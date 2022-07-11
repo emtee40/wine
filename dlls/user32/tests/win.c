@@ -8892,10 +8892,8 @@ static LRESULT WINAPI message_window_topmost_proc(HWND hwnd, UINT msg, WPARAM wp
          * between sensibility and specificity, WM_KILLFOCUS is always
          * considered bad, while all the other messages are considered
          * bad only on the message-only widow. */
-        todo_wine_if(msg == WM_KILLFOCUS)
         ok(msg != WM_KILLFOCUS, "Received message WM_KILLFOCUS for window %p (message-only window is %p)\n",
                 hwnd, message_window_topmost_hwnd_msg);
-        todo_wine_if(hwnd == message_window_topmost_hwnd_msg)
         ok(hwnd != message_window_topmost_hwnd_msg, "Received message %u for message-only window %p\n",
                 msg, hwnd);
     }
@@ -8984,7 +8982,7 @@ static void test_message_window_topmost(void)
     ret = EndDeferWindowPos(hdwp);
     ok(ret, "Unexpected failure when calling EndDeferWindowPos()\n");
 
-    todo_wine ok(GetLastError() == 0xdeadbeef, "Last error unexpectedly set to %#lx\n", GetLastError());
+    ok(GetLastError() == 0xdeadbeef, "Last error unexpectedly set to %#lx\n", GetLastError());
 
     while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
     {
@@ -8996,7 +8994,7 @@ static void test_message_window_topmost(void)
 
     ret = GetWindowRect(hwnd_msg, &rect);
     ok(ret, "Unexpected failure when calling GetWindowRect()\n");
-    todo_wine ok(rect.left == 220 && rect.top == 221 && rect.right == 220 + 222 && rect.bottom == 221 + 223,
+    ok(rect.left == 220 && rect.top == 221 && rect.right == 220 + 222 && rect.bottom == 221 + 223,
             "Unexpected rectangle %s\n", wine_dbgstr_rect(&rect));
 
     message_window_topmost_received_killfocus = FALSE;
