@@ -1,4 +1,4 @@
-# Occitan translations for Wine ### revirat entà linha 383 
+# Occitan translations for Wine  ### revirat entà linha 843
 #
 msgid ""
 msgstr ""
@@ -384,61 +384,61 @@ msgstr "non compressat"
 
 #: dlls/browseui/browseui.rc:28
 msgid "Canceling..."
-msgstr "Annulation..."
+msgstr "Anullacion..."
 
 #: dlls/browseui/browseui.rc:29
 msgid "%1!u! %2 remaining"
-msgstr "%1!u! %2 restante(s)"
+msgstr "%1!u! %2 restanta(s)"
 
 #: dlls/browseui/browseui.rc:30
 msgid "%1!u! %2 and %3!u! %4 remaining"
-msgstr "%1!u! %2 et %3!u! %4 restante(s)"
+msgstr "%1!u! %2 e %3!u! %4 restanta(s)"
 
 #: dlls/browseui/browseui.rc:31
 msgid "seconds"
-msgstr "secondes"
+msgstr "secondas"
 
 #: dlls/browseui/browseui.rc:32
 msgid "minutes"
-msgstr "minutes"
+msgstr "minutas"
 
 #: dlls/browseui/browseui.rc:33
 msgid "hours"
-msgstr "heures"
+msgstr "oras"
 
 #: dlls/comctl32/comctl32.rc:68 programs/winefile/winefile.rc:156
 msgid "Properties for %s"
-msgstr "Propriétés de %s"
+msgstr "Proprietats de %s"
 
 #: dlls/comctl32/comctl32.rc:73 dlls/comdlg32/comdlg32.rc:265
 msgid "&Apply"
-msgstr "&Appliquer"
+msgstr "&Aplicar"
 
 #: dlls/comctl32/comctl32.rc:74 dlls/comctl32/comctl32.rc:88
 #: dlls/comdlg32/comdlg32.rc:309 dlls/user32/user32.rc:99
 #: dlls/user32/user32.rc:81
 msgid "Help"
-msgstr "Aide"
+msgstr "Ajuda"
 
 #: dlls/comctl32/comctl32.rc:81
 msgid "Wizard"
-msgstr "Assistant"
+msgstr "Assistent"
 
 #: dlls/comctl32/comctl32.rc:84
 msgid "< &Back"
-msgstr "< &Précédent"
+msgstr "< &Precedent"
 
 #: dlls/comctl32/comctl32.rc:85 dlls/oledb32/version.rc:61
 msgid "&Next >"
-msgstr "&Suivant >"
+msgstr "&Seguent >"
 
 #: dlls/comctl32/comctl32.rc:86
 msgid "Finish"
-msgstr "Terminer"
+msgstr "Acabar"
 
 #: dlls/comctl32/comctl32.rc:97
 msgid "Customize Toolbar"
-msgstr "Personnaliser la barre d'outils"
+msgstr "Personalizar la barra d'espleches"
 
 #: dlls/comctl32/comctl32.rc:100 dlls/comctl32/comctl32.rc:57
 #: dlls/cryptui/cryptui.rc:356 dlls/ieframe/ieframe.rc:43
@@ -446,11 +446,11 @@ msgstr "Personnaliser la barre d'outils"
 #: programs/oleview/oleview.rc:187 programs/oleview/oleview.rc:200
 #: programs/oleview/oleview.rc:212 programs/taskmgr/taskmgr.rc:139
 msgid "&Close"
-msgstr "&Fermer"
+msgstr "&Barrar"
 
 #: dlls/comctl32/comctl32.rc:101
 msgid "R&eset"
-msgstr "&Réinitialiser"
+msgstr "&Reinicializar"
 
 #: dlls/comctl32/comctl32.rc:102 dlls/comdlg32/comdlg32.rc:173
 #: dlls/comdlg32/comdlg32.rc:195 dlls/comdlg32/comdlg32.rc:266
@@ -470,45 +470,45 @@ msgstr "&Réinitialiser"
 #: programs/winemine/winemine.rc:53 programs/winhlp32/winhlp32.rc:57
 #: programs/wordpad/wordpad.rc:102
 msgid "&Help"
-msgstr "Aid&e"
+msgstr "Ajud&a"
 
 #: dlls/comctl32/comctl32.rc:103
 msgid "Move &Up"
-msgstr "&Monter"
+msgstr "&Montar"
 
 #: dlls/comctl32/comctl32.rc:104
 msgid "Move &Down"
-msgstr "&Descendre"
+msgstr "&Davalar"
 
 #: dlls/comctl32/comctl32.rc:105
 msgid "A&vailable buttons:"
-msgstr "Boutons &disponibles :"
+msgstr "Botons &disponibles :"
 
 #: dlls/comctl32/comctl32.rc:107
 msgid "&Add ->"
-msgstr "A&jouter ->"
+msgstr "A&justar ->"
 
 #: dlls/comctl32/comctl32.rc:108
 msgid "<- &Remove"
-msgstr "<- E&nlever"
+msgstr "<- &Tirar"
 
 #: dlls/comctl32/comctl32.rc:109
 msgid "&Toolbar buttons:"
-msgstr "&Boutons de la barre d'outils :"
+msgstr "&Botons de la barra d'espleches :"
 
 #: dlls/comctl32/comctl32.rc:42
 msgid "Separator"
-msgstr "Séparateur"
+msgstr "Separador"
 
 #: dlls/comctl32/comctl32.rc:47 programs/progman/progman.rc:81
 msgctxt "hotkey"
 msgid "None"
-msgstr "Aucune"
+msgstr "Cap"
 
 #: dlls/comctl32/comctl32.rc:52 dlls/shell32/shell32.rc:307
 #: dlls/shlwapi/shlwapi.rc:46 dlls/user32/user32.rc:90 dlls/user32/user32.rc:78
 msgid "&Yes"
-msgstr "&Oui"
+msgstr "&Òc"
 
 #: dlls/comctl32/comctl32.rc:53 dlls/shell32/shell32.rc:309
 #: dlls/shlwapi/shlwapi.rc:47 dlls/user32/user32.rc:91 dlls/user32/user32.rc:79
@@ -518,98 +518,98 @@ msgstr "&Non"
 #: dlls/comctl32/comctl32.rc:54 dlls/user32/user32.rc:93
 #: dlls/user32/user32.rc:76
 msgid "&Retry"
-msgstr "Ré&péter"
+msgstr "Re&petir"
 
 #: dlls/comctl32/comctl32.rc:62
 msgid "Hide details"
-msgstr "Cacher les détails"
+msgstr "Amagar los detalhs"
 
 #: dlls/comctl32/comctl32.rc:63
 msgid "See details"
-msgstr "Voir les détails"
+msgstr "Veire los detalhs"
 
 #: dlls/comctl32/comctl32.rc:31 dlls/cryptui/cryptui.rc:235
 #: programs/regedit/regedit.rc:291 programs/taskmgr/taskmgr.rc:434
 #: programs/winedbg/winedbg.rc:61 programs/winedbg/winedbg.rc:76
 #: programs/wordpad/wordpad.rc:180
 msgid "Close"
-msgstr "Fermer"
+msgstr "Barrar"
 
 #: dlls/comctl32/comctl32.rc:36
 msgid "Today:"
-msgstr "Aujourd'hui :"
+msgstr "Uèi :"
 
 #: dlls/comctl32/comctl32.rc:37
 msgid "Go to today"
-msgstr "Aller à aujourd'hui"
+msgstr "Anar a uèi"
 
 #: dlls/comdlg32/comdlg32.rc:158 dlls/comdlg32/comdlg32.rc:171
 #: dlls/comdlg32/comdlg32.rc:462 dlls/comdlg32/comdlg32.rc:487
 #: dlls/comdlg32/comdlg32.rc:514 dlls/shell32/shell32.rc:165
 #: programs/oleview/oleview.rc:101
 msgid "Open"
-msgstr "Ouvrir"
+msgstr "Obrir"
 
 #: dlls/comdlg32/comdlg32.rc:161 dlls/comdlg32/comdlg32.rc:183
 msgid "File &Name:"
-msgstr "&Nom de fichier :"
+msgstr "&Nom de fichièr :"
 
 #: dlls/comdlg32/comdlg32.rc:164 dlls/comdlg32/comdlg32.rc:186
 msgid "&Directories:"
-msgstr "&Répertoires :"
+msgstr "&Repertòris :"
 
 #: dlls/comdlg32/comdlg32.rc:167 dlls/comdlg32/comdlg32.rc:189
 msgid "List Files of &Type:"
-msgstr "Liste des fichiers de &type :"
+msgstr "Lista dels fichièrs de &tip :"
 
 #: dlls/comdlg32/comdlg32.rc:169 dlls/comdlg32/comdlg32.rc:191
 msgid "Dri&ves:"
-msgstr "&Lecteurs :"
+msgstr "&Legidors :"
 
 #: dlls/comdlg32/comdlg32.rc:174 dlls/comdlg32/comdlg32.rc:196
 #: dlls/shell32/shell32.rc:368 dlls/shell32/shell32.rc:405
 #: programs/winefile/winefile.rc:172
 msgid "&Read Only"
-msgstr "Lectu&re seule"
+msgstr "Lectu&ra sola"
 
 #: dlls/comdlg32/comdlg32.rc:180
 msgid "Save As..."
-msgstr "Enregistrer sous..."
+msgstr "Enregistrar sòus..."
 
 #: dlls/comdlg32/comdlg32.rc:193 dlls/comdlg32/comdlg32.rc:146
 msgid "Save As"
-msgstr "Enregistrer"
+msgstr "Enregistrar"
 
 #: dlls/comdlg32/comdlg32.rc:202 dlls/comdlg32/comdlg32.rc:211
 #: dlls/comdlg32/comdlg32.rc:358 dlls/comdlg32/comdlg32.rc:55
 #: dlls/hhctrl.ocx/hhctrl.rc:49 programs/wordpad/wordpad.rc:173
 msgid "Print"
-msgstr "Imprimer"
+msgstr "Estampar"
 
 #: dlls/comdlg32/comdlg32.rc:205
 msgid "Printer:"
-msgstr "Imprimante :"
+msgstr "Estampadoira :"
 
 #: dlls/comdlg32/comdlg32.rc:207 dlls/comdlg32/comdlg32.rc:375
 msgid "Print range"
-msgstr "Zone d'impression"
+msgstr "Zòna d'impression"
 
 #: dlls/comdlg32/comdlg32.rc:208 dlls/comdlg32/comdlg32.rc:376
 #: programs/regedit/regedit.rc:273
 msgid "&All"
-msgstr "&Tout"
+msgstr "&Tot"
 
 #: dlls/comdlg32/comdlg32.rc:209
 msgid "S&election"
-msgstr "&Sélection"
+msgstr "&Seleccion"
 
 #: dlls/comdlg32/comdlg32.rc:210
 msgid "&Pages"
-msgstr "&Pages"
+msgstr "&Paginas"
 
 #: dlls/comdlg32/comdlg32.rc:213 dlls/comdlg32/comdlg32.rc:235
 msgid "&Setup"
-msgstr "&Configurer"
+msgstr "&Configurar"
 
 #: dlls/comdlg32/comdlg32.rc:214
 msgid "&From:"
@@ -617,88 +617,88 @@ msgstr "&De :"
 
 #: dlls/comdlg32/comdlg32.rc:215
 msgid "&To:"
-msgstr "&à :"
+msgstr "&a :"
 
 #: dlls/comdlg32/comdlg32.rc:216 dlls/wineps.drv/wineps.rc:42
 msgid "Print &Quality:"
-msgstr "&Qualité d'impression :"
+msgstr "&Qualitat d'impression :"
 
 #: dlls/comdlg32/comdlg32.rc:218
 msgid "Print to Fi&le"
-msgstr "Imprimer dans un &fichier"
+msgstr "Estampar dins un &fichièr"
 
 #: dlls/comdlg32/comdlg32.rc:219
 msgid "Condensed"
-msgstr "Copies t&riées"
+msgstr "Còpias t&riadas"
 
 #: dlls/comdlg32/comdlg32.rc:225 dlls/comdlg32/comdlg32.rc:397
 msgid "Print Setup"
-msgstr "Configuration de l'impression"
+msgstr "Configuracion de l'impression"
 
 #: dlls/comdlg32/comdlg32.rc:228 dlls/comdlg32/comdlg32.rc:361
 #: dlls/comdlg32/comdlg32.rc:400
 msgid "Printer"
-msgstr "Imprimante"
+msgstr "Estampadoira"
 
 #: dlls/comdlg32/comdlg32.rc:229
 msgid "&Default Printer"
-msgstr "&Imprimante par défaut"
+msgstr "&Estampadoira par défaut"
 
 #: dlls/comdlg32/comdlg32.rc:230
 msgid "[none]"
-msgstr "[aucune]"
+msgstr "[cap]"
 
 #: dlls/comdlg32/comdlg32.rc:231
 msgid "Specific &Printer"
-msgstr "Imprimante &spécifique"
+msgstr "Estampadoira &especific"
 
 #: dlls/comdlg32/comdlg32.rc:236 dlls/comdlg32/comdlg32.rc:419
 #: dlls/comdlg32/comdlg32.rc:443 dlls/wineps.drv/wineps.rc:34
 msgid "Orientation"
-msgstr "Orientation"
+msgstr "Orientacion"
 
 #: dlls/comdlg32/comdlg32.rc:237
 msgid "Po&rtrait"
-msgstr "&Portrait"
+msgstr "&Retrachat"
 
 #: dlls/comdlg32/comdlg32.rc:238 dlls/comdlg32/comdlg32.rc:445
 #: dlls/wineps.drv/wineps.rc:37
 msgid "&Landscape"
-msgstr "P&aysage"
+msgstr "P&aisatge"
 
 #: dlls/comdlg32/comdlg32.rc:241 dlls/comdlg32/comdlg32.rc:413
 #: dlls/comdlg32/comdlg32.rc:438 dlls/wineps.drv/wineps.rc:28
 msgid "Paper"
-msgstr "Papier"
+msgstr "Papièr"
 
 #: dlls/comdlg32/comdlg32.rc:242
 msgid "Si&ze"
-msgstr "&Taille"
+msgstr "&Talha"
 
 #: dlls/comdlg32/comdlg32.rc:243
 msgid "&Source"
-msgstr "&Source"
+msgstr "&Font"
 
 #: dlls/comdlg32/comdlg32.rc:251 programs/conhost/conhost.rc:76
 msgid "Font"
-msgstr "Police"
+msgstr "Polícia"
 
 #: dlls/comdlg32/comdlg32.rc:254
 msgid "&Font:"
-msgstr "&Police :"
+msgstr "&Polícia :"
 
 #: dlls/comdlg32/comdlg32.rc:257
 msgid "Font St&yle:"
-msgstr "St&yle :"
+msgstr "Est&il :"
 
 #: dlls/comdlg32/comdlg32.rc:260 dlls/comdlg32/comdlg32.rc:439
 #: programs/winecfg/winecfg.rc:300
 msgid "&Size:"
-msgstr "T&aille :"
+msgstr "T&alha :"
 
 #: dlls/comdlg32/comdlg32.rc:267
 msgid "Effects"
-msgstr "Effets"
+msgstr "Efèits"
 
 #: dlls/comdlg32/comdlg32.rc:268
 msgid "Stri&keout"
@@ -706,15 +706,15 @@ msgstr "&Barré"
 
 #: dlls/comdlg32/comdlg32.rc:269
 msgid "&Underline"
-msgstr "&Souligné"
+msgstr "&Soslinhat"
 
 #: dlls/comdlg32/comdlg32.rc:270 programs/winecfg/winecfg.rc:298
 msgid "&Color:"
-msgstr "&Couleur :"
+msgstr "&Color :"
 
 #: dlls/comdlg32/comdlg32.rc:273
 msgid "Sample"
-msgstr "Aperçu"
+msgstr "Apercebut"
 
 #: dlls/comdlg32/comdlg32.rc:275
 msgid "Scr&ipt:"
@@ -722,15 +722,15 @@ msgstr "Sc&ript :"
 
 #: dlls/comdlg32/comdlg32.rc:283 dlls/comdlg32/comdlg32.rc:288
 msgid "Color"
-msgstr "Couleurs"
+msgstr "Colors"
 
 #: dlls/comdlg32/comdlg32.rc:286
 msgid "&Basic Colors:"
-msgstr "Couleurs de &base :"
+msgstr "Colors de &basa :"
 
 #: dlls/comdlg32/comdlg32.rc:287
 msgid "&Custom Colors:"
-msgstr "&Couleurs personnalisées :"
+msgstr "&Colors personalizadas :"
 
 #: dlls/comdlg32/comdlg32.rc:289
 msgid "|S&olid"
@@ -738,19 +738,19 @@ msgstr "|S&olide"
 
 #: dlls/comdlg32/comdlg32.rc:290
 msgid "&Red:"
-msgstr "&Rouge :"
+msgstr "&Roi :"
 
 #: dlls/comdlg32/comdlg32.rc:292
 msgid "&Green:"
-msgstr "&Vert :"
+msgstr "&Verd :"
 
 #: dlls/comdlg32/comdlg32.rc:294
 msgid "&Blue:"
-msgstr "Bl&eu :"
+msgstr "Bl&u :"
 
 #: dlls/comdlg32/comdlg32.rc:296
 msgid "&Hue:"
-msgstr "&Teinte :"
+msgstr "&Tenhuda :"
 
 #: dlls/comdlg32/comdlg32.rc:298
 msgctxt "Saturation"
@@ -764,11 +764,11 @@ msgstr "&Lum. :"
 
 #: dlls/comdlg32/comdlg32.rc:310
 msgid "&Add to Custom Colors"
-msgstr "&Ajouter aux couleurs personnalisées"
+msgstr "&Ajustar a las colors personalizadas"
 
 #: dlls/comdlg32/comdlg32.rc:311
 msgid "&Define Custom Colors >>"
-msgstr "&Définir les couleurs personnalisées >>"
+msgstr "&Definir las colors personalizadas >>"
 
 #: dlls/comdlg32/comdlg32.rc:312
 msgctxt "Solid"
@@ -778,23 +778,23 @@ msgstr "S&olide"
 #: dlls/comdlg32/comdlg32.rc:318 programs/regedit/regedit.rc:280
 #: programs/regedit/regedit.rc:290
 msgid "Find"
-msgstr "Recherche"
+msgstr "Recèrca"
 
 #: dlls/comdlg32/comdlg32.rc:321 dlls/comdlg32/comdlg32.rc:340
 msgid "Fi&nd What:"
-msgstr "&Rechercher :"
+msgstr "&Recèrcar :"
 
 #: dlls/comdlg32/comdlg32.rc:323 dlls/comdlg32/comdlg32.rc:344
 msgid "Match &Whole Word Only"
-msgstr "Mots &entiers seulement"
+msgstr "Mots &entièrs solament"
 
 #: dlls/comdlg32/comdlg32.rc:324 dlls/comdlg32/comdlg32.rc:345
 msgid "Match &Case"
-msgstr "Respecter la &casse"
+msgstr "Respectar la &casse"
 
 #: dlls/comdlg32/comdlg32.rc:325
 msgid "Direction"
-msgstr "Direction"
+msgstr "Direccion"
 
 #: dlls/comdlg32/comdlg32.rc:326 programs/view/view.rc:42
 msgid "&Up"
@@ -802,45 +802,45 @@ msgstr "&Haut"
 
 #: dlls/comdlg32/comdlg32.rc:327 programs/view/view.rc:43
 msgid "&Down"
-msgstr "&Bas"
+msgstr "&Baish"
 
 #: dlls/comdlg32/comdlg32.rc:329 dlls/comdlg32/comdlg32.rc:347
 msgid "&Find Next"
-msgstr "&Suivant"
+msgstr "&Seguent"
 
 #: dlls/comdlg32/comdlg32.rc:337
 msgid "Replace"
-msgstr "Remplacer"
+msgstr "Remplaçar"
 
 #: dlls/comdlg32/comdlg32.rc:342
 msgid "Re&place With:"
-msgstr "R&emplacer par :"
+msgstr "R&emplaçar per :"
 
 #: dlls/comdlg32/comdlg32.rc:348
 msgid "&Replace"
-msgstr "&Remplacer"
+msgstr "&Remplaçar"
 
 #: dlls/comdlg32/comdlg32.rc:349
 msgid "Replace &All"
-msgstr "Remplacer &tout"
+msgstr "Remplaçar &tot"
 
 #: dlls/comdlg32/comdlg32.rc:363 dlls/comdlg32/comdlg32.rc:403
 #: dlls/ieframe/ieframe.rc:42 dlls/shdoclc/shdoclc.rc:61
 #: dlls/shell32/shell32.rc:108 programs/clock/clock.rc:31
 #: programs/conhost/conhost.rc:34
 msgid "&Properties"
-msgstr "&Propriétés"
+msgstr "&Proprietats"
 
 #: dlls/comdlg32/comdlg32.rc:364
 msgid "Print to fi&le"
-msgstr "Imprimer dans un fichier"
+msgstr "Estampar dens un fichèr"
 
 #: dlls/comdlg32/comdlg32.rc:365 dlls/comdlg32/comdlg32.rc:401
 #: dlls/msacm32/msacm32.rc:34 programs/winefile/winefile.rc:137
 msgid "&Name:"
 msgstr "&Nom :"
 
-#: dlls/comdlg32/comdlg32.rc:366 dlls/comdlg32/comdlg32.rc:404
+#: dlls/comdlg32/comdlg32.rc:366 dlls/comdlg32/comdlg32.rc:404  ### revirat entà linha 843
 msgid "Status:"
 msgstr "État :"
 
@@ -890,11 +890,11 @@ msgstr "Tai&lle :"
 
 #: dlls/comdlg32/comdlg32.rc:416
 msgid "&Source:"
-msgstr "Source :"
+msgstr "Font :"
 
 #: dlls/comdlg32/comdlg32.rc:421
 msgid "P&ortrait"
-msgstr "&Portrait"
+msgstr "&Retrachat"
 
 #: dlls/comdlg32/comdlg32.rc:422
 msgid "L&andscape"
@@ -910,7 +910,7 @@ msgstr "&Bac :"
 
 #: dlls/comdlg32/comdlg32.rc:444 dlls/wineps.drv/wineps.rc:35
 msgid "&Portrait"
-msgstr "&Portrait"
+msgstr "&Retrachat"
 
 #: dlls/comdlg32/comdlg32.rc:447
 msgid "L&eft:"
@@ -930,19 +930,19 @@ msgstr "&Bas :"
 
 #: dlls/comdlg32/comdlg32.rc:457
 msgid "P&rinter..."
-msgstr "&Imprimante..."
+msgstr "&Estampadoira..."
 
 #: dlls/comdlg32/comdlg32.rc:465 dlls/comdlg32/comdlg32.rc:490
 msgid "Look &in:"
-msgstr "&Rechercher dans :"
+msgstr "&Recèrcar dans :"
 
 #: dlls/comdlg32/comdlg32.rc:471 dlls/comdlg32/comdlg32.rc:497
 msgid "File &name:"
-msgstr "&Nom du fichier :"
+msgstr "&Nom du fichèr :"
 
 #: dlls/comdlg32/comdlg32.rc:475 dlls/comdlg32/comdlg32.rc:501
 msgid "Files of &type:"
-msgstr "Fichiers du &type :"
+msgstr "Fichèrs du &type :"
 
 #: dlls/comdlg32/comdlg32.rc:478 dlls/comdlg32/comdlg32.rc:504
 msgid "Open as &read-only"
@@ -956,26 +956,26 @@ msgstr "&Ouvrir"
 
 #: dlls/comdlg32/comdlg32.rc:517
 msgid "File name:"
-msgstr "Nom du fichier :"
+msgstr "Nom du fichèr :"
 
 #: dlls/comdlg32/comdlg32.rc:520
 msgid "Files of type:"
-msgstr "Fichiers du type :"
+msgstr "Fichèrs du type :"
 
 #: dlls/comdlg32/comdlg32.rc:33 dlls/vbscript/vbscript.rc:35
 msgid "File not found"
-msgstr "Fichier introuvable"
+msgstr "Fichèr introuvable"
 
 #: dlls/comdlg32/comdlg32.rc:34
 msgid "Please verify that the correct file name was given"
-msgstr "Veuillez vérifier que le nom de fichier indiqué est correct"
+msgstr "Veuillez vérifier que le nom de fichèr indiqué est correct"
 
 #: dlls/comdlg32/comdlg32.rc:35
 msgid ""
 "File does not exist.\n"
 "Do you want to create file?"
 msgstr ""
-"Ce fichier n'existe pas.\n"
+"Ce fichèr n'existe pas.\n"
 "Souhaitez-vous le créer ?"
 
 #: dlls/comdlg32/comdlg32.rc:36
@@ -983,7 +983,7 @@ msgid ""
 "File already exists.\n"
 "Do you want to replace it?"
 msgstr ""
-"Ce fichier existe déjà.\n"
+"Ce fichèr existe déjà.\n"
 "Voulez-vous le remplacer ?"
 
 #: dlls/comdlg32/comdlg32.rc:37
@@ -995,7 +995,7 @@ msgid ""
 "A filename cannot contain any of the following characters:\n"
 "                          / : < > |"
 msgstr ""
-"Un nom de fichier ne peut contenir aucun des caractères suivants :\n"
+"Un nom de fichèr ne peut contenir aucun des caractères suivants :\n"
 "                          / : < > |"
 
 #: dlls/comdlg32/comdlg32.rc:39
@@ -1004,7 +1004,7 @@ msgstr "Le chemin d'accès n'existe pas"
 
 #: dlls/comdlg32/comdlg32.rc:40
 msgid "File does not exist"
-msgstr "Le fichier n'existe pas"
+msgstr "Le fichèr n'existe pas"
 
 #: dlls/comdlg32/comdlg32.rc:41
 msgid "The selection contains a non-folder object"
@@ -1056,7 +1056,7 @@ msgstr "Marron"
 
 #: dlls/comdlg32/comdlg32.rc:124 programs/wordpad/wordpad.rc:127
 msgid "Green"
-msgstr "Vert"
+msgstr "Verd"
 
 #: dlls/comdlg32/comdlg32.rc:125 programs/wordpad/wordpad.rc:128
 msgid "Olive"
@@ -1064,7 +1064,7 @@ msgstr "Olive"
 
 #: dlls/comdlg32/comdlg32.rc:126 programs/wordpad/wordpad.rc:129
 msgid "Navy"
-msgstr "Bleu marine"
+msgstr "Blu marine"
 
 #: dlls/comdlg32/comdlg32.rc:127 programs/wordpad/wordpad.rc:130
 msgid "Purple"
@@ -1084,7 +1084,7 @@ msgstr "Argent"
 
 #: dlls/comdlg32/comdlg32.rc:131 programs/wordpad/wordpad.rc:134
 msgid "Red"
-msgstr "Rouge"
+msgstr "Roi"
 
 #: dlls/comdlg32/comdlg32.rc:132 programs/wordpad/wordpad.rc:135
 msgid "Lime"
@@ -1097,7 +1097,7 @@ msgstr "Jaune"
 #: dlls/comdlg32/comdlg32.rc:134 dlls/light.msstyles/light.rc:29
 #: dlls/light.msstyles/light.rc:35 programs/wordpad/wordpad.rc:137
 msgid "Blue"
-msgstr "Bleu"
+msgstr "Blu"
 
 #: dlls/comdlg32/comdlg32.rc:135 programs/wordpad/wordpad.rc:138
 msgid "Fuchsia"
@@ -1153,7 +1153,7 @@ msgstr "Une erreur d'impression s'est produite."
 
 #: dlls/comdlg32/comdlg32.rc:69
 msgid "No default printer defined."
-msgstr "Imprimante par défaut non définie."
+msgstr "Estampadoira par défaut non définie."
 
 #: dlls/comdlg32/comdlg32.rc:70
 msgid "Cannot find the printer."
@@ -1198,7 +1198,7 @@ msgstr "Enregistrer"
 
 #: dlls/comdlg32/comdlg32.rc:147
 msgid "Open File"
-msgstr "Ouvrir le fichier"
+msgstr "Ouvrir le fichèr"
 
 #: dlls/comdlg32/comdlg32.rc:148
 msgid "Select Folder"
@@ -1314,7 +1314,7 @@ msgstr "Mode économie d'énergie ; "
 
 #: dlls/comdlg32/comdlg32.rc:78
 msgid "Default Printer; "
-msgstr "Imprimante par défaut ; "
+msgstr "Estampadoira par défaut ; "
 
 #: dlls/comdlg32/comdlg32.rc:79
 msgid "There are %d documents in the queue"
@@ -1335,7 +1335,7 @@ msgstr "mm"
 
 #: dlls/compstui/compstui.rc:29 dlls/shell32/shell32.rc:74
 msgid "Properties"
-msgstr "Propriétés"
+msgstr "Proprietats"
 
 #: dlls/compstui/compstui.rc:30 dlls/hhctrl.ocx/hhctrl.rc:50
 #: programs/conhost/conhost.rc:51 programs/wordpad/wordpad.rc:166
@@ -1874,7 +1874,7 @@ msgstr "Utilisateur IPsec"
 
 #: dlls/crypt32/crypt32.rc:148
 msgid "Encrypting File System"
-msgstr "Système de fichiers chiffré (EFS)"
+msgstr "Système de fichèrs chiffré (EFS)"
 
 #: dlls/crypt32/crypt32.rc:149 dlls/cryptui/cryptui.rc:133
 msgid "Windows Hardware Driver Verification"
@@ -1926,7 +1926,7 @@ msgstr "Intermédiaire IKE IPsec"
 
 #: dlls/crypt32/crypt32.rc:161 dlls/cryptui/cryptui.rc:132
 msgid "File Recovery"
-msgstr "Restauration de fichier"
+msgstr "Restauration de fichèr"
 
 #: dlls/crypt32/crypt32.rc:162 dlls/cryptui/cryptui.rc:137
 msgid "Root List Signer"
@@ -2279,7 +2279,7 @@ msgstr "É&diter les propriétés..."
 
 #: dlls/cryptui/cryptui.rc:211
 msgid "&Copy to File..."
-msgstr "&Copier dans le fichier..."
+msgstr "&Copier dans le fichèr..."
 
 #: dlls/cryptui/cryptui.rc:215
 msgid "Certification Path"
@@ -2380,7 +2380,7 @@ msgid ""
 msgstr ""
 "Cet assistant vous aide à importer des certificats, des listes de révocation "
 "de certificats et des listes de certificats de confiance dans un magasin de "
-"certificats à partir d'un fichier.\n"
+"certificats à partir d'un fichèr.\n"
 "\n"
 "Un certificat peut être utilisé pour vous identifier, ou pour identifier "
 "l'ordinateur avec lequel vous communiquez. Il peut également être utilisé à "
@@ -2388,11 +2388,11 @@ msgstr ""
 "certificats sont des collections de certificats, de listes de révocation de "
 "certificats et de listes de certificats de confiance.\n"
 "\n"
-"Pour continuer, cliquez sur Suivant."
+"Pour continuer, cliquez sur Seguent."
 
 #: dlls/cryptui/cryptui.rc:299 dlls/cryptui/cryptui.rc:435
 msgid "&File name:"
-msgstr "&Nom du fichier :"
+msgstr "&Nom du fichèr :"
 
 #: dlls/cryptui/cryptui.rc:301 dlls/cryptui/cryptui.rc:323
 #: dlls/cryptui/cryptui.rc:437 programs/winecfg/winecfg.rc:319
@@ -2404,7 +2404,7 @@ msgid ""
 "Note: The following file formats may contain more than one certificate, "
 "certificate revocation list, or certificate trust list:"
 msgstr ""
-"Remarque : les formats de fichiers suivants peuvent contenir plus d'un "
+"Remarque : les formats de fichèrs suivants peuvent contenir plus d'un "
 "certificat, liste de révocation de certificats ou liste de certificats de "
 "confiance :"
 
@@ -2529,7 +2529,7 @@ msgid ""
 "To continue, click Next."
 msgstr ""
 "Cet assistant vous aide à exporter des certificats, des listes de révocation "
-"de certificats et des listes de certificats de confiance dans un fichier à "
+"de certificats et des listes de certificats de confiance dans un fichèr à "
 "partir d'un magasin de certificats.\n"
 "\n"
 "Un certificat peut être utilisé pour vous identifier, ou pour identifier "
@@ -2538,7 +2538,7 @@ msgstr ""
 "certificats sont des collections de certificats, de listes de révocation de "
 "certificats et de listes de certificats de confiance.\n"
 "\n"
-"Pour continuer, cliquez sur Suivant."
+"Pour continuer, cliquez sur Seguent."
 
 #: dlls/cryptui/cryptui.rc:389
 msgid ""
@@ -2724,7 +2724,7 @@ msgstr "Extensions critiques uniquement"
 
 #: dlls/cryptui/cryptui.rc:53
 msgid "Properties Only"
-msgstr "Propriétés uniquement"
+msgstr "Proprietats uniquement"
 
 #: dlls/cryptui/cryptui.rc:55
 msgid "Serial number"
@@ -2773,7 +2773,7 @@ msgstr "Description"
 
 #: dlls/cryptui/cryptui.rc:66
 msgid "Certificate Properties"
-msgstr "Propriétés du certificat"
+msgstr "Proprietats du certificat"
 
 #: dlls/cryptui/cryptui.rc:67
 msgid "Please enter an OID in the form 1.2.3.4"
@@ -2792,16 +2792,16 @@ msgid ""
 "The file contains objects that do not match the given criteria. Please "
 "select another file."
 msgstr ""
-"Le fichier contient des objets ne satisfaisant pas aux critères spécifiés. "
-"Veuillez sélectionner un autre fichier."
+"Le fichèr contient des objets ne satisfaisant pas aux critères spécifiés. "
+"Veuillez sélectionner un autre fichèr."
 
 #: dlls/cryptui/cryptui.rc:73
 msgid "File to Import"
-msgstr "Fichier à importer"
+msgstr "Fichèr à importer"
 
 #: dlls/cryptui/cryptui.rc:74
 msgid "Specify the file you want to import."
-msgstr "Spécifiez le fichier à importer."
+msgstr "Spécifiez le fichèr à importer."
 
 #: dlls/cryptui/cryptui.rc:75 dlls/cryptui/cryptui.rc:98
 msgid "Certificate Store"
@@ -2837,11 +2837,11 @@ msgstr "Messages CMS/PKCS #7 (*.spc ; *.p7b)"
 
 #: dlls/cryptui/cryptui.rc:84
 msgid "Please select a file."
-msgstr "Sélectionnez un fichier."
+msgstr "Sélectionnez un fichèr."
 
 #: dlls/cryptui/cryptui.rc:85
 msgid "The file format is not recognized. Please select another file."
-msgstr "Le format du fichier n'est pas reconnu. Sélectionnez un autre fichier."
+msgstr "Le format du fichèr n'est pas reconnu. Sélectionnez un autre fichèr."
 
 #: dlls/cryptui/cryptui.rc:86
 msgid "Could not open "
@@ -2865,7 +2865,7 @@ msgstr "Déterminé automatiquement par le programme"
 
 #: dlls/cryptui/cryptui.rc:91 dlls/shell32/shell32.rc:137
 msgid "File"
-msgstr "Fichier"
+msgstr "Fichèr"
 
 #: dlls/cryptui/cryptui.rc:92 dlls/inetcpl.cpl/inetcpl.rc:108
 msgid "Content"
@@ -3075,15 +3075,15 @@ msgstr "Choisissez le format dans lequel le contenu sera sauvé."
 
 #: dlls/cryptui/cryptui.rc:153
 msgid "Export Filename"
-msgstr "Nom du fichier à exporter"
+msgstr "Nom du fichèr à exporter"
 
 #: dlls/cryptui/cryptui.rc:154
 msgid "Specify the name of the file in which the content will be saved."
-msgstr "Choisissez le nom du fichier dans lequel le contenu sera sauvé."
+msgstr "Choisissez le nom du fichèr dans lequel le contenu sera sauvé."
 
 #: dlls/cryptui/cryptui.rc:155
 msgid "The specified file already exists. Do you want to replace it?"
-msgstr "Le fichier spécifié existe déjà. Voulez-vous le remplacer ?"
+msgstr "Le fichèr spécifié existe déjà. Voulez-vous le remplacer ?"
 
 #: dlls/cryptui/cryptui.rc:156
 msgid "DER-Encoded Binary X.509 (*.cer)"
@@ -3103,7 +3103,7 @@ msgstr "Échange d'informations personnelles (*.pfx)"
 
 #: dlls/cryptui/cryptui.rc:163
 msgid "File Format"
-msgstr "Format de fichier"
+msgstr "Format de fichèr"
 
 #: dlls/cryptui/cryptui.rc:164
 msgid "Include all certificates in certificate path"
@@ -3289,7 +3289,7 @@ msgstr "Autre"
 
 #: dlls/gphoto2.ds/gphoto2.rc:30
 msgid "Files on Camera"
-msgstr "Fichiers sur l'appareil photo"
+msgstr "Fichèrs sur l'appareil photo"
 
 #: dlls/gphoto2.ds/gphoto2.rc:34
 msgid "Import Selected"
@@ -3338,7 +3338,7 @@ msgstr "&Précédent"
 
 #: dlls/hhctrl.ocx/hhctrl.rc:61 dlls/hhctrl.ocx/hhctrl.rc:74
 msgid "&Forward"
-msgstr "&Suivant"
+msgstr "&Seguent"
 
 #: dlls/hhctrl.ocx/hhctrl.rc:62
 msgctxt "table of contents"
@@ -3357,7 +3357,7 @@ msgstr "Actualis&er"
 #: dlls/hhctrl.ocx/hhctrl.rc:65 dlls/hhctrl.ocx/hhctrl.rc:80
 #: programs/winhlp32/winhlp32.rc:34
 msgid "&Print..."
-msgstr "&Imprimer..."
+msgstr "&Estampar..."
 
 #: dlls/hhctrl.ocx/hhctrl.rc:76 dlls/hhctrl.ocx/hhctrl.rc:90
 #: dlls/shdoclc/shdoclc.rc:49 dlls/shdoclc/shdoclc.rc:98
@@ -3396,7 +3396,7 @@ msgstr "Coller"
 
 #: dlls/hhctrl.ocx/hhctrl.rc:91 dlls/shdoclc/shdoclc.rc:121
 msgid "&Print"
-msgstr "&Imprimer"
+msgstr "&Estampar"
 
 #: dlls/hhctrl.ocx/hhctrl.rc:31 programs/taskmgr/taskmgr.rc:89
 msgid "&Contents"
@@ -3408,7 +3408,7 @@ msgstr "I&ndex"
 
 #: dlls/hhctrl.ocx/hhctrl.rc:33 programs/notepad/notepad.rc:55
 msgid "&Search"
-msgstr "&Rechercher"
+msgstr "&Recèrcar"
 
 #: dlls/hhctrl.ocx/hhctrl.rc:34
 msgid "Favor&ites"
@@ -3455,7 +3455,7 @@ msgstr "Synchroniser"
 
 #: dlls/hhctrl.ocx/hhctrl.rc:51 dlls/ieframe/ieframe.rc:67
 msgid "Forward"
-msgstr "Suivant"
+msgstr "Seguent"
 
 #: dlls/iccvid/iccvid.rc:28 dlls/iccvid/iccvid.rc:29
 msgid "Cinepak Video codec"
@@ -3468,7 +3468,7 @@ msgstr "Codec vidéo Cinepak"
 #: programs/winefile/winefile.rc:28 programs/winhlp32/winhlp32.rc:31
 #: programs/wordpad/wordpad.rc:29
 msgid "&File"
-msgstr "&Fichier"
+msgstr "&Fichèr"
 
 #: dlls/ieframe/ieframe.rc:30 programs/regedit/regedit.rc:45
 #: programs/regedit/regedit.rc:98 programs/regedit/regedit.rc:121
@@ -3495,11 +3495,11 @@ msgstr "&Format d'impression..."
 
 #: dlls/ieframe/ieframe.rc:39
 msgid "Pr&int..."
-msgstr "&Imprimer..."
+msgstr "&Estampar..."
 
 #: dlls/ieframe/ieframe.rc:40 programs/wordpad/wordpad.rc:37
 msgid "Print previe&w"
-msgstr "&Aperçu avant impression"
+msgstr "&Apercebut avant impression"
 
 #: dlls/ieframe/ieframe.rc:47
 msgid "&Toolbars"
@@ -3544,7 +3544,7 @@ msgstr "Accueil"
 
 #: dlls/ieframe/ieframe.rc:71 programs/winhlp32/winhlp32.rc:69
 msgid "Print..."
-msgstr "Imprimer..."
+msgstr "Estampar..."
 
 #: dlls/ieframe/ieframe.rc:76
 msgid "Address"
@@ -3552,7 +3552,7 @@ msgstr "Adresse"
 
 #: dlls/ieframe/ieframe.rc:81
 msgid "Searching for %s"
-msgstr "Recherche de %s"
+msgstr "Recèrca de %s"
 
 #: dlls/ieframe/ieframe.rc:82
 msgid "Start downloading %s"
@@ -3597,7 +3597,7 @@ msgstr ""
 
 #: dlls/inetcpl.cpl/inetcpl.rc:59
 msgid "Delete &files..."
-msgstr "&Effacer les fichiers..."
+msgstr "&Effacer les fichèrs..."
 
 #: dlls/inetcpl.cpl/inetcpl.rc:60
 msgid "&Settings..."
@@ -3612,7 +3612,7 @@ msgid ""
 "Temporary internet files\n"
 "Cached copies of web pages, images and certificates."
 msgstr ""
-"Fichiers internet temporaires\n"
+"Fichèrs internet temporaires\n"
 "Copies en cache de pages web, d'images et de certificats."
 
 #: dlls/inetcpl.cpl/inetcpl.rc:73
@@ -3716,7 +3716,7 @@ msgstr "Paramètres de sécurité pour la zone : "
 
 #: dlls/inetcpl.cpl/inetcpl.rc:34
 msgid "Custom"
-msgstr "Personnalisée"
+msgstr "Personalizada"
 
 #: dlls/inetcpl.cpl/inetcpl.rc:35
 msgid "Very Low"
@@ -4171,7 +4171,7 @@ msgstr "Fonction invalide.\n"
 
 #: dlls/kernelbase/winerror.mc:38
 msgid "File not found.\n"
-msgstr "Fichier introuvable.\n"
+msgstr "Fichèr introuvable.\n"
 
 #: dlls/kernelbase/winerror.mc:43
 msgid "Path not found.\n"
@@ -4179,7 +4179,7 @@ msgstr "Chemin introuvable.\n"
 
 #: dlls/kernelbase/winerror.mc:48 dlls/kernelbase/winerror.mc:3773
 msgid "Too many open files.\n"
-msgstr "Trop de fichiers ouverts.\n"
+msgstr "Trop de fichèrs ouverts.\n"
 
 #: dlls/kernelbase/winerror.mc:53 dlls/kernelbase/winerror.mc:3758
 msgid "Access denied.\n"
@@ -4235,7 +4235,7 @@ msgstr "Périphérique différent.\n"
 
 #: dlls/kernelbase/winerror.mc:118
 msgid "No more files.\n"
-msgstr "Il n'y a plus de fichiers.\n"
+msgstr "Il n'y a plus de fichèrs.\n"
 
 #: dlls/kernelbase/winerror.mc:123
 msgid "Write protected.\n"
@@ -4259,7 +4259,7 @@ msgstr "Erreur CRC.\n"
 
 #: dlls/kernelbase/winerror.mc:148
 msgid "Bad length.\n"
-msgstr "Taille incorrecte.\n"
+msgstr "Talha incorrecte.\n"
 
 #: dlls/kernelbase/winerror.mc:153 dlls/kernelbase/winerror.mc:528
 msgid "Seek error.\n"
@@ -4307,7 +4307,7 @@ msgstr "Capacité du tampon de partage dépassée.\n"
 
 #: dlls/kernelbase/winerror.mc:208
 msgid "End of file.\n"
-msgstr "Fin de fichier atteinte.\n"
+msgstr "Fin de fichèr atteinte.\n"
 
 #: dlls/kernelbase/winerror.mc:213 dlls/kernelbase/winerror.mc:438
 msgid "Disk full.\n"
@@ -4407,7 +4407,7 @@ msgstr "Redirecteur suspendu.\n"
 
 #: dlls/kernelbase/winerror.mc:333
 msgid "File exists.\n"
-msgstr "Le fichier existe.\n"
+msgstr "Le fichèr existe.\n"
 
 #: dlls/kernelbase/winerror.mc:338
 msgid "Cannot create.\n"
@@ -4707,7 +4707,7 @@ msgstr "%1 a un ordinal invalide.\n"
 
 #: dlls/kernelbase/winerror.mc:718
 msgid "File already exists.\n"
-msgstr "Le fichier existe déjà.\n"
+msgstr "Le fichèr existe déjà.\n"
 
 #: dlls/kernelbase/winerror.mc:723
 msgid "Invalid flag number.\n"
@@ -4787,7 +4787,7 @@ msgstr "Aucun signal envoyé.\n"
 
 #: dlls/kernelbase/winerror.mc:818 programs/cmd/cmd.rc:410
 msgid "File name is too long.\n"
-msgstr "Nom de fichier trop long.\n"
+msgstr "Nom de fichèr trop long.\n"
 
 #: dlls/kernelbase/winerror.mc:823
 msgid "Ring 2 stack in use.\n"
@@ -4797,7 +4797,7 @@ msgstr "Pile de l'anneau 2 actuellement utilisée.\n"
 msgid "Error in use of filename wildcards.\n"
 msgstr ""
 "Erreur dans l'utilisation de caractères génériques dans les noms de "
-"fichiers.\n"
+"fichèrs.\n"
 
 #: dlls/kernelbase/winerror.mc:833
 msgid "Invalid signal number.\n"
@@ -4857,7 +4857,7 @@ msgstr "Liste d'attributs étendus non cohérente.\n"
 
 #: dlls/kernelbase/winerror.mc:903
 msgid "No more data available.\n"
-msgstr "Aucune autre donnée n'est disponible.\n"
+msgstr "Cap autre donnée n'est disponible.\n"
 
 #: dlls/kernelbase/winerror.mc:908
 msgid "Cannot use Copy API.\n"
@@ -4873,7 +4873,7 @@ msgstr "Les attributs étendus ne tiennent pas dans la mémoire tampon.\n"
 
 #: dlls/kernelbase/winerror.mc:923
 msgid "Extended attribute file corrupt.\n"
-msgstr "Fichier d'attributs étendus corrompu.\n"
+msgstr "Fichèr d'attributs étendus corrompu.\n"
 
 #: dlls/kernelbase/winerror.mc:928
 msgid "Extended attribute table full.\n"
@@ -4909,7 +4909,7 @@ msgstr "Message de verrou opportuniste invalide reçu.\n"
 
 #: dlls/kernelbase/winerror.mc:968
 msgid "Message 0x%1 not found in file %2.\n"
-msgstr "Message 0x%1 introuvable dans le fichier %2.\n"
+msgstr "Message 0x%1 introuvable dans le fichèr %2.\n"
 
 #: dlls/kernelbase/winerror.mc:973
 msgid "Invalid address.\n"
@@ -4974,7 +4974,7 @@ msgstr "Volume non reconnu.\n"
 
 #: dlls/kernelbase/winerror.mc:1048
 msgid "File invalid.\n"
-msgstr "Fichier no valide.\n"
+msgstr "Fichèr no valide.\n"
 
 #: dlls/kernelbase/winerror.mc:1053
 msgid "Cannot run full-screen.\n"
@@ -5018,7 +5018,7 @@ msgstr "Échec d'opération d'E/S initiée par le registre.\n"
 
 #: dlls/kernelbase/winerror.mc:1103
 msgid "Not registry file.\n"
-msgstr "Pas un fichier registre.\n"
+msgstr "Pas un fichèr registre.\n"
 
 #: dlls/kernelbase/winerror.mc:1108
 msgid "Key deleted.\n"
@@ -5102,7 +5102,7 @@ msgstr "La base de données n'existe pas.\n"
 
 #: dlls/kernelbase/winerror.mc:1208
 msgid "Service-specific error.\n"
-msgstr "Erreur spécifique au service.\n"
+msgstr "Erreur especific au service.\n"
 
 #: dlls/kernelbase/winerror.mc:1213
 msgid "Process aborted.\n"
@@ -5179,7 +5179,7 @@ msgstr "Fin du support.\n"
 
 #: dlls/kernelbase/winerror.mc:1303
 msgid "Filemark detected.\n"
-msgstr "Marque de fichier détectée.\n"
+msgstr "Marque de fichèr détectée.\n"
 
 #: dlls/kernelbase/winerror.mc:1308
 msgid "Beginning of media.\n"
@@ -5187,11 +5187,11 @@ msgstr "Début du support.\n"
 
 #: dlls/kernelbase/winerror.mc:1313
 msgid "Setmark detected.\n"
-msgstr "Marque de groupe de fichiers détectée.\n"
+msgstr "Marque de groupe de fichèrs détectée.\n"
 
 #: dlls/kernelbase/winerror.mc:1318
 msgid "No data detected.\n"
-msgstr "Aucune donnée détectée.\n"
+msgstr "Cap donnée détectée.\n"
 
 #: dlls/kernelbase/winerror.mc:1323
 msgid "Partition failure.\n"
@@ -5395,7 +5395,7 @@ msgstr "Élément introuvable.\n"
 
 #: dlls/kernelbase/winerror.mc:1573
 msgid "No match found.\n"
-msgstr "Aucune correspondance trouvée.\n"
+msgstr "Cap correspondance trouvée.\n"
 
 #: dlls/kernelbase/winerror.mc:1578
 msgid "Property set not found.\n"
@@ -5415,15 +5415,15 @@ msgstr "ID de volume inexistant.\n"
 
 #: dlls/kernelbase/winerror.mc:1598
 msgid "Unable to remove the file to be replaced.\n"
-msgstr "Impossible de supprimer le fichier à remplacer.\n"
+msgstr "Impossible de supprimer le fichèr à remplacer.\n"
 
 #: dlls/kernelbase/winerror.mc:1603
 msgid "Unable to move the replacement file into place.\n"
-msgstr "Impossible de déplacer le fichier de remplacement sur place.\n"
+msgstr "Impossible de déplacer le fichèr de remplacement sur place.\n"
 
 #: dlls/kernelbase/winerror.mc:1608
 msgid "Moving the replacement file failed.\n"
-msgstr "Échec du déplacement du fichier de remplacement.\n"
+msgstr "Échec du déplacement du fichèr de remplacement.\n"
 
 #: dlls/kernelbase/winerror.mc:1613
 msgid "The journal is being deleted.\n"
@@ -5435,7 +5435,7 @@ msgstr "Le journal n'est pas actif.\n"
 
 #: dlls/kernelbase/winerror.mc:1623
 msgid "Potential matching file found.\n"
-msgstr "Fichier potentiel trouvé.\n"
+msgstr "Fichèr potentiel trouvé.\n"
 
 #: dlls/kernelbase/winerror.mc:1628
 msgid "The journal entry was deleted.\n"
@@ -5535,7 +5535,7 @@ msgstr "Opération annulée par l'utilisateur.\n"
 
 #: dlls/kernelbase/winerror.mc:1753
 msgid "File has a user-mapped section.\n"
-msgstr "Le fichier contient une section mappée par l'utilisateur.\n"
+msgstr "Le fichèr contient une section mappée par l'utilisateur.\n"
 
 #: dlls/kernelbase/winerror.mc:1758 dlls/kernelbase/winerror.mc:3783
 msgid "Connection refused.\n"
@@ -5787,7 +5787,7 @@ msgstr "Compte utilisateur désactivé.\n"
 
 #: dlls/kernelbase/winerror.mc:2068
 msgid "No security ID mapped.\n"
-msgstr "Aucune correspondance pour les IDs de sécurité.\n"
+msgstr "Cap correspondance pour les IDs de sécurité.\n"
 
 #: dlls/kernelbase/winerror.mc:2073
 msgid "Too many LUIDs requested.\n"
@@ -6020,7 +6020,7 @@ msgstr "Aucun composant héritable.\n"
 
 #: dlls/kernelbase/winerror.mc:2363
 msgid "File or directory corrupt.\n"
-msgstr "Fichier ou répertoire corrompu.\n"
+msgstr "Fichèr ou répertoire corrompu.\n"
 
 #: dlls/kernelbase/winerror.mc:2368
 msgid "Disk is corrupt.\n"
@@ -6184,7 +6184,7 @@ msgstr "LB_SETCOUNT invalide envoyé.\n"
 
 #: dlls/kernelbase/winerror.mc:2568
 msgid "No tab stops on this list box.\n"
-msgstr "Aucune marque de tabulation dans cette liste de choix.\n"
+msgstr "Cap marque de tabulation dans cette liste de choix.\n"
 
 #: dlls/kernelbase/winerror.mc:2573
 msgid "Can't destroy object owned by another thread.\n"
@@ -6200,7 +6200,7 @@ msgstr "La fenêtre ne comporte pas de menu système.\n"
 
 #: dlls/kernelbase/winerror.mc:2588
 msgid "Invalid message box style.\n"
-msgstr "Style de boîte de message invalide.\n"
+msgstr "Estil de boîte de message invalide.\n"
 
 #: dlls/kernelbase/winerror.mc:2593
 msgid "Invalid SPI parameter.\n"
@@ -6236,7 +6236,7 @@ msgstr "Menu contextuel déjà actif.\n"
 
 #: dlls/kernelbase/winerror.mc:2633
 msgid "No scrollbars.\n"
-msgstr "Aucune barre de défilement.\n"
+msgstr "Cap barre de défilement.\n"
 
 #: dlls/kernelbase/winerror.mc:2638
 msgid "Invalid scrollbar range.\n"
@@ -6264,7 +6264,7 @@ msgstr "Quota insuffisant pour l'espace de travail.\n"
 
 #: dlls/kernelbase/winerror.mc:2668
 msgid "No page file quota.\n"
-msgstr "Quota insuffisant pour le fichier d'échange.\n"
+msgstr "Quota insuffisant pour le fichèr d'échange.\n"
 
 #: dlls/kernelbase/winerror.mc:2673
 msgid "Exceeded commitment limit.\n"
@@ -6296,7 +6296,7 @@ msgstr "Descripteur de moniteur invalide.\n"
 
 #: dlls/kernelbase/winerror.mc:2708
 msgid "Event log file corrupt.\n"
-msgstr "Fichier journal d'événements corrompu.\n"
+msgstr "Fichèr journal d'événements corrompu.\n"
 
 #: dlls/kernelbase/winerror.mc:2713
 msgid "Event log can't start.\n"
@@ -6304,11 +6304,11 @@ msgstr "Impossible d'ouvrir le journal d'événements.\n"
 
 #: dlls/kernelbase/winerror.mc:2718
 msgid "Event log file full.\n"
-msgstr "Le fichier journal d'événements est plein.\n"
+msgstr "Le fichèr journal d'événements est plein.\n"
 
 #: dlls/kernelbase/winerror.mc:2723
 msgid "Event log file changed.\n"
-msgstr "Fichier journal d'événements modifié.\n"
+msgstr "Fichèr journal d'événements modifié.\n"
 
 #: dlls/kernelbase/winerror.mc:2728
 msgid "Installer service failed.\n"
@@ -6340,7 +6340,7 @@ msgstr "Composant inconnu.\n"
 
 #: dlls/kernelbase/winerror.mc:2763
 msgid "Unknown property.\n"
-msgstr "Propriété inconnue.\n"
+msgstr "Proprietat inconnue.\n"
 
 #: dlls/kernelbase/winerror.mc:2768
 msgid "Invalid handle state.\n"
@@ -6356,7 +6356,7 @@ msgstr "Index manquant.\n"
 
 #: dlls/kernelbase/winerror.mc:2783
 msgid "Installation source is missing.\n"
-msgstr "Source d'installation manquante.\n"
+msgstr "Font d'installation manquante.\n"
 
 #: dlls/kernelbase/winerror.mc:2788
 msgid "Wrong installation package version.\n"
@@ -6396,7 +6396,7 @@ msgstr "Échec de l'interface utilisateur du programme d'installation.\n"
 
 #: dlls/kernelbase/winerror.mc:2833
 msgid "Failed to open installation log file.\n"
-msgstr "Impossible d'ouvrir le fichier journal d'installation.\n"
+msgstr "Impossible d'ouvrir le fichèr journal d'installation.\n"
 
 #: dlls/kernelbase/winerror.mc:2838
 msgid "Installation language not supported.\n"
@@ -6404,7 +6404,7 @@ msgstr "Langue d'installation non prise en charge.\n"
 
 #: dlls/kernelbase/winerror.mc:2843
 msgid "Installation transform failed to apply.\n"
-msgstr "Le fichier de transformation d'installation n'a pu être appliqué.\n"
+msgstr "Le fichèr de transformation d'installation n'a pu être appliqué.\n"
 
 #: dlls/kernelbase/winerror.mc:2848
 msgid "Installation package rejected.\n"
@@ -6532,7 +6532,7 @@ msgstr "Serveur déjà en mode écoute.\n"
 
 #: dlls/kernelbase/winerror.mc:3003
 msgid "No protocol sequences registered.\n"
-msgstr "Aucune séquence de protocoles enregistrée.\n"
+msgstr "Cap séquence de protocoles enregistrée.\n"
 
 #: dlls/kernelbase/winerror.mc:3008
 msgid "RPC server not listening.\n"
@@ -6644,7 +6644,7 @@ msgstr "Numéro de procédure hors intervalle.\n"
 
 #: dlls/kernelbase/winerror.mc:3148
 msgid "Binding has no authentication data.\n"
-msgstr "La liaison ne dispose d'aucune information d'authentification.\n"
+msgstr "La liaison ne dispose d'cap information d'authentification.\n"
 
 #: dlls/kernelbase/winerror.mc:3153
 msgid "Unknown authentication service.\n"
@@ -6756,7 +6756,7 @@ msgstr "Impossible d'ouvrir la table de conversion de caractères.\n"
 
 #: dlls/kernelbase/winerror.mc:3288
 msgid "Character translation table file too small.\n"
-msgstr "Fichier de table de conversion de caractères trop petit.\n"
+msgstr "Fichèr de table de conversion de caractères trop petit.\n"
 
 #: dlls/kernelbase/winerror.mc:3293
 msgid "Null context handle.\n"
@@ -6852,7 +6852,7 @@ msgstr "Processeur d'impression inconnu.\n"
 
 #: dlls/kernelbase/winerror.mc:3408
 msgid "Invalid separator file.\n"
-msgstr "Fichier séparateur inconnu.\n"
+msgstr "Fichèr séparateur inconnu.\n"
 
 #: dlls/kernelbase/winerror.mc:3413
 msgid "Invalid priority.\n"
@@ -6925,7 +6925,7 @@ msgstr "Quota insuffisant.\n"
 
 #: dlls/kernelbase/winerror.mc:3498
 msgid "No interfaces.\n"
-msgstr "Aucune interface.\n"
+msgstr "Cap interface.\n"
 
 #: dlls/kernelbase/winerror.mc:3503
 msgid "RPC call canceled.\n"
@@ -7010,7 +7010,7 @@ msgstr "Nom de formulaire non valide.\n"
 
 #: dlls/kernelbase/winerror.mc:3603
 msgid "Invalid form size.\n"
-msgstr "Taille de formulaire non valide.\n"
+msgstr "Talha de formulaire non valide.\n"
 
 #: dlls/kernelbase/winerror.mc:3608
 msgid "Already awaiting printer handle.\n"
@@ -7018,7 +7018,7 @@ msgstr "Descripteur d'imprimante déjà en attente.\n"
 
 #: dlls/kernelbase/winerror.mc:3613
 msgid "Printer deleted.\n"
-msgstr "Imprimante supprimée.\n"
+msgstr "Estampadoira supprimée.\n"
 
 #: dlls/kernelbase/winerror.mc:3618
 msgid "Invalid printer state.\n"
@@ -7070,7 +7070,7 @@ msgstr "Erreur de discipline sur le tube RPC.\n"
 
 #: dlls/kernelbase/winerror.mc:3678
 msgid "No data on RPC pipe.\n"
-msgstr "Aucune donnée dans le tube RPC.\n"
+msgstr "Cap donnée dans le tube RPC.\n"
 
 #: dlls/kernelbase/winerror.mc:3683
 msgid "No site name available.\n"
@@ -7078,11 +7078,11 @@ msgstr "Aucun nom de site disponible.\n"
 
 #: dlls/kernelbase/winerror.mc:3688
 msgid "The file cannot be accessed.\n"
-msgstr "Accès impossible au fichier.\n"
+msgstr "Accès impossible au fichèr.\n"
 
 #: dlls/kernelbase/winerror.mc:3693
 msgid "The filename cannot be resolved.\n"
-msgstr "Impossible de résoudre le nom de fichier.\n"
+msgstr "Impossible de résoudre le nom de fichèr.\n"
 
 #: dlls/kernelbase/winerror.mc:3698
 msgid "RPC entry type mismatch.\n"
@@ -7130,7 +7130,7 @@ msgstr "Appel interrompu.\n"
 
 #: dlls/kernelbase/winerror.mc:3753
 msgid "Invalid file handle.\n"
-msgstr "Descripteur de fichier non valide.\n"
+msgstr "Descripteur de fichèr non valide.\n"
 
 #: dlls/kernelbase/winerror.mc:3763
 msgid "Invalid pointer address.\n"
@@ -7174,7 +7174,7 @@ msgstr "Échec de l'appel.\n"
 
 #: dlls/kernelbase/winerror.mc:3810
 msgid "No Signature found in file.\n"
-msgstr "Pas de signature trouvée dans le fichier.\n"
+msgstr "Pas de signature trouvée dans le fichèr.\n"
 
 #: dlls/kernelbase/winerror.mc:3824
 msgid "Invalid call.\n"
@@ -7247,7 +7247,7 @@ msgstr "Folio"
 
 #: dlls/localspl/localspl.rc:51
 msgid "Quarto"
-msgstr "Papier quarto"
+msgstr "Papièr quarto"
 
 #: dlls/localspl/localspl.rc:52
 msgid "10x14"
@@ -7767,7 +7767,7 @@ msgstr "Type non valide.\n"
 
 #: dlls/mferror/mferror.mc:123
 msgid "Invalid file format.\n"
-msgstr "Format de fichier non valide.\n"
+msgstr "Format de fichèr non valide.\n"
 
 #: dlls/mferror/mferror.mc:137
 msgid "Invalid timestamp.\n"
@@ -8091,7 +8091,7 @@ msgstr "Un ou plusieurs cycles ont été trouvés dans la topologie.\n"
 #, fuzzy
 #| msgid "Installation source is missing.\n"
 msgid "Presentation descriptor is missing.\n"
-msgstr "Source d'installation manquante.\n"
+msgstr "Font d'installation manquante.\n"
 
 #: dlls/mferror/mferror.mc:683
 msgid "Stream descriptor is missing.\n"
@@ -8203,7 +8203,7 @@ msgid ""
 "file path and try again."
 msgstr ""
 "Le paquet d'installation spécifié n'a pu être ouvert. Veuillez vérifier le "
-"chemin du fichier et réessayer."
+"chemin du fichèr et réessayer."
 
 #: dlls/msi/msi.rc:32
 msgid "path %s not found"
@@ -8266,7 +8266,7 @@ msgstr ""
 "\t/p paquet_correctif /a paquet [propriété]\n"
 "Modificateurs de journalisation et d'interface utilisateur pour les "
 "commandes ci-dessus :\n"
-"\t/l[*][i|w|e|a|r|u|c|m|o|p|v|][+|!] fichier_journal\n"
+"\t/l[*][i|w|e|a|r|u|c|m|o|p|v|][+|!] fichèr_journal\n"
 "\t/q{|n|b|r|f|n+|b+|b-}\n"
 "Enregistrer le service MSI :\n"
 "\t/y\n"
@@ -8306,7 +8306,7 @@ msgstr "Allocation d'espace pour le registre"
 
 #: dlls/msi/msi.rc:92
 msgid "Searching for installed applications"
-msgstr "Recherche d'applications installées"
+msgstr "Recèrca d'applications installées"
 
 #: dlls/msi/msi.rc:93
 msgid "Binding executables"
@@ -8316,7 +8316,7 @@ msgstr ""
 #, fuzzy
 #| msgid "Searching for %s"
 msgid "Searching for qualifying products"
-msgstr "Recherche de %s"
+msgstr "Recèrca de %s"
 
 #: dlls/msi/msi.rc:95 dlls/msi/msi.rc:96 dlls/msi/msi.rc:101
 msgid "Computing space requirements"
@@ -8336,19 +8336,19 @@ msgstr "Effacement des services"
 
 #: dlls/msi/msi.rc:100
 msgid "Creating duplicate files"
-msgstr "Création de doublons de fichiers"
+msgstr "Création de doublons de fichèrs"
 
 #: dlls/msi/msi.rc:102
 msgid "Searching for related applications"
-msgstr "Recherche d'applications associées"
+msgstr "Recèrca d'applications associées"
 
 #: dlls/msi/msi.rc:103
 msgid "Copying network install files"
-msgstr "Copie des fichiers d'installation pour le réseau"
+msgstr "Copie des fichèrs d'installation pour le réseau"
 
 #: dlls/msi/msi.rc:104
 msgid "Copying new files"
-msgstr "Copie des nouveaux fichiers"
+msgstr "Copie des nouveaux fichèrs"
 
 #: dlls/msi/msi.rc:105
 msgid "Installing ODBC components"
@@ -8376,7 +8376,7 @@ msgstr ""
 
 #: dlls/msi/msi.rc:111
 msgid "Moving files"
-msgstr "Déplacement de Fichiers"
+msgstr "Déplacement de Fichèrs"
 
 #: dlls/msi/msi.rc:112
 msgid "Publishing assembly information"
@@ -8388,7 +8388,7 @@ msgstr "Déplublication des informations d'assemblage"
 
 #: dlls/msi/msi.rc:114
 msgid "Patching files"
-msgstr "Mise à jour des fichiers"
+msgstr "Mise à jour des fichèrs"
 
 #: dlls/msi/msi.rc:115
 msgid "Updating component registration"
@@ -8444,7 +8444,7 @@ msgstr "Enregistrement de l'utilisateur"
 
 #: dlls/msi/msi.rc:128
 msgid "Removing duplicated files"
-msgstr "Suppression des fichiers en doublon"
+msgstr "Suppression des fichèrs en doublon"
 
 #: dlls/msi/msi.rc:129 dlls/msi/msi.rc:153
 msgid "Updating environment strings"
@@ -8456,7 +8456,7 @@ msgstr "Suppression des applications"
 
 #: dlls/msi/msi.rc:131
 msgid "Removing files"
-msgstr "Suppression des fichiers"
+msgstr "Suppression des fichèrs"
 
 #: dlls/msi/msi.rc:132
 msgid "Removing folders"
@@ -8464,7 +8464,7 @@ msgstr "Suppression des dossiers"
 
 #: dlls/msi/msi.rc:133
 msgid "Removing INI files entries"
-msgstr "Suppression des entrées dans les fichiers INI"
+msgstr "Suppression des entrées dans les fichèrs INI"
 
 #: dlls/msi/msi.rc:134
 msgid "Removing ODBC components"
@@ -8540,7 +8540,7 @@ msgstr "Suppression de l'enregistrement des bibliothèques de types"
 
 #: dlls/msi/msi.rc:154
 msgid "Writing INI files values"
-msgstr "Écriture des entrées dans les fichiers INI"
+msgstr "Écriture des entrées dans les fichèrs INI"
 
 #: dlls/msi/msi.rc:155
 msgid "Writing system registry values"
@@ -8552,11 +8552,11 @@ msgstr "Espace disponible : [1]"
 
 #: dlls/msi/msi.rc:162
 msgid "Property: [1], Signature: [2]"
-msgstr "Propriété : [1], signature : [2]"
+msgstr "Proprietat : [1], signature : [2]"
 
 #: dlls/msi/msi.rc:163
 msgid "File: [1]"
-msgstr "Fichier : [1]"
+msgstr "Fichèr : [1]"
 
 #: dlls/msi/msi.rc:164 dlls/msi/msi.rc:191
 msgid "Folder: [1]"
@@ -8572,7 +8572,7 @@ msgstr "Service : [1]"
 
 #: dlls/msi/msi.rc:167 dlls/msi/msi.rc:170 dlls/msi/msi.rc:174
 msgid "File: [1],  Directory: [9],  Size: [6]"
-msgstr "Fichier : [1],  Répertoire : [9],  Taille : [6]"
+msgstr "Fichèr : [1],  Répertoire : [9],  Talha : [6]"
 
 #: dlls/msi/msi.rc:168
 msgid "Found application: [1]"
@@ -8580,7 +8580,7 @@ msgstr "Application trouvée : [1]"
 
 #: dlls/msi/msi.rc:169
 msgid "File: [1], Directory: [9], Size: [6]"
-msgstr "Fichier : [1], Répertoire : [9], Taille : [6]"
+msgstr "Fichèr : [1], Répertoire : [9], Talha : [6]"
 
 #: dlls/msi/msi.rc:171
 msgid "Service: [2]"
@@ -8588,7 +8588,7 @@ msgstr "Service : [2]"
 
 #: dlls/msi/msi.rc:172
 msgid "File: [1],  Dependencies: [2]"
-msgstr "Fichier : [1],  Dépendances : [2]"
+msgstr "Fichèr : [1],  Dépendances : [2]"
 
 #: dlls/msi/msi.rc:173
 msgid "Application: [1]"
@@ -8600,7 +8600,7 @@ msgstr "Contexte d'application :[1], Nom d'assemblage :[2]"
 
 #: dlls/msi/msi.rc:177
 msgid "File: [1],  Directory: [2],  Size: [3]"
-msgstr "Fichier : [1],  Répertoire : [2],  Taille : [3]"
+msgstr "Fichèr : [1],  Répertoire : [2],  Talha : [3]"
 
 #: dlls/msi/msi.rc:178 dlls/msi/msi.rc:199
 msgid "Component ID: [1], Qualifier: [2]"
@@ -8624,7 +8624,7 @@ msgstr "Extension : [1]"
 
 #: dlls/msi/msi.rc:183 dlls/msi/msi.rc:204
 msgid "Font: [1]"
-msgstr "Police : [1]"
+msgstr "Polícia : [1]"
 
 #: dlls/msi/msi.rc:184 dlls/msi/msi.rc:205
 msgid "MIME Content Type: [1], Extension: [2]"
@@ -8640,7 +8640,7 @@ msgstr ""
 
 #: dlls/msi/msi.rc:187 dlls/msi/msi.rc:190
 msgid "File: [1], Directory: [9]"
-msgstr "Fichier : [1], Répertoire : [9]"
+msgstr "Fichèr : [1], Répertoire : [9]"
 
 #: dlls/msi/msi.rc:188 dlls/msi/msi.rc:208
 msgid "Name: [1], Value: [2], Action [3]"
@@ -8652,7 +8652,7 @@ msgstr "Application : [1], Ligne de commande : [2]"
 
 #: dlls/msi/msi.rc:192 dlls/msi/msi.rc:209
 msgid "File: [1],  Section: [2],  Key: [3], Value: [4]"
-msgstr "Fichier : [1],  Section : [2],  Clé : [3], Valeur : [4]"
+msgstr "Fichèr : [1],  Section : [2],  Clé : [3], Valeur : [4]"
 
 #: dlls/msi/msi.rc:193
 msgid "Key: [1], Name: [2]"
@@ -8660,7 +8660,7 @@ msgstr "Clé : [1], Nom : [2]"
 
 #: dlls/msi/msi.rc:195 dlls/msi/msi.rc:196
 msgid "File: [1], Folder: [2]"
-msgstr "Fichier : [1], Dossier : [2]"
+msgstr "Fichèr : [1], Dossier : [2]"
 
 #: dlls/msi/msi.rc:202
 msgid "AppId: [1]{{, AppType: [2]}}"
@@ -8729,8 +8729,8 @@ msgid ""
 "Source file not found{{(cabinet)}}: [2]. Verify that the file exists and "
 "that you can access it."
 msgstr ""
-"Fichier source n'a pas été trouvé{{(cabinet)}} : [2]. Veuillez vérifier que "
-"le fichier existe et que vous avez les droits pour y accéder."
+"Fichèr source n'a pas été trouvé{{(cabinet)}} : [2]. Veuillez vérifier que "
+"le fichèr existe et que vous avez les droits pour y accéder."
 
 #: dlls/msrle32/msrle32.rc:31
 msgid "Wine MS-RLE video codec"
@@ -9345,7 +9345,7 @@ msgstr ""
 
 #: dlls/oledb32/version.rc:36
 msgid "Data Link Properties"
-msgstr "Propriétés du lien de données"
+msgstr "Proprietats du lien de données"
 
 #: dlls/oledb32/version.rc:37
 msgid "OLE DB Provider(s)"
@@ -9401,7 +9401,7 @@ msgstr "Créer un contrôle"
 
 #: dlls/oledlg/oledlg.rc:69
 msgid "Create From File"
-msgstr "Créer depuis le fichier"
+msgstr "Créer depuis le fichèr"
 
 #: dlls/oledlg/oledlg.rc:72
 msgid "&Add Control..."
@@ -9417,7 +9417,7 @@ msgstr "Parcourir..."
 
 #: dlls/oledlg/oledlg.rc:76
 msgid "File:"
-msgstr "Fichier :"
+msgstr "Fichèr :"
 
 #: dlls/oledlg/oledlg.rc:82
 msgid "Paste Special"
@@ -9425,7 +9425,7 @@ msgstr "Collage spécial"
 
 #: dlls/oledlg/oledlg.rc:85 dlls/setupapi/setupapi.rc:43
 msgid "Source:"
-msgstr "Source :"
+msgstr "Font :"
 
 #: dlls/oledlg/oledlg.rc:86 dlls/shdoclc/shdoclc.rc:50
 #: dlls/shdoclc/shdoclc.rc:82 dlls/shdoclc/shdoclc.rc:95
@@ -9460,7 +9460,7 @@ msgid ""
 "Insert the contents of the file as an object into your document so that you "
 "may activate it using the program which created it."
 msgstr ""
-"Insère le contenu du fichier en tant qu'objet dans votre document pour "
+"Insère le contenu du fichèr en tant qu'objet dans votre document pour "
 "pouvoir l'activer en utilisant le programme avec lequel il a été créé."
 
 #: dlls/oledlg/oledlg.rc:30 dlls/shell32/shell32.rc:195
@@ -9472,7 +9472,7 @@ msgid ""
 "File does not appear to be a valid OLE module. Unable to register OLE "
 "control."
 msgstr ""
-"Le fichier ne semble pas être un module OLE valide. Impossible d'enregistrer "
+"Le fichèr ne semble pas être un module OLE valide. Impossible d'enregistrer "
 "le contrôle OLE."
 
 #: dlls/oledlg/oledlg.rc:32
@@ -9522,7 +9522,7 @@ msgid ""
 "your document."
 msgstr ""
 "Insère le contenu du presse-papiers dans votre document comme %s. Les "
-"données sont liées au fichier source afin que les modifications de celui-ci "
+"données sont liées au fichèr source afin que les modifications de celui-ci "
 "soient répercutées dans votre document."
 
 #: dlls/oledlg/oledlg.rc:45
@@ -9532,7 +9532,7 @@ msgid ""
 "in your document."
 msgstr ""
 "Insère une image du contenu du presse-papiers dans votre document. L'image "
-"est liée au fichier source afin que les modifications de celui-ci soient "
+"est liée au fichèr source afin que les modifications de celui-ci soient "
 "répercutées dans votre document."
 
 #: dlls/oledlg/oledlg.rc:46
@@ -9542,7 +9542,7 @@ msgid ""
 "be reflected in your document."
 msgstr ""
 "Insère un raccourci qui pointe vers l'emplacement du contenu du presse-"
-"papiers. Le raccourci est lié au fichier source afin que les modifications "
+"papiers. Le raccourci est lié au fichèr source afin que les modifications "
 "de celui-ci soient répercutées dans votre document."
 
 #: dlls/oledlg/oledlg.rc:47
@@ -9555,7 +9555,7 @@ msgstr "Type inconnu"
 
 #: dlls/oledlg/oledlg.rc:49
 msgid "Unknown Source"
-msgstr "Source inconnue"
+msgstr "Font inconnue"
 
 #: dlls/oledlg/oledlg.rc:50
 msgid "the program which created it"
@@ -9597,7 +9597,7 @@ msgstr "µs"
 
 #: dlls/serialui/serialui.rc:28
 msgid "Settings for %s"
-msgstr "Propriétés de %s"
+msgstr "Proprietats de %s"
 
 #: dlls/serialui/serialui.rc:31
 msgid "Baud Rate"
@@ -9621,7 +9621,7 @@ msgstr "Bits d'arrêt"
 
 #: dlls/setupapi/setupapi.rc:39
 msgid "Copying Files..."
-msgstr "Copie de fichiers..."
+msgstr "Copie de fichèrs..."
 
 #: dlls/setupapi/setupapi.rc:45
 msgid "Destination:"
@@ -9629,7 +9629,7 @@ msgstr "Destination :"
 
 #: dlls/setupapi/setupapi.rc:52
 msgid "Files Needed"
-msgstr "Fichiers requis"
+msgstr "Fichèrs requis"
 
 #: dlls/setupapi/setupapi.rc:55
 msgid ""
@@ -9641,11 +9641,11 @@ msgstr ""
 
 #: dlls/setupapi/setupapi.rc:57
 msgid "Copy manufacturer's files from:"
-msgstr "Copier les fichiers du fabricant depuis :"
+msgstr "Copier les fichèrs du fabricant depuis :"
 
 #: dlls/setupapi/setupapi.rc:31
 msgid "The file '%1' on %2 is needed"
-msgstr "Le fichier « %1 » sur %2 est requis"
+msgstr "Le fichèr « %1 » sur %2 est requis"
 
 #: dlls/setupapi/setupapi.rc:32 programs/ipconfig/ipconfig.rc:34
 msgid "Unknown"
@@ -9653,11 +9653,11 @@ msgstr "Inconnu"
 
 #: dlls/setupapi/setupapi.rc:33
 msgid "Copy files from:"
-msgstr "Copier les fichiers depuis :"
+msgstr "Copier les fichèrs depuis :"
 
 #: dlls/setupapi/setupapi.rc:34
 msgid "Type the path where the file is located, and then click OK."
-msgstr "Saisissez le chemin du fichier, puis cliquez sur OK."
+msgstr "Saisissez le chemin du fichèr, puis cliquez sur OK."
 
 #: dlls/shdoclc/shdoclc.rc:42
 msgid "F&orward"
@@ -9695,7 +9695,7 @@ msgstr "Coda&ge"
 
 #: dlls/shdoclc/shdoclc.rc:58
 msgid "Pr&int"
-msgstr "&Imprimer"
+msgstr "&Estampar"
 
 #: dlls/shdoclc/shdoclc.rc:66 dlls/shdoclc/shdoclc.rc:149
 #: dlls/shdoclc/shdoclc.rc:173
@@ -9715,7 +9715,7 @@ msgstr "Enregistrer la cible so&us..."
 #: dlls/shdoclc/shdoclc.rc:69 dlls/shdoclc/shdoclc.rc:130
 #: dlls/shdoclc/shdoclc.rc:152 dlls/shdoclc/shdoclc.rc:176
 msgid "&Print Target"
-msgstr "Imprimer la cib&le"
+msgstr "Estampar la cib&le"
 
 #: dlls/shdoclc/shdoclc.rc:71 dlls/shdoclc/shdoclc.rc:154
 #: dlls/shdoclc/shdoclc.rc:178
@@ -9732,7 +9732,7 @@ msgstr "Envoyer l'image par &courrier électronique..."
 
 #: dlls/shdoclc/shdoclc.rc:74
 msgid "Pr&int Picture..."
-msgstr "&Imprimer l'image..."
+msgstr "&Estampar l'image..."
 
 #: dlls/shdoclc/shdoclc.rc:75
 msgid "&Go to My Pictures"
@@ -9789,11 +9789,11 @@ msgstr "&table"
 
 #: dlls/shdoclc/shdoclc.rc:111
 msgid "&Cell Properties"
-msgstr "Propriétés de la &cellule"
+msgstr "Proprietats de la &cellule"
 
 #: dlls/shdoclc/shdoclc.rc:112
 msgid "&Table Properties"
-msgstr "Propriétés de la &table"
+msgstr "Proprietats de la &table"
 
 #: dlls/shdoclc/shdoclc.rc:128
 msgid "Open in &New Window"
@@ -10104,7 +10104,7 @@ msgstr "&Parcourir..."
 
 #: dlls/shell32/shell32.rc:353 dlls/shell32/shell32.rc:382
 msgid "File type:"
-msgstr "Type de fichier :"
+msgstr "Type de fichèr :"
 
 #: dlls/shell32/shell32.rc:357 dlls/shell32/shell32.rc:390
 #: dlls/urlmon/urlmon.rc:37 programs/explorer/explorer.rc:33
@@ -10114,7 +10114,7 @@ msgstr "Emplacement :"
 #: dlls/shell32/shell32.rc:359 dlls/shell32/shell32.rc:392
 #: programs/winefile/winefile.rc:169
 msgid "Size:"
-msgstr "Taille :"
+msgstr "Talha :"
 
 #: dlls/shell32/shell32.rc:363 dlls/shell32/shell32.rc:396
 msgid "Creation date:"
@@ -10153,7 +10153,7 @@ msgstr "Dernier accès :"
 #: dlls/shell32/shell32.rc:138 dlls/shell32/shell32.rc:142
 #: programs/winefile/winefile.rc:107
 msgid "Size"
-msgstr "Taille"
+msgstr "Talha"
 
 #: dlls/shell32/shell32.rc:139 programs/regedit/regedit.rc:151
 msgid "Type"
@@ -10278,7 +10278,7 @@ msgstr "Images"
 
 #: dlls/shell32/shell32.rc:216
 msgid "Common Files"
-msgstr "Fichiers communs"
+msgstr "Fichèrs communs"
 
 #: dlls/shell32/shell32.rc:218
 msgid "Administrative Tools"
@@ -10334,7 +10334,7 @@ msgstr "Jeux sauvegardés"
 
 #: dlls/shell32/shell32.rc:231
 msgid "Searches"
-msgstr "Recherches"
+msgstr "Recèrcas"
 
 #: dlls/shell32/shell32.rc:232
 msgid "Users"
@@ -10354,7 +10354,7 @@ msgstr "Erreur lors de la création du dossier"
 
 #: dlls/shell32/shell32.rc:169
 msgid "Confirm file deletion"
-msgstr "Confirmez la suppression du fichier"
+msgstr "Confirmez la suppression du fichèr"
 
 #: dlls/shell32/shell32.rc:170
 msgid "Confirm folder deletion"
@@ -10370,7 +10370,7 @@ msgstr "Voulez-vous réellement supprimer ces %1 éléments ?"
 
 #: dlls/shell32/shell32.rc:179
 msgid "Confirm file overwrite"
-msgstr "Confirmez l'écrasement du fichier"
+msgstr "Confirmez l'écrasement du fichèr"
 
 #: dlls/shell32/shell32.rc:178
 msgid ""
@@ -10378,7 +10378,7 @@ msgid ""
 "\n"
 "Do you want to replace it?"
 msgstr ""
-"Ce dossier contient déjà un fichier nommé « %1 ».\n"
+"Ce dossier contient déjà un fichèr nommé « %1 ».\n"
 "\n"
 "Voulez-vous le remplacer ?"
 
@@ -10417,7 +10417,7 @@ msgid ""
 msgstr ""
 "Ce dossier contient déjà un dossier nommé « %1 ».\n"
 "\n"
-"Si des fichiers dans le dossier de destination ont le même nom que ceux dans "
+"Si des fichèrs dans le dossier de destination ont le même nom que ceux dans "
 "le dossier\n"
 "sélectionné, ils seront écrasés. Voulez-vous quand même déplacer ou copier\n"
 "le dossier ?"
@@ -10438,12 +10438,12 @@ msgstr ""
 
 #: dlls/shell32/shell32.rc:196
 msgid "Executable files (*.exe)"
-msgstr "Fichiers exécutables (*.exe)"
+msgstr "Fichèrs exécutables (*.exe)"
 
 #: dlls/shell32/shell32.rc:242
 msgid "There is no Windows program configured to open this type of file."
 msgstr ""
-"Aucun programme Windows n'est configuré pour ouvrir ce type de fichier."
+"Aucun programme Windows n'est configuré pour ouvrir ce type de fichèr."
 
 #: dlls/shell32/shell32.rc:244
 msgid "Are you sure you wish to permanently delete '%1'?"
@@ -10463,7 +10463,7 @@ msgid ""
 "\n"
 "Do you want to replace it?"
 msgstr ""
-"Un fichier existe déjà dans le chemin %1.\n"
+"Un fichèr existe déjà dans le chemin %1.\n"
 "\n"
 "Voulez-vous le remplacer ?"
 
@@ -10502,7 +10502,7 @@ msgstr ""
 "publiée par la Free Software Foundation ; soit la version 2.1 de la Licence, "
 "soit (à votre gré) toute version ultérieure.\n"
 "\n"
-"Wine est distribué dans l’espoir qu'il sera utile, mais SANS AUCUNE "
+"Wine est distribué dans l’espoir qu'il sera utile, mais SANS CAP "
 "GARANTIE : sans même la garantie implicite de COMMERCIALISABILITÉ ou "
 "d’ADÉQUATION À UN OBJECTIF PARTICULIER. Consultez la Licence Générale "
 "Publique Limitée pour plus de détails.\n"
@@ -10550,7 +10550,7 @@ msgstr " s"
 
 #: dlls/twain_32/twain.rc:29
 msgid "Select Source"
-msgstr "Sélectionnez une source"
+msgstr "Sélectionnez une font"
 
 #: dlls/tzres/tzres.rc:108
 msgctxt "maximum 31 characters"
@@ -10625,12 +10625,12 @@ msgstr ""
 #: dlls/tzres/tzres.rc:72
 msgctxt "maximum 31 characters"
 msgid "Cape Verde Standard Time"
-msgstr "Heure du Cap-Vert"
+msgstr "Heure du Cap-Verd"
 
 #: dlls/tzres/tzres.rc:73
 msgctxt "maximum 31 characters"
 msgid "Cape Verde Daylight Time"
-msgstr "Heure d'été du Cap-Vert"
+msgstr "Heure d'été du Cap-Verd"
 
 #: dlls/tzres/tzres.rc:74
 msgid "(UTC-01:00) Cabo Verde Is."
@@ -12909,7 +12909,7 @@ msgid ""
 msgstr ""
 "Lorsqu'il est installé, un composant ActiveX a un accès complet à votre "
 "ordinateur. Ne cliquez pas sur le bouton d'installation à moins d'avoir une "
-"confiance absolue dans la source ci-dessus."
+"confiance absolue dans la font ci-dessus."
 
 #: dlls/urlmon/urlmon.rc:51
 msgid "Installation of component failed: %08x"
@@ -13010,7 +13010,7 @@ msgstr "Erreur de périphérique d'E/S"
 
 #: dlls/vbscript/vbscript.rc:37
 msgid "File already exists"
-msgstr "Le fichier existe déjà"
+msgstr "Le fichèr existe déjà"
 
 #: dlls/vbscript/vbscript.rc:38
 msgid "Disk full"
@@ -13018,7 +13018,7 @@ msgstr "Disque plein"
 
 #: dlls/vbscript/vbscript.rc:39
 msgid "Too many files"
-msgstr "Trop de fichiers ouverts"
+msgstr "Trop de fichèrs ouverts"
 
 #: dlls/vbscript/vbscript.rc:40
 msgid "Permission denied"
@@ -13026,7 +13026,7 @@ msgstr "Accès refusé"
 
 #: dlls/vbscript/vbscript.rc:41
 msgid "Path/File access error"
-msgstr "Erreur d'accès au chemin / fichier"
+msgstr "Erreur d'accès au chemin / fichèr"
 
 #: dlls/vbscript/vbscript.rc:42
 msgid "Path not found"
@@ -13044,7 +13044,7 @@ msgstr "Utilisation non valide de Null"
 
 #: dlls/vbscript/vbscript.rc:45
 msgid "Can't create necessary temporary file"
-msgstr "Impossible de créer le fichier temporaire nécessaire"
+msgstr "Impossible de créer le fichèr temporaire nécessaire"
 
 #: dlls/vbscript/vbscript.rc:46
 msgid "ActiveX component can't create object"
@@ -13057,7 +13057,7 @@ msgstr "La classe ne supporte pas l'automatisation"
 #: dlls/vbscript/vbscript.rc:48
 msgid "File name or class name not found during Automation operation"
 msgstr ""
-"Le nom de fichier ou de classe n'a pas été trouvé pendant l'opération "
+"Le nom de fichèr ou de classe n'a pas été trouvé pendant l'opération "
 "d'automatisation."
 
 #: dlls/vbscript/vbscript.rc:51
@@ -13147,7 +13147,7 @@ msgstr "Tout amener à l'avant-plan"
 
 #: dlls/wineps.drv/wineps.rc:31
 msgid "Paper Si&ze:"
-msgstr "&Taille du papier :"
+msgstr "&Talha du papier :"
 
 #: dlls/wineps.drv/wineps.rc:39
 msgid "Duplex:"
@@ -13378,8 +13378,8 @@ msgid ""
 "A MIDI map was not found. There may be a problem with the driver, or the "
 "MIDIMAP.CFG file may be corrupt or missing."
 msgstr ""
-"Aucune carte MIDI trouvée. Cela peut être dû à un problème de pilote, ou à "
-"un fichier MIDIMAP.CFG corrompu ou absent."
+"Cap carte MIDI trouvée. Cela peut être dû à un problème de pilote, ou à "
+"un fichèr MIDIMAP.CFG corrompu ou absent."
 
 #: dlls/winmm/winmm.rc:55
 msgid ""
@@ -13402,7 +13402,7 @@ msgid ""
 "The current MIDI setup is damaged. Copy the original MIDIMAP.CFG file to the "
 "Windows SYSTEM directory, and then try again."
 msgstr ""
-"La configuration MIDI actuelle est altérée. Copiez le fichier MIDIMAP.CFG "
+"La configuration MIDI actuelle est altérée. Copiez le fichèr MIDIMAP.CFG "
 "original dans le répertoire Windows SYSTEM, puis réessayez."
 
 #: dlls/winmm/winmm.rc:60
@@ -13450,7 +13450,7 @@ msgstr ""
 
 #: dlls/winmm/winmm.rc:68
 msgid "No command was specified."
-msgstr "Aucune commande spécifiée."
+msgstr "Cap commande spécifiée."
 
 #: dlls/winmm/winmm.rc:69
 msgid ""
@@ -13502,8 +13502,8 @@ msgstr ""
 msgid ""
 "Cannot find the specified file. Make sure the path and filename are correct."
 msgstr ""
-"Le fichier spécifié est introuvable. Vérifiez que le chemin d'accès et le "
-"nom de fichier sont corrects."
+"Le fichèr spécifié est introuvable. Vérifiez que le chemin d'accès et le "
+"nom de fichèr sont corrects."
 
 #: dlls/winmm/winmm.rc:77
 msgid "The device driver is not ready."
@@ -13526,7 +13526,7 @@ msgstr ""
 #: dlls/winmm/winmm.rc:80
 msgid "Cannot use 'all' as the device name with the specified command."
 msgstr ""
-"Ne peut utiliser « all » comme nom de périphérique spécifique pour cette "
+"Ne peut utiliser « all » comme nom de périphérique especific pour cette "
 "commande."
 
 #: dlls/winmm/winmm.rc:81
@@ -13542,7 +13542,7 @@ msgstr ""
 msgid "Cannot determine the device type from the given filename extension."
 msgstr ""
 "Impossible de déterminer le type de périphérique à partir de l'extension de "
-"nom de fichier donnée."
+"nom de fichèr donnée."
 
 #: dlls/winmm/winmm.rc:83
 msgid "The specified parameter is out of range for the specified command."
@@ -13557,7 +13557,7 @@ msgid ""
 "Cannot save the specified file. Make sure you have enough disk space or are "
 "still connected to the network."
 msgstr ""
-"Il est impossible d'enregistrer le fichier spécifié. Vérifiez que vous avez "
+"Il est impossible d'enregistrer le fichèr spécifié. Vérifiez que vous avez "
 "assez d'espace disque ou que vous êtes toujours connecté au réseau."
 
 #: dlls/winmm/winmm.rc:86
@@ -13602,7 +13602,7 @@ msgid ""
 "The specified command requires an alias, file, driver, or device name. "
 "Please supply one."
 msgstr ""
-"La commande spécifiée requiert un nom d'alias, de fichier, de pilote ou de "
+"La commande spécifiée requiert un nom d'alias, de fichèr, de pilote ou de "
 "périphérique : veuillez l'entrer."
 
 #: dlls/winmm/winmm.rc:92
@@ -13629,7 +13629,7 @@ msgid ""
 "The specified file cannot be played on the specified MCI device. The file "
 "may be corrupt, or not in the correct format."
 msgstr ""
-"Le fichier ne peut pas être lu sur le périphérique MCI spécifié. Le fichier "
+"Le fichèr ne peut pas être lu sur le périphérique MCI spécifié. Le fichèr "
 "est endommagé ou son format n'est pas le bon."
 
 #: dlls/winmm/winmm.rc:96
@@ -13639,7 +13639,7 @@ msgstr "Un bloc de paramètres nuls a été passé à MCI."
 #: dlls/winmm/winmm.rc:97
 msgid "Cannot save an unnamed file. Supply a filename."
 msgstr ""
-"Impossible d'enregistrer un fichier sans nom. Entrez un nom de fichier."
+"Impossible d'enregistrer un fichèr sans nom. Entrez un nom de fichèr."
 
 #: dlls/winmm/winmm.rc:98
 msgid "You must specify an alias when using the 'new' parameter."
@@ -13654,7 +13654,7 @@ msgstr ""
 
 #: dlls/winmm/winmm.rc:100
 msgid "Cannot use a filename with the specified device."
-msgstr "Impossible d'utiliser un nom de fichier avec le périphérique spécifié."
+msgstr "Impossible d'utiliser un nom de fichèr avec le périphérique spécifié."
 
 #: dlls/winmm/winmm.rc:101
 msgid ""
@@ -13678,7 +13678,7 @@ msgid ""
 "The filename is invalid. Make sure the filename is not longer than 8 "
 "characters, followed by a period and an extension."
 msgstr ""
-"Le nom de fichier est invalide. Assurez-vous qu'il fait au plus 8 "
+"Le nom de fichèr est invalide. Assurez-vous qu'il fait au plus 8 "
 "caractères, suivis d'un point et d'une extension."
 
 #: dlls/winmm/winmm.rc:104
@@ -13702,7 +13702,7 @@ msgid ""
 "Cannot access the specified file or MCI device. Try changing directories or "
 "restarting your computer."
 msgstr ""
-"Impossible d'accéder au fichier ou au périphérique MCI spécifié. Essayez de "
+"Impossible d'accéder au fichèr ou au périphérique MCI spécifié. Essayez de "
 "changer de répertoire ou de redémarrer votre ordinateur."
 
 #: dlls/winmm/winmm.rc:107
@@ -13710,7 +13710,7 @@ msgid ""
 "Cannot access the specified file or MCI device because the application "
 "cannot change directories."
 msgstr ""
-"Impossible d'accéder au fichier ou au périphérique MCI spécifié, car "
+"Impossible d'accéder au fichèr ou au périphérique MCI spécifié, car "
 "l'application ne peut pas changer de répertoire."
 
 #: dlls/winmm/winmm.rc:108
@@ -13718,7 +13718,7 @@ msgid ""
 "Cannot access specified file or MCI device because the application cannot "
 "change drives."
 msgstr ""
-"Impossible d'accéder au fichier ou au périphérique MCI spécifié, car "
+"Impossible d'accéder au fichèr ou au périphérique MCI spécifié, car "
 "l'application ne peut pas changer de lecteur."
 
 #: dlls/winmm/winmm.rc:109
@@ -13743,7 +13743,7 @@ msgid ""
 "All wave devices that can play files in the current format are in use. Wait "
 "until a wave device is free, and then try again."
 msgstr ""
-"Tous les périphériques audio capables de jouer des fichiers dans ce format "
+"Tous les périphériques audio capables de jouer des fichèrs dans ce format "
 "sont en cours d'utilisation. Attendez qu'un périphérique audio se libère, "
 "puis essayez à nouveau."
 
@@ -13761,7 +13761,7 @@ msgid ""
 "All wave devices that can record files in the current format are in use. "
 "Wait until a wave device is free, and then try again."
 msgstr ""
-"Tous les périphériques audio capables d'enregistrer des fichiers dans ce "
+"Tous les périphériques audio capables d'enregistrer des fichèrs dans ce "
 "format sont en cours d'utilisation. Attendez qu'un périphérique audio se "
 "libère, puis essayez à nouveau."
 
@@ -13787,7 +13787,7 @@ msgid ""
 "No wave device that can play files in the current format is installed. Use "
 "the Drivers option to install the wave device."
 msgstr ""
-"Aucun périphérique audio capable de jouer des fichiers dans le format en "
+"Aucun périphérique audio capable de jouer des fichèrs dans le format en "
 "cours n'est présent. Utiliser l'option pour installer des périphériques "
 "audio."
 
@@ -13796,14 +13796,14 @@ msgid ""
 "The device you are trying to play to cannot recognize the current file "
 "format."
 msgstr ""
-"Ce périphérique ne parvient pas à reconnaître le format du fichier actuel."
+"Ce périphérique ne parvient pas à reconnaître le format du fichèr actuel."
 
 #: dlls/winmm/winmm.rc:120
 msgid ""
 "No wave device that can record files in the current format is installed. Use "
 "the Drivers option to install the wave device."
 msgstr ""
-"Aucun périphérique audio capable d'enregistrer des fichiers dans le format "
+"Aucun périphérique audio capable d'enregistrer des fichèrs dans le format "
 "en cours n'est présent."
 
 #: dlls/winmm/winmm.rc:121
@@ -13812,7 +13812,7 @@ msgid ""
 "format."
 msgstr ""
 "Le périphérique avec lequel vous essayez d'enregistrer ne parvient pas à "
-"reconnaître le format du fichier courant."
+"reconnaître le format du fichèr courant."
 
 #: dlls/winmm/winmm.rc:126
 msgid ""
@@ -13877,7 +13877,7 @@ msgid ""
 "Cannot read the specified file. Make sure the file is still present, or "
 "check your disk or network connection."
 msgstr ""
-"Impossible de lire ce fichier. Assurez-vous qu'il n'a pas été supprimé ou "
+"Impossible de lire ce fichèr. Assurez-vous qu'il n'a pas été supprimé ou "
 "vérifiez votre disque ou votre connexion réseau."
 
 #: dlls/winmm/winmm.rc:125
@@ -13885,7 +13885,7 @@ msgid ""
 "Cannot write to the specified file. Make sure you have enough disk space or "
 "are still connected to the network."
 msgstr ""
-"Il est impossible d'écrire des informations dans le fichier spécifié. "
+"Il est impossible d'écrire des informations dans le fichèr spécifié. "
 "Vérifiez que vous avez assez d'espace disque ou que vous êtes toujours "
 "connecté au réseau."
 
@@ -13907,19 +13907,19 @@ msgstr "Muet"
 
 #: dlls/winspool.drv/winspool.rc:37
 msgid "Print to File"
-msgstr "Imprimer dans un fichier"
+msgstr "Estampar dans un fichèr"
 
 #: dlls/winspool.drv/winspool.rc:40
 msgid "&Output File Name:"
-msgstr "&Fichier de sortie :"
+msgstr "&Fichèr de sortie :"
 
 #: dlls/winspool.drv/winspool.rc:31
 msgid "The output file already exists. Click OK to overwrite."
-msgstr "Le fichier de sortie existe déjà. Cliquez sur OK pour l'écraser."
+msgstr "Le fichèr de sortie existe déjà. Cliquez sur OK pour l'écraser."
 
 #: dlls/winspool.drv/winspool.rc:32
 msgid "Unable to create the output file."
-msgstr "Impossible de créer le fichier de sortie."
+msgstr "Impossible de créer le fichèr de sortie."
 
 #: dlls/wldap32/wldap32.rc:32
 msgid "Success"
@@ -14171,7 +14171,7 @@ msgstr ""
 
 #: programs/attrib/attrib.rc:31 programs/cmd/cmd.rc:376
 msgid "%1: File Not Found\n"
-msgstr "%1 : fichier non trouvé\n"
+msgstr "%1 : fichèr non trouvé\n"
 
 #: programs/attrib/attrib.rc:50
 msgid ""
@@ -14194,24 +14194,24 @@ msgid ""
 "  /S  Processes matching files in the current folder and all subfolders.\n"
 "  /D  Processes folders as well.\n"
 msgstr ""
-"ATTRIB - Affiche ou modifie les attributs de fichiers.\n"
+"ATTRIB - Affiche ou modifie les attributs de fichèrs.\n"
 "\n"
 "Syntaxe :\n"
 "ATTRIB [+R | -R] [+A | -A ] [+S | -S] [+H | -H] [lecteur:][chemin]"
-"[nom_fichier]\n"
+"[nom_fichèr]\n"
 "       [/S [/D]]\n"
 "\n"
 "Où :\n"
 "\n"
 "  +   Définit un attribut.\n"
 "  -   Supprime un attribut.\n"
-"  R   Attribut de fichier en lecture seule.\n"
-"  A   Attribut de fichier archive.\n"
-"  S   Attribut de fichier système.\n"
-"  H   Attribut de fichier caché.\n"
-"  [lecteur:][chemin][nom_fichier]\n"
-"      Spécifie un ou plusieurs fichiers qu'attrib doit traiter.\n"
-"  /S  Traite les fichiers correspondants dans le dossier courant\n"
+"  R   Attribut de fichèr en lecture seule.\n"
+"  A   Attribut de fichèr archive.\n"
+"  S   Attribut de fichèr système.\n"
+"  H   Attribut de fichèr caché.\n"
+"  [lecteur:][chemin][nom_fichèr]\n"
+"      Spécifie un ou plusieurs fichèrs qu'attrib doit traiter.\n"
+"  /S  Traite les fichèrs correspondants dans le dossier courant\n"
 "      et tous les sous-dossiers.\n"
 "  /D  Traite également les dossiers.\n"
 
@@ -14256,7 +14256,7 @@ msgstr "&Numérique"
 #: programs/winecfg/winecfg.rc:313 programs/winefile/winefile.rc:63
 #: programs/wordpad/wordpad.rc:84
 msgid "&Font..."
-msgstr "&Police..."
+msgstr "&Polícia..."
 
 #: programs/clock/clock.rc:37
 msgid "&Without Titlebar"
@@ -14293,14 +14293,14 @@ msgid ""
 "Changes to default directory, environment variables etc made within a\n"
 "called procedure are inherited by the caller.\n"
 msgstr ""
-"CALL <fichier_commandes> appelle un fichier de commandes depuis un autre\n"
-"fichier de commandes. Quand le fichier appelé sort, le contrôle revient au\n"
-"fichier appelant.\n"
-"La commande CALL peut fournir des paramètres du fichier invoqué.\n"
+"CALL <fichèr_commandes> appelle un fichèr de commandes depuis un autre\n"
+"fichèr de commandes. Quand le fichèr appelé sort, le contrôle revient au\n"
+"fichèr appelant.\n"
+"La commande CALL peut fournir des paramètres du fichèr invoqué.\n"
 "\n"
 "Les changements de répertoire courant, de variables d'environnement et "
 "autres\n"
-"effectués dans le fichier appelé sont répercutés dans l'appelant.\n"
+"effectués dans le fichèr appelé sont répercutés dans l'appelant.\n"
 
 #: programs/cmd/cmd.rc:44
 msgid ""
@@ -14320,7 +14320,7 @@ msgstr "CLS efface l'écran de la console.\n"
 
 #: programs/cmd/cmd.rc:53
 msgid "COPY <filename> copies a file.\n"
-msgstr "COPY copie un ou plusieurs fichiers.\n"
+msgstr "COPY copie un ou plusieurs fichèrs.\n"
 
 #: programs/cmd/cmd.rc:56
 msgid "CTTY changes the input/output device.\n"
@@ -14332,7 +14332,7 @@ msgstr "DATE affiche ou modifie la date système.\n"
 
 #: programs/cmd/cmd.rc:62
 msgid "DEL <filename> deletes a file or set of files.\n"
-msgstr "DEL <fichier> efface un fichier ou un groupe de fichiers.\n"
+msgstr "DEL <fichèr> efface un fichèr ou un groupe de fichèrs.\n"
 
 #: programs/cmd/cmd.rc:65
 msgid "DIR lists the contents of a directory.\n"
@@ -14360,7 +14360,7 @@ msgstr ""
 
 #: programs/cmd/cmd.rc:78
 msgid "ERASE <filename> deletes a file or set of files.\n"
-msgstr "ERASE <fichier> efface un ou plusieurs fichiers.\n"
+msgstr "ERASE <fichèr> efface un ou plusieurs fichèrs.\n"
 
 #: programs/cmd/cmd.rc:85
 msgid ""
@@ -14370,12 +14370,12 @@ msgid ""
 "\n"
 "The % sign must be doubled when using FOR in a batch file.\n"
 msgstr ""
-"La commande FOR sert à exécuter une commande pour chaque fichier d'une\n"
-"liste de fichiers.\n"
+"La commande FOR sert à exécuter une commande pour chaque fichèr d'une\n"
+"liste de fichèrs.\n"
 "\n"
 "Usage : FOR %variable IN (liste) DO commande\n"
 "\n"
-"Le signe % doit être doublé quand FOR est utilisé dans un fichier batch.\n"
+"Le signe % doit être doublé quand FOR est utilisé dans un fichèr batch.\n"
 
 #: programs/cmd/cmd.rc:97
 msgid ""
@@ -14391,13 +14391,13 @@ msgid ""
 "GOTO has no effect when used interactively.\n"
 msgstr ""
 "La commande GOTO transfère l'exécution à une autre commande (située après\n"
-"une étiquette donnée) dans un fichier de commandes.\n"
+"une étiquette donnée) dans un fichèr de commandes.\n"
 "\n"
 "L'étiquette cible du GOTO a une longueur de maximum 255 caractères mais ne\n"
 "peut inclure d'espaces (à la différence d'autres systèmes d'exploitation).\n"
-"Si deux étiquettes identiques (ou plus) existent dans le même fichier,\n"
+"Si deux étiquettes identiques (ou plus) existent dans le même fichèr,\n"
 "seule la première sera utilisée. Essayer de sauter vers une étiquette non\n"
-"existante termine l'exécution du fichier de commandes.\n"
+"existante termine l'exécution du fichèr de commandes.\n"
 "\n"
 "GOTO n'a pas d'effet si utilisé interactivement.\n"
 
@@ -14422,7 +14422,7 @@ msgid ""
 msgstr ""
 "IF est utilisé pour exécuter une commande de façon conditionnelle.\n"
 "\n"
-"Syntaxe : IF [NOT] EXIST fichier commande\n"
+"Syntaxe : IF [NOT] EXIST fichèr commande\n"
 "          IF [NOT] chaîne1==chaîne2 commande\n"
 "          IF [NOT] ERRORLEVEL nombre commande\n"
 "\n"
@@ -14460,10 +14460,10 @@ msgid ""
 "\n"
 "MOVE fails if the old and new locations are on different DOS drive letters.\n"
 msgstr ""
-"MOVE déplace un fichier ou un répertoire vers un autre point du système de\n"
-"fichiers.\n"
+"MOVE déplace un fichèr ou un répertoire vers un autre point du système de\n"
+"fichèrs.\n"
 "\n"
-"Si l'objet déplacé est un répertoire, alors tous ses fichiers et\n"
+"Si l'objet déplacé est un répertoire, alors tous ses fichèrs et\n"
 "sous-répertoires sont également déplacés.\n"
 "\n"
 "MOVE échoue si l'ancien et le nouvel emplacement sont sur des lecteurs DOS\n"
@@ -14501,7 +14501,7 @@ msgstr ""
 "PAUSE affiche un message à l'écran demandant à l'utilisateur d'appuyer sur\n"
 "une touche.\n"
 "\n"
-"Principalement utilisé dans les fichiers de commandes pour permettre à\n"
+"Principalement utilisé dans les fichèrs de commandes pour permettre à\n"
 "l'utilisateur de lire la sortie de la dernière commande avant qu'elle ne\n"
 "disparaisse de l'écran.\n"
 
@@ -14557,17 +14557,17 @@ msgid ""
 "and can therefore be used as a comment in a batch file.\n"
 msgstr ""
 "Une ligne de commande commençant par REM (suivi d'une espace) n'induit\n"
-"aucune action, et peut donc servir de commentaire dans un fichier de "
+"cap action, et peut donc servir de commentaire dans un fichèr de "
 "commandes.\n"
 
 #: programs/cmd/cmd.rc:176
 msgid "REN <filename> is the short version of RENAME. It renames a file.\n"
 msgstr ""
-"REN <fichier> est la version courte de RENAME. Elle renomme un fichier.\n"
+"REN <fichèr> est la version courte de RENAME. Elle renomme un fichèr.\n"
 
 #: programs/cmd/cmd.rc:178
 msgid "RENAME <filename> renames a file.\n"
-msgstr "RENAME <fichier> renomme un fichier.\n"
+msgstr "RENAME <fichèr> renomme un fichèr.\n"
 
 #: programs/cmd/cmd.rc:181
 msgid "RD <directory> is the short version of RMDIR. It deletes a directory.\n"
@@ -14618,7 +14618,7 @@ msgid ""
 "list, so parameter 2 becomes parameter 1 and so on. It has no effect if\n"
 "called from the command line.\n"
 msgstr ""
-"SHIFT est utilisé dans un fichier de commandes pour enlever le premier\n"
+"SHIFT est utilisé dans un fichèr de commandes pour enlever le premier\n"
 "paramètre de la liste ; ainsi, le paramètre 2 devient le paramètre 1 et "
 "ainsi\n"
 "de suite. Il est sans effet s'il est appelé depuis la ligne de commande.\n"
@@ -14656,8 +14656,8 @@ msgstr ""
 "Lance un programme, ou ouvre un document avec le programme normalement\n"
 "associé à cette extension.\n"
 "Usage :\n"
-"start [options] fichier_programme [...]\n"
-"start [options] fichier_document\n"
+"start [options] fichèr_programme [...]\n"
+"start [options] fichèr_document\n"
 "\n"
 "Options :\n"
 "\"titre\"          Spécifie le titre des fenêtres filles.\n"
@@ -14679,7 +14679,7 @@ msgstr ""
 "/affinity masque Lancer le programme avec le masque d'affinité spécifié.\n"
 "/wait            Attendre que le programme lancé se termine, puis renvoyer\n"
 "                 son code de sortie.\n"
-"/unix            Interpréter fichier_programme ou fichier_document comme un\n"
+"/unix            Interpréter fichèr_programme ou fichèr_document comme un\n"
 "                 chemin Unix.\n"
 "/ProgIDOpen      Ouvrir un document via le programme identifié par progID.\n"
 "/?               Afficher cette aide et se terminer.\n"
@@ -14697,8 +14697,8 @@ msgid ""
 "TYPE <filename> copies <filename> to the console device (or elsewhere if\n"
 "redirected). No check is made that the file is readable text.\n"
 msgstr ""
-"TYPE <fichier> affiche <fichier> sur la console (ou ailleurs si redirigé).\n"
-"Aucun test n'est fait pour voir si le fichier contient bien du texte.\n"
+"TYPE <fichèr> affiche <fichèr> sur la console (ou ailleurs si redirigé).\n"
+"Aucun test n'est fait pour voir si le fichèr contient bien du texte.\n"
 
 #: programs/cmd/cmd.rc:253
 msgid ""
@@ -14733,7 +14733,7 @@ msgid ""
 "were introduced by a preceding SETLOCAL.\n"
 msgstr ""
 "ENDLOCAL met fin aux modifications locales de l'environnement dans un\n"
-"fichier de commandes, introduites à la suite d'un SETLOCAL préalable.\n"
+"fichèr de commandes, introduites à la suite d'un SETLOCAL préalable.\n"
 
 #: programs/cmd/cmd.rc:271
 msgid ""
@@ -14744,14 +14744,14 @@ msgid ""
 "file, whichever comes first), at which point the previous environment\n"
 "settings are restored.\n"
 msgstr ""
-"SETLOCAL entame les modifications locales à l'environnement dans un fichier\n"
+"SETLOCAL entame les modifications locales à l'environnement dans un fichèr\n"
 "de commandes.\n"
 "\n"
 "Les modifications apportées à l'environnement après un SETLOCAL sont "
 "locales\n"
-"au fichier de commandes, et sont préservées jusqu'au prochain ENDLOCAL (ou "
+"au fichèr de commandes, et sont préservées jusqu'au prochain ENDLOCAL (ou "
 "à\n"
-"défaut jusqu'à la fin du fichier), après quoi les réglages antérieurs de\n"
+"défaut jusqu'à la fin du fichèr), après quoi les réglages antérieurs de\n"
 "l'environnement sont restaurés.\n"
 
 #: programs/cmd/cmd.rc:275
@@ -14779,13 +14779,13 @@ msgid ""
 "Specifying no file type after the equal sign removes the current\n"
 "association, if any.\n"
 msgstr ""
-"ASSOC affiche ou modifie les associations d'extensions de fichiers.\n"
+"ASSOC affiche ou modifie les associations d'extensions de fichèrs.\n"
 "\n"
-"Syntaxe : ASSOC [.ext[=[type_fichier]]]\n"
+"Syntaxe : ASSOC [.ext[=[type_fichèr]]]\n"
 "\n"
-"Sans paramètre ASSOC affiche les associations d'extensions de fichiers\n"
-"existantes. Si seule une extension de fichier est spécifiée, affiche\n"
-"l'association actuelle. Si aucun type de fichier n'est spécifié après le\n"
+"Sans paramètre ASSOC affiche les associations d'extensions de fichèrs\n"
+"existantes. Si seule une extension de fichèr est spécifiée, affiche\n"
+"l'association actuelle. Si aucun type de fichèr n'est spécifié après le\n"
 "signe égal, supprime l'association courante, si elle existe.\n"
 
 #: programs/cmd/cmd.rc:300
@@ -14802,20 +14802,20 @@ msgid ""
 "associated to the specified file type.\n"
 msgstr ""
 "FTYPE affiche ou modifie les commandes d'ouverture associées à des types\n"
-"de fichiers.\n"
+"de fichèrs.\n"
 "\n"
-"Syntaxe : FTYPE [type_fichier[=[commande_ouverture]]]\n"
+"Syntaxe : FTYPE [type_fichèr[=[commande_ouverture]]]\n"
 "\n"
-"Sans paramètre, affiche les types de fichiers pour lesquels des chaînes de\n"
+"Sans paramètre, affiche les types de fichèrs pour lesquels des chaînes de\n"
 "commande d'ouverture sont actuellement définies.\n"
-"Si seul un type de fichier est spécifié, affiche la chaîne de commande\n"
+"Si seul un type de fichèr est spécifié, affiche la chaîne de commande\n"
 "d'ouverture associée si elle existe.\n"
-"Ne spécifier aucune commande après le signe égal supprime la commande\n"
-"d'ouverture associée au type de fichier spécifié.\n"
+"Ne spécifier cap commande après le signe égal supprime la commande\n"
+"d'ouverture associée au type de fichèr spécifié.\n"
 
 #: programs/cmd/cmd.rc:303
 msgid "MORE displays output of files or piped input in pages.\n"
-msgstr "MORE affiche le contenu de fichiers ou l'entrée standard par pages.\n"
+msgstr "MORE affiche le contenu de fichèrs ou l'entrée standard par pages.\n"
 
 #: programs/cmd/cmd.rc:308
 msgid ""
@@ -14825,7 +14825,7 @@ msgid ""
 msgstr ""
 "CHOICE affiche un message et bloque jusqu'à ce que l'utilisateur appuie sur\n"
 "une des touches spécifiées dans une liste configurable.\n"
-"CHOICE est principalement utilisé pour construire un menu dans un fichier\n"
+"CHOICE est principalement utilisé pour construire un menu dans un fichèr\n"
 "de commandes.\n"
 
 #: programs/cmd/cmd.rc:324
@@ -14903,46 +14903,46 @@ msgid ""
 "Enter HELP <command> for further information on any of the above commands.\n"
 msgstr ""
 "Les commandes intégrées de CMD sont :\n"
-"ASSOC\t\tAffiche ou modifie les associations d'extensions de fichiers\n"
-"ATTRIB\t\tAffiche ou modifie les attributs de fichiers DOS\n"
-"CALL\t\tInvoque un fichier de commandes depuis un autre\n"
+"ASSOC\t\tAffiche ou modifie les associations d'extensions de fichèrs\n"
+"ATTRIB\t\tAffiche ou modifie les attributs de fichèrs DOS\n"
+"CALL\t\tInvoque un fichèr de commandes depuis un autre\n"
 "CD (CHDIR)\tChange le répertoire courant\n"
 "CHOICE\t\tAttend l'appui d'une touche appartenant à une liste configurable\n"
 "CLS\t\tEfface l'écran\n"
-"COPY\t\tCopie un ou plusieurs fichiers\n"
+"COPY\t\tCopie un ou plusieurs fichèrs\n"
 "CTTY\t\tChange le périphérique d'entrée/sortie\n"
 "DATE\t\tAffiche ou modifie la date système\n"
-"DEL (ERASE)\tEfface un fichier ou un groupe de fichiers\n"
+"DEL (ERASE)\tEfface un fichèr ou un groupe de fichèrs\n"
 "DIR\t\tListe le contenu d'un répertoire\n"
 "ECHO\t\tAffiche du texte sur la console\n"
 "ENDLOCAL\tMet fin aux modifications locales de l'environnement dans un\n"
-"\t\tfichier de commandes\n"
+"\t\tfichèr de commandes\n"
 "FTYPE\t\tAffiche ou modifie les commandes d'ouverture associées à des\n"
-"\t\ttypes de fichiers\n"
+"\t\ttypes de fichèrs\n"
 "HELP\t\tAffiche de brefs détails sur l'utilisation d'une commande\n"
 "MD (MKDIR)\tCrée un répertoire\n"
 "MKLINK\t\tCrée un lien symbolique\n"
 "MORE\t\tAffiche du texte par pages\n"
-"MOVE\t\tDéplace un fichier, un groupe de fichiers ou un répertoire\n"
+"MOVE\t\tDéplace un fichèr, un groupe de fichèrs ou un répertoire\n"
 "PATH\t\tRègle ou affiche le chemin de recherche\n"
-"PAUSE\t\tSuspend l'exécution d'un fichier de commandes\n"
+"PAUSE\t\tSuspend l'exécution d'un fichèr de commandes\n"
 "POPD\t\tRemplace le répertoire courant par le dernier enregistré avec\n"
 "\t\tPUSHD\n"
 "PROMPT\t\tChange l'invite de commande\n"
 "PUSHD\t\tChange de répertoire en enregistrant le répertoire courant\n"
-"REN (RENAME)\tRenomme un fichier\n"
+"REN (RENAME)\tRenomme un fichèr\n"
 "RD (RMDIR)\tEfface un répertoire\n"
 "SET\t\tRègle ou affiche les variables d'environnement\n"
 "SETLOCAL\tEntame les modifications locales à l'environnement dans un\n"
-"\t\tfichier de commandes\n"
+"\t\tfichèr de commandes\n"
 "START\t\tLance un programme, ou ouvre un document dans le programme\n"
 "\t\tassocié\n"
 "TIME\t\tRègle ou affiche l'heure système courante\n"
 "TITLE\t\tRègle le titre de la fenêtre pour la session CMD\n"
-"TYPE\t\tAffiche le contenu d'un fichier texte\n"
+"TYPE\t\tAffiche le contenu d'un fichèr texte\n"
 "VER\t\tAffiche la version de cmd utilisée.\n"
 "VOL\t\tAffiche le nom de volume d'un lecteur de disque\n"
-"XCOPY\t\tCopie des fichiers ou répertoires sources vers une destination\n"
+"XCOPY\t\tCopie des fichèrs ou répertoires fonts vers une destination\n"
 "EXIT\t\tQuitte CMD\n"
 "\n"
 "Entrez HELP <commande> pour plus d'informations sur les commandes ci-"
@@ -14964,11 +14964,11 @@ msgstr "N"
 
 #: programs/cmd/cmd.rc:368
 msgid "File association missing for extension %1\n"
-msgstr "Association de fichier manquante pour l'extension %1\n"
+msgstr "Association de fichèr manquante pour l'extension %1\n"
 
 #: programs/cmd/cmd.rc:369
 msgid "No open command associated with file type '%1'\n"
-msgstr "Aucune commande d'ouverture n'est associée au type de fichier « %1 »\n"
+msgstr "Cap commande d'ouverture n'est associée au type de fichèr « %1 »\n"
 
 #: programs/cmd/cmd.rc:370
 msgid "Overwrite %1?"
@@ -14981,7 +14981,7 @@ msgstr "Plus..."
 #: programs/cmd/cmd.rc:372
 msgid "Line in Batch processing possibly truncated. Using:\n"
 msgstr ""
-"Ligne du fichier de commandes probablement tronquée. Utilisation de :\n"
+"Ligne du fichèr de commandes probablement tronquée. Utilisation de :\n"
 
 #: programs/cmd/cmd.rc:374
 msgid "Argument missing\n"
@@ -14993,7 +14993,7 @@ msgstr "Erreur de syntaxe\n"
 
 #: programs/cmd/cmd.rc:377
 msgid "No help available for %1\n"
-msgstr "Aucune aide disponible pour %1\n"
+msgstr "Cap aide disponible pour %1\n"
 
 #: programs/cmd/cmd.rc:378
 msgid "Target to GOTO not found\n"
@@ -15026,7 +15026,7 @@ msgstr "Impossible d'ouvrir « %1 »\n"
 #: programs/cmd/cmd.rc:385
 msgid "Cannot call batch label outside of a batch script\n"
 msgstr ""
-"Impossible de sauter vers une étiquette hors d'un fichier de commandes\n"
+"Impossible de sauter vers une étiquette hors d'un fichèr de commandes\n"
 
 #: programs/cmd/cmd.rc:386 programs/reg/reg.rc:128 programs/xcopy/xcopy.rc:45
 msgctxt "All key"
@@ -15109,7 +15109,7 @@ msgstr " (Oui|Non|Tous)"
 msgid ""
 "Can't recognize '%1' as an internal or external command, or batch script.\n"
 msgstr ""
-"Ne reconnaît pas « %1 » comme commande interne ou externe, ou fichier de "
+"Ne reconnaît pas « %1 » comme commande interne ou externe, ou fichèr de "
 "commandes.\n"
 
 #: programs/cmd/cmd.rc:405
@@ -15138,7 +15138,7 @@ msgstr ""
 
 #: programs/conhost/conhost.rc:54
 msgid "Cursor size"
-msgstr "Taille du curseur"
+msgstr "Talha du curseur"
 
 #: programs/conhost/conhost.rc:55
 msgid "&Small"
@@ -15158,7 +15158,7 @@ msgstr "Historique des commandes"
 
 #: programs/conhost/conhost.rc:60
 msgid "&Buffer size:"
-msgstr "&Taille mém. tampon :"
+msgstr "&Talha mém. tampon :"
 
 #: programs/conhost/conhost.rc:63
 msgid "&Remove duplicates"
@@ -15190,7 +15190,7 @@ msgstr "Mode &insertion"
 
 #: programs/conhost/conhost.rc:79
 msgid "&Font"
-msgstr "&Police"
+msgstr "&Polícia"
 
 #: programs/conhost/conhost.rc:81
 msgid "&Color"
@@ -15202,7 +15202,7 @@ msgstr "Configuration"
 
 #: programs/conhost/conhost.rc:95
 msgid "Buffer zone"
-msgstr "Taille mémoire tampon écran"
+msgstr "Talha mémoire tampon écran"
 
 #: programs/conhost/conhost.rc:96
 msgid "&Width:"
@@ -15214,7 +15214,7 @@ msgstr "Ha&uteur :"
 
 #: programs/conhost/conhost.rc:103
 msgid "Window size"
-msgstr "Taille de la fenêtre"
+msgstr "Talha de la fenêtre"
 
 #: programs/conhost/conhost.rc:104
 msgid "W&idth:"
@@ -15260,7 +15260,7 @@ msgstr "&Défiler"
 
 #: programs/conhost/conhost.rc:40
 msgid "S&earch"
-msgstr "&Rechercher"
+msgstr "&Recèrcar"
 
 #: programs/conhost/conhost.rc:43
 msgid "Setup - Default settings"
@@ -15296,7 +15296,7 @@ msgstr "Outil de diagnostic DirectX"
 
 #: programs/dxdiag/dxdiag.rc:31
 msgid "Usage: dxdiag [/whql:off | /whql:on] [/t filename | /x filename]"
-msgstr "Usage : dxdiag [/whql:off | /whql:on] [/t fichier | /x fichier]"
+msgstr "Usage : dxdiag [/whql:off | /whql:on] [/t fichèr | /x fichèr]"
 
 #: programs/explorer/explorer.rc:32
 msgid "Wine Explorer"
@@ -15591,7 +15591,7 @@ msgstr "Le service %1 n'a pas pu être arrêté.\n"
 
 #: programs/net/net.rc:44
 msgid "There are no entries in the list.\n"
-msgstr "Il n'y a aucune entrée dans la liste.\n"
+msgstr "Il n'y a cap entrée dans la liste.\n"
 
 #: programs/net/net.rc:45
 msgid ""
@@ -15758,7 +15758,7 @@ msgstr "&Enregistrer\tCtrl+S"
 #: programs/notepad/notepad.rc:35 programs/regedit/regedit.rc:39
 #: programs/wordpad/wordpad.rc:36
 msgid "&Print...\tCtrl+P"
-msgstr "&Imprimer...\tCtrl+P"
+msgstr "&Estampar...\tCtrl+P"
 
 #: programs/notepad/notepad.rc:36 programs/wordpad/wordpad.rc:38
 msgid "Page Se&tup..."
@@ -15804,11 +15804,11 @@ msgstr "&Retour à la ligne automatique"
 
 #: programs/notepad/notepad.rc:56
 msgid "&Search...\tCtrl+F"
-msgstr "&Rechercher...\tCtrl+F"
+msgstr "&Recèrcar...\tCtrl+F"
 
 #: programs/notepad/notepad.rc:57
 msgid "&Search next\tF3"
-msgstr "&Suivant\tF3"
+msgstr "&Seguent\tF3"
 
 #: programs/notepad/notepad.rc:58 programs/wordpad/wordpad.rc:55
 msgid "&Replace...\tCtrl+H"
@@ -15956,7 +15956,7 @@ msgstr "(sans titre)"
 
 #: programs/notepad/notepad.rc:82 programs/winedbg/winedbg.rc:42
 msgid "Text files (*.txt)"
-msgstr "Fichiers texte (*.txt)"
+msgstr "Fichèrs texte (*.txt)"
 
 #: programs/notepad/notepad.rc:85
 msgid ""
@@ -15964,9 +15964,9 @@ msgid ""
 "\n"
 "Do you want to create a new file?"
 msgstr ""
-"Le fichier « %s » n'existe pas.\n"
+"Le fichèr « %s » n'existe pas.\n"
 "\n"
-"Voulez-vous créer un nouveau fichier ?"
+"Voulez-vous créer un nouveau fichèr ?"
 
 #: programs/notepad/notepad.rc:87
 msgid ""
@@ -15974,7 +15974,7 @@ msgid ""
 "\n"
 "Would you like to save the changes?"
 msgstr ""
-"Le fichier « %s » a été modifié\n"
+"Le fichèr « %s » a été modifié\n"
 "\n"
 "Voulez-vous enregistrer vos modifications ?"
 
@@ -16004,7 +16004,7 @@ msgid ""
 "Continue?"
 msgstr ""
 "%1\n"
-"Ce fichier contient des caractères Unicode qui seront perdus si\n"
+"Ce fichèr contient des caractères Unicode qui seront perdus si\n"
 "vous le sauvez dans le codage %2.\n"
 "Pour conserver ces caractères, cliquez sur Annuler et sélectionnez\n"
 "une des alternatives Unicode dans la liste déroulante Codage.\n"
@@ -16016,7 +16016,7 @@ msgstr ""
 
 #: programs/oleview/oleview.rc:32
 msgid "&Bind to file..."
-msgstr "&Lier au fichier..."
+msgstr "&Lier au fichèr..."
 
 #: programs/oleview/oleview.rc:33
 msgid "&View TypeLib..."
@@ -16183,15 +16183,15 @@ msgstr "OleView - Visionneuse d'objets OLE/COM"
 
 #: programs/oleview/oleview.rc:102
 msgid "TypeLib files (*.tlb; *.olb; *.dll; *.ocx; *.exe)"
-msgstr "Fichiers TypeLib (*.tlb ; *.olb ; *.dll ; *.ocx ; *.exe)"
+msgstr "Fichèrs TypeLib (*.tlb ; *.olb ; *.dll ; *.ocx ; *.exe)"
 
 #: programs/oleview/oleview.rc:105
 msgid "Bind to file via a File Moniker"
-msgstr "Lier à un fichier à l'aide d'un Moniker Fichier"
+msgstr "Lier à un fichèr à l'aide d'un Moniker Fichèr"
 
 #: programs/oleview/oleview.rc:106
 msgid "Open a TypeLib file and view the contents"
-msgstr "Ouvrir un fichier TypeLib et afficher son contenu"
+msgstr "Ouvrir un fichèr TypeLib et afficher son contenu"
 
 #: programs/oleview/oleview.rc:107
 msgid "Change machine wide Distributed COM settings"
@@ -16213,7 +16213,7 @@ msgstr "Créer une instance de l'objet sélectionné"
 
 #: programs/oleview/oleview.rc:111
 msgid "Create an instance of the selected object on a specific machine"
-msgstr "Créer une instance de l'objet sélectionné sur une machine spécifique"
+msgstr "Créer une instance de l'objet sélectionné sur une machine especific"
 
 #: programs/oleview/oleview.rc:112
 msgid "Release the currently selected object instance"
@@ -16347,7 +16347,7 @@ msgstr "Interfaces héritées"
 
 #: programs/oleview/oleview.rc:126
 msgid "Save as an .IDL or .H file"
-msgstr "Enregistrer comme fichier .IDL ou .H"
+msgstr "Enregistrer comme fichèr .IDL ou .H"
 
 #: programs/oleview/oleview.rc:127
 msgid "Close window"
@@ -16375,7 +16375,7 @@ msgstr "C&opier...\tF8"
 
 #: programs/progman/progman.rc:38
 msgid "&Properties\tAlt+Enter"
-msgstr "&Propriétés\tAlt+Entrée"
+msgstr "&Proprietats\tAlt+Entrée"
 
 #: programs/progman/progman.rc:40
 msgid "&Execute..."
@@ -16457,15 +16457,15 @@ msgstr "Copier le programme :"
 
 #: programs/progman/progman.rc:152
 msgid "Program Group Attributes"
-msgstr "Propriétés de groupe"
+msgstr "Proprietats de groupe"
 
 #: programs/progman/progman.rc:156
 msgid "&Group file:"
-msgstr "&Fichier du groupe :"
+msgstr "&Fichèr du groupe :"
 
 #: programs/progman/progman.rc:168
 msgid "Program Attributes"
-msgstr "Propriétés de programme"
+msgstr "Proprietats de programme"
 
 #: programs/progman/progman.rc:172 programs/progman/progman.rc:212
 msgid "&Command line:"
@@ -16493,7 +16493,7 @@ msgstr "Changer l'icône"
 
 #: programs/progman/progman.rc:194
 msgid "&Filename:"
-msgstr "&Nom du fichier :"
+msgstr "&Nom du fichèr :"
 
 #: programs/progman/progman.rc:196
 msgid "Current &icon:"
@@ -16540,7 +16540,7 @@ msgid ""
 "The group file `%s' cannot be opened.\n"
 "Should it be tried further on?"
 msgstr ""
-"Impossible d'ouvrir le fichier de groupe « %s ».\n"
+"Impossible d'ouvrir le fichèr de groupe « %s ».\n"
 "Voulez-vous réessayer ?"
 
 #: programs/progman/progman.rc:77
@@ -16553,12 +16553,12 @@ msgstr "Caractéristique inconnue dans %s"
 
 #: programs/progman/progman.rc:79
 msgid "File `%s' exists. Not overwritten."
-msgstr "Le fichier « %s » existe déjà. Pas d'écrasement."
+msgstr "Le fichèr « %s » existe déjà. Pas d'écrasement."
 
 #: programs/progman/progman.rc:80
 msgid "Save group as `%s' to prevent overwriting original files."
 msgstr ""
-"Groupe enregistré sous « %s » pour éviter l'écrasement du fichier original."
+"Groupe enregistré sous « %s » pour éviter l'écrasement du fichèr original."
 
 #: programs/progman/progman.rc:84
 msgid "Libraries (*.dll)"
@@ -16566,7 +16566,7 @@ msgstr "Bibliothèques (*.dll)"
 
 #: programs/progman/progman.rc:85
 msgid "Icon files"
-msgstr "Fichiers icônes"
+msgstr "Fichèrs icônes"
 
 #: programs/progman/progman.rc:86
 msgid "Icons (*.ico)"
@@ -16626,7 +16626,7 @@ msgstr ""
 "Opérations prises en charge :\n"
 "  ADD | COPY | DELETE | EXPORT | IMPORT | QUERY\n"
 "\n"
-"Pour de l'aide sur une opération spécifique, tapez :\n"
+"Pour de l'aide sur une opération especific, tapez :\n"
 "  REG [opération] /?\n"
 "\n"
 
@@ -16825,7 +16825,7 @@ msgstr ""
 "valeurs.\n"
 "\n"
 "  <key1>, <key2>\n"
-"     Les clés de registre définissant la source (<cle1>) et\n"
+"     Les clés de registre définissant la font (<cle1>) et\n"
 "     la destination (<cle2>) des valeurs.\n"
 "     Si la clé <clé2> n'existe pas, elle est créée.\n"
 "\n"
@@ -16962,11 +16962,11 @@ msgid ""
 "     Overwrite <file> without prompting for confirmation.\n"
 "\n"
 msgstr ""
-"REG EXPORT <cle> <fichier> [/y]\n"
+"REG EXPORT <cle> <fichèr> [/y]\n"
 "\n"
 "  Exporte une clé de registre (ainsi que toutes ses sous-clés et ses "
 "valeurs)\n"
-"  vers un fichier.\n"
+"  vers un fichèr.\n"
 "\n"
 "  <cle>\n"
 "     La clé de register à exporter.\n"
@@ -16985,13 +16985,13 @@ msgstr ""
 "     Sousclé : Le chemin complet vers la clé de registre sous la RACINE\n"
 "     spécifiée.\n"
 "\n"
-"  <fichier>\n"
-"     Le chemin d'accès et le nom du fichier vers lequel le contenu sera "
+"  <fichèr>\n"
+"     Le chemin d'accès et le nom du fichèr vers lequel le contenu sera "
 "exporté.\n"
-"     Ce fichier doit avoir une extension .reg.\n"
+"     Ce fichèr doit avoir une extension .reg.\n"
 "\n"
 "  /y\n"
-"     Écrase <fichier> sans demander de confirmation.\n"
+"     Écrase <fichèr> sans demander de confirmation.\n"
 "\n"
 
 #: programs/reg/reg.rc:148
@@ -17004,12 +17004,12 @@ msgid ""
 "     The name and path of the registry file to import.\n"
 "\n"
 msgstr ""
-"REG IMPORT <fichier>\n"
+"REG IMPORT <fichèr>\n"
 "\n"
-"  Importe des clés et leurs valeurs à partir d'un fichier vers le registre.\n"
+"  Importe des clés et leurs valeurs à partir d'un fichèr vers le registre.\n"
 "\n"
-"  <fichier>\n"
-"     Le chemin d'accès et le nom du fichier à importer.\n"
+"  <fichèr>\n"
+"     Le chemin d'accès et le nom du fichèr à importer.\n"
 "\n"
 
 #: programs/reg/reg.rc:114
@@ -17048,7 +17048,7 @@ msgid ""
 msgstr ""
 "REG QUERY <key> [/v value_name | /ve] [/s]\n"
 "\n"
-"  Recherche une clé de registre spécifiée et affiche toutes ses sous-clés,\n"
+"  Recèrca une clé de registre spécifiée et affiche toutes ses sous-clés,\n"
 "  ainsi que les valeurs dans cette clé.\n"
 "  Utiliser [/s] pour rechercher récursivement dans les sous-clés.\n"
 "\n"
@@ -17074,11 +17074,11 @@ msgstr ""
 "     toutes les valeurs de la clé <key> sont affichées.\n"
 "\n"
 "  /ve\n"
-"     Recherche une valeur sans nom. Cette option recherche la valeur par "
+"     Recèrca une valeur sans nom. Cette option recherche la valeur par "
 "défaut.\n"
 "\n"
 "  /s\n"
-"     Recherche récursivement toutes les sous-clés filles de <key>.\n"
+"     Recèrca récursivement toutes les sous-clés filles de <key>.\n"
 "\n"
 
 #: programs/reg/reg.rc:180
@@ -17146,7 +17146,7 @@ msgstr "reg : paramètres de ligne de commande invalide\n"
 
 #: programs/reg/reg.rc:204
 msgid "reg: The source and destination keys cannot be the same\n"
-msgstr "reg : les clés source et destination ne peuvent être les mêmes\n"
+msgstr "reg : les clés font et destination ne peuvent être les mêmes\n"
 
 #: programs/reg/reg.rc:205
 msgid ""
@@ -17175,7 +17175,7 @@ msgstr ""
 
 #: programs/reg/reg.rc:173
 msgid "The file '%1' already exists. Do you want to overwrite it?"
-msgstr "Le fichier « %1 » existe déjà. Voulez-vous la remplacer ?"
+msgstr "Le fichèr « %1 » existe déjà. Voulez-vous la remplacer ?"
 
 #: programs/reg/reg.rc:151
 msgid "reg: Unrecognized escape sequence [\\%1!c!]\n"
@@ -17187,7 +17187,7 @@ msgstr "reg : impossible d'ouvrir la clé de registre « %1 ».\n"
 
 #: programs/reg/reg.rc:150
 msgid "reg: The file '%1' was not found.\n"
-msgstr "reg : le fichier « %1 » est introuvable.\n"
+msgstr "reg : le fichèr « %1 » est introuvable.\n"
 
 #: programs/reg/reg.rc:143 programs/regedit/regedit.rc:245
 msgid "(value not set)"
@@ -17195,7 +17195,7 @@ msgstr "(valeur non définie)"
 
 #: programs/reg/reg.rc:138
 msgid "Search complete. Number of matches found: %1!d!\n"
-msgstr "Recherche terminée. Nombre de correspondances trouvées : %1!d!\n"
+msgstr "Recèrca terminée. Nombre de correspondances trouvées : %1!d!\n"
 
 #: programs/regedit/regedit.rc:34
 msgid "&Registry"
@@ -17203,11 +17203,11 @@ msgstr "&Registre"
 
 #: programs/regedit/regedit.rc:36
 msgid "&Import Registry File..."
-msgstr "&Importer un fichier registre..."
+msgstr "&Importer un fichèr registre..."
 
 #: programs/regedit/regedit.rc:37
 msgid "&Export Registry File..."
-msgstr "&Exporter un fichier registre..."
+msgstr "&Exporter un fichèr registre..."
 
 #: programs/regedit/regedit.rc:47 programs/regedit/regedit.rc:100
 #: programs/regedit/regedit.rc:123
@@ -17256,11 +17256,11 @@ msgstr "&Copier le nom de la clé"
 #: programs/regedit/regedit.rc:62 programs/regedit/regedit.rc:109
 #: programs/wordpad/wordpad.rc:53
 msgid "&Find...\tCtrl+F"
-msgstr "&Rechercher...\tCtrl+F"
+msgstr "&Recèrcar...\tCtrl+F"
 
 #: programs/regedit/regedit.rc:63
 msgid "Find Ne&xt\tF3"
-msgstr "Rechercher le s&uivant\tF3"
+msgstr "Recèrcar le s&uivant\tF3"
 
 #: programs/regedit/regedit.rc:67
 msgid "Status &Bar"
@@ -17297,7 +17297,7 @@ msgstr "Branche &sélectionnée :"
 
 #: programs/regedit/regedit.rc:283
 msgid "Find:"
-msgstr "Rechercher :"
+msgstr "Recèrcar :"
 
 #: programs/regedit/regedit.rc:285
 msgid "Find in:"
@@ -17406,19 +17406,19 @@ msgstr "Éditeur du registre"
 
 #: programs/regedit/regedit.rc:226
 msgid "Import Registry File"
-msgstr "Importer un fichier de registre"
+msgstr "Importer un fichèr de registre"
 
 #: programs/regedit/regedit.rc:227
 msgid "Export Registry File"
-msgstr "Exporter un fichier de registre"
+msgstr "Exporter un fichèr de registre"
 
 #: programs/regedit/regedit.rc:228
 msgid "Registry files (*.reg)"
-msgstr "Fichiers de registre (*.reg)"
+msgstr "Fichèrs de registre (*.reg)"
 
 #: programs/regedit/regedit.rc:229
 msgid "Win9x/NT4 Registry files (REGEDIT4)"
-msgstr "Fichiers de registre Win9x/NT4 (REGEDIT4)"
+msgstr "Fichèrs de registre Win9x/NT4 (REGEDIT4)"
 
 #: programs/regedit/regedit.rc:246
 msgid "(cannot display value)"
@@ -17511,29 +17511,29 @@ msgid ""
 "  regedit /D \"HKEY_LOCAL_MACHINE\\Key\\Path\"\n"
 msgstr ""
 "Usage :\n"
-"  regedit [options] [nom_fichier] [clé_registre]\n"
+"  regedit [options] [nom_fichèr] [clé_registre]\n"
 "\n"
 "Options :\n"
 "  [pas d'option]  Lancer la version graphique de ce programme.\n"
-"  /L:system.dat   L'emplacement du fichier system.dat à modifier.\n"
+"  /L:system.dat   L'emplacement du fichèr system.dat à modifier.\n"
 "                  Compatible avec toute autre option. Ignorée.\n"
-"  /R:user.dat     L'emplacement du fichier user.dat à modifier.\n"
+"  /R:user.dat     L'emplacement du fichèr user.dat à modifier.\n"
 "                  Compatible avec toute autre option. Ignorée.\n"
-"  /C              Importer le contenu d'un fichier de registre.\n"
+"  /C              Importer le contenu d'un fichèr de registre.\n"
 "  /D              Effacer une clé de registre spécifiée.\n"
 "  /E              Exporter le contenu d'une clé de registre spécifiée dans\n"
-"                  fichier. Si aucune clé n'est spécifiée, le registre "
+"                  fichèr. Si cap clé n'est spécifiée, le registre "
 "entier\n"
 "                  est exporté.\n"
 "  /S              Mode silencieux. Aucun message ne sera affiché.\n"
 "  /V              Lancer l'interface graphique en mode avancé. Ignorée.\n"
 "  /?              Afficher ces informations et se terminer.\n"
-"  [nom_fichier]   L'emplacement du fichier contenant des informations de "
+"  [nom_fichèr]   L'emplacement du fichèr contenant des informations de "
 "registre\n"
 "                  à importer.\n"
 "                  Si utilisée avec [/E], cette option spécifie "
 "l'emplacement\n"
-"                  du fichier où les informations du registre seront "
+"                  du fichèr où les informations du registre seront "
 "exportées.\n"
 "  [clé_registre]  La clé de registre à modifier.\n"
 "\n"
@@ -17552,19 +17552,19 @@ msgstr "Tapez « regedit /? » pour de l'aide.\n"
 
 #: programs/regedit/regedit.rc:416
 msgid "regedit: No filename was specified.\n"
-msgstr "regedit : aucun nom de fichier spécifié.\n"
+msgstr "regedit : aucun nom de fichèr spécifié.\n"
 
 #: programs/regedit/regedit.rc:417
 msgid "regedit: No registry key was specified for removal.\n"
-msgstr "regedit : aucune clé de registre à supprimer n'a été spécifiée.\n"
+msgstr "regedit : cap clé de registre à supprimer n'a été spécifiée.\n"
 
 #: programs/regedit/regedit.rc:418
 msgid "regedit: The file '%1' was not found.\n"
-msgstr "regedit : le fichier « %1 » est introuvable.\n"
+msgstr "regedit : le fichèr « %1 » est introuvable.\n"
 
 #: programs/regedit/regedit.rc:419
 msgid "regedit: Unable to open the file '%1'.\n"
-msgstr "regedit : impossible d'ouvrir le fichier « %1 ».\n"
+msgstr "regedit : impossible d'ouvrir le fichèr « %1 ».\n"
 
 #: programs/regedit/regedit.rc:420
 msgid "regedit: Unhandled action.\n"
@@ -17680,11 +17680,11 @@ msgstr "Copie le nom de la clé sélectionnée vers le presse-papiers"
 #: programs/regedit/regedit.rc:200
 msgid "Finds a text string in a key, value or data"
 msgstr ""
-"Recherche une chaîne de caractères dans une clé, une valeur ou des données"
+"Recèrca une chaîne de caractères dans une clé, une valeur ou des données"
 
 #: programs/regedit/regedit.rc:201
 msgid "Finds next occurrence of text specified in previous search"
-msgstr "Recherche l'occurrence suivante du texte de la dernière recherche"
+msgstr "Recèrca l'occurrence suivante du texte de la dernière recherche"
 
 #: programs/regedit/regedit.rc:172
 msgid "Modifies the value's data"
@@ -17708,11 +17708,11 @@ msgstr "Ajoute une nouvelle valeur de 32 bits"
 
 #: programs/regedit/regedit.rc:181
 msgid "Imports a text file into the registry"
-msgstr "Importe un fichier texte dans le registre"
+msgstr "Importe un fichèr texte dans le registre"
 
 #: programs/regedit/regedit.rc:183
 msgid "Exports all or part of the registry to a text file"
-msgstr "Exporte tout ou partie du registre dans un fichier texte"
+msgstr "Exporte tout ou partie du registre dans un fichèr texte"
 
 #: programs/regedit/regedit.rc:184
 msgid "Prints all or part of the registry"
@@ -17750,7 +17750,7 @@ msgstr "Voulez-vous réellement supprimer la valeur de registre sélectionnée 
 
 #: programs/regedit/regedit.rc:220
 msgid "Search complete. The string '%1' was not found."
-msgstr "Recherche terminée. Occurrence de « %1 » non trouvée."
+msgstr "Recèrca terminée. Occurrence de « %1 » non trouvée."
 
 #: programs/regedit/regedit.rc:215
 msgid "Are you sure you want to delete these values?"
@@ -17778,7 +17778,7 @@ msgstr "Ajoute une nouvelle valeur chaîne extensible"
 
 #: programs/regedit/regedit.rc:202
 msgid "Exports the selected branch of the registry to a text file"
-msgstr "Exporte la branche du registre sélectionnée dans un fichier texte"
+msgstr "Exporte la branche du registre sélectionnée dans un fichèr texte"
 
 #: programs/regedit/regedit.rc:180
 msgid "Adds a new expandable string value"
@@ -17966,8 +17966,8 @@ msgstr ""
 "Lance un programme, ou ouvre un document avec le programme normalement\n"
 "associé à cette extension.\n"
 "Usage :\n"
-"start [options] fichier_programme [...]\n"
-"start [options] fichier_document\n"
+"start [options] fichèr_programme [...]\n"
+"start [options] fichèr_document\n"
 "\n"
 "Options :\n"
 "\"titre\"          Spécifie le titre des fenêtres filles.\n"
@@ -17989,9 +17989,9 @@ msgstr ""
 "/affinity masque Lancer le programme avec le masque d'affinité spécifié.\n"
 "/wait            Attendre que le programme lancé se termine, puis renvoyer\n"
 "                 son code de sortie.\n"
-"/unix            Interpréter fichier_programme ou fichier_document comme un\n"
+"/unix            Interpréter fichèr_programme ou fichèr_document comme un\n"
 "                 chemin Unix.\n"
-"/exec            Ouvrir le fichier spécifié (usage interne à Wine).\\n\"\n"
+"/exec            Ouvrir le fichèr spécifié (usage interne à Wine).\\n\"\n"
 "/ProgIDOpen      Ouvrir un document via le programme identifié par progID.\n"
 "/?               Afficher cette aide et se terminer.\n"
 
@@ -18002,13 +18002,13 @@ msgid ""
 "ShellExecuteEx failed"
 msgstr ""
 "Le programme n'a pas pu être lancé, ou aucun programme n'est associé au "
-"fichier spécifié.\n"
+"fichèr spécifié.\n"
 "ShellExecuteEx a échoué"
 
 #: programs/start/start.rc:60
 msgid "Could not translate the specified Unix filename to a DOS filename."
 msgstr ""
-"Le nom de fichier Unix spécifié n'a pas pu être converti en nom de fichier "
+"Le nom de fichèr Unix spécifié n'a pas pu être converti en nom de fichèr "
 "DOS."
 
 #: programs/taskkill/taskkill.rc:30
@@ -18135,7 +18135,7 @@ msgstr "reg : syntaxe invalide. "
 #, fuzzy
 #| msgid "The filename cannot be resolved.\n"
 msgid "ERROR: The search filter cannot be recognized.\n"
-msgstr "Impossible de résoudre le nom de fichier.\n"
+msgstr "Impossible de résoudre le nom de fichèr.\n"
 
 #: programs/taskmgr/taskmgr.rc:37 programs/taskmgr/taskmgr.rc:108
 msgid "&New Task (Run...)"
@@ -18573,7 +18573,7 @@ msgstr "É&cart de défauts de pages"
 
 #: programs/taskmgr/taskmgr.rc:549
 msgid "&Virtual Memory Size"
-msgstr "Taille de la mémoire &virtuelle"
+msgstr "Talha de la mémoire &virtuelle"
 
 #: programs/taskmgr/taskmgr.rc:551
 msgid "Pa&ged Pool"
@@ -18997,7 +18997,7 @@ msgstr ""
 "Wine.\n"
 "  --remove {GUID}   Désinstaller l'application spécifiée.\n"
 "\t\t    Utilisez « --list » pour déterminer le GUID de l'application.\n"
-"  [aucune option]   Lancer la version graphique de ce programme.\n"
+"  [cap option]   Lancer la version graphique de ce programme.\n"
 "\n"
 
 #: programs/view/view.rc:36
@@ -19018,11 +19018,11 @@ msgstr "&Droite"
 
 #: programs/view/view.rc:49
 msgid "Regular Metafile Viewer"
-msgstr "Visionneuse de fichiers Metafile réguliers"
+msgstr "Visionneuse de fichèrs Metafile réguliers"
 
 #: programs/view/view.rc:50
 msgid "Metafiles (*.wmf, *.emf)"
-msgstr "Méta-fichiers (*.wmf, *.emf)"
+msgstr "Méta-fichèrs (*.wmf, *.emf)"
 
 #: programs/wineboot/wineboot.rc:31
 msgid "Waiting for Program"
@@ -19123,7 +19123,7 @@ msgstr "É&muler un bureau virtuel"
 
 #: programs/winecfg/winecfg.rc:180
 msgid "Desktop &size:"
-msgstr "&Taille du bureau :"
+msgstr "&Talha du bureau :"
 
 #: programs/winecfg/winecfg.rc:185
 msgid "Screen resolution"
@@ -19234,7 +19234,7 @@ msgstr "N° de sé&rie :"
 
 #: programs/winecfg/winecfg.rc:262
 msgid "&Show dot files"
-msgstr "&Montrer les fichiers cachés"
+msgstr "&Montrer les fichèrs cachés"
 
 #: programs/winecfg/winecfg.rc:269
 msgid "Driver diagnostics"
@@ -19304,7 +19304,7 @@ msgstr "Types MIME"
 
 #: programs/winecfg/winecfg.rc:311
 msgid "Manage file &associations"
-msgstr "&Gérer les associations de fichier"
+msgstr "&Gérer les associations de fichèr"
 
 #: programs/winecfg/winecfg.rc:314
 msgid "Folders"
@@ -19356,11 +19356,11 @@ msgstr "Configuration de Wine"
 
 #: programs/winecfg/winecfg.rc:45
 msgid "Theme files (*.msstyles; *.theme)"
-msgstr "Fichiers de thèmes (*.msstyles ; *.theme)"
+msgstr "Fichèrs de thèmes (*.msstyles ; *.theme)"
 
 #: programs/winecfg/winecfg.rc:46
 msgid "Select a theme file"
-msgstr "Sélectionnez un fichier de thème"
+msgstr "Sélectionnez un fichèr de thème"
 
 #: programs/winecfg/winecfg.rc:47
 msgid "Folder"
@@ -19462,7 +19462,7 @@ msgstr "Utiliser les paramètres globaux"
 
 #: programs/winecfg/winecfg.rc:63
 msgid "Select an executable file"
-msgstr "Sélectionnez un fichier exécutable"
+msgstr "Sélectionnez un fichèr exécutable"
 
 #: programs/winecfg/winecfg.rc:68
 msgid "Autodetect"
@@ -19703,10 +19703,10 @@ msgid ""
 "and attach that file to the report."
 msgstr ""
 "Si ce problème ne se produit pas sous Windows et n'a pas déjà été rapporté, "
-"vous pouvez enregistrer les informations détaillées dans un fichier en "
+"vous pouvez enregistrer les informations détaillées dans un fichèr en "
 "utilisant le bouton « Enregistrer sous », et ensuite  <a href=\"https://wiki."
 "winehq.org/Bugs\">soumettre un rapport d'anomalie</a> en y attachant ledit "
-"fichier."
+"fichèr."
 
 #: programs/winedbg/winedbg.rc:40
 msgid ""
@@ -19739,7 +19739,7 @@ msgstr "Re&nommer..."
 
 #: programs/winefile/winefile.rc:34
 msgid "Propert&ies\tAlt+Enter"
-msgstr "&Propriétés\tAlt+Entrée"
+msgstr "&Proprietats\tAlt+Entrée"
 
 #: programs/winefile/winefile.rc:38
 msgid "Cr&eate Directory..."
@@ -19807,7 +19807,7 @@ msgstr "Arranger &verticalement\tCtrl+F4"
 
 #: programs/winefile/winefile.rc:84
 msgid "&About Wine File Manager"
-msgstr "À &propos du gestionnaire de fichiers de Wine"
+msgstr "À &propos du gestionnaire de fichèrs de Wine"
 
 #: programs/winefile/winefile.rc:121
 msgid "Select destination"
@@ -19815,11 +19815,11 @@ msgstr "Sélectionner la destination"
 
 #: programs/winefile/winefile.rc:134
 msgid "By File Type"
-msgstr "Par type de fichier"
+msgstr "Par type de fichèr"
 
 #: programs/winefile/winefile.rc:139
 msgid "File type"
-msgstr "Type de fichier"
+msgstr "Type de fichèr"
 
 #: programs/winefile/winefile.rc:140
 msgid "&Directories"
@@ -19835,15 +19835,15 @@ msgstr "Docu&ments"
 
 #: programs/winefile/winefile.rc:146
 msgid "&Other files"
-msgstr "&Autres fichiers"
+msgstr "&Autres fichèrs"
 
 #: programs/winefile/winefile.rc:148
 msgid "Show Hidden/&System Files"
-msgstr "Montrer les fichiers cachés/&système"
+msgstr "Montrer les fichèrs cachés/&système"
 
 #: programs/winefile/winefile.rc:159
 msgid "&File Name:"
-msgstr "Nom du &fichier :"
+msgstr "Nom du &fichèr :"
 
 #: programs/winefile/winefile.rc:161
 msgid "Full &Path:"
@@ -19884,7 +19884,7 @@ msgstr "Erreur lors de la sélection de la nouvelle police."
 
 #: programs/winefile/winefile.rc:96
 msgid "Wine File Manager"
-msgstr "Gestionnaire de fichiers de Wine"
+msgstr "Gestionnaire de fichèrs de Wine"
 
 #: programs/winefile/winefile.rc:98
 msgid "root fs"
@@ -19984,7 +19984,7 @@ msgstr "Veuillez saisir votre nom"
 
 #: programs/winemine/winemine.rc:90
 msgid "Custom Game"
-msgstr "Grille personnalisée"
+msgstr "Grille personalizada"
 
 #: programs/winemine/winemine.rc:92
 msgid "Rows"
@@ -20036,7 +20036,7 @@ msgstr "&Toujours visible"
 
 #: programs/winhlp32/winhlp32.rc:50 programs/winhlp32/winhlp32.rc:70
 msgid "Fonts"
-msgstr "Polices"
+msgstr "Polícias"
 
 #: programs/winhlp32/winhlp32.rc:52 programs/winhlp32/winhlp32.rc:72
 msgid "Small"
@@ -20068,7 +20068,7 @@ msgstr "Index"
 
 #: programs/winhlp32/winhlp32.rc:108
 msgid "Search"
-msgstr "Recherche"
+msgstr "Recèrca"
 
 #: programs/winhlp32/winhlp32.rc:81
 msgid "Wine Help"
@@ -20076,7 +20076,7 @@ msgstr "Aide de Wine"
 
 #: programs/winhlp32/winhlp32.rc:86
 msgid "Error while reading the help file `%s'"
-msgstr "Erreur lors de la lecture du fichier d'aide « %s »"
+msgstr "Erreur lors de la lecture du fichèr d'aide « %s »"
 
 #: programs/winhlp32/winhlp32.rc:88
 msgid "Summary"
@@ -20088,15 +20088,15 @@ msgstr "&Index"
 
 #: programs/winhlp32/winhlp32.rc:91
 msgid "Help files (*.hlp)"
-msgstr "Fichiers d'aide (*.hlp)"
+msgstr "Fichèrs d'aide (*.hlp)"
 
 #: programs/winhlp32/winhlp32.rc:92
 msgid "Cannot find '%s'. Do you want to find this file yourself?"
-msgstr "« %s » introuvable. Souhaitez-vous rechercher ce fichier vous-même ?"
+msgstr "« %s » introuvable. Souhaitez-vous rechercher ce fichèr vous-même ?"
 
 #: programs/winhlp32/winhlp32.rc:93
 msgid "Cannot find a richedit implementation... Aborting"
-msgstr "Aucune implémentation richedit détectée... Abandon"
+msgstr "Cap implémentation richedit détectée... Abandon"
 
 #: programs/winhlp32/winhlp32.rc:94
 msgid "Help topics: "
@@ -20136,7 +20136,7 @@ msgstr "&Tout sélectionner\tCtrl+A"
 
 #: programs/wordpad/wordpad.rc:54
 msgid "Find &next\tF3"
-msgstr "Rechercher le &suivant\tF3"
+msgstr "Recèrcar le &suivant\tF3"
 
 #: programs/wordpad/wordpad.rc:57
 msgid "Read-&only"
@@ -20383,7 +20383,7 @@ msgstr "Document texte Unicode"
 
 #: programs/wordpad/wordpad.rc:154
 msgid "Printer files (*.prn)"
-msgstr "Fichiers d'impression (*.prn)"
+msgstr "Fichèrs d'impression (*.prn)"
 
 #: programs/wordpad/wordpad.rc:161
 msgid "Center"
@@ -20458,7 +20458,7 @@ msgstr "Enregistrer les modifications de « %s » ?"
 
 #: programs/wordpad/wordpad.rc:193
 msgid "Finished searching the document."
-msgstr "Recherche terminée dans le document."
+msgstr "Recèrca terminée dans le document."
 
 #: programs/wordpad/wordpad.rc:194
 msgid "Failed to load the RichEdit library."
@@ -20482,20 +20482,20 @@ msgstr "Les documents conteneur OLE ne sont pas pris en charge."
 
 #: programs/wordpad/wordpad.rc:200
 msgid "Could not save the file."
-msgstr "Impossible d'enregistrer le fichier."
+msgstr "Impossible d'enregistrer le fichèr."
 
 #: programs/wordpad/wordpad.rc:201
 msgid "You do not have access to save the file."
 msgstr ""
-"Vous ne disposez pas des droits nécessaires à l'enregistrement du fichier."
+"Vous ne disposez pas des droits nécessaires à l'enregistrement du fichèr."
 
 #: programs/wordpad/wordpad.rc:202
 msgid "Could not open the file."
-msgstr "Impossible d'ouvrir le fichier."
+msgstr "Impossible d'ouvrir le fichèr."
 
 #: programs/wordpad/wordpad.rc:203
 msgid "You do not have access to open the file."
-msgstr "Vous ne disposez pas des droits nécessaires à l'ouverture du fichier."
+msgstr "Vous ne disposez pas des droits nécessaires à l'ouverture du fichèr."
 
 #: programs/wordpad/wordpad.rc:204
 msgid "Printing not implemented."
@@ -20524,11 +20524,11 @@ msgstr "Appuyez sur <Entrée> pour démarrer la copie\n"
 
 #: programs/xcopy/xcopy.rc:33
 msgid "%1!d! file(s) would be copied\n"
-msgstr "%1!d! fichier(s) seront copiés\n"
+msgstr "%1!d! fichèr(s) seront copiés\n"
 
 #: programs/xcopy/xcopy.rc:34
 msgid "%1!d! file(s) copied\n"
-msgstr "%1!d! fichier(s) copiés\n"
+msgstr "%1!d! fichèr(s) copiés\n"
 
 #: programs/xcopy/xcopy.rc:37
 msgid ""
@@ -20536,9 +20536,9 @@ msgid ""
 "on the target?\n"
 "(F - File, D - Directory)\n"
 msgstr ""
-"« %1 » est-il un fichier ou un répertoire\n"
+"« %1 » est-il un fichèr ou un répertoire\n"
 "dans la destination ?\n"
-"(F - Fichier, R - Répertoire)\n"
+"(F - Fichèr, R - Répertoire)\n"
 
 #: programs/xcopy/xcopy.rc:38
 msgid "%1? (Yes|No)\n"
@@ -20571,7 +20571,7 @@ msgid ""
 "XCOPY - Copies source files or directory trees to a destination.\n"
 "\n"
 "Syntax:\n"
-"XCOPY source [destination] [/I] [/S] [/Q] [/F] [/L] [/W] [/T] [/N] [/U]\n"
+"XCOPY font [destination] [/I] [/S] [/Q] [/F] [/L] [/W] [/T] [/N] [/U]\n"
 "\t     [/R] [/H] [/C] [/P] [/A] [/M] [/E] [/D] [/Y] [/-Y] [/K]\n"
 "\n"
 "Where:\n"
@@ -20602,43 +20602,43 @@ msgid ""
 "\t\tthan source.\n"
 "\n"
 msgstr ""
-"XCOPY - Copie des fichiers ou répertoires sources vers une destination.\n"
+"XCOPY - Copie des fichèrs ou répertoires fonts vers une destination.\n"
 "\n"
 "Syntaxe :\n"
-"XCOPY source [destination] [/I] [/S] [/Q] [/F] [/L] [/W] [/T] [/N] [/U]\n"
+"XCOPY font [destination] [/I] [/S] [/Q] [/F] [/L] [/W] [/T] [/N] [/U]\n"
 "\t     [/R] [/H] [/C] [/P] [/A] [/M] [/E] [/D] [/Y] [/-Y]\n"
 "\n"
 "Où :\n"
 "\n"
 "[/I]  Supposer que la destination est un répertoire si elle n'existe pas et "
 "que\n"
-"\tl'on copie plus d'un fichier.\n"
+"\tl'on copie plus d'un fichèr.\n"
 "[/S]  Copier les répertoires et sous-répertoires.\n"
 "[/E]  Copier les répertoires et sous-répertoires, y compris ceux qui sont "
 "vides.\n"
-"[/Q]  Ne pas afficher les fichiers copiés (mode silencieux).\n"
-"[/F]  Afficher les sources et destination complètes lors de la copie.\n"
-"[/L]  Simuler la copie, en montrant le nom des fichiers qui seraient "
+"[/Q]  Ne pas afficher les fichèrs copiés (mode silencieux).\n"
+"[/F]  Afficher les fonts et destination complètes lors de la copie.\n"
+"[/L]  Simuler la copie, en montrant le nom des fichèrs qui seraient "
 "copiés.\n"
 "[/W]  Demander confirmation avant de démarrer la copie.\n"
 "[/T]  Créer une structure de répertoires vides, mais ne copie pas les "
-"fichiers.\n"
-"[/Y]  Demander une confirmation lors de l'écrasement de fichiers.\n"
-"[/-Y] Demander une confirmation lors de l'écrasement de fichiers.\n"
-"[/P]  Interroger l'utilisateur avant de copier chaque fichier source.\n"
+"fichèrs.\n"
+"[/Y]  Demander une confirmation lors de l'écrasement de fichèrs.\n"
+"[/-Y] Demander une confirmation lors de l'écrasement de fichèrs.\n"
+"[/P]  Interroger l'utilisateur avant de copier chaque fichèr font.\n"
 "[/N]  Copier en utilisant les noms courts.\n"
-"[/U]  Ne copier que les fichiers existant déjà dans la destination.\n"
-"[/R]  Écraser les fichiers en lecture seule.\n"
-"[/H]  Inclure les fichiers cachés et système dans la copie.\n"
+"[/U]  Ne copier que les fichèrs existant déjà dans la destination.\n"
+"[/R]  Écraser les fichèrs en lecture seule.\n"
+"[/H]  Inclure les fichèrs cachés et système dans la copie.\n"
 "[/C]  Continuer même si une erreur survient pendant la copie.\n"
-"[/A]  Ne copier que les fichiers ayant l'attribut archive défini.\n"
-"[/M]  Ne copier que les fichiers ayant l'attribut archive défini ; supprime\n"
+"[/A]  Ne copier que les fichèrs ayant l'attribut archive défini.\n"
+"[/M]  Ne copier que les fichèrs ayant l'attribut archive défini ; supprime\n"
 "      ensuite l'attribut.\n"
-"[/K]  Copier les attributs de fichier; sans cette option, les attributes ne "
+"[/K]  Copier les attributs de fichèr; sans cette option, les attributes ne "
 "sont\n"
 "pas préservés.\n"
-"[/D | /D:m-j-a] Ne copier que les nouveaux fichiers, ou ceux modifiés après "
+"[/D | /D:m-j-a] Ne copier que les nouveaux fichèrs, ou ceux modifiés après "
 "la\n"
-"\t\tdate spécifiée. Si aucune date n'est fournie, ne copier que si\n"
-"\t\tle fichier de destination est plus ancien que le fichier source.\n"
+"\t\tdate spécifiée. Si cap date n'est fournie, ne copier que si\n"
+"\t\tle fichèr de destination est plus ancien que le fichèr font.\n"
 "\n"
