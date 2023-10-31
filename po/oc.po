@@ -1,4 +1,4 @@
-# Occitan translations for Wine  ### revirat entà linha 843
+# Occitan translations for Wine  ### revirat entà linha 875
 #
 msgid ""
 msgstr ""
@@ -840,29 +840,29 @@ msgstr "Estampar dens un fichèr"
 msgid "&Name:"
 msgstr "&Nom :"
 
-#: dlls/comdlg32/comdlg32.rc:366 dlls/comdlg32/comdlg32.rc:404  ### revirat entà linha 843
+#: dlls/comdlg32/comdlg32.rc:366 dlls/comdlg32/comdlg32.rc:404
 msgid "Status:"
-msgstr "État :"
+msgstr "Estat :"
 
 #: dlls/comdlg32/comdlg32.rc:368 dlls/comdlg32/comdlg32.rc:406
 msgid "Type:"
-msgstr "Type :"
+msgstr "Tipe :"
 
 #: dlls/comdlg32/comdlg32.rc:370 dlls/comdlg32/comdlg32.rc:408
 msgid "Where:"
-msgstr "Emplacement :"
+msgstr "Emplaçament :"
 
 #: dlls/comdlg32/comdlg32.rc:372 dlls/comdlg32/comdlg32.rc:410
 msgid "Comment:"
-msgstr "Commentaire :"
+msgstr "Comentari :"
 
 #: dlls/comdlg32/comdlg32.rc:377
 msgid "Pa&ges"
-msgstr "&Pages"
+msgstr "&Paginas"
 
 #: dlls/comdlg32/comdlg32.rc:378
 msgid "&Selection"
-msgstr "&Sélection"
+msgstr "&Seleccion"
 
 #: dlls/comdlg32/comdlg32.rc:381
 msgid "&from:"
@@ -872,7 +872,7 @@ msgstr "&de :"
 msgid "&to:"
 msgstr "&à :"
 
-#: dlls/comdlg32/comdlg32.rc:384
+#: dlls/comdlg32/comdlg32.rc:384  ### revirat entà linha 875
 msgid "Copies"
 msgstr "Copies"
 
@@ -902,7 +902,7 @@ msgstr "Pa&ysage"
 
 #: dlls/comdlg32/comdlg32.rc:432
 msgid "Setup Page"
-msgstr "Mise en page"
+msgstr "Mise en pagina"
 
 #: dlls/comdlg32/comdlg32.rc:441
 msgid "&Tray:"
@@ -1120,7 +1120,7 @@ msgid ""
 "This value does not lie within the page range.\n"
 "Please enter a value between %1!d! and %2!d!."
 msgstr ""
-"Cette valeur n'est pas dans l'intervalle de pages.\n"
+"Cette valeur n'est pas dans l'intervalle de paginas.\n"
 "Veuillez indiquer une valeur entre %1!d! et %2!d!."
 
 #: dlls/comdlg32/comdlg32.rc:61
@@ -1182,7 +1182,7 @@ msgstr ""
 
 #: dlls/comdlg32/comdlg32.rc:142
 msgid "Select a font size between %1!d! and %2!d! points."
-msgstr "Sélectionnez une taille de police entre %1!d! et %2!d! points."
+msgstr "Seleccionnez une taille de police entre %1!d! et %2!d! points."
 
 #: dlls/comdlg32/comdlg32.rc:143 dlls/ieframe/ieframe.rc:35
 msgid "&Save"
@@ -1202,7 +1202,7 @@ msgstr "Ouvrir le fichèr"
 
 #: dlls/comdlg32/comdlg32.rc:148
 msgid "Select Folder"
-msgstr "Sélectionnez un dossier"
+msgstr "Seleccionnez un dossier"
 
 #: dlls/comdlg32/comdlg32.rc:149
 msgid "Font size has to be a number."
@@ -1290,7 +1290,7 @@ msgstr "Pas de toner ; "
 
 #: dlls/comdlg32/comdlg32.rc:104
 msgid "Page punt; "
-msgstr "Abandon de page ; "
+msgstr "Abandon de pagina ; "
 
 #: dlls/comdlg32/comdlg32.rc:105
 msgid "Interrupted by user; "
@@ -1473,7 +1473,7 @@ msgstr "Nom non structuré"
 
 #: dlls/crypt32/crypt32.rc:48
 msgid "Content Type"
-msgstr "Type de contenu"
+msgstr "Tipe de contenu"
 
 #: dlls/crypt32/crypt32.rc:49
 msgid "Message Digest"
@@ -1526,7 +1526,7 @@ msgstr "Nom de modèle de certification"
 
 #: dlls/crypt32/crypt32.rc:61
 msgid "Certificate Type"
-msgstr "Type de certificat"
+msgstr "Tipe de certificat"
 
 #: dlls/crypt32/crypt32.rc:62
 msgid "Certificate Manifold"
@@ -1534,7 +1534,7 @@ msgstr ""
 
 #: dlls/crypt32/crypt32.rc:63
 msgid "Netscape Cert Type"
-msgstr "Type de certificat Netscape"
+msgstr "Tipe de certificat Netscape"
 
 #: dlls/crypt32/crypt32.rc:64
 msgid "Netscape Base URL"
@@ -1562,7 +1562,7 @@ msgstr "Nom du serveur SSL de Netscape"
 
 #: dlls/crypt32/crypt32.rc:70
 msgid "Netscape Comment"
-msgstr "Commentaire Netscape"
+msgstr "Comentari Netscape"
 
 #: dlls/crypt32/crypt32.rc:71
 msgid "Country/Region"
@@ -1586,7 +1586,7 @@ msgstr "Localité"
 
 #: dlls/crypt32/crypt32.rc:76
 msgid "State or Province"
-msgstr "État ou province"
+msgstr "Estat ou province"
 
 #: dlls/crypt32/crypt32.rc:77
 msgid "Title"
@@ -2026,7 +2026,7 @@ msgstr "Utilisation de la clé inconnue"
 
 #: dlls/crypt32/crypt32.rc:194
 msgid "Subject Type="
-msgstr "Type de sujet ="
+msgstr "Tipe de sujet ="
 
 #: dlls/crypt32/crypt32.rc:195
 msgctxt "Certificate Authority"
@@ -2346,11 +2346,11 @@ msgstr ""
 
 #: dlls/cryptui/cryptui.rc:273 dlls/cryptui/cryptui.rc:69
 msgid "Select Certificate Store"
-msgstr "Sélectionnez le magasin de certificats"
+msgstr "Seleccionnez le magasin de certificats"
 
 #: dlls/cryptui/cryptui.rc:276
 msgid "Select the certificate store you want to use:"
-msgstr "Sélectionnez le magasin de certificats à utiliser :"
+msgstr "Seleccionnez le magasin de certificats à utiliser :"
 
 #: dlls/cryptui/cryptui.rc:279
 msgid "&Show physical stores"
@@ -2427,12 +2427,12 @@ msgid ""
 "Wine can automatically select the certificate store, or you can specify a "
 "location for the certificates."
 msgstr ""
-"Wine peut sélectionner automatiquement un magasin de certificats, ou vous "
+"Wine peut seleccionar automatiquement un magasin de certificats, ou vous "
 "pouvez spécifier l'emplacement des certificats."
 
 #: dlls/cryptui/cryptui.rc:318
 msgid "&Automatically select certificate store"
-msgstr "Sélectionner &automatiquement un magasin de certificats"
+msgstr "Seleccionner &automatiquement un magasin de certificats"
 
 #: dlls/cryptui/cryptui.rc:320
 msgid "&Place all certificates in the following store:"
@@ -2498,7 +2498,7 @@ msgstr "Rôle du certificat"
 msgid ""
 "Select one or more purposes to be listed when Advanced Purposes is selected."
 msgstr ""
-"Sélectionnez un ou plusieurs rôles à afficher quand les options avancées "
+"Seleccionnez un ou plusieurs rôles à afficher quand les options avancées "
 "sont sélectionnées."
 
 #: dlls/cryptui/cryptui.rc:366
@@ -2546,7 +2546,7 @@ msgid ""
 "to protect the private key on a later page."
 msgstr ""
 "Si vous choisissez d'exporter la clé privée, on vous demandera un mot de "
-"passe pour protéger la clé privée dans une page ultérieure."
+"passe pour protéger la clé privée dans une pagina ultérieure."
 
 #: dlls/cryptui/cryptui.rc:390
 msgid "Do you wish to export the private key?"
@@ -2566,7 +2566,7 @@ msgstr "&Confirmez le mot de passe :"
 
 #: dlls/cryptui/cryptui.rc:412
 msgid "Select the format you want to use:"
-msgstr "Sélectionnez le format à utiliser :"
+msgstr "Seleccionnez le format à utiliser :"
 
 #: dlls/cryptui/cryptui.rc:413
 msgid "&DER-encoded X.509 (*.cer)"
@@ -2614,11 +2614,11 @@ msgstr ""
 
 #: dlls/cryptui/cryptui.rc:456 dlls/cryptui/cryptui.rc:179
 msgid "Select Certificate"
-msgstr "Sélectionnez le certificat"
+msgstr "Seleccionnez le certificat"
 
 #: dlls/cryptui/cryptui.rc:459
 msgid "Select a certificate you want to use"
-msgstr "Sélectionnez le certificats à utiliser"
+msgstr "Seleccionnez le certificats à utiliser"
 
 #: dlls/cryptui/cryptui.rc:30 dlls/cryptui/cryptui.rc:93
 msgid "Certificate"
@@ -2785,7 +2785,7 @@ msgstr "L'OID que vous avez entré existe déjà."
 
 #: dlls/cryptui/cryptui.rc:70
 msgid "Please select a certificate store."
-msgstr "Veuillez sélectionner un magasin de certificats."
+msgstr "Veuillez seleccionar un magasin de certificats."
 
 #: dlls/cryptui/cryptui.rc:72
 msgid ""
@@ -2793,7 +2793,7 @@ msgid ""
 "select another file."
 msgstr ""
 "Le fichèr contient des objets ne satisfaisant pas aux critères spécifiés. "
-"Veuillez sélectionner un autre fichèr."
+"Veuillez seleccionar un autre fichèr."
 
 #: dlls/cryptui/cryptui.rc:73
 msgid "File to Import"
@@ -2837,11 +2837,11 @@ msgstr "Messages CMS/PKCS #7 (*.spc ; *.p7b)"
 
 #: dlls/cryptui/cryptui.rc:84
 msgid "Please select a file."
-msgstr "Sélectionnez un fichèr."
+msgstr "Seleccionnez un fichèr."
 
 #: dlls/cryptui/cryptui.rc:85
 msgid "The file format is not recognized. Please select another file."
-msgstr "Le format du fichèr n'est pas reconnu. Sélectionnez un autre fichèr."
+msgstr "Le format du fichèr n'est pas reconnu. Seleccionnez un autre fichèr."
 
 #: dlls/cryptui/cryptui.rc:86
 msgid "Could not open "
@@ -2853,7 +2853,7 @@ msgstr "Déterminé par le programme"
 
 #: dlls/cryptui/cryptui.rc:88
 msgid "Please select a store"
-msgstr "Veuillez sélectionner un magasin"
+msgstr "Veuillez seleccionar un magasin"
 
 #: dlls/cryptui/cryptui.rc:89
 msgid "Certificate Store Selected"
@@ -3163,7 +3163,7 @@ msgstr "Emplacement"
 
 #: dlls/cryptui/cryptui.rc:180
 msgid "Select a certificate"
-msgstr "Sélectionnez un certificat"
+msgstr "Seleccionnez un certificat"
 
 #: dlls/cryptui/cryptui.rc:181 programs/winefile/winefile.rc:101
 #: programs/winhlp32/winhlp32.rc:110 programs/winhlp32/winhlp32.rc:85
@@ -3363,7 +3363,7 @@ msgstr "&Estampar..."
 #: dlls/shdoclc/shdoclc.rc:49 dlls/shdoclc/shdoclc.rc:98
 #: dlls/shdoclc/shdoclc.rc:120 dlls/user32/user32.rc:65
 msgid "Select &All"
-msgstr "&Tout sélectionner"
+msgstr "&Tout seleccionar"
 
 #: dlls/hhctrl.ocx/hhctrl.rc:78 dlls/shdoclc/shdoclc.rc:54
 msgid "&View Source"
@@ -3568,7 +3568,7 @@ msgstr "Demande de %s"
 
 #: dlls/inetcpl.cpl/inetcpl.rc:49
 msgid "Home page"
-msgstr "Page d'accueil"
+msgstr "Pagina d'accueil"
 
 #: dlls/inetcpl.cpl/inetcpl.rc:50
 msgid "You can choose the address that will be used as your home page."
@@ -3576,15 +3576,15 @@ msgstr "Vous pouvez choisir l'adresse à utiliser comme page d'accueil."
 
 #: dlls/inetcpl.cpl/inetcpl.rc:53
 msgid "&Current page"
-msgstr "Page &courante"
+msgstr "Pagina &courante"
 
 #: dlls/inetcpl.cpl/inetcpl.rc:54
 msgid "&Default page"
-msgstr "Page par &défaut"
+msgstr "Pagina par &défaut"
 
 #: dlls/inetcpl.cpl/inetcpl.rc:55
 msgid "&Blank page"
-msgstr "Page &blanche"
+msgstr "Pagina &blanche"
 
 #: dlls/inetcpl.cpl/inetcpl.rc:56
 msgid "Browsing history"
@@ -3593,7 +3593,7 @@ msgstr "Historique de navigation"
 #: dlls/inetcpl.cpl/inetcpl.rc:57
 msgid "You can delete cached pages, cookies and other data."
 msgstr ""
-"Vous pouvez effacer les pages en cache, les cookies et d'autres données."
+"Vous pouvez effacer les paginas en cache, les cookies et d'autres données."
 
 #: dlls/inetcpl.cpl/inetcpl.rc:59
 msgid "Delete &files..."
@@ -3613,7 +3613,7 @@ msgid ""
 "Cached copies of web pages, images and certificates."
 msgstr ""
 "Fichèrs internet temporaires\n"
-"Copies en cache de pages web, d'images et de certificats."
+"Copies en cache de paginas web, d'images et de certificats."
 
 #: dlls/inetcpl.cpl/inetcpl.rc:73
 msgid ""
@@ -4127,7 +4127,7 @@ msgstr "Wine"
 
 #: dlls/kernelbase/kernelbase.rc:29
 msgid "Western Europe and United States"
-msgstr "Europe occidentale et États-Unis d'Amérique"
+msgstr "Europe occidentale et Estats-Unis d'Amérique"
 
 #: dlls/kernelbase/kernelbase.rc:30
 msgid "Central Europe"
@@ -4727,7 +4727,7 @@ msgstr "Segment de pile de démarrage non valide pour %1.\n"
 
 #: dlls/kernelbase/winerror.mc:743
 msgid "Invalid module type for %1.\n"
-msgstr "Type de module non valide pour %1.\n"
+msgstr "Tipe de module non valide pour %1.\n"
 
 #: dlls/kernelbase/winerror.mc:748
 msgid "Invalid EXE signature in %1.\n"
@@ -5864,11 +5864,11 @@ msgstr "Ne peut accéder aux informations du domaine.\n"
 
 #: dlls/kernelbase/winerror.mc:2163
 msgid "Invalid server state.\n"
-msgstr "État du serveur inadéquat.\n"
+msgstr "Estat du serveur inadéquat.\n"
 
 #: dlls/kernelbase/winerror.mc:2168
 msgid "Invalid domain state.\n"
-msgstr "État du domaine inadéquat.\n"
+msgstr "Estat du domaine inadéquat.\n"
 
 #: dlls/kernelbase/winerror.mc:2173
 msgid "Invalid domain role.\n"
@@ -5924,7 +5924,7 @@ msgstr "Collision d'ID d'ouverture de session.\n"
 
 #: dlls/kernelbase/winerror.mc:2238
 msgid "Invalid logon type.\n"
-msgstr "Type de connexion invalide.\n"
+msgstr "Tipe de connexion invalide.\n"
 
 #: dlls/kernelbase/winerror.mc:2243
 msgid "Cannot impersonate.\n"
@@ -5932,7 +5932,7 @@ msgstr "Impossible d'emprunter une identité.\n"
 
 #: dlls/kernelbase/winerror.mc:2248
 msgid "Invalid transaction state.\n"
-msgstr "État de transaction invalide.\n"
+msgstr "Estat de transaction invalide.\n"
 
 #: dlls/kernelbase/winerror.mc:2253
 msgid "Security DB commit failure.\n"
@@ -5976,7 +5976,7 @@ msgstr "Le groupe local existe déjà.\n"
 
 #: dlls/kernelbase/winerror.mc:2303 dlls/kernelbase/winerror.mc:2328
 msgid "Logon type not granted.\n"
-msgstr "Type d'accès non accordé.\n"
+msgstr "Tipe d'accès non accordé.\n"
 
 #: dlls/kernelbase/winerror.mc:2308
 msgid "Too many secrets.\n"
@@ -6280,7 +6280,7 @@ msgstr "Descripteur de clavier invalide.\n"
 
 #: dlls/kernelbase/winerror.mc:2688
 msgid "Hook type not allowed.\n"
-msgstr "Type de point d'entrée non autorisé.\n"
+msgstr "Tipe de point d'entrée non autorisé.\n"
 
 #: dlls/kernelbase/winerror.mc:2693
 msgid "Interactive window station required.\n"
@@ -6344,7 +6344,7 @@ msgstr "Proprietat inconnue.\n"
 
 #: dlls/kernelbase/winerror.mc:2768
 msgid "Invalid handle state.\n"
-msgstr "État de descripteur invalide.\n"
+msgstr "Estat de descripteur invalide.\n"
 
 #: dlls/kernelbase/winerror.mc:2773
 msgid "Bad configuration.\n"
@@ -6428,7 +6428,7 @@ msgstr "Discordance de type de données.\n"
 
 #: dlls/kernelbase/winerror.mc:2873 dlls/kernelbase/winerror.mc:3083
 msgid "Unsupported type.\n"
-msgstr "Type non pris en charge.\n"
+msgstr "Tipe non pris en charge.\n"
 
 #: dlls/kernelbase/winerror.mc:2878
 msgid "Creation failed.\n"
@@ -6524,7 +6524,7 @@ msgstr "UUID déjà enregistré.\n"
 
 #: dlls/kernelbase/winerror.mc:2993
 msgid "UUID type already registered.\n"
-msgstr "Type de UUID déjà enregistré.\n"
+msgstr "Tipe de UUID déjà enregistré.\n"
 
 #: dlls/kernelbase/winerror.mc:2998
 msgid "Server already listening.\n"
@@ -6540,7 +6540,7 @@ msgstr "Serveur RPC pas en mode écoute.\n"
 
 #: dlls/kernelbase/winerror.mc:3013
 msgid "Unknown manager type.\n"
-msgstr "Type de gestionnaire inconnu.\n"
+msgstr "Tipe de gestionnaire inconnu.\n"
 
 #: dlls/kernelbase/winerror.mc:3018
 msgid "Unknown interface.\n"
@@ -6624,7 +6624,7 @@ msgstr "Point de terminaison dupliqué.\n"
 
 #: dlls/kernelbase/winerror.mc:3123
 msgid "Unknown authentication type.\n"
-msgstr "Type d'authentification inconnu.\n"
+msgstr "Tipe d'authentification inconnu.\n"
 
 #: dlls/kernelbase/winerror.mc:3128
 msgid "Maximum calls too low.\n"
@@ -6872,7 +6872,7 @@ msgstr "Commande d'imprimante invalide.\n"
 
 #: dlls/kernelbase/winerror.mc:3433
 msgid "Invalid data type.\n"
-msgstr "Type de donnée invalide.\n"
+msgstr "Tipe de donnée invalide.\n"
 
 #: dlls/kernelbase/winerror.mc:3438
 msgid "Invalid environment.\n"
@@ -6909,7 +6909,7 @@ msgstr "Données ressources introuvables.\n"
 
 #: dlls/kernelbase/winerror.mc:3478
 msgid "Resource type not found.\n"
-msgstr "Type de ressource introuvable.\n"
+msgstr "Tipe de ressource introuvable.\n"
 
 #: dlls/kernelbase/winerror.mc:3483
 msgid "Resource name not found.\n"
@@ -7022,7 +7022,7 @@ msgstr "Estampadoira supprimée.\n"
 
 #: dlls/kernelbase/winerror.mc:3618
 msgid "Invalid printer state.\n"
-msgstr "État d'imprimante non valide.\n"
+msgstr "Estat d'imprimante non valide.\n"
 
 #: dlls/kernelbase/winerror.mc:3623
 msgid "User must change password.\n"
@@ -7733,7 +7733,7 @@ msgstr "Numéro de flux non invalide.\n"
 
 #: dlls/mferror/mferror.mc:60
 msgid "Invalid media type.\n"
-msgstr "Type de média invalide.\n"
+msgstr "Tipe de média invalide.\n"
 
 #: dlls/mferror/mferror.mc:67
 #, fuzzy
@@ -7763,7 +7763,7 @@ msgstr "Erreur inattendue.\n"
 
 #: dlls/mferror/mferror.mc:116
 msgid "Invalid type.\n"
-msgstr "Type non valide.\n"
+msgstr "Tipe non valide.\n"
 
 #: dlls/mferror/mferror.mc:123
 msgid "Invalid file format.\n"
@@ -7779,11 +7779,11 @@ msgstr "Schéma non pris en charge.\n"
 
 #: dlls/mferror/mferror.mc:151
 msgid "Unsupported bytestream type.\n"
-msgstr "Type de flux d'octets non pris en charge.\n"
+msgstr "Tipe de flux d'octets non pris en charge.\n"
 
 #: dlls/mferror/mferror.mc:158
 msgid "Unsupported time format.\n"
-msgstr "Type de format non pris en charge.\n"
+msgstr "Tipe de format non pris en charge.\n"
 
 #: dlls/mferror/mferror.mc:165
 msgid "Timestamp is not set for the sample.\n"
@@ -7809,7 +7809,7 @@ msgstr "Le taux d'échantillonage n'est pas pris en charge.\n"
 #, fuzzy
 #| msgid "Unsupported type.\n"
 msgid "Unsupported thinning.\n"
-msgstr "Type non pris en charge.\n"
+msgstr "Tipe non pris en charge.\n"
 
 #: dlls/mferror/mferror.mc:207
 msgid "Reversing is not supported.\n"
@@ -7895,11 +7895,11 @@ msgstr "L'attribut n'a pas été trouvé.\n"
 
 #: dlls/mferror/mferror.mc:347
 msgid "Property type is not allowed.\n"
-msgstr "Type de propriété non autorisé.\n"
+msgstr "Tipe de propriété non autorisé.\n"
 
 #: dlls/mferror/mferror.mc:354
 msgid "Property type is not supported.\n"
-msgstr "Type de propriété pas pris en charge.\n"
+msgstr "Tipe de propriété pas pris en charge.\n"
 
 #: dlls/mferror/mferror.mc:361
 msgid "Property is empty.\n"
@@ -8155,7 +8155,7 @@ msgstr "Réseau entier"
 
 #: dlls/msacm32/msacm32.rc:30
 msgid "Sound Selection"
-msgstr "Sélection du son"
+msgstr "Seleccion du son"
 
 #: dlls/msacm32/msacm32.rc:39 programs/winedbg/winedbg.rc:77
 msgid "&Save As..."
@@ -8179,7 +8179,7 @@ msgstr "Informations sur l'hyperlien"
 
 #: dlls/mshtml/mshtml.rc:43 programs/winecfg/winecfg.rc:249
 msgid "&Type:"
-msgstr "&Type :"
+msgstr "&Tipe :"
 
 #: dlls/mshtml/mshtml.rc:45
 msgid "&URL:"
@@ -8294,7 +8294,7 @@ msgstr "fonctionnalité depuis :"
 
 #: dlls/msi/msi.rc:65
 msgid "choose which folder contains %s"
-msgstr "sélectionnez le dossier contenant %s"
+msgstr "seleccionatz le dossier contenant %s"
 
 #: dlls/msi/msi.rc:66 dlls/shell32/shell32.rc:236
 msgid "New Folder"
@@ -8628,7 +8628,7 @@ msgstr "Polícia : [1]"
 
 #: dlls/msi/msi.rc:184 dlls/msi/msi.rc:205
 msgid "MIME Content Type: [1], Extension: [2]"
-msgstr "Type de contenu MIME : [1], Extension : [2]"
+msgstr "Tipe de contenu MIME : [1], Extension : [2]"
 
 #: dlls/msi/msi.rc:185 dlls/msi/msi.rc:206
 msgid "ProgId: [1]"
@@ -8706,7 +8706,7 @@ msgstr "Action [Temps] : [1]. [2]"
 
 #: dlls/msi/msi.rc:79
 msgid "Message type: [1], Argument: [2]{, [3]}"
-msgstr "Type du message type : [1], Argument : [2]{, [3]}"
+msgstr "Tipe du message type : [1], Argument : [2]{, [3]}"
 
 #: dlls/msi/msi.rc:82
 msgid "=== Logging started: [Date]  [Time] ==="
@@ -8934,11 +8934,11 @@ msgstr "élément du plan"
 
 #: dlls/oleacc/oleacc.rc:68
 msgid "page tab"
-msgstr "onglet de page"
+msgstr "onglet de pagina"
 
 #: dlls/oleacc/oleacc.rc:69
 msgid "property page"
-msgstr "page de propriétés"
+msgstr "pagina de propriétés"
 
 #: dlls/oleacc/oleacc.rc:70
 msgid "indicator"
@@ -9026,7 +9026,7 @@ msgstr "blanc"
 
 #: dlls/oleacc/oleacc.rc:91
 msgid "page tab list"
-msgstr "liste d'onglets de pages"
+msgstr "liste d'onglets de paginas"
 
 #: dlls/oleacc/oleacc.rc:92
 msgid "clock"
@@ -9228,7 +9228,7 @@ msgstr "Fournisseur"
 
 #: dlls/oledb32/version.rc:59
 msgid "Select the data you want to connect to:"
-msgstr "Sélectionnez la donnée à laquelle vous souhaitez vous connecter :"
+msgstr "Seleccionnez la donnée à laquelle vous souhaitez vous connecter :"
 
 #: dlls/oledb32/version.rc:66
 msgid "Connection"
@@ -9321,7 +9321,7 @@ msgid ""
 "value, select a property, then choose Edit Value below."
 msgstr ""
 "Voici les propriétés à initialiser pour ce type de données. Pour ce faire, "
-"sélectionnez une propriété, et appuyez sur « Modifier valeur... »."
+"seleccionatz une propriété, et appuyez sur « Modifier valeur... »."
 
 #: dlls/oledb32/version.rc:115
 msgid "&Edit Value..."
@@ -9333,7 +9333,7 @@ msgstr "Erreur du lien vers les données"
 
 #: dlls/oledb32/version.rc:50
 msgid "Please select a provider."
-msgstr "Sélectionnez un fournisseur."
+msgstr "Seleccionnez un fournisseur."
 
 #: dlls/oledb32/version.rc:51
 msgid ""
@@ -9385,7 +9385,7 @@ msgstr "Insérer objet"
 
 #: dlls/oledlg/oledlg.rc:61
 msgid "Object Type:"
-msgstr "Type d'objet :"
+msgstr "Tipe d'objet :"
 
 #: dlls/oledlg/oledlg.rc:64 dlls/oledlg/oledlg.rc:102
 msgid "Result"
@@ -9551,7 +9551,7 @@ msgstr "Insère le contenu du presse-papiers dans votre document."
 
 #: dlls/oledlg/oledlg.rc:48 programs/regedit/regedit.rc:435
 msgid "Unknown Type"
-msgstr "Type inconnu"
+msgstr "Tipe inconnu"
 
 #: dlls/oledlg/oledlg.rc:49
 msgid "Unknown Source"
@@ -9661,7 +9661,7 @@ msgstr "Saisissez le chemin du fichèr, puis cliquez sur OK."
 
 #: dlls/shdoclc/shdoclc.rc:42
 msgid "F&orward"
-msgstr "Page &suivante"
+msgstr "Pagina &suivante"
 
 #: dlls/shdoclc/shdoclc.rc:44
 msgid "&Save Background As..."
@@ -9769,7 +9769,7 @@ msgstr "&Supprimer"
 
 #: dlls/shdoclc/shdoclc.rc:103 dlls/shell32/shell32.rc:97
 msgid "&Select"
-msgstr "&Sélectionner"
+msgstr "&Seleccionner"
 
 #: dlls/shdoclc/shdoclc.rc:105
 msgid "&Cell"
@@ -9854,7 +9854,7 @@ msgstr "Vider les caches de formats"
 
 #: dlls/shdoclc/shdoclc.rc:208
 msgid "Dump LayoutRects"
-msgstr "Vider les rectangles de mise en page (LayoutRect)"
+msgstr "Vider les rectangles de mise en pagina (LayoutRect)"
 
 #: dlls/shdoclc/shdoclc.rc:209
 msgid "Memory Monitor"
@@ -9890,11 +9890,11 @@ msgstr "Bas"
 
 #: dlls/shdoclc/shdoclc.rc:224
 msgid "Page Up"
-msgstr "Page précédente"
+msgstr "Pagina précédente"
 
 #: dlls/shdoclc/shdoclc.rc:225
 msgid "Page Down"
-msgstr "Page suivante"
+msgstr "Pagina suivante"
 
 #: dlls/shdoclc/shdoclc.rc:227
 msgid "Scroll Up"
@@ -9914,11 +9914,11 @@ msgstr "Bord droit"
 
 #: dlls/shdoclc/shdoclc.rc:238
 msgid "Page Left"
-msgstr "Page vers la gauche"
+msgstr "Pagina vers la gauche"
 
 #: dlls/shdoclc/shdoclc.rc:239
 msgid "Page Right"
-msgstr "Page vers la droite"
+msgstr "Pagina vers la droite"
 
 #: dlls/shdoclc/shdoclc.rc:241
 msgid "Scroll Left"
@@ -10104,7 +10104,7 @@ msgstr "&Parcourir..."
 
 #: dlls/shell32/shell32.rc:353 dlls/shell32/shell32.rc:382
 msgid "File type:"
-msgstr "Type de fichèr :"
+msgstr "Tipe de fichèr :"
 
 #: dlls/shell32/shell32.rc:357 dlls/shell32/shell32.rc:390
 #: dlls/urlmon/urlmon.rc:37 programs/explorer/explorer.rc:33
@@ -10157,7 +10157,7 @@ msgstr "Talha"
 
 #: dlls/shell32/shell32.rc:139 programs/regedit/regedit.rc:151
 msgid "Type"
-msgstr "Type"
+msgstr "Tipe"
 
 #: dlls/shell32/shell32.rc:140
 msgid "Modified"
@@ -10174,7 +10174,7 @@ msgstr "Espace disponible"
 
 #: dlls/shell32/shell32.rc:145
 msgid "Comments"
-msgstr "Commentaires"
+msgstr "Comentaris"
 
 #: dlls/shell32/shell32.rc:146
 msgid "Original location"
@@ -10200,7 +10200,7 @@ msgstr "Panneau de configuration"
 
 #: dlls/shell32/shell32.rc:164
 msgid "Select"
-msgstr "Sélectionner"
+msgstr "Seleccionner"
 
 #: dlls/shell32/shell32.rc:187
 msgid "Restart"
@@ -10550,7 +10550,7 @@ msgstr " s"
 
 #: dlls/twain_32/twain.rc:29
 msgid "Select Source"
-msgstr "Sélectionnez une font"
+msgstr "Seleccionnez une font"
 
 #: dlls/tzres/tzres.rc:108
 msgctxt "maximum 31 characters"
@@ -12982,7 +12982,7 @@ msgstr "&Continuer"
 
 #: dlls/user32/user32.rc:105
 msgid "Select Window"
-msgstr "Sélection de fenêtre"
+msgstr "Seleccion de fenêtre"
 
 #: dlls/user32/user32.rc:72
 msgid "&More Windows..."
@@ -13204,11 +13204,11 @@ msgstr "Protocole de sécurité"
 
 #: dlls/wininet/wininet.rc:38
 msgid "Signature Type"
-msgstr "Type de signature"
+msgstr "Tipe de signature"
 
 #: dlls/wininet/wininet.rc:39
 msgid "Encryption Type"
-msgstr "Type d'encryption"
+msgstr "Tipe d'encryption"
 
 #: dlls/wininet/wininet.rc:40
 msgid "Privacy Strength"
@@ -13752,7 +13752,7 @@ msgid ""
 "Cannot set the current wave device for play back because it is in use. Wait "
 "until the device is free, and then try again."
 msgstr ""
-"Impossible de sélectionner le périphérique audio actuel pour la lecture car "
+"Impossible de seleccionar le périphérique audio actuel pour la lecture car "
 "il est en cours d'utilisation. Attendez qu'il se libère, puis essayez à "
 "nouveau."
 
@@ -13770,7 +13770,7 @@ msgid ""
 "Cannot set the current wave device for recording because it is in use. Wait "
 "until the device is free, and then try again."
 msgstr ""
-"Impossible de sélectionner le périphérique audio actuel pour "
+"Impossible de seleccionar le périphérique audio actuel pour "
 "l'enregistrement car il est en cours d'utilisation. Attendez qu'il se "
 "libère, puis essayez à nouveau."
 
@@ -13987,7 +13987,7 @@ msgstr "Attribut inconnu"
 
 #: dlls/wldap32/wldap32.rc:49
 msgid "Undefined Type"
-msgstr "Type non défini"
+msgstr "Tipe non défini"
 
 #: dlls/wldap32/wldap32.rc:50
 msgid "Inappropriate Matching"
@@ -14217,11 +14217,11 @@ msgstr ""
 
 #: programs/chcp.com/chcp.rc:28
 msgid "Active code page: %1!u!\n"
-msgstr "Page de code active : %1!u!\n"
+msgstr "Pagina de code active : %1!u!\n"
 
 #: programs/chcp.com/chcp.rc:29
 msgid "Invalid code page\n"
-msgstr "Page de code invalide\n"
+msgstr "Pagina de code invalide\n"
 
 #: programs/chcp.com/chcp.rc:33
 msgid ""
@@ -14236,11 +14236,11 @@ msgid ""
 msgstr ""
 "CHCP [nombre]\n"
 "\n"
-"  Modifie ou affiche la page de code de la console active.\n"
+"  Modifie ou affiche la pagina de code de la console active.\n"
 "\n"
-"  nombre   La page de code de la console à activer.\n"
+"  nombre   La pagina de code de la console à activer.\n"
 "\n"
-"  Lancer CHCP sans nombre en paramètre pour afficher la page de code de la "
+"  Lancer CHCP sans nombre en paramètre pour afficher la pagina de code de la "
 "console active.\n"
 "\n"
 
@@ -14815,7 +14815,7 @@ msgstr ""
 
 #: programs/cmd/cmd.rc:303
 msgid "MORE displays output of files or piped input in pages.\n"
-msgstr "MORE affiche le contenu de fichèrs ou l'entrée standard par pages.\n"
+msgstr "MORE affiche le contenu de fichèrs ou l'entrée standard par paginas.\n"
 
 #: programs/cmd/cmd.rc:308
 msgid ""
@@ -14922,7 +14922,7 @@ msgstr ""
 "HELP\t\tAffiche de brefs détails sur l'utilisation d'une commande\n"
 "MD (MKDIR)\tCrée un répertoire\n"
 "MKLINK\t\tCrée un lien symbolique\n"
-"MORE\t\tAffiche du texte par pages\n"
+"MORE\t\tAffiche du texte par paginas\n"
 "MOVE\t\tDéplace un fichèr, un groupe de fichèrs ou un répertoire\n"
 "PATH\t\tRègle ou affiche le chemin de recherche\n"
 "PAUSE\t\tSuspend l'exécution d'un fichèr de commandes\n"
@@ -15252,7 +15252,7 @@ msgstr "&Marquer"
 
 #: programs/conhost/conhost.rc:38
 msgid "&Select all"
-msgstr "&Tout sélectionner"
+msgstr "&Tout seleccionar"
 
 #: programs/conhost/conhost.rc:39
 msgid "Sc&roll"
@@ -15406,7 +15406,7 @@ msgstr "Nom d'hôte"
 
 #: programs/ipconfig/ipconfig.rc:39
 msgid "Node type"
-msgstr "Type de nœud"
+msgstr "Tipe de nœud"
 
 #: programs/ipconfig/ipconfig.rc:40
 msgid "Broadcast"
@@ -15489,7 +15489,7 @@ msgstr ""
 #, fuzzy
 #| msgid "Encryption Type"
 msgid "KerbTicket Encryption Type"
-msgstr "Type d'encryption"
+msgstr "Tipe d'encryption"
 
 #: programs/klist/klist.rc:37
 #, fuzzy
@@ -15649,7 +15649,7 @@ msgstr "Adresse distante"
 
 #: programs/netstat/netstat.rc:34
 msgid "State"
-msgstr "État"
+msgstr "Estat"
 
 #: programs/netstat/netstat.rc:35
 msgid "Interface Statistics"
@@ -15762,7 +15762,7 @@ msgstr "&Estampar...\tCtrl+P"
 
 #: programs/notepad/notepad.rc:36 programs/wordpad/wordpad.rc:38
 msgid "Page Se&tup..."
-msgstr "&Mise en page..."
+msgstr "&Mise en pagina..."
 
 #: programs/notepad/notepad.rc:37
 msgid "P&rinter Setup..."
@@ -15792,7 +15792,7 @@ msgstr "&Effacer\tSuppr"
 
 #: programs/notepad/notepad.rc:49
 msgid "Select &all\tCtrl+A"
-msgstr "&Tout sélectionner\tCtrl+A"
+msgstr "&Tout seleccionar\tCtrl+A"
 
 #: programs/notepad/notepad.rc:50
 msgid "&Time/Date\tF5"
@@ -15837,7 +15837,7 @@ msgstr "À &propos du Bloc-notes"
 
 #: programs/notepad/notepad.rc:107
 msgid "Page Setup"
-msgstr "Mise en page"
+msgstr "Mise en pagina"
 
 #: programs/notepad/notepad.rc:109
 msgid "&Header:"
@@ -15845,7 +15845,7 @@ msgstr "&En-tête :"
 
 #: programs/notepad/notepad.rc:111
 msgid "&Footer:"
-msgstr "&Pied de page :"
+msgstr "&Pied de pagina :"
 
 #: programs/notepad/notepad.rc:114
 msgid "Margins (millimeters)"
@@ -15939,7 +15939,7 @@ msgstr ""
 
 #: programs/notepad/notepad.rc:74
 msgid "Page &p"
-msgstr "Page &p"
+msgstr "Pagina &p"
 
 #: programs/notepad/notepad.rc:76
 msgid "Notepad"
@@ -16006,7 +16006,7 @@ msgstr ""
 "%1\n"
 "Ce fichèr contient des caractères Unicode qui seront perdus si\n"
 "vous le sauvez dans le codage %2.\n"
-"Pour conserver ces caractères, cliquez sur Annuler et sélectionnez\n"
+"Pour conserver ces caractères, cliquez sur Annuler et seleccionatz\n"
 "une des alternatives Unicode dans la liste déroulante Codage.\n"
 "Continuer ?"
 
@@ -18089,7 +18089,7 @@ msgstr ""
 #, fuzzy
 #| msgid "page tab list"
 msgid "Wine tasklist"
-msgstr "liste d'onglets de pages"
+msgstr "liste d'onglets de paginas"
 
 #: programs/tasklist/tasklist.rc:29
 msgid "Usage: tasklist [/?]\n"
@@ -18183,7 +18183,7 @@ msgstr "En pau&se"
 
 #: programs/taskmgr/taskmgr.rc:68 programs/taskmgr/taskmgr.rc:256
 msgid "&Select Columns..."
-msgstr "&Sélectionner les colonnes..."
+msgstr "&Seleccionner les colonnes..."
 
 #: programs/taskmgr/taskmgr.rc:69 programs/taskmgr/taskmgr.rc:258
 msgid "&CPU History"
@@ -18506,13 +18506,13 @@ msgstr "CPU 31"
 
 #: programs/taskmgr/taskmgr.rc:514
 msgid "Select Columns"
-msgstr "Sélection des colonnes"
+msgstr "Seleccion des colonnes"
 
 #: programs/taskmgr/taskmgr.rc:519
 msgid ""
 "Select the columns that will appear on the Process page of the Task Manager."
 msgstr ""
-"Sélectionnez les colonnes qui apparaîtront dans la page Processus du "
+"Seleccionnez les colonnes qui apparaîtront dans la pagina Processus du "
 "Gestionnaire des tâches."
 
 #: programs/taskmgr/taskmgr.rc:521
@@ -18569,7 +18569,7 @@ msgstr "&Nom de l'utilisateur"
 
 #: programs/taskmgr/taskmgr.rc:547
 msgid "Page F&aults Delta"
-msgstr "É&cart de défauts de pages"
+msgstr "É&cart de défauts de paginas"
 
 #: programs/taskmgr/taskmgr.rc:549
 msgid "&Virtual Memory Size"
@@ -18715,7 +18715,7 @@ msgstr "Affiche les tâches 16 bits sous le ntvdm.exe associé"
 
 #: programs/taskmgr/taskmgr.rc:216
 msgid "Select which columns will be visible on the Process page"
-msgstr "Sélectionne les colonnes à afficher dans la page des processus"
+msgstr "Seleccionne les colonnes à afficher dans la pagina des processus"
 
 #: programs/taskmgr/taskmgr.rc:217
 msgid "Displays kernel time in the performance graphs"
@@ -18824,7 +18824,7 @@ msgstr "Util. mémoire max"
 
 #: programs/taskmgr/taskmgr.rc:279
 msgid "Page Faults"
-msgstr "Défauts de pages"
+msgstr "Défauts de paginas"
 
 #: programs/taskmgr/taskmgr.rc:280
 msgid "USER Objects"
@@ -19190,7 +19190,7 @@ msgstr "N&ative puis Intégrée"
 
 #: programs/winecfg/winecfg.rc:225
 msgid "Select Drive Letter"
-msgstr "Sélectionnez la lettre du lecteur"
+msgstr "Seleccionnez la lettre du lecteur"
 
 #: programs/winecfg/winecfg.rc:237
 msgid "Drive configuration"
@@ -19300,7 +19300,7 @@ msgstr "Couleu&r :"
 
 #: programs/winecfg/winecfg.rc:310
 msgid "MIME types"
-msgstr "Types MIME"
+msgstr "Tipes MIME"
 
 #: programs/winecfg/winecfg.rc:311
 msgid "Manage file &associations"
@@ -19324,7 +19324,7 @@ msgstr "Lecteurs"
 
 #: programs/winecfg/winecfg.rc:35
 msgid "Select the Unix target directory, please."
-msgstr "Veuillez sélectionner le répertoire Unix cible."
+msgstr "Veuillez seleccionar le répertoire Unix cible."
 
 #: programs/winecfg/winecfg.rc:36
 msgid "Hide Advan&ced"
@@ -19360,7 +19360,7 @@ msgstr "Fichèrs de thèmes (*.msstyles ; *.theme)"
 
 #: programs/winecfg/winecfg.rc:46
 msgid "Select a theme file"
-msgstr "Sélectionnez un fichèr de thème"
+msgstr "Seleccionnez un fichèr de thème"
 
 #: programs/winecfg/winecfg.rc:47
 msgid "Folder"
@@ -19462,7 +19462,7 @@ msgstr "Utiliser les paramètres globaux"
 
 #: programs/winecfg/winecfg.rc:63
 msgid "Select an executable file"
-msgstr "Sélectionnez un fichèr exécutable"
+msgstr "Seleccionnez un fichèr exécutable"
 
 #: programs/winecfg/winecfg.rc:68
 msgid "Autodetect"
@@ -19770,7 +19770,7 @@ msgid "&Sort by Name"
 msgstr "Trier par &nom"
 
 #: programs/winefile/winefile.rc:55
-msgid "Sort &by Type"
+msgid "Sort &by Tipe"
 msgstr "Trier par &type"
 
 #: programs/winefile/winefile.rc:56
@@ -19811,7 +19811,7 @@ msgstr "À &propos du gestionnaire de fichèrs de Wine"
 
 #: programs/winefile/winefile.rc:121
 msgid "Select destination"
-msgstr "Sélectionner la destination"
+msgstr "Seleccionner la destination"
 
 #: programs/winefile/winefile.rc:134
 msgid "By File Type"
@@ -19819,7 +19819,7 @@ msgstr "Par type de fichèr"
 
 #: programs/winefile/winefile.rc:139
 msgid "File type"
-msgstr "Type de fichèr"
+msgstr "Tipe de fichèr"
 
 #: programs/winefile/winefile.rc:140
 msgid "&Directories"
@@ -20132,7 +20132,7 @@ msgstr "&Effacer\tSuppr"
 
 #: programs/wordpad/wordpad.rc:51
 msgid "&Select all\tCtrl+A"
-msgstr "&Tout sélectionner\tCtrl+A"
+msgstr "&Tout seleccionar\tCtrl+A"
 
 #: programs/wordpad/wordpad.rc:54
 msgid "Find &next\tF3"
@@ -20399,19 +20399,19 @@ msgstr "Texte riche"
 
 #: programs/wordpad/wordpad.rc:174
 msgid "Next page"
-msgstr "Page suivante"
+msgstr "Pagina suivante"
 
 #: programs/wordpad/wordpad.rc:175
 msgid "Previous page"
-msgstr "Page précédente"
+msgstr "Pagina précédente"
 
 #: programs/wordpad/wordpad.rc:176
 msgid "Two pages"
-msgstr "Deux pages"
+msgstr "Deux paginas"
 
 #: programs/wordpad/wordpad.rc:177
 msgid "One page"
-msgstr "Une page"
+msgstr "Une pagina"
 
 #: programs/wordpad/wordpad.rc:178
 msgid "Zoom in"
@@ -20423,11 +20423,11 @@ msgstr "Zoom arrière"
 
 #: programs/wordpad/wordpad.rc:181
 msgid "Page"
-msgstr "Page"
+msgstr "Pagina"
 
 #: programs/wordpad/wordpad.rc:182
 msgid "Pages"
-msgstr "Pages"
+msgstr "Paginas"
 
 #: programs/wordpad/wordpad.rc:183
 msgctxt "unit: centimeter"
