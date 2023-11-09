@@ -946,73 +946,73 @@ msgstr "Fichèrs deu &tipe :"
 
 #: dlls/comdlg32/comdlg32.rc:478 dlls/comdlg32/comdlg32.rc:504
 msgid "Open as &read-only"
-msgstr "&Lecture seule"
+msgstr "&Lectura sola"
 
 #: dlls/comdlg32/comdlg32.rc:480 dlls/comdlg32/comdlg32.rc:506
 #: dlls/comdlg32/comdlg32.rc:524 dlls/shdoclc/shdoclc.rc:127
 #: dlls/shell32/shell32.rc:99
 msgid "&Open"
-msgstr "&Ouvrir"
+msgstr "&Obrir"
 
 #: dlls/comdlg32/comdlg32.rc:517
 msgid "File name:"
-msgstr "Nom du fichèr :"
+msgstr "Nom deu fichèr :"
 
 #: dlls/comdlg32/comdlg32.rc:520
 msgid "Files of type:"
-msgstr "Fichèrs du type :"
+msgstr "Fichèrs deu tipe :"
 
 #: dlls/comdlg32/comdlg32.rc:33 dlls/vbscript/vbscript.rc:35
 msgid "File not found"
-msgstr "Fichèr introuvable"
+msgstr "Fichèr introbable"
 
 #: dlls/comdlg32/comdlg32.rc:34
 msgid "Please verify that the correct file name was given"
-msgstr "Veuillez vérifier que le nom de fichèr indiqué est correct"
+msgstr "Volhatz verificar que lo nom de fichèr indicat ei corrècte"
 
 #: dlls/comdlg32/comdlg32.rc:35
 msgid ""
 "File does not exist.\n"
 "Do you want to create file?"
 msgstr ""
-"Ce fichèr n'existe pas.\n"
-"Souhaitez-vous le créer ?"
+"Aqueth fichèr n'existeish pas.\n"
+"Que Desiratz ac crear ?"
 
 #: dlls/comdlg32/comdlg32.rc:36
 msgid ""
 "File already exists.\n"
 "Do you want to replace it?"
 msgstr ""
-"Ce fichèr existe déjà.\n"
-"Voulez-vous le remplacer ?"
+"Aqueth fichèr qu'existeish dejà.\n"
+"Qu'ac Voletz remplaçar ?"
 
 #: dlls/comdlg32/comdlg32.rc:37
 msgid "Invalid character(s) in path"
-msgstr "Le chemin d'accès contient des caractères invalides"
+msgstr "Lo camin d'accès que contien caractèrs invalides "
 
 #: dlls/comdlg32/comdlg32.rc:38
 msgid ""
 "A filename cannot contain any of the following characters:\n"
 "                          / : < > |"
 msgstr ""
-"Un nom de fichèr ne peut contenir aucun des caractères suivants :\n"
+"Un nom de fichèr ne pòt pas contiéner nat deus caractèrs seguents :\n"
 "                          / : < > |"
 
 #: dlls/comdlg32/comdlg32.rc:39
 msgid "Path does not exist"
-msgstr "Le chemin d'accès n'existe pas"
+msgstr "Lo camin d'accès n'existeish pas "
 
 #: dlls/comdlg32/comdlg32.rc:40
 msgid "File does not exist"
-msgstr "Le fichèr n'existe pas"
+msgstr "Lo fichèr n'existeish pas "
 
 #: dlls/comdlg32/comdlg32.rc:41
 msgid "The selection contains a non-folder object"
-msgstr "La sélection contient un élément qui n'est pas un dossier"
+msgstr "La seleccion que contien un element qui ei pas un dossièr"
 
 #: dlls/comdlg32/comdlg32.rc:46
 msgid "Up One Level"
-msgstr "Remonter d'un niveau"
+msgstr "Remontar d'un nivèu"
 
 #: dlls/comdlg32/comdlg32.rc:47
 msgid "Create New Folder"
@@ -1020,19 +1020,19 @@ msgstr "Créer un nouveau dossier"
 
 #: dlls/comdlg32/comdlg32.rc:48
 msgid "List"
-msgstr "Liste"
+msgstr "Lista"
 
 #: dlls/comdlg32/comdlg32.rc:49 dlls/cryptui/cryptui.rc:201
 msgid "Details"
-msgstr "Détails"
+msgstr "Detalhs"
 
 #: dlls/comdlg32/comdlg32.rc:50
 msgid "Browse to Desktop"
-msgstr "Afficher le bureau"
+msgstr "Afichar lo burèu"
 
 #: dlls/comdlg32/comdlg32.rc:114
 msgid "Regular"
-msgstr "Normal"
+msgstr "Normau"
 
 #: dlls/comdlg32/comdlg32.rc:115
 msgid "Bold"
