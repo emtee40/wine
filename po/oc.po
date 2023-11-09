@@ -1294,35 +1294,35 @@ msgstr "Abandon de pagina ; "
 
 #: dlls/comdlg32/comdlg32.rc:105
 msgid "Interrupted by user; "
-msgstr "Interrompu par l'utilisateur ; "
+msgstr "Interromput per l'utilizator; "
 
 #: dlls/comdlg32/comdlg32.rc:106
 msgid "Out of memory; "
-msgstr "Mémoire insuffisante ; "
+msgstr "Memòria insufisenta; "
 
 #: dlls/comdlg32/comdlg32.rc:107
 msgid "The printer door is open; "
-msgstr "Le capot de l'imprimante est ouvert ; "
+msgstr "Lo capòt de l'estampadera qu'ei obèrt ; "
 
 #: dlls/comdlg32/comdlg32.rc:108
 msgid "Print server unknown; "
-msgstr "Serveur d'impression inconnu ; "
+msgstr "Servidor d'impression desconegut; "
 
 #: dlls/comdlg32/comdlg32.rc:109
 msgid "Power save mode; "
-msgstr "Mode économie d'énergie ; "
+msgstr "Mòda estauvi d'energia; "
 
 #: dlls/comdlg32/comdlg32.rc:78
 msgid "Default Printer; "
-msgstr "Estampadoira par défaut ; "
+msgstr "Estampadoira per defaut; "
 
 #: dlls/comdlg32/comdlg32.rc:79
 msgid "There are %d documents in the queue"
-msgstr "Il y a %d document(s) dans la file d'attente"
+msgstr "Qu'i a %d document(s) dens la cordada d'espèrae"
 
 #: dlls/comdlg32/comdlg32.rc:80
 msgid "Margins [inches]"
-msgstr "Marges (pouces)"
+msgstr "Marges (poç)"
 
 #: dlls/comdlg32/comdlg32.rc:81
 msgid "Margins [mm]"
