@@ -1,4 +1,4 @@
-# Occitan translations for Wine  ### revirat entà linha 1334
+# Occitan translations for Wine  ### revirat entà linha 1396
 #
 msgid ""
 msgstr ""
@@ -1328,7 +1328,7 @@ msgstr "Marges (poç)"
 msgid "Margins [mm]"
 msgstr "Marges (mm)"
 
-#: dlls/comdlg32/comdlg32.rc:82 dlls/sane.ds/sane.rc:33   ### revirat entà linha 1334
+#: dlls/comdlg32/comdlg32.rc:82 dlls/sane.ds/sane.rc:33
 msgctxt "unit: millimeters"
 msgid "mm"
 msgstr "mm"
@@ -1378,10 +1378,10 @@ msgid ""
 "Make sure that your user name\n"
 "and password are correct."
 msgstr ""
-"Qu'Asseguratz que lo vòste nom d'utilizator\n"
+"Qu'asseguratz que lo vòste nom d'utilizator\n"
 "e lo vòste mòt de que passa que son corrèctes ."
 
-#: dlls/credui/credui.rc:35
+#: dlls/credui/credui.rc:35   ### revirat entà linha 1396
 msgid ""
 "Having Caps Lock on may cause you to enter your password incorrectly.\n"
 "\n"
