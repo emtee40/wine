@@ -1,4 +1,4 @@
-# Occitan translations for Wine  ### revirat entà linha 875
+# Occitan translations for Wine  ### revirat entà linha 1334
 #
 msgid ""
 msgstr ""
@@ -642,7 +642,7 @@ msgstr "Estampadoira"
 
 #: dlls/comdlg32/comdlg32.rc:229
 msgid "&Default Printer"
-msgstr "&Estampadoira par défaut"
+msgstr "&Estampadoira per defaut"
 
 #: dlls/comdlg32/comdlg32.rc:230
 msgid "[none]"
@@ -872,7 +872,7 @@ msgstr "&de :"
 msgid "&to:"
 msgstr "&à :"
 
-#: dlls/comdlg32/comdlg32.rc:384  ### revirat entà linha 875
+#: dlls/comdlg32/comdlg32.rc:384
 msgid "Copies"
 msgstr "Copias"
 
@@ -1328,7 +1328,7 @@ msgstr "Marges (poç)"
 msgid "Margins [mm]"
 msgstr "Marges (mm)"
 
-#: dlls/comdlg32/comdlg32.rc:82 dlls/sane.ds/sane.rc:33
+#: dlls/comdlg32/comdlg32.rc:82 dlls/sane.ds/sane.rc:33   ### revirat entà linha 1334
 msgctxt "unit: millimeters"
 msgid "mm"
 msgstr "mm"
@@ -1340,46 +1340,46 @@ msgstr "Proprietats"
 #: dlls/compstui/compstui.rc:30 dlls/hhctrl.ocx/hhctrl.rc:50
 #: programs/conhost/conhost.rc:51 programs/wordpad/wordpad.rc:166
 msgid "Options"
-msgstr "Options"
+msgstr "Opcions"
 
 #: dlls/compstui/compstui.rc:31
 #, fuzzy
 #| msgid "Defaults"
 msgid "Default"
-msgstr "Valeurs par défaut"
+msgstr "Valors per defaut"
 
 #: dlls/credui/credui.rc:45
 msgid "&User name:"
-msgstr "&Nom d'utilisateur :"
+msgstr "&Nom d'utilizator :"
 
 #: dlls/credui/credui.rc:48 dlls/cryptui/cryptui.rc:402
 #: dlls/oledb32/version.rc:81
 msgid "&Password:"
-msgstr "&Mot de passe :"
+msgstr "&Mòt de passa :"
 
 #: dlls/credui/credui.rc:50
 msgid "&Remember my password"
-msgstr "&Se souvenir de mon mot de passe"
+msgstr "&Se soviéner de la mea mòt de passa"
 
 #: dlls/credui/credui.rc:30
 msgid "Connect to %s"
-msgstr "Se connecter à %s"
+msgstr "Se connectar a %s"
 
 #: dlls/credui/credui.rc:31
 msgid "Connecting to %s"
-msgstr "Connexion à %s"
+msgstr "Connexion a %s"
 
 #: dlls/credui/credui.rc:32
 msgid "Logon unsuccessful"
-msgstr "Échec lors de la connexion"
+msgstr "Mauescaduda pendent la connecion"
 
 #: dlls/credui/credui.rc:33
 msgid ""
 "Make sure that your user name\n"
 "and password are correct."
 msgstr ""
-"Assurez-vous que votre nom d'utilisateur\n"
-"et votre mot de passe sont corrects."
+"Qu'Asseguratz que lo vòste nom d'utilizator\n"
+"e lo vòste mòt de que passa que son corrèctes ."
 
 #: dlls/credui/credui.rc:35
 msgid ""
@@ -1388,12 +1388,12 @@ msgid ""
 "Press the Caps Lock key on your keyboard to turn off Caps Lock before\n"
 "entering your password."
 msgstr ""
-"Le verrouillage majuscule étant activé, cela pourrait provoquer une erreur "
-"lors de la saisie de votre mot de passe.\n"
+"La varrolhada majuscula estant activada, aquò que poiré provocar ua "
+"error pendent la sasida de la vòsta mòt de que passa.\n"
 "\n"
-"Appuyez sur la touche VERR.MAJ de votre clavier afin de désactiver le "
-"verrouillage majuscule avant\n"
-"de saisir votre mot de passe."
+"Que premetz la tòca VERR .MAJ deu vòste clavèr entà desactivar "
+"la varrolhada majuscula abans de \n"
+"sasir lo vòste mòt de que passa."
 
 #: dlls/credui/credui.rc:34
 msgid "Caps Lock is On"
@@ -1489,7 +1489,7 @@ msgstr "Contresignature"
 
 #: dlls/crypt32/crypt32.rc:52
 msgid "Challenge Password"
-msgstr "Mot de passe défi"
+msgstr "mòt de passa défi"
 
 #: dlls/crypt32/crypt32.rc:53
 msgid "Unstructured Address"
@@ -2562,7 +2562,7 @@ msgstr "&Non, ne pas exporter la clé privée"
 
 #: dlls/cryptui/cryptui.rc:404
 msgid "&Confirm password:"
-msgstr "&Confirmez le mot de passe :"
+msgstr "&Confirmez le mòt de passa :"
 
 #: dlls/cryptui/cryptui.rc:412
 msgid "Select the format you want to use:"
@@ -3135,11 +3135,11 @@ msgstr ""
 
 #: dlls/cryptui/cryptui.rc:172
 msgid "Enter Password"
-msgstr "Entrez le mot de passe"
+msgstr "Entrez le mòt de passa"
 
 #: dlls/cryptui/cryptui.rc:173
 msgid "You may password-protect a private key."
-msgstr "Vous pouvez protéger une clé privée par un mot de passe."
+msgstr "Vous pouvez protéger une clé privée par un mòt de passa."
 
 #: dlls/cryptui/cryptui.rc:174
 msgid "The passwords do not match."
@@ -3321,11 +3321,11 @@ msgstr "Acquisition... Veuillez patienter"
 
 #: dlls/gphoto2.ds/gphoto2.rc:51
 msgid "Connecting to camera"
-msgstr "Connexion à l'appareil photo"
+msgstr "Connexion a l'appareil photo"
 
 #: dlls/gphoto2.ds/gphoto2.rc:55
 msgid "Connecting to camera... Please Wait"
-msgstr "Connexion à l'appareil photo... Veuillez patienter"
+msgstr "Connexion a l'appareil photo... Veuillez patienter"
 
 #: dlls/hhctrl.ocx/hhctrl.rc:59
 msgid "S&ync"
@@ -4427,7 +4427,7 @@ msgstr "Déjà assigné.\n"
 
 #: dlls/kernelbase/winerror.mc:358 dlls/kernelbase/winerror.mc:1713
 msgid "Invalid password.\n"
-msgstr "Mot de passe non valide.\n"
+msgstr "mòt de passa non valide.\n"
 
 #: dlls/kernelbase/winerror.mc:363
 msgid "Invalid parameter.\n"
@@ -5675,7 +5675,7 @@ msgstr "Clé de session utilisateur locale.\n"
 
 #: dlls/kernelbase/winerror.mc:1928
 msgid "Password too complex for LM.\n"
-msgstr "Mot de passe trop complexe pour LM.\n"
+msgstr "mòt de passa trop complexe pour LM.\n"
 
 #: dlls/kernelbase/winerror.mc:1933
 msgid "Unknown revision.\n"
@@ -5751,11 +5751,11 @@ msgstr "Ne peut effacer le dernier utilisateur administratif.\n"
 
 #: dlls/kernelbase/winerror.mc:2023
 msgid "Wrong password.\n"
-msgstr "Mot de passe erroné.\n"
+msgstr "mòt de passa erroné.\n"
 
 #: dlls/kernelbase/winerror.mc:2028
 msgid "Ill-formed password.\n"
-msgstr "Le mot de passe contient des valeurs non autorisées.\n"
+msgstr "Le mòt de passa contient des Valors non autorisées.\n"
 
 #: dlls/kernelbase/winerror.mc:2033
 msgid "Password restriction.\n"
@@ -5779,7 +5779,7 @@ msgstr "Station de travail non autorisée.\n"
 
 #: dlls/kernelbase/winerror.mc:2058
 msgid "Password expired.\n"
-msgstr "Mot de passe expiré.\n"
+msgstr "mòt de passa expiré.\n"
 
 #: dlls/kernelbase/winerror.mc:2063
 msgid "Account disabled.\n"
@@ -5996,7 +5996,7 @@ msgstr "Trop d'ID de contexte.\n"
 
 #: dlls/kernelbase/winerror.mc:2333
 msgid "Cross-encrypted NT password required.\n"
-msgstr "Mot de passe NT à chiffrage croisé nécessaire.\n"
+msgstr "mòt de passa NT à chiffrage croisé nécessaire.\n"
 
 #: dlls/kernelbase/winerror.mc:2338
 msgid "No such member.\n"
@@ -6012,7 +6012,7 @@ msgstr "Trop de SIDs.\n"
 
 #: dlls/kernelbase/winerror.mc:2353
 msgid "Cross-encrypted LM password required.\n"
-msgstr "Mot de passe LM à chiffrage croisé nécessaire.\n"
+msgstr "mòt de passa LM à chiffrage croisé nécessaire.\n"
 
 #: dlls/kernelbase/winerror.mc:2358
 msgid "No inheritable components.\n"
@@ -7026,7 +7026,7 @@ msgstr "Estat d'imprimante non valide.\n"
 
 #: dlls/kernelbase/winerror.mc:3623
 msgid "User must change password.\n"
-msgstr "L'utilisateur doit modifier son mot de passe.\n"
+msgstr "L'utilisateur doit modifier son mòt de passa.\n"
 
 #: dlls/kernelbase/winerror.mc:3628
 msgid "Domain controller not found.\n"
@@ -7118,7 +7118,7 @@ msgstr "L'élément de groupe n'a pu être supprimé.\n"
 
 #: dlls/kernelbase/winerror.mc:3738
 msgid "The username could not be found.\n"
-msgstr "Nom d'utilisateur introuvable.\n"
+msgstr "nom d'utilizator introuvable.\n"
 
 #: dlls/kernelbase/winerror.mc:3743
 msgid "This network connection does not exist.\n"
@@ -8127,11 +8127,11 @@ msgstr "Impossible d'afficher l'aide."
 
 #: dlls/mpr/mpr.rc:35 dlls/wininet/wininet.rc:48
 msgid "Enter Network Password"
-msgstr "Entrez le mot de passe réseau"
+msgstr "Entrez le mòt de passa réseau"
 
 #: dlls/mpr/mpr.rc:38 dlls/wininet/wininet.rc:51 dlls/wininet/wininet.rc:71
 msgid "Please enter your username and password:"
-msgstr "Veuillez saisir vos nom d'utilisateur et mot de passe :"
+msgstr "Veuillez saisir vos nom d'utilizator et mòt de passa :"
 
 #: dlls/mpr/mpr.rc:39 dlls/wininet/wininet.rc:52
 msgid "Proxy"
@@ -8143,11 +8143,11 @@ msgstr "Utilisateur"
 
 #: dlls/mpr/mpr.rc:42 dlls/wininet/wininet.rc:55 dlls/wininet/wininet.rc:75
 msgid "Password"
-msgstr "Mot de passe"
+msgstr "mòt de passa"
 
 #: dlls/mpr/mpr.rc:47 dlls/wininet/wininet.rc:60 dlls/wininet/wininet.rc:80
 msgid "&Save this password (insecure)"
-msgstr "&Enregistrer ce mot de passe (risqué)"
+msgstr "&Enregistrer ce mòt de passa (risqué)"
 
 #: dlls/mpr/mpr.rc:30
 msgid "Entire Network"
@@ -8472,7 +8472,7 @@ msgstr "Suppression des composants ODBC"
 
 #: dlls/msi/msi.rc:135
 msgid "Removing system registry values"
-msgstr "Suppression des valeurs dans le registre système"
+msgstr "Suppression des Valors dans le registre système"
 
 #: dlls/msi/msi.rc:136
 msgid "Removing shortcuts"
@@ -8544,7 +8544,7 @@ msgstr "Écriture des entrées dans les fichèrs INI"
 
 #: dlls/msi/msi.rc:155
 msgid "Writing system registry values"
-msgstr "Écriture des valeurs dans le registre système"
+msgstr "Écriture des Valors dans le registre système"
 
 #: dlls/msi/msi.rc:161
 msgid "Free space: [1]"
@@ -9092,7 +9092,7 @@ msgstr "actif"
 #: dlls/oleacc/oleacc.rc:106
 msgctxt "object state"
 msgid "default"
-msgstr "valeur par défaut"
+msgstr "valeur per defaut"
 
 #: dlls/oleacc/oleacc.rc:107
 msgctxt "object state"
@@ -9265,15 +9265,15 @@ msgstr "2. Entrer les informations pour se connecter au serveur"
 
 #: dlls/oledb32/version.rc:79
 msgid "User &name:"
-msgstr "&Nom d'utilisateur :"
+msgstr "&nom d'utilizator :"
 
 #: dlls/oledb32/version.rc:83
 msgid "&Blank password"
-msgstr "Mot de passe"
+msgstr "mòt de passa"
 
 #: dlls/oledb32/version.rc:84
 msgid "Allow &saving password"
-msgstr "Autoriser à mémoriser le mot de passe"
+msgstr "Autoriser à mémoriser le mòt de passa"
 
 #: dlls/oledb32/version.rc:85
 msgid "3. Enter the &initial catalog to use:"
@@ -13853,7 +13853,7 @@ msgstr ""
 
 #: dlls/winmm/winmm.rc:132
 msgid "The system doesn't have a current MIDI port specified."
-msgstr "Le système n'a pas spécifié de port MIDI par défaut."
+msgstr "Le système n'a pas spécifié de port MIDI per defaut."
 
 #: dlls/winmm/winmm.rc:127
 msgid ""
@@ -14543,7 +14543,7 @@ msgstr ""
 "$q    Signe =             $t    Heure courante      $v    Version de cmd\n"
 "\n"
 "Notez qu'entrer la commande PROMPT sans texte d'invite remet l'invite à sa\n"
-"valeur par défaut, à savoir le répertoire courant (incluant la lettre du\n"
+"valeur per defaut, à savoir le répertoire courant (incluant la lettre du\n"
 "lecteur courant) suivi d'un signe « plus grand que » (>).\n"
 "(c.-à-d. la commande PROMPT $p$g).\n"
 "\n"
@@ -14608,7 +14608,7 @@ msgstr ""
 "avoir aucun espace avant le signe « = », ni dans <variable>.\n"
 "\n"
 "Sous Wine, l'environnement du système hôte est inclus dans l'environnement\n"
-"Win32, il y aura par conséquent généralement bien plus de valeurs que dans\n"
+"Win32, il y aura par conséquent généralement bien plus de Valors que dans\n"
 "un système Win32 natif. Notez qu'il n'est pas possible de modifier\n"
 "l'environnement du système d'exploitation dans cmd.\n"
 
@@ -15264,7 +15264,7 @@ msgstr "&Recèrcar"
 
 #: programs/conhost/conhost.rc:43
 msgid "Setup - Default settings"
-msgstr "Configuration - paramètres par défaut"
+msgstr "Configuration - paramètres per defaut"
 
 #: programs/conhost/conhost.rc:44
 msgid "Setup - Current settings"
@@ -15438,7 +15438,7 @@ msgstr "DHCP activé"
 
 #: programs/ipconfig/ipconfig.rc:50
 msgid "Default gateway"
-msgstr "Passerelle par défaut"
+msgstr "Passerelle per defaut"
 
 #: programs/ipconfig/ipconfig.rc:51
 msgid "IPv6 address"
@@ -16107,7 +16107,7 @@ msgstr "&Grouper par catégorie de type"
 
 #: programs/oleview/oleview.rc:156
 msgid "Connect to another machine"
-msgstr "Se connecter à une autre machine"
+msgstr "Se connectar aune autre machine"
 
 #: programs/oleview/oleview.rc:159
 msgid "&Machine name:"
@@ -16134,12 +16134,12 @@ msgid ""
 "These settings change only registry values.\n"
 "They have no effect on Wine performance."
 msgstr ""
-"Ces paramètres ne font que modifier des valeurs du registre.\n"
+"Ces paramètres ne font que modifier des Valors du registre.\n"
 "Ils n'ont pas d'effet sur les performances de Wine."
 
 #: programs/oleview/oleview.rc:180
 msgid "Default Interface Viewer"
-msgstr "Visionneuse d'interface par défaut"
+msgstr "Visionneuse d'interface per defaut"
 
 #: programs/oleview/oleview.rc:183
 msgid "Interface"
@@ -16602,7 +16602,7 @@ msgstr "reg : le système n'a pas pu trouver la valeur de registre spécifiée\
 
 #: programs/reg/reg.rc:132 programs/regedit/regedit.rc:244
 msgid "(Default)"
-msgstr "(par défaut)"
+msgstr "(per defaut)"
 
 #: programs/reg/reg.rc:141
 msgid "Type \"REG /?\" for help.\n"
@@ -16736,11 +16736,11 @@ msgstr ""
 "\n"
 "  <key>\n"
 "     La clé de registre à ajouter ou, si soit [/v] ou [/ve] est spécifié,\n"
-"     la clé dans laquelle ajouter les nouvelles valeurs.\n"
+"     la clé dans laquelle ajouter les nouvelles Valors.\n"
 "\n"
 "     Format : RACINE\\Sousclé\n"
 "\n"
-"     RACINE : une clé de registre prédéfinie, parmi une des valeurs "
+"     RACINE : une clé de registre prédéfinie, parmi une des Valors "
 "suivantes :\n"
 "\n"
 "         HKEY_LOCAL_MACHINE  | HKLM\n"
@@ -16758,7 +16758,7 @@ msgstr ""
 "  /ve\n"
 "     Ajouter une valeur de registre sans nom. Cette option modifie la valeur "
 "de\n"
-"     la clé par défaut.\n"
+"     la clé per defaut.\n"
 "\n"
 "  /t <type>\n"
 "     Le type de données à ajouter au registre. Si [/t] est spécifié,\n"
@@ -16767,13 +16767,13 @@ msgstr ""
 "         REG_SZ    | REG_MULTI_SZ | REG_EXPAND_SZ\n"
 "         REG_DWORD | REG_BINARY   | REG_NONE\n"
 "\n"
-"     Si [/t] n'est pas spécifié, le type par défaut est REG_SZ.\n"
+"     Si [/t] n'est pas spécifié, le type per defaut est REG_SZ.\n"
 "\n"
 "  /s <separator>\n"
 "     Le caractère utilisé pour séparer les chaines de caractères dans\n"
 "     le type REG_MULTI_SZ.\n"
 "\n"
-"     Si [/s] n'est pas spécifié, le séparateur par défaut est \\0.\n"
+"     Si [/s] n'est pas spécifié, le séparateur per defaut est \\0.\n"
 "\n"
 "  /d <data>\n"
 "     Les données à ajouter à la valeur dans le registre.\n"
@@ -16820,18 +16820,18 @@ msgstr ""
 "\n"
 "  Copie le contenu d'une clé de registre spécifiée vers un autre "
 "emplacement.\n"
-"  Par défaut, cette opération ne copie que les valeurs de la clé.\n"
+"  per defaut, cette opération ne copie que les Valors de la clé.\n"
 "  Utiliser [/s] pour copier récursivement les sous-clés ainsi que leurs "
-"valeurs.\n"
+"Valors.\n"
 "\n"
 "  <key1>, <key2>\n"
 "     Les clés de registre définissant la font (<cle1>) et\n"
-"     la destination (<cle2>) des valeurs.\n"
+"     la destination (<cle2>) des Valors.\n"
 "     Si la clé <clé2> n'existe pas, elle est créée.\n"
 "\n"
 "     Format : RACINE\\Sousclé\n"
 "\n"
-"     RACINE : une clé de registre prédéfinie, parmi une des valeurs "
+"     RACINE : une clé de registre prédéfinie, parmi une des Valors "
 "suivantes :\n"
 "\n"
 "         HKEY_LOCAL_MACHINE  | HKLM\n"
@@ -16844,11 +16844,11 @@ msgstr ""
 "     spécifiée.\n"
 "\n"
 "  /s\n"
-"     Copier les sous-clés et les valeurs depuis <cle1> vers <cle2>.\n"
+"     Copier les sous-clés et les Valors depuis <cle1> vers <cle2>.\n"
 "\n"
 "  /f\n"
 "     Écrase toutes les données dans <cle2> sans demander de confirmation.\n"
-"     Cette option ne modifie pas les sous-clés et les valeurs qui ne sont\n"
+"     Cette option ne modifie pas les sous-clés et les Valors qui ne sont\n"
 "     présentes que dans <cle2>.\n"
 "\n"
 
@@ -16893,18 +16893,18 @@ msgstr ""
 "REG DELETE <cle> [/v nom_valeur | /ve | /va] [/f]\n"
 "\n"
 "  Efface une clé de registre (ainsi que toutes ses sous-clés et ses "
-"valeurs), ou\n"
-"  efface une ou plusieurs valeurs d'une clé de registre.\n"
+"Valors), ou\n"
+"  efface une ou plusieurs Valors d'une clé de registre.\n"
 "\n"
 "  <cle>\n"
 "     La clé de registre à effacer, ou si une des options [/v], [/ve] ou [/"
 "va]\n"
-"     est spécifiée, la clé de registre dont une ou plusieurs valeurs seront\n"
+"     est spécifiée, la clé de registre dont une ou plusieurs valors seront\n"
 "     effacées.\n"
 "\n"
 "     Format : RACINE\\Sousclé\n"
 "\n"
-"     RACINE : une clé de registre prédéfinie, parmi une des valeurs "
+"     RACINE : une clé de registre prédéfinie, parmi une des valors "
 "suivantes :\n"
 "\n"
 "         HKEY_LOCAL_MACHINE  | HKLM\n"
@@ -16921,14 +16921,14 @@ msgstr ""
 "\n"
 "  /ve\n"
 "     Efface une valeur sans nom.\n"
-"     Cette option efface la valeur par défaut de la clé de registre.\n"
+"     Cette option efface la valeur per defaut de la clé de registre.\n"
 "\n"
 "  /va\n"
-"     Efface toutes les valeurs de la clé de registre.\n"
+"     Efface toutes les valors de la clé de registre.\n"
 "\n"
 "  /f\n"
 "     Efface une clé de registre (ainsi que toutes ses sous-clés et ses "
-"valeurs)\n"
+"valors)\n"
 "     sans demander de confirmation.\n"
 "\n"
 
@@ -16965,7 +16965,7 @@ msgstr ""
 "REG EXPORT <cle> <fichèr> [/y]\n"
 "\n"
 "  Exporte une clé de registre (ainsi que toutes ses sous-clés et ses "
-"valeurs)\n"
+"valors)\n"
 "  vers un fichèr.\n"
 "\n"
 "  <cle>\n"
@@ -16973,7 +16973,7 @@ msgstr ""
 "\n"
 "     Format : RACINE\\Sousclé\n"
 "\n"
-"     RACINE : une clé de registre prédéfinie, parmi une des valeurs "
+"     RACINE : une clé de registre prédéfinie, parmi une des valors "
 "suivantes :\n"
 "\n"
 "         HKEY_LOCAL_MACHINE  | HKLM\n"
@@ -17006,7 +17006,7 @@ msgid ""
 msgstr ""
 "REG IMPORT <fichèr>\n"
 "\n"
-"  Importe des clés et leurs valeurs à partir d'un fichèr vers le registre.\n"
+"  Importe des clés et leurs valors à partir d'un fichèr vers le registre.\n"
 "\n"
 "  <fichèr>\n"
 "     Le chemin d'accès et le nom du fichèr à importer.\n"
@@ -17049,7 +17049,7 @@ msgstr ""
 "REG QUERY <key> [/v value_name | /ve] [/s]\n"
 "\n"
 "  Recèrca une clé de registre spécifiée et affiche toutes ses sous-clés,\n"
-"  ainsi que les valeurs dans cette clé.\n"
+"  ainsi que les valors dans cette clé.\n"
 "  Utiliser [/s] pour rechercher récursivement dans les sous-clés.\n"
 "\n"
 "  <key>\n"
@@ -17057,7 +17057,7 @@ msgstr ""
 "\n"
 "     Format : RACINE\\Sousclé\n"
 "\n"
-"     RACINE : une clé de registre prédéfinie, parmi une des valeurs "
+"     RACINE : une clé de registre prédéfinie, parmi une des valors "
 "suivantes :\n"
 "\n"
 "         HKEY_LOCAL_MACHINE  | HKLM\n"
@@ -17071,7 +17071,7 @@ msgstr ""
 "\n"
 "  /v <value_name>\n"
 "     Le nom de la valeur à chercher. Si ni [/v] ni [/ve] ne sont spécifiés,\n"
-"     toutes les valeurs de la clé <key> sont affichées.\n"
+"     toutes les valors de la clé <key> sont affichées.\n"
 "\n"
 "  /ve\n"
 "     Recèrca une valeur sans nom. Cette option recherche la valeur par "
@@ -17162,7 +17162,7 @@ msgstr "Voulez-vous réellement supprimer la valeur de registre « %1 » ?"
 #: programs/reg/reg.rc:134
 msgid "Are you sure you want to delete all registry values in '%1'?"
 msgstr ""
-"Voulez-vous réellement supprimer toutes les valeurs de registre dans « %1 » ?"
+"Voulez-vous réellement supprimer toutes les valors de registre dans « %1 » ?"
 
 #: programs/reg/reg.rc:135
 msgid "Are you sure you want to delete the registry key '%1'?"
@@ -17171,7 +17171,7 @@ msgstr "Voulez-vous réellement supprimer la clé de registre « %1 » ?"
 #: programs/reg/reg.rc:137
 msgid "reg: Unable to delete all registry values in '%1'\n"
 msgstr ""
-"reg : impossible d'effacer toutes les valeurs de registre dans « %1 ».\n"
+"reg : impossible d'effacer toutes les valors de registre dans « %1 ».\n"
 
 #: programs/reg/reg.rc:173
 msgid "The file '%1' already exists. Do you want to overwrite it?"
@@ -17309,7 +17309,7 @@ msgstr "Clés"
 
 #: programs/regedit/regedit.rc:287
 msgid "Value names"
-msgstr "Valeurs"
+msgstr "valors"
 
 #: programs/regedit/regedit.rc:288
 msgid "Value content"
@@ -17375,7 +17375,7 @@ msgstr "Contient des commandes pour travailler sur le registre entier"
 
 #: programs/regedit/regedit.rc:163
 msgid "Contains commands for editing values or keys"
-msgstr "Contient des commandes pour éditer des valeurs ou des clés"
+msgstr "Contient des commandes pour éditer des valors ou des clés"
 
 #: programs/regedit/regedit.rc:164
 msgid "Contains commands for customizing the registry window"
@@ -17394,7 +17394,7 @@ msgstr ""
 
 #: programs/regedit/regedit.rc:167
 msgid "Contains commands for creating new keys or values"
-msgstr "Contient des commandes pour créer de nouvelles clés ou valeurs"
+msgstr "Contient des commandes pour créer de nouvelles clés ou valors"
 
 #: programs/regedit/regedit.rc:152
 msgid "Data"
@@ -17472,7 +17472,7 @@ msgstr "Impossible de renommer la clé de registre sélectionnée."
 msgid ""
 "The keys and values contained in %1 were successfully added to the registry."
 msgstr ""
-"Les clés et les valeurs contenues dans « %1 » ont été ajoutées avec succès "
+"Les clés et les valors contenues dans « %1 » ont été ajoutées avec succès "
 "au registre."
 
 #: programs/regedit/regedit.rc:261
@@ -17754,7 +17754,7 @@ msgstr "Recèrca terminée. Occurrence de « %1 » non trouvée."
 
 #: programs/regedit/regedit.rc:215
 msgid "Are you sure you want to delete these values?"
-msgstr "Voulez-vous réellement supprimer ces valeurs ?"
+msgstr "Voulez-vous réellement supprimer ces valors ?"
 
 #: programs/regedit/regedit.rc:218
 msgid "New Key #%d"
@@ -19242,7 +19242,7 @@ msgstr "Diagnostic de pilotes"
 
 #: programs/winecfg/winecfg.rc:271
 msgid "Defaults"
-msgstr "Valeurs par défaut"
+msgstr "valors per defaut"
 
 #: programs/winecfg/winecfg.rc:272
 msgid "Output device:"
@@ -19388,7 +19388,7 @@ msgstr "Échec du test audio !"
 
 #: programs/winecfg/winecfg.rc:87
 msgid "(System default)"
-msgstr "(Valeur par défaut du système)"
+msgstr "(Valeur per defaut du système)"
 
 #: programs/winecfg/winecfg.rc:90
 msgid "5.1 Surround"
@@ -19450,7 +19450,7 @@ msgstr "désactivée"
 
 #: programs/winecfg/winecfg.rc:60
 msgid "Default Settings"
-msgstr "Paramètres par défaut"
+msgstr "Paramètres per defaut"
 
 #: programs/winecfg/winecfg.rc:61
 msgid "Wine Programs (*.exe; *.exe.so)"
