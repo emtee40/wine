@@ -1161,88 +1161,88 @@ msgstr "Impossible de trobar l'estampadera."
 
 #: dlls/comdlg32/comdlg32.rc:71 programs/progman/progman.rc:76
 msgid "Out of memory."
-msgstr "Mémoire insuffisante."
+msgstr "Memòria insufisenta."
 
 #: dlls/comdlg32/comdlg32.rc:72
 msgid "An error occurred."
-msgstr "Une erreur s'est produite."
+msgstr "Ua error que s'ei produsida ."
 
 #: dlls/comdlg32/comdlg32.rc:73
 msgid "Unknown printer driver."
-msgstr "Pilote d'imprimante inconnu."
+msgstr "Pilòte d'estampadera desconegut."
 
 #: dlls/comdlg32/comdlg32.rc:76
 msgid ""
 "Before you can perform printer-related tasks such as page setup or printing "
 "a document, you need to install a printer. Please install one and retry."
 msgstr ""
-"Avant de pouvoir effectuer des opérations en relation avec l'impression "
-"comme la configuration de l'imprimante ou l'impression d'un document, vous "
-"devez installer une imprimante. Veuillez en installer une et réessayez."
+"Abans de poder efectuar operacions en relacion dab l'impression com la "
+"configuracion de l'estampadera o l'impression d'un document, que devetz "
+"installar ua estampadera. Ne volhatz installar ua e que tornatz ensajar ."
 
 #: dlls/comdlg32/comdlg32.rc:142
 msgid "Select a font size between %1!d! and %2!d! points."
-msgstr "Seleccionnez une taille de police entre %1!d! et %2!d! points."
+msgstr "Seleccionatz ua talha de polícia enter %1!d! e %2!d! puntejats."
 
 #: dlls/comdlg32/comdlg32.rc:143 dlls/ieframe/ieframe.rc:35
 msgid "&Save"
-msgstr "&Enregistrer"
+msgstr "&Enregistrar"
 
 #: dlls/comdlg32/comdlg32.rc:144
 msgid "Save &in:"
-msgstr "Enregistrer &dans :"
+msgstr "Enregistrar &dens :"
 
 #: dlls/comdlg32/comdlg32.rc:145
 msgid "Save"
-msgstr "Enregistrer"
+msgstr "Enregistrar"
 
 #: dlls/comdlg32/comdlg32.rc:147
 msgid "Open File"
-msgstr "Ouvrir le fichèr"
+msgstr "Obrir lo fichèr"
 
 #: dlls/comdlg32/comdlg32.rc:148
 msgid "Select Folder"
-msgstr "Seleccionnez un dossier"
+msgstr "Que seleccionatz un dossièr "
 
 #: dlls/comdlg32/comdlg32.rc:149
 msgid "Font size has to be a number."
-msgstr "La taille de police doit être un nombre."
+msgstr "La talha de polícia que deu estar un nombre."
 
 #: dlls/comdlg32/comdlg32.rc:84 programs/oleview/oleview.rc:98
 msgid "Ready"
-msgstr "Prêt"
+msgstr "Prèst"
 
 #: dlls/comdlg32/comdlg32.rc:85
 msgid "Paused; "
-msgstr "Suspendu ; "
+msgstr "Penut ; "
 
 #: dlls/comdlg32/comdlg32.rc:86
 msgid "Error; "
-msgstr "Erreur ; "
+msgstr "Error ; "
 
 #: dlls/comdlg32/comdlg32.rc:87
 msgid "Pending deletion; "
-msgstr "En attente de suppression ; "
+msgstr "En espèra de supression ; "
 
 #: dlls/comdlg32/comdlg32.rc:88
 msgid "Paper jam; "
-msgstr "Bourrage papier ; "
+msgstr "Borratge papèr ; "
 
 #: dlls/comdlg32/comdlg32.rc:89
 msgid "Out of paper; "
-msgstr "Plus de papier ; "
+msgstr "Mei de papèr ; "
 
 #: dlls/comdlg32/comdlg32.rc:90
 msgid "Feed paper manual; "
-msgstr "Insertion manuelle du papier ; "
+msgstr "Insercion manuau deu papèr ; "
 
 #: dlls/comdlg32/comdlg32.rc:91
 msgid "Paper problem; "
-msgstr "Problème de papier ; "
+msgstr "Problèma de papèr ; "
 
 #: dlls/comdlg32/comdlg32.rc:92
 msgid "Printer offline; "
-msgstr "L'imprimante n'est pas en ligne ; "
+msgstr "L'estampadera n'ei   pas en linha ; "
 
 #: dlls/comdlg32/comdlg32.rc:93
 msgid "I/O Active; "
