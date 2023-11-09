@@ -1040,15 +1040,15 @@ msgstr "Gras"
 
 #: dlls/comdlg32/comdlg32.rc:116
 msgid "Italic"
-msgstr "Italique"
+msgstr "Italic"
 
 #: dlls/comdlg32/comdlg32.rc:117
 msgid "Bold Italic"
-msgstr "Gras italique"
+msgstr "Gras italic"
 
 #: dlls/comdlg32/comdlg32.rc:122 programs/wordpad/wordpad.rc:125
 msgid "Black"
-msgstr "Noir"
+msgstr "Negre"
 
 #: dlls/comdlg32/comdlg32.rc:123 programs/wordpad/wordpad.rc:126
 msgid "Maroon"
@@ -1060,19 +1060,19 @@ msgstr "Verd"
 
 #: dlls/comdlg32/comdlg32.rc:125 programs/wordpad/wordpad.rc:128
 msgid "Olive"
-msgstr "Olive"
+msgstr "Oliva"
 
 #: dlls/comdlg32/comdlg32.rc:126 programs/wordpad/wordpad.rc:129
 msgid "Navy"
-msgstr "Blu marine"
+msgstr "Blu marina"
 
 #: dlls/comdlg32/comdlg32.rc:127 programs/wordpad/wordpad.rc:130
 msgid "Purple"
-msgstr "Pourpre"
+msgstr "Porpre"
 
 #: dlls/comdlg32/comdlg32.rc:128 programs/wordpad/wordpad.rc:131
 msgid "Teal"
-msgstr "Sarcelle"
+msgstr "Cercela"
 
 #: dlls/comdlg32/comdlg32.rc:129 programs/wordpad/wordpad.rc:132
 msgid "Gray"
@@ -1088,7 +1088,7 @@ msgstr "Roi"
 
 #: dlls/comdlg32/comdlg32.rc:132 programs/wordpad/wordpad.rc:135
 msgid "Lime"
-msgstr "Citron vert"
+msgstr "Citron verd"
 
 #: dlls/comdlg32/comdlg32.rc:133 programs/wordpad/wordpad.rc:136
 msgid "Yellow"
@@ -1101,11 +1101,11 @@ msgstr "Blu"
 
 #: dlls/comdlg32/comdlg32.rc:135 programs/wordpad/wordpad.rc:138
 msgid "Fuchsia"
-msgstr "Fuchsia"
+msgstr "Fúschia"
 
 #: dlls/comdlg32/comdlg32.rc:136 programs/wordpad/wordpad.rc:139
 msgid "Aqua"
-msgstr "Eau"
+msgstr "Aiga"
 
 #: dlls/comdlg32/comdlg32.rc:137 programs/wordpad/wordpad.rc:140
 msgid "White"
@@ -1113,51 +1113,51 @@ msgstr "Blanc"
 
 #: dlls/comdlg32/comdlg32.rc:57
 msgid "Unreadable Entry"
-msgstr "Entrée illisible"
+msgstr "Entrada illegibla"
 
 #: dlls/comdlg32/comdlg32.rc:59
 msgid ""
 "This value does not lie within the page range.\n"
 "Please enter a value between %1!d! and %2!d!."
 msgstr ""
-"Cette valeur n'est pas dans l'intervalle de paginas.\n"
-"Veuillez indiquer une valeur entre %1!d! et %2!d!."
+"Aquera valor n'ei pas dens l'intervalle de que paginès.\n"
+"Volhatz indicar ua valor enter %1!d! e %2!d!."
 
 #: dlls/comdlg32/comdlg32.rc:61
 msgid "The 'from' entry cannot exceed the 'to' entry."
-msgstr "Le champ « de » ne peut être plus grand que le champ « à »."
+msgstr "Lo camp « de » ne pòt pas estar mei gran que lo camp « a »."
 
 #: dlls/comdlg32/comdlg32.rc:63
 msgid ""
 "Margins overlap or fall outside Paper boundaries.\n"
 "Please reenter margins."
 msgstr ""
-"Les marges se chevauchent ou dépassent du papier\n"
-"Veuillez indiquer de nouvelles valeurs."
+"Los marges que's cavaucan o que despassan deu papèr\n"
+"Volhatz indicar navèras valors."
 
 #: dlls/comdlg32/comdlg32.rc:65
 msgid "The 'Number of copies' field cannot be empty."
-msgstr "Le champ « Nombre de copies » ne peut être vide."
+msgstr "Lo camp « Nombre de copias » ne pòt pas estar vueida."
 
 #: dlls/comdlg32/comdlg32.rc:67
 msgid ""
 "This large number of copies is not supported by your printer.\n"
 "Please enter a value between 1 and %d."
 msgstr ""
-"Votre imprimante ne peut gérer autant de copies.\n"
-"Veuillez indiquer un nombre de copies entre 1 et %d."
+"La vòsta estampadera ne pòt pas gerir autant de copias.\n"
+"Volhatz indicar un nombre de copias enter 1 e %d."
 
 #: dlls/comdlg32/comdlg32.rc:68
 msgid "A printer error occurred."
-msgstr "Une erreur d'impression s'est produite."
+msgstr "Ua error d'impression que s'ei produsida ."
 
 #: dlls/comdlg32/comdlg32.rc:69
 msgid "No default printer defined."
-msgstr "Estampadoira par défaut non définie."
+msgstr "Estampadoira per defaut non definida."
 
 #: dlls/comdlg32/comdlg32.rc:70
 msgid "Cannot find the printer."
-msgstr "Impossible de trouver l'imprimante."
+msgstr "Impossible de trobar l'estampadera."
 
 #: dlls/comdlg32/comdlg32.rc:71 programs/progman/progman.rc:76
 msgid "Out of memory."
