@@ -874,19 +874,19 @@ msgstr "&à :"
 
 #: dlls/comdlg32/comdlg32.rc:384  ### revirat entà linha 875
 msgid "Copies"
-msgstr "Copies"
+msgstr "Copias"
 
 #: dlls/comdlg32/comdlg32.rc:385
 msgid "Number of &copies:"
-msgstr "Nombre de copies :"
+msgstr "Nombre de copias :"
 
 #: dlls/comdlg32/comdlg32.rc:387
 msgid "C&ollate"
-msgstr "Copies assemblées"
+msgstr "Copias assembladas"
 
 #: dlls/comdlg32/comdlg32.rc:414 programs/winecfg/winecfg.rc:306
 msgid "Si&ze:"
-msgstr "Tai&lle :"
+msgstr "Ta&lha :"
 
 #: dlls/comdlg32/comdlg32.rc:416
 msgid "&Source:"
@@ -898,11 +898,11 @@ msgstr "&Retrachat"
 
 #: dlls/comdlg32/comdlg32.rc:422
 msgid "L&andscape"
-msgstr "Pa&ysage"
+msgstr "P&aisatge"
 
 #: dlls/comdlg32/comdlg32.rc:432
 msgid "Setup Page"
-msgstr "Mise en pagina"
+msgstr "Mesa en pagina"
 
 #: dlls/comdlg32/comdlg32.rc:441
 msgid "&Tray:"
@@ -914,19 +914,19 @@ msgstr "&Retrachat"
 
 #: dlls/comdlg32/comdlg32.rc:447
 msgid "L&eft:"
-msgstr "&Gauche :"
+msgstr "&Esquèrra :"
 
 #: dlls/comdlg32/comdlg32.rc:449 programs/notepad/notepad.rc:119
 msgid "&Right:"
-msgstr "&Droite :"
+msgstr "D&reta :"
 
 #: dlls/comdlg32/comdlg32.rc:451
 msgid "T&op:"
-msgstr "&Haut :"
+msgstr "Naut& :"
 
 #: dlls/comdlg32/comdlg32.rc:453 programs/notepad/notepad.rc:121
 msgid "&Bottom:"
-msgstr "&Bas :"
+msgstr "&Baish :"
 
 #: dlls/comdlg32/comdlg32.rc:457
 msgid "P&rinter..."
@@ -934,15 +934,15 @@ msgstr "&Estampadoira..."
 
 #: dlls/comdlg32/comdlg32.rc:465 dlls/comdlg32/comdlg32.rc:490
 msgid "Look &in:"
-msgstr "&Recèrcar dans :"
+msgstr "&Recèrcar dens :"
 
 #: dlls/comdlg32/comdlg32.rc:471 dlls/comdlg32/comdlg32.rc:497
 msgid "File &name:"
-msgstr "&Nom du fichèr :"
+msgstr "&Nom deu fichèr :"
 
 #: dlls/comdlg32/comdlg32.rc:475 dlls/comdlg32/comdlg32.rc:501
 msgid "Files of &type:"
-msgstr "Fichèrs du &type :"
+msgstr "Fichèrs deu &tipe :"
 
 #: dlls/comdlg32/comdlg32.rc:478 dlls/comdlg32/comdlg32.rc:504
 msgid "Open as &read-only"
