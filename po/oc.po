@@ -1242,23 +1242,23 @@ msgstr "Problèma de papèr ; "
 
 #: dlls/comdlg32/comdlg32.rc:92
 msgid "Printer offline; "
-msgstr "L'estampadera n'ei   pas en linha ; "
+msgstr "L'estampadera n'ei pas en linha ; "
 
 #: dlls/comdlg32/comdlg32.rc:93
 msgid "I/O Active; "
-msgstr "E/S actives ; "
+msgstr "E/S actius ; "
 
 #: dlls/comdlg32/comdlg32.rc:94
 msgid "Busy; "
-msgstr "Occupée ; "
+msgstr "Aucupada; "
 
 #: dlls/comdlg32/comdlg32.rc:95
 msgid "Printing; "
-msgstr "En cours d'impression ; "
+msgstr "A har un tribalh d'impression; "
 
 #: dlls/comdlg32/comdlg32.rc:96
 msgid "Output tray is full; "
-msgstr "Le bac de sortie est plein ; "
+msgstr "Lo bac de sortida qu'ei plen ; "
 
 #: dlls/comdlg32/comdlg32.rc:97
 msgid "Not available; "
@@ -1266,23 +1266,23 @@ msgstr "Non disponible ; "
 
 #: dlls/comdlg32/comdlg32.rc:98
 msgid "Waiting; "
-msgstr "En attente ; "
+msgstr "En espèra; "
 
 #: dlls/comdlg32/comdlg32.rc:99
 msgid "Processing; "
-msgstr "Traitement en cours ; "
+msgstr "Tractament en cors; "
 
 #: dlls/comdlg32/comdlg32.rc:100
 msgid "Initializing; "
-msgstr "Démarrage en cours ; "
+msgstr "Aviada en cors; "
 
 #: dlls/comdlg32/comdlg32.rc:101
 msgid "Warming up; "
-msgstr "Préchauffage ; "
+msgstr "Precauhatge; "
 
 #: dlls/comdlg32/comdlg32.rc:102
 msgid "Toner low; "
-msgstr "Toner presque vide ; "
+msgstr "Toner quasi vueit; "
 
 #: dlls/comdlg32/comdlg32.rc:103
 msgid "No toner; "
