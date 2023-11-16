@@ -222,14 +222,21 @@ static void test_ExtCreateRegion(void)
     verify_region(hrgn, &empty_rect);
     DeleteObject(hrgn);
 
-    /* Cannot be smaller than sizeof(RGNDATAHEADER) */
+    /* Function should return NULL, if dwSize is larger than header size */
+    rgn.data.rdh.dwSize = sizeof(rgn.data.rdh) + 1;
+    SetLastError(0xdeadbeef);
+    hrgn = ExtCreateRegion(NULL, sizeof(RGNDATAHEADER), &rgn.data);
+    ok(!hrgn, "ExtCreateRegion should fail\n");
+    ok((GetLastError() == 0xdeadbeef), "Expected: 0xdeadbeef, got %lu\n", GetLastError());
+
+    rgn.data.rdh.dwSize = sizeof(rgn.data.rdh);
+
+    /* Number of bytes cannot be smaller than sizeof(RGNDATAHEADER) */
     SetLastError(0xdeadbeef);
     hrgn = ExtCreateRegion(NULL, sizeof(RGNDATAHEADER) - 1, &rgn.data);
-    todo_wine
     ok(!hrgn, "ExtCreateRegion should fail\n");
-    todo_wine
     ok(GetLastError() == ERROR_INVALID_PARAMETER ||
-       broken(GetLastError() == 0xdeadbeef), "0xdeadbeef, got %lu\n", GetLastError());
+       (GetLastError() == 0xdeadbeef), "0xdeadbeef, got %lu\n", GetLastError());
 
     SetLastError(0xdeadbeef);
     hrgn = ExtCreateRegion(NULL, sizeof(rgn), &rgn.data);
@@ -267,10 +274,8 @@ static void test_ExtCreateRegion(void)
     /* Buffer cannot be smaller than sizeof(RGNDATAHEADER) + 2 * sizeof(RECT) */
     SetLastError(0xdeadbeef);
     hrgn = ExtCreateRegion(NULL, sizeof(RGNDATAHEADER) + 2 * sizeof(RECT) - 1, &rgn.data);
-    todo_wine
     ok(!hrgn, "ExtCreateRegion should fail\n");
     ok(GetLastError() == 0xdeadbeef, "0xdeadbeef, got %lu\n", GetLastError());
-
 }
 
 static void test_GetClipRgn(void)

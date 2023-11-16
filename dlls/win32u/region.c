@@ -896,11 +896,12 @@ HRGN WINAPI NtGdiExtCreateRegion( const XFORM *xform, DWORD count, const RGNDATA
     WINEREGION *obj;
     const RECT *pCurRect, *pEndRect;
 
-    if (!rgndata || rgndata->rdh.dwSize < sizeof(RGNDATAHEADER))
+    if (!rgndata || rgndata->rdh.dwSize != sizeof(RGNDATAHEADER) ||
+        (count < sizeof(RGNDATAHEADER) + rgndata->rdh.nCount * sizeof(RECT)))
         return 0;
 
-    /* XP doesn't care about the type */
-    if( rgndata->rdh.iType != RDH_RECTANGLES )
+    /* Up to Windows XP/2003, function return 0, if type is wrong */
+    if (rgndata->rdh.iType != RDH_RECTANGLES)
         WARN("(Unsupported region data type: %u)\n", (int)rgndata->rdh.iType);
 
     if (xform)
