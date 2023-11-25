@@ -1,4 +1,4 @@
-# Occitan translations for Wine  ### revirat entà linha 1396
+# Occitan translations for Wine  ### revirat entà linha 1509
 #
 msgid ""
 msgstr ""
@@ -1381,7 +1381,7 @@ msgstr ""
 "Qu'asseguratz que lo vòste nom d'utilizator\n"
 "e lo vòste mòt de que passa que son corrèctes ."
 
-#: dlls/credui/credui.rc:35   ### revirat entà linha 1396
+#: dlls/credui/credui.rc:35
 msgid ""
 "Having Caps Lock on may cause you to enter your password incorrectly.\n"
 "\n"
@@ -1397,59 +1397,59 @@ msgstr ""
 
 #: dlls/credui/credui.rc:34
 msgid "Caps Lock is On"
-msgstr "VERR.MAJ est activé"
+msgstr "VERR.MAJ es activada"
 
 #: dlls/crypt32/crypt32.rc:30
 msgid "Authority Key Identifier"
-msgstr "Identifiant de l'autorité de la clé"
+msgstr "Identificant de l'autoritat de la clau"
 
 #: dlls/crypt32/crypt32.rc:31
 msgid "Key Attributes"
-msgstr "Attributs de la clé"
+msgstr "Atributs de la clau"
 
 #: dlls/crypt32/crypt32.rc:32
 msgid "Key Usage Restriction"
-msgstr "Restrictions de l'utilisation de la clé"
+msgstr "Restriccions de l'utilizacion de la clau"
 
 #: dlls/crypt32/crypt32.rc:33
 msgid "Subject Alternative Name"
-msgstr "Nom alternatif du sujet"
+msgstr "Nom alternatiu deu subjècte"
 
 #: dlls/crypt32/crypt32.rc:34
 msgid "Issuer Alternative Name"
-msgstr "Nom alternatif de l'émetteur"
+msgstr "Nom alternatiu de l'emetedor"
 
 #: dlls/crypt32/crypt32.rc:35
 msgid "Basic Constraints"
-msgstr "Contraintes de base"
+msgstr "Constrentas de basa"
 
 #: dlls/crypt32/crypt32.rc:36
 msgid "Key Usage"
-msgstr "Utilisation de la clé"
+msgstr "Utilizacion de la clau"
 
 #: dlls/crypt32/crypt32.rc:37
 msgid "Certificate Policies"
-msgstr "Politiques de certificats"
+msgstr "Politicas de certificats"
 
 #: dlls/crypt32/crypt32.rc:38
 msgid "Subject Key Identifier"
-msgstr "Identifiant de clé du sujet"
+msgstr "Identificant de clau deu subjècte"
 
 #: dlls/crypt32/crypt32.rc:39
 msgid "CRL Reason Code"
-msgstr ""
+msgstr "Còdi de motiu de la CRL (lista de revocacion de certificats)"
 
 #: dlls/crypt32/crypt32.rc:40
 msgid "CRL Distribution Points"
-msgstr "Points de distribution de LRC"
+msgstr "Punts de distribucion de CRL (lista de revocacion de certificats)"
 
 #: dlls/crypt32/crypt32.rc:41
 msgid "Enhanced Key Usage"
-msgstr "Utilisation complémentaire de la clé"
+msgstr "Utilizacion complementària de la clau"
 
 #: dlls/crypt32/crypt32.rc:42
 msgid "Authority Information Access"
-msgstr "Accès aux informations de l'autorité"
+msgstr "Accès a las informacions de l'autoritat"
 
 #: dlls/crypt32/crypt32.rc:43
 msgid "Certificate Extensions"
@@ -1457,31 +1457,31 @@ msgstr "Extensions de certificats"
 
 #: dlls/crypt32/crypt32.rc:44
 msgid "Next Update Location"
-msgstr "Emplacement de la mise à jour suivante"
+msgstr "Emplaçament de l'actualizada seguenta"
 
 #: dlls/crypt32/crypt32.rc:45
 msgid "Yes or No Trust"
-msgstr "Confiance Oui ou Non"
+msgstr "Hidança ÒC o Nani"
 
 #: dlls/crypt32/crypt32.rc:46
 msgid "Email Address"
-msgstr "Adresse électronique"
+msgstr "Adreça electronica"
 
 #: dlls/crypt32/crypt32.rc:47
 msgid "Unstructured Name"
-msgstr "Nom non structuré"
+msgstr "Nom non estructurat"
 
 #: dlls/crypt32/crypt32.rc:48
 msgid "Content Type"
-msgstr "Tipe de contenu"
+msgstr "Tipe de contengut"
 
 #: dlls/crypt32/crypt32.rc:49
 msgid "Message Digest"
-msgstr "Empreinte du message"
+msgstr "Mèrca deu messatge"
 
 #: dlls/crypt32/crypt32.rc:50
 msgid "Signing Time"
-msgstr "Heure de la signature"
+msgstr "Òra de la signatura"
 
 #: dlls/crypt32/crypt32.rc:51
 msgid "Counter Sign"
@@ -1489,24 +1489,24 @@ msgstr "Contresignature"
 
 #: dlls/crypt32/crypt32.rc:52
 msgid "Challenge Password"
-msgstr "mòt de passa défi"
+msgstr "Contestar lo mot de passa"
 
 #: dlls/crypt32/crypt32.rc:53
 msgid "Unstructured Address"
-msgstr "Adresse non structurée"
+msgstr "Adreça non estructurada"
 
 #: dlls/crypt32/crypt32.rc:54
 msgid "S/MIME Capabilities"
-msgstr "Capacités S/MIME"
+msgstr "Capacitats S/MIME"
 
 #: dlls/crypt32/crypt32.rc:55
 msgid "Prefer Signed Data"
-msgstr "Préférer les données signées"
+msgstr "Preferir las dadas signadas"
 
-#: dlls/crypt32/crypt32.rc:56 dlls/cryptdlg/cryptdlg.rc:34
+#: dlls/crypt32/crypt32.rc:56 dlls/cryptdlg/cryptdlg.rc:34   ### revirat entà linha 1509
 msgctxt "Certification Practice Statement"
 msgid "CPS"
-msgstr "Énoncé des pratiques de certification (CPS)"
+msgstr "Enonciat de las practicas de certificacion (CPS)"
 
 #: dlls/crypt32/crypt32.rc:57 dlls/cryptdlg/cryptdlg.rc:35
 msgid "User Notice"
