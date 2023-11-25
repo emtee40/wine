@@ -1,4 +1,4 @@
-# Occitan translations for Wine  ### revirat entà linha 1509
+# Occitan translations for Wine   ### revirat entà linha 1669
 #
 msgid ""
 msgstr ""
@@ -1503,26 +1503,26 @@ msgstr "Capacitats S/MIME"
 msgid "Prefer Signed Data"
 msgstr "Preferir las dadas signadas"
 
-#: dlls/crypt32/crypt32.rc:56 dlls/cryptdlg/cryptdlg.rc:34   ### revirat entà linha 1509
+#: dlls/crypt32/crypt32.rc:56 dlls/cryptdlg/cryptdlg.rc:34
 msgctxt "Certification Practice Statement"
 msgid "CPS"
 msgstr "Enonciat de las practicas de certificacion (CPS)"
 
 #: dlls/crypt32/crypt32.rc:57 dlls/cryptdlg/cryptdlg.rc:35
 msgid "User Notice"
-msgstr "Notice utilisateur"
+msgstr "Notícia utilizator"
 
 #: dlls/crypt32/crypt32.rc:58
 msgid "On-line Certificate Status Protocol"
-msgstr "Protocole de vérification en ligne de certificat (OCSP)"
+msgstr "Protocòle de verificacion en linha de certificat (OCSP)"
 
 #: dlls/crypt32/crypt32.rc:59
 msgid "Certification Authority Issuer"
-msgstr "Émetteur de l'autorité de certification"
+msgstr "Emetedor de l'autoritat de certificacion"
 
 #: dlls/crypt32/crypt32.rc:60
 msgid "Certification Template Name"
-msgstr "Nom de modèle de certification"
+msgstr "Nom de modèle de certificacion"
 
 #: dlls/crypt32/crypt32.rc:61
 msgid "Certificate Type"
@@ -1530,7 +1530,7 @@ msgstr "Tipe de certificat"
 
 #: dlls/crypt32/crypt32.rc:62
 msgid "Certificate Manifold"
-msgstr ""
+msgstr "Collector de certificat"
 
 #: dlls/crypt32/crypt32.rc:63
 msgid "Netscape Cert Type"
@@ -1538,27 +1538,27 @@ msgstr "Tipe de certificat Netscape"
 
 #: dlls/crypt32/crypt32.rc:64
 msgid "Netscape Base URL"
-msgstr "URL Netscape de base"
+msgstr "URL Netscape de basa"
 
 #: dlls/crypt32/crypt32.rc:65
 msgid "Netscape Revocation URL"
-msgstr "URL Netscape de révocation"
+msgstr "URL Netscape de revocacion"
 
 #: dlls/crypt32/crypt32.rc:66
 msgid "Netscape CA Revocation URL"
-msgstr "URL Netscape de révocation de l'AC"
+msgstr "URL Netscape de revocacion de l'AC"
 
 #: dlls/crypt32/crypt32.rc:67
 msgid "Netscape Cert Renewal URL"
-msgstr "URL Netscape de renouvellement du certificat"
+msgstr "URL Netscape de renovelament deu certificat"
 
 #: dlls/crypt32/crypt32.rc:68
 msgid "Netscape CA Policy URL"
-msgstr "URL Netscape de politique de sécurité d'AC"
+msgstr "URL Netscape de politica de securitat de CA (Autoritat de Certificacion)"
 
 #: dlls/crypt32/crypt32.rc:69
 msgid "Netscape SSL ServerName"
-msgstr "Nom du serveur SSL de Netscape"
+msgstr "Nom deu servidor SSL de Netscape"
 
 #: dlls/crypt32/crypt32.rc:70
 msgid "Netscape Comment"
@@ -1566,15 +1566,15 @@ msgstr "Comentari Netscape"
 
 #: dlls/crypt32/crypt32.rc:71
 msgid "Country/Region"
-msgstr "Pays/Région"
+msgstr "País/Region"
 
 #: dlls/crypt32/crypt32.rc:72
 msgid "Organization"
-msgstr "Organisation"
+msgstr "Organizacion"
 
 #: dlls/crypt32/crypt32.rc:73
 msgid "Organizational Unit"
-msgstr "Unité d'organisation"
+msgstr "Unitat d'organizacion"
 
 #: dlls/crypt32/crypt32.rc:74
 msgid "Common Name"
@@ -1582,91 +1582,91 @@ msgstr "Nom commun"
 
 #: dlls/crypt32/crypt32.rc:75
 msgid "Locality"
-msgstr "Localité"
+msgstr "Localitat"
 
 #: dlls/crypt32/crypt32.rc:76
 msgid "State or Province"
-msgstr "Estat ou province"
+msgstr "Estat ou província"
 
 #: dlls/crypt32/crypt32.rc:77
 msgid "Title"
-msgstr "Titre"
+msgstr "Títol"
 
 #: dlls/crypt32/crypt32.rc:78
 msgid "Given Name"
-msgstr "Prénom"
+msgstr "Prenom"
 
 #: dlls/crypt32/crypt32.rc:79
 msgid "Initials"
-msgstr "Initiales"
+msgstr "Iniciaus"
 
 #: dlls/crypt32/crypt32.rc:80
 msgid "Surname"
-msgstr "Nom de famille"
+msgstr "Nom de familha"
 
 #: dlls/crypt32/crypt32.rc:81
 msgid "Domain Component"
-msgstr "Composant de domaine"
+msgstr "Compausant de maine"
 
 #: dlls/crypt32/crypt32.rc:82
 msgid "Street Address"
-msgstr "Adresse"
+msgstr "Adreça"
 
 #: dlls/crypt32/crypt32.rc:83
 msgid "Serial Number"
-msgstr "Numéro de série"
+msgstr "Numèro de seria"
 
 #: dlls/crypt32/crypt32.rc:84
 msgid "CA Version"
-msgstr "Version de l'AC"
+msgstr "Version de CA"
 
 #: dlls/crypt32/crypt32.rc:85
 msgid "Cross CA Version"
-msgstr "Version de certification croisée d'AC"
+msgstr "Version de certificacion crotzada de CA (Autoritat de Certificacion)"
 
 #: dlls/crypt32/crypt32.rc:86
 msgid "Serialized Signature Serial Number"
-msgstr "Numéro de série de signature sérialisée"
+msgstr "Numèro de seria de signatura serialisada"
 
 #: dlls/crypt32/crypt32.rc:87
 msgid "Principal Name"
-msgstr "Nom principal"
+msgstr "Nom principau"
 
 #: dlls/crypt32/crypt32.rc:88
 msgid "Windows Product Update"
-msgstr "Mise à jour de Windows"
+msgstr "Actualizada de Windows"
 
 #: dlls/crypt32/crypt32.rc:89
 msgid "Enrollment Name Value Pair"
-msgstr "Paire nom/valeur d'enrôlement"
+msgstr "Para nom/valor d'enrotlament"
 
 #: dlls/crypt32/crypt32.rc:90
 msgid "OS Version"
-msgstr "Version du système d'exploitation"
+msgstr "Version deu sistèma d'espleitacion"
 
 #: dlls/crypt32/crypt32.rc:91
 msgid "Enrollment CSP"
-msgstr "Fournisseur de service cryptographique d'enrôlement"
+msgstr "Hornidor de servici criptografic d'enrotlament"
 
 #: dlls/crypt32/crypt32.rc:92
 msgid "CRL Number"
-msgstr "Numéro de la LRC"
+msgstr "Numéro de la CRL (liste de révocation de certificats)"
 
 #: dlls/crypt32/crypt32.rc:93
 msgid "Delta CRL Indicator"
-msgstr "Indicateur de delta-LRC"
+msgstr "Indicator de dèlta-CRL (liste de révocation de certificats)"
 
 #: dlls/crypt32/crypt32.rc:94
 msgid "Issuing Distribution Point"
-msgstr "Point de distribution d'émission"
+msgstr "Punt de distribucion d'emission"
 
 #: dlls/crypt32/crypt32.rc:95
 msgid "Freshest CRL"
-msgstr "LRC la plus récente"
+msgstr "CRL (liste de révocation de certificats) la mei recenta"
 
-#: dlls/crypt32/crypt32.rc:96
+#: dlls/crypt32/crypt32.rc:96   ### revirat entà linha 1669
 msgid "Name Constraints"
-msgstr "Contraintes de nom"
+msgstr "Constrentas de nom"
 
 #: dlls/crypt32/crypt32.rc:97
 msgid "Policy Mappings"
@@ -1986,7 +1986,7 @@ msgstr "Émetteur du certificat"
 
 #: dlls/crypt32/crypt32.rc:184
 msgid "Certificate Serial Number="
-msgstr "Numéro de série du certificat ="
+msgstr "Numèro de seria du certificat ="
 
 #: dlls/crypt32/crypt32.rc:185
 msgid "Other Name="
@@ -1994,7 +1994,7 @@ msgstr "Autre nom ="
 
 #: dlls/crypt32/crypt32.rc:186
 msgid "Email Address="
-msgstr "Adresse électronique ="
+msgstr "Adreça electronica ="
 
 #: dlls/crypt32/crypt32.rc:187
 msgid "DNS Name="
@@ -2002,7 +2002,7 @@ msgstr "Nom DNS ="
 
 #: dlls/crypt32/crypt32.rc:188
 msgid "Directory Address"
-msgstr "Adresse d'annuaire"
+msgstr "Adreça d'annuaire"
 
 #: dlls/crypt32/crypt32.rc:189
 msgid "URL="
@@ -2010,7 +2010,7 @@ msgstr "URL ="
 
 #: dlls/crypt32/crypt32.rc:190
 msgid "IP Address="
-msgstr "Adresse IP ="
+msgstr "Adreça IP ="
 
 #: dlls/crypt32/crypt32.rc:191
 msgid "Mask="
@@ -2728,7 +2728,7 @@ msgstr "Proprietats uniquement"
 
 #: dlls/cryptui/cryptui.rc:55
 msgid "Serial number"
-msgstr "Numéro de série"
+msgstr "Numèro de seria"
 
 #: dlls/cryptui/cryptui.rc:56 dlls/wininet/wininet.rc:34
 msgid "Issuer"
@@ -3511,7 +3511,7 @@ msgstr "Barre &standard"
 
 #: dlls/ieframe/ieframe.rc:50
 msgid "&Address bar"
-msgstr "Barre d'&adresse"
+msgstr "Barre d'&adreça"
 
 #: dlls/ieframe/ieframe.rc:53 programs/regedit/regedit.rc:73
 msgid "&Favorites"
@@ -3548,7 +3548,7 @@ msgstr "Estampar..."
 
 #: dlls/ieframe/ieframe.rc:76
 msgid "Address"
-msgstr "Adresse"
+msgstr "Adreça"
 
 #: dlls/ieframe/ieframe.rc:81
 msgid "Searching for %s"
@@ -3572,7 +3572,7 @@ msgstr "Pagina d'accueil"
 
 #: dlls/inetcpl.cpl/inetcpl.rc:50
 msgid "You can choose the address that will be used as your home page."
-msgstr "Vous pouvez choisir l'adresse à utiliser comme page d'accueil."
+msgstr "Vous pouvez choisir l'adreça à utiliser comme page d'accueil."
 
 #: dlls/inetcpl.cpl/inetcpl.rc:53
 msgid "&Current page"
@@ -3687,7 +3687,7 @@ msgstr "Utiliser un script Proxy Auto-Config (PAC)"
 
 #: dlls/inetcpl.cpl/inetcpl.rc:128 dlls/inetcpl.cpl/inetcpl.rc:132
 msgid "Address:"
-msgstr "Adresse :"
+msgstr "Adreça :"
 
 #: dlls/inetcpl.cpl/inetcpl.rc:130
 msgid "Proxy server"
@@ -4663,7 +4663,7 @@ msgstr "Segment non verrouillé.\n"
 
 #: dlls/kernelbase/winerror.mc:663
 msgid "Bad thread ID address.\n"
-msgstr "Adresse de l'ID de thread incorrecte.\n"
+msgstr "Adreça de l'ID de thread incorrecte.\n"
 
 #: dlls/kernelbase/winerror.mc:668
 msgid "Bad arguments to DosExecPgm.\n"
@@ -4913,7 +4913,7 @@ msgstr "Message 0x%1 introuvable dans le fichèr %2.\n"
 
 #: dlls/kernelbase/winerror.mc:973
 msgid "Invalid address.\n"
-msgstr "Adresse non valide.\n"
+msgstr "Adreça non valide.\n"
 
 #: dlls/kernelbase/winerror.mc:978
 msgid "Arithmetic overflow.\n"
@@ -5263,7 +5263,7 @@ msgstr "Expiration de la temporisation du compteur d'E/S série.\n"
 
 #: dlls/kernelbase/winerror.mc:1408
 msgid "Floppy ID address mark not found.\n"
-msgstr "Marque d'adresse d'ID de disquette non trouvée.\n"
+msgstr "Marque d'adreça d'ID de disquette non trouvée.\n"
 
 #: dlls/kernelbase/winerror.mc:1413
 msgid "Floppy reports wrong cylinder.\n"
@@ -5367,7 +5367,7 @@ msgstr "L'élément destination est rempli.\n"
 
 #: dlls/kernelbase/winerror.mc:1538
 msgid "The element address is invalid.\n"
-msgstr "L'adresse de l'élément est invalide.\n"
+msgstr "L'adreça de l'élément est invalide.\n"
 
 #: dlls/kernelbase/winerror.mc:1543
 msgid "The magazine is not present.\n"
@@ -5547,11 +5547,11 @@ msgstr "Connexion fermée gracieusement.\n"
 
 #: dlls/kernelbase/winerror.mc:1768
 msgid "Address already associated with transport endpoint.\n"
-msgstr "Adresse déjà associée au destinataire du transport.\n"
+msgstr "Adreça déjà associée au destinataire du transport.\n"
 
 #: dlls/kernelbase/winerror.mc:1773
 msgid "Address not associated with transport endpoint.\n"
-msgstr "Adresse non associée au destinataire du transport.\n"
+msgstr "Adreça non associée au destinataire du transport.\n"
 
 #: dlls/kernelbase/winerror.mc:1778
 msgid "Connection invalid.\n"
@@ -5603,7 +5603,7 @@ msgstr "Interdit de se connecter depuis cette station de travail.\n"
 
 #: dlls/kernelbase/winerror.mc:1838
 msgid "Incorrect network address.\n"
-msgstr "Adresse réseau incorrecte.\n"
+msgstr "Adreça réseau incorrecte.\n"
 
 #: dlls/kernelbase/winerror.mc:1843
 msgid "Service already registered.\n"
@@ -6504,7 +6504,7 @@ msgstr "Format du point de terminaison invalide.\n"
 
 #: dlls/kernelbase/winerror.mc:2968
 msgid "Invalid network address.\n"
-msgstr "Adresse réseau invalide.\n"
+msgstr "Adreça réseau invalide.\n"
 
 #: dlls/kernelbase/winerror.mc:2973
 msgid "No endpoint found.\n"
@@ -6616,7 +6616,7 @@ msgstr "Syntaxe de nom pas prise en charge.\n"
 
 #: dlls/kernelbase/winerror.mc:3113
 msgid "No network address.\n"
-msgstr "Pas d'adresse réseau.\n"
+msgstr "Pas d'adreça réseau.\n"
 
 #: dlls/kernelbase/winerror.mc:3118
 msgid "Duplicate endpoint.\n"
@@ -6712,7 +6712,7 @@ msgstr "Service de noms indisponible.\n"
 
 #: dlls/kernelbase/winerror.mc:3233
 msgid "Invalid network address family.\n"
-msgstr "Famille d'adresses réseau invalide.\n"
+msgstr "Famille d'adreças réseau invalide.\n"
 
 #: dlls/kernelbase/winerror.mc:3238
 msgid "Operation not supported.\n"
@@ -7134,7 +7134,7 @@ msgstr "Descripteur de fichèr non valide.\n"
 
 #: dlls/kernelbase/winerror.mc:3763
 msgid "Invalid pointer address.\n"
-msgstr "Adresse de pointeur non valide.\n"
+msgstr "Adreça de pointeur non valide.\n"
 
 #: dlls/kernelbase/winerror.mc:3768
 msgid "Invalid argument.\n"
@@ -9038,7 +9038,7 @@ msgstr "bouton avec menu"
 
 #: dlls/oleacc/oleacc.rc:94
 msgid "IP address"
-msgstr "Adresse IP"
+msgstr "Adreça IP"
 
 #: dlls/oleacc/oleacc.rc:95
 msgid "outline button"
@@ -15058,7 +15058,7 @@ msgid ""
 "Volume Serial Number is %1!04x!-%2!04x!\n"
 "\n"
 msgstr ""
-"Le numéro de série du volume est %1!04x!-%2!04x!\n"
+"Le numèro de seria du volume est %1!04x!-%2!04x!\n"
 "\n"
 
 #: programs/cmd/cmd.rc:393
@@ -15398,7 +15398,7 @@ msgstr "Suffixe DNS propre à la connexion"
 
 #: programs/ipconfig/ipconfig.rc:36
 msgid "IPv4 address"
-msgstr "Adresse IPv4"
+msgstr "Adreça IPv4"
 
 #: programs/ipconfig/ipconfig.rc:37
 msgid "Hostname"
@@ -15430,7 +15430,7 @@ msgstr "Routage IP activé"
 
 #: programs/ipconfig/ipconfig.rc:46
 msgid "Physical address"
-msgstr "Adresse physique"
+msgstr "Adreça physique"
 
 #: programs/ipconfig/ipconfig.rc:47
 msgid "DHCP enabled"
@@ -15442,7 +15442,7 @@ msgstr "Passerelle per defaut"
 
 #: programs/ipconfig/ipconfig.rc:51
 msgid "IPv6 address"
-msgstr "Adresse IPv6"
+msgstr "Adreça IPv6"
 
 #: programs/ipconfig/ipconfig.rc:38
 msgid "Primary DNS suffix"
@@ -15641,11 +15641,11 @@ msgstr "Proto"
 
 #: programs/netstat/netstat.rc:32
 msgid "Local Address"
-msgstr "Adresse locale"
+msgstr "Adreça locale"
 
 #: programs/netstat/netstat.rc:33
 msgid "Foreign Address"
-msgstr "Adresse distante"
+msgstr "Adreça distante"
 
 #: programs/netstat/netstat.rc:34
 msgid "State"
