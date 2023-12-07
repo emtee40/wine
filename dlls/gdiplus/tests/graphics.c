@@ -176,7 +176,7 @@ typedef struct node{
 /* Linked list prepend function. */
 static void log_state(GraphicsState data, node ** log)
 {
-    node * new_entry = HeapAlloc(GetProcessHeap(), 0, sizeof(node));
+    node * new_entry = malloc(sizeof(node));
 
     new_entry->data = data;
     new_entry->next = *log;
@@ -209,7 +209,7 @@ static void check_no_duplicates(node * log)
     temp = orig;
     do{
         temp2 = temp->next;
-        HeapFree(GetProcessHeap(), 0, temp);
+        free(temp);
         temp = temp2;
     }while(temp);
 
@@ -4770,7 +4770,7 @@ static void test_measure_string(void)
 
     set_rect_empty(&rect);
     rect.Height = height;
-    rect.Width = width_2 - 0.05;
+    rect.Width = width_2 - 0.006;
     set_rect_empty(&bounds);
     status = GdipMeasureString(graphics, string, -1, font, &rect, format, &bounds, &glyphs, &lines);
     expect(Ok, status);
@@ -4779,6 +4779,19 @@ static void test_measure_string(void)
     expectf(0.0, bounds.X);
     expectf(0.0, bounds.Y);
     expectf_(width_1, bounds.Width, 0.01);
+    expectf(height, bounds.Height);
+
+    set_rect_empty(&rect);
+    rect.Height = height;
+    rect.Width = width_2 - 0.004;
+    set_rect_empty(&bounds);
+    status = GdipMeasureString(graphics, string, -1, font, &rect, format, &bounds, &glyphs, &lines);
+    expect(Ok, status);
+    expect(2, glyphs);
+    expect(1, lines);
+    expectf(0.0, bounds.X);
+    expectf(0.0, bounds.Y);
+    expectf_(width_2, bounds.Width, 0.01);
     expectf(height, bounds.Height);
 
     /* Default (Near) alignment */
@@ -7198,19 +7211,19 @@ static HDC create_printer_dc(void)
     if (!pOpenPrinterA(buffer, &hprn, NULL)) goto done;
 
     pGetPrinterA(hprn, 2, NULL, 0, &len);
-    pbuf = HeapAlloc(GetProcessHeap(), 0, len);
+    pbuf = malloc(len);
     if (!pGetPrinterA(hprn, 2, (LPBYTE)pbuf, len, &len)) goto done;
 
     pGetPrinterDriverA(hprn, NULL, 3, NULL, 0, &len);
-    dbuf = HeapAlloc(GetProcessHeap(), 0, len);
+    dbuf = malloc(len);
     if (!pGetPrinterDriverA(hprn, NULL, 3, (LPBYTE)dbuf, len, &len)) goto done;
 
     hdc = CreateDCA(dbuf->pDriverPath, pbuf->pPrinterName, pbuf->pPortName, pbuf->pDevMode);
     trace("hdc %p for driver '%s' printer '%s' port '%s'\n", hdc,
           dbuf->pDriverPath, pbuf->pPrinterName, pbuf->pPortName);
 done:
-    HeapFree(GetProcessHeap(), 0, dbuf);
-    HeapFree(GetProcessHeap(), 0, pbuf);
+    free(dbuf);
+    free(pbuf);
     if (hprn) pClosePrinter(hprn);
     if (winspool) FreeLibrary(winspool);
     return hdc;

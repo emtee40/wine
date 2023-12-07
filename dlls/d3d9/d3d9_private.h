@@ -32,7 +32,6 @@
 #include "wingdi.h"
 #include "winuser.h"
 #include "wine/debug.h"
-#include "wine/heap.h"
 
 #include "d3d9.h"
 #include "wine/wined3d.h"
@@ -223,7 +222,6 @@ struct d3d9_texture
     struct list rtv_list;
     DWORD usage;
     BOOL flags;
-    struct wined3d_shader_resource_view *wined3d_srv;
     D3DTEXTUREFILTERTYPE autogen_filter_type;
 };
 

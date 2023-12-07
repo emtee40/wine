@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: Wine\n"
 "Report-Msgid-Bugs-To: https://bugs.winehq.org\n"
 "POT-Creation-Date: N/A\n"
-"PO-Revision-Date: 2023-08-10 22:50+0200\n"
+"PO-Revision-Date: 2023-11-09 19:50+0100\n"
 "Last-Translator: Floris Renaud <jkfloris@dds.nl>\n"
 "Language-Team: Dutch\n"
 "Language: nl\n"
@@ -98,7 +98,7 @@ msgstr "Ondersteuning"
 #: dlls/shlwapi/shlwapi.rc:44 dlls/twain_32/twain.rc:32
 #: dlls/user32/user32.rc:94 dlls/user32/user32.rc:109 dlls/user32/user32.rc:73
 #: dlls/wininet/wininet.rc:62 dlls/wininet/wininet.rc:82
-#: dlls/winspool.drv/winspool.rc:42 programs/net/net.rc:47
+#: dlls/winspool.drv/winspool.rc:42 programs/net/net.rc:48
 #: programs/notepad/notepad.rc:124 programs/oleview/oleview.rc:161
 #: programs/oleview/oleview.rc:174 programs/progman/progman.rc:106
 #: programs/progman/progman.rc:124 programs/progman/progman.rc:142
@@ -9519,7 +9519,7 @@ msgctxt "unit: bits"
 msgid "b"
 msgstr "b"
 
-#: dlls/sane.ds/sane.rc:34 dlls/wineps.drv/wineps.rc:49
+#: dlls/sane.ds/sane.rc:34 dlls/wineps.drv/wineps.rc:52
 #: programs/winecfg/winecfg.rc:188
 msgctxt "unit: dots/inch"
 msgid "dpi"
@@ -12646,6 +12646,12 @@ msgstr "Papier&formaat:"
 msgid "Duplex:"
 msgstr "Dubbelzijdig:"
 
+#: dlls/wineps.drv/wineps.rc:45
+#, fuzzy
+#| msgid "&Tray:"
+msgid "Paper &Tray:"
+msgstr "La&de:"
+
 #: dlls/wininet/wininet.rc:53 dlls/wininet/wininet.rc:73
 msgid "Realm"
 msgstr "Realm"
@@ -15030,11 +15036,11 @@ msgstr "Service %1 is succesvol gestopt.\n"
 msgid "The %1 service failed to stop.\n"
 msgstr "Stoppen van service %1 is mislukt.\n"
 
-#: programs/net/net.rc:44
+#: programs/net/net.rc:45
 msgid "There are no entries in the list.\n"
 msgstr "De opgegeven lijst is leeg.\n"
 
-#: programs/net/net.rc:45
+#: programs/net/net.rc:46
 msgid ""
 "\n"
 "Status  Local   Remote\n"
@@ -15044,33 +15050,37 @@ msgstr ""
 "Status    Lokaal  Op afstand\n"
 "---------------------------------------------------------------\n"
 
-#: programs/net/net.rc:46
+#: programs/net/net.rc:47
 msgid "%1      %2      %3      Open resources: %4!u!\n"
 msgstr "%1      %2      %3      Open bronnen: %4!u!\n"
 
-#: programs/net/net.rc:48
+#: programs/net/net.rc:49
 msgid "Paused"
 msgstr "Onderbroken"
 
-#: programs/net/net.rc:49
+#: programs/net/net.rc:50
 msgid "Disconnected"
 msgstr "Verbinding verbroken"
 
-#: programs/net/net.rc:50
+#: programs/net/net.rc:51
 msgid "A network error occurred"
 msgstr "Er is een netwerkfout opgetreden"
 
-#: programs/net/net.rc:51
+#: programs/net/net.rc:52
 msgid "Connection is being made"
 msgstr "De verbinding wordt gemaakt"
 
-#: programs/net/net.rc:52
+#: programs/net/net.rc:53
 msgid "Reconnecting"
 msgstr "Opnieuw verbinden"
 
 #: programs/net/net.rc:43
 msgid "The following services are running:\n"
 msgstr "De volgende services draaien:\n"
+
+#: programs/net/net.rc:44
+msgid "A command was used with conflicting switches.\n"
+msgstr ""
 
 #: programs/netstat/netstat.rc:30
 msgid "Active Connections"
@@ -18582,13 +18592,11 @@ msgstr "Uiterlijk"
 
 #: programs/winecfg/winecfg.rc:293
 msgid "&Theme:"
-msgstr "Thema:"
+msgstr "&Thema:"
 
 #: programs/winecfg/winecfg.rc:295
-#, fuzzy
-#| msgid "&WinRT app theme:"
 msgid "&WinRT theme:"
-msgstr "Thema voor &WinRT programma's:"
+msgstr "&WinRT thema:"
 
 #: programs/winecfg/winecfg.rc:297
 msgid "&Install theme..."
@@ -18604,11 +18612,11 @@ msgstr "Kleur:"
 
 #: programs/winecfg/winecfg.rc:310
 msgid "MIME types"
-msgstr "Bestandassociaties"
+msgstr "Bestandsassociaties"
 
 #: programs/winecfg/winecfg.rc:311
-msgid "Manage file &associations"
-msgstr "Toestaan dat bestandassociaties worden gemaakt"
+msgid "Manage file and protocol &associations"
+msgstr "&Bestands- en protocolassociaties toestaan"
 
 #: programs/winecfg/winecfg.rc:314
 msgid "Folders"

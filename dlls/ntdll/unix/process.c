@@ -802,7 +802,7 @@ NTSTATUS WINAPI NtCreateUserProcess( HANDLE *process_handle_ptr, HANDLE *thread_
         goto done;
     }
     if (!machine) machine = pe_info.machine;
-    if (!(startup_info = create_startup_info( attr.ObjectName, params, &pe_info, &startup_info_size )))
+    if (!(startup_info = create_startup_info( attr.ObjectName, process_flags, params, &pe_info, &startup_info_size )))
         goto done;
     env_size = get_env_size( params, &winedebug );
 
@@ -1042,7 +1042,7 @@ void fill_vm_counters( VM_COUNTERS_EX *pvmi, int unix_pid )
     if (unix_pid == -1)
         strcpy( path, "/proc/self/status" );
     else
-        sprintf( path, "/proc/%u/status", unix_pid);
+        snprintf( path, sizeof(path), "/proc/%u/status", unix_pid);
     f = fopen( path, "r" );
     if (!f) return;
 

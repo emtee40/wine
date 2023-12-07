@@ -99,7 +99,7 @@ msgstr "Informationen"
 #: dlls/shlwapi/shlwapi.rc:44 dlls/twain_32/twain.rc:32
 #: dlls/user32/user32.rc:94 dlls/user32/user32.rc:109 dlls/user32/user32.rc:73
 #: dlls/wininet/wininet.rc:62 dlls/wininet/wininet.rc:82
-#: dlls/winspool.drv/winspool.rc:42 programs/net/net.rc:47
+#: dlls/winspool.drv/winspool.rc:42 programs/net/net.rc:48
 #: programs/notepad/notepad.rc:124 programs/oleview/oleview.rc:161
 #: programs/oleview/oleview.rc:174 programs/progman/progman.rc:106
 #: programs/progman/progman.rc:124 programs/progman/progman.rc:142
@@ -9523,7 +9523,7 @@ msgctxt "unit: bits"
 msgid "b"
 msgstr "b"
 
-#: dlls/sane.ds/sane.rc:34 dlls/wineps.drv/wineps.rc:49
+#: dlls/sane.ds/sane.rc:34 dlls/wineps.drv/wineps.rc:52
 #: programs/winecfg/winecfg.rc:188
 msgctxt "unit: dots/inch"
 msgid "dpi"
@@ -12650,6 +12650,12 @@ msgstr "&Papiergröße:"
 msgid "Duplex:"
 msgstr "Duplex:"
 
+#: dlls/wineps.drv/wineps.rc:45
+#, fuzzy
+#| msgid "&Tray:"
+msgid "Paper &Tray:"
+msgstr "&Zufuhr:"
+
 #: dlls/wininet/wininet.rc:53 dlls/wininet/wininet.rc:73
 msgid "Realm"
 msgstr "Bereich"
@@ -15057,11 +15063,11 @@ msgstr "Der Dienst %1 wurde erfolgreich beendet.\n"
 msgid "The %1 service failed to stop.\n"
 msgstr "Der Dienst %1 konnte nicht beendet werden.\n"
 
-#: programs/net/net.rc:44
+#: programs/net/net.rc:45
 msgid "There are no entries in the list.\n"
 msgstr "Es sind keine Einträge in der Liste.\n"
 
-#: programs/net/net.rc:45
+#: programs/net/net.rc:46
 msgid ""
 "\n"
 "Status  Local   Remote\n"
@@ -15071,33 +15077,37 @@ msgstr ""
 "Status  Lokal   Entfernt\n"
 "---------------------------------------------------------------\n"
 
-#: programs/net/net.rc:46
+#: programs/net/net.rc:47
 msgid "%1      %2      %3      Open resources: %4!u!\n"
 msgstr "%1      %2      %3      Offene Ressourcen: %4!u!\n"
 
-#: programs/net/net.rc:48
+#: programs/net/net.rc:49
 msgid "Paused"
 msgstr "Angehalten"
 
-#: programs/net/net.rc:49
+#: programs/net/net.rc:50
 msgid "Disconnected"
 msgstr "Getrennt"
 
-#: programs/net/net.rc:50
+#: programs/net/net.rc:51
 msgid "A network error occurred"
 msgstr "Ein Netzwerkfehler ist aufgetreten"
 
-#: programs/net/net.rc:51
+#: programs/net/net.rc:52
 msgid "Connection is being made"
 msgstr "Verbindung wird hergestellt"
 
-#: programs/net/net.rc:52
+#: programs/net/net.rc:53
 msgid "Reconnecting"
 msgstr "Erneuter Verbindungsaufbau"
 
 #: programs/net/net.rc:43
 msgid "The following services are running:\n"
 msgstr "Die folgenden Dienste laufen:\n"
+
+#: programs/net/net.rc:44
+msgid "A command was used with conflicting switches.\n"
+msgstr ""
 
 #: programs/netstat/netstat.rc:30
 msgid "Active Connections"
@@ -18634,7 +18644,9 @@ msgid "MIME types"
 msgstr "MIME-Typen"
 
 #: programs/winecfg/winecfg.rc:311
-msgid "Manage file &associations"
+#, fuzzy
+#| msgid "Manage file &associations"
+msgid "Manage file and protocol &associations"
 msgstr "Datei&zuordnungen verwalten"
 
 #: programs/winecfg/winecfg.rc:314

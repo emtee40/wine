@@ -194,6 +194,7 @@ static const struct wined3d_extension_map gl_extension_map[] =
     {"GL_EXT_polygon_offset_clamp",         ARB_POLYGON_OFFSET_CLAMP      },
     {"GL_EXT_provoking_vertex",             EXT_PROVOKING_VERTEX          },
     {"GL_EXT_secondary_color",              EXT_SECONDARY_COLOR           },
+    {"GL_EXT_shader_integer_mix",           EXT_SHADER_INTEGER_MIX        },
     {"GL_EXT_stencil_two_side",             EXT_STENCIL_TWO_SIDE          },
     {"GL_EXT_stencil_wrap",                 EXT_STENCIL_WRAP              },
     {"GL_EXT_texture3D",                    EXT_TEXTURE3D                 },
@@ -1315,6 +1316,7 @@ cards_nvidia_binary[] =
     /* Direct 3D 11 */
     {"Tesla T4",                    CARD_NVIDIA_TESLA_T4},
     {"Ampere A10",                  CARD_NVIDIA_AMPERE_A10},
+    {"RTX 3070",                    CARD_NVIDIA_GEFORCE_RTX3070},   /* GeForce 3000 - highend */
     {"RTX 2080 Ti",                 CARD_NVIDIA_GEFORCE_RTX2080TI}, /* GeForce 2000 - highend */
     {"RTX 2080",                    CARD_NVIDIA_GEFORCE_RTX2080},   /* GeForce 2000 - highend */
     {"RTX 2070",                    CARD_NVIDIA_GEFORCE_RTX2070},   /* GeForce 2000 - highend */
@@ -3390,6 +3392,7 @@ static BOOL wined3d_adapter_init_gl_caps(struct wined3d_adapter_gl *adapter_gl,
         {ARB_DERIVATIVE_CONTROL,           MAKEDWORD_VERSION(4, 5)},
         {ARB_SHADER_TEXTURE_IMAGE_SAMPLES, MAKEDWORD_VERSION(4, 5)},
         {ARB_TEXTURE_BARRIER,              MAKEDWORD_VERSION(4, 5)},
+        {EXT_SHADER_INTEGER_MIX,           MAKEDWORD_VERSION(4, 5)},
 
         {ARB_PIPELINE_STATISTICS_QUERY,    MAKEDWORD_VERSION(4, 6)},
         {ARB_POLYGON_OFFSET_CLAMP,         MAKEDWORD_VERSION(4, 6)},
@@ -4917,12 +4920,8 @@ static void adapter_gl_destroy_rendertarget_view(struct wined3d_rendertarget_vie
 
     TRACE("view_gl %p.\n", view_gl);
 
-    /* Take a reference to the resource, in case releasing the resource
-     * would cause the device to be destroyed. */
-    wined3d_resource_incref(resource);
     wined3d_rendertarget_view_cleanup(&view_gl->v);
     wined3d_view_gl_destroy(resource->device, &view_gl->gl_view, NULL, NULL, view_gl);
-    wined3d_resource_decref(resource);
 }
 
 static HRESULT adapter_gl_create_shader_resource_view(const struct wined3d_view_desc *desc,
@@ -4958,16 +4957,8 @@ static void adapter_gl_destroy_shader_resource_view(struct wined3d_shader_resour
 
     TRACE("view_gl %p.\n", view_gl);
 
-    /* Take a reference to the resource. There are two reasons for this:
-     *  - Releasing the resource could in turn cause the device to be
-     *    destroyed, but we still need the device for
-     *    wined3d_view_vk_destroy().
-     *  - We shouldn't free buffer resources until after we've removed the
-     *    view from its bo_user list. */
-    wined3d_resource_incref(resource);
     wined3d_shader_resource_view_cleanup(&view_gl->v);
     wined3d_view_gl_destroy(resource->device, &view_gl->gl_view, &view_gl->bo_user, NULL, view_gl);
-    wined3d_resource_decref(resource);
 }
 
 static HRESULT adapter_gl_create_unordered_access_view(const struct wined3d_view_desc *desc,
@@ -5003,16 +4994,8 @@ static void adapter_gl_destroy_unordered_access_view(struct wined3d_unordered_ac
 
     TRACE("view_gl %p.\n", view_gl);
 
-    /* Take a reference to the resource. There are two reasons for this:
-     *  - Releasing the resource could in turn cause the device to be
-     *    destroyed, but we still need the device for
-     *    wined3d_view_vk_destroy().
-     *  - We shouldn't free buffer resources until after we've removed the
-     *    view from its bo_user list. */
-    wined3d_resource_incref(resource);
     wined3d_unordered_access_view_cleanup(&view_gl->v);
     wined3d_view_gl_destroy(resource->device, &view_gl->gl_view, &view_gl->bo_user, &view_gl->counter_bo, view_gl);
-    wined3d_resource_decref(resource);
 }
 
 static HRESULT adapter_gl_create_sampler(struct wined3d_device *device, const struct wined3d_sampler_desc *desc,

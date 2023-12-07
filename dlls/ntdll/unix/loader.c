@@ -30,6 +30,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <signal.h>
+#include <spawn.h>
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -69,7 +70,6 @@
 # include <mach/mach_error.h>
 # include <mach-o/getsect.h>
 # include <crt_externs.h>
-# include <spawn.h>
 # ifndef _POSIX_SPAWN_DISABLE_ASLR
 #  define _POSIX_SPAWN_DISABLE_ASLR 0x0100
 # endif
@@ -77,6 +77,7 @@
 #ifdef __ANDROID__
 # include <jni.h>
 #endif
+extern char **environ;
 
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
@@ -88,6 +89,7 @@
 #include "winternl.h"
 #include "unix_private.h"
 #include "wine/list.h"
+#include "ntsyscalls.h"
 #include "wine/debug.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(module);
@@ -114,256 +116,32 @@ void *pRtlUserThreadStart = NULL;
 void *p__wine_ctrl_routine = NULL;
 SYSTEM_DLL_INIT_BLOCK *pLdrSystemDllInitBlock = NULL;
 
-static void *p__wine_syscall_dispatcher;
-
 static void * const syscalls[] =
 {
-    NtAcceptConnectPort,
-    NtAccessCheck,
-    NtAccessCheckAndAuditAlarm,
-    NtAddAtom,
-    NtAdjustGroupsToken,
-    NtAdjustPrivilegesToken,
-    NtAlertResumeThread,
-    NtAlertThread,
-    NtAlertThreadByThreadId,
-    NtAllocateLocallyUniqueId,
-    NtAllocateUuids,
-    NtAllocateVirtualMemory,
-    NtAllocateVirtualMemoryEx,
-    NtAreMappedFilesTheSame,
-    NtAssignProcessToJobObject,
-    NtCallbackReturn,
-    NtCancelIoFile,
-    NtCancelIoFileEx,
-    NtCancelSynchronousIoFile,
-    NtCancelTimer,
-    NtClearEvent,
-    NtClose,
-    NtCommitTransaction,
-    NtCompareObjects,
-    NtCompleteConnectPort,
-    NtConnectPort,
-    NtContinue,
-    NtCreateDebugObject,
-    NtCreateDirectoryObject,
-    NtCreateEvent,
-    NtCreateFile,
-    NtCreateIoCompletion,
-    NtCreateJobObject,
-    NtCreateKey,
-    NtCreateKeyTransacted,
-    NtCreateKeyedEvent,
-    NtCreateLowBoxToken,
-    NtCreateMailslotFile,
-    NtCreateMutant,
-    NtCreateNamedPipeFile,
-    NtCreatePagingFile,
-    NtCreatePort,
-    NtCreateSection,
-    NtCreateSemaphore,
-    NtCreateSymbolicLinkObject,
-    NtCreateThread,
-    NtCreateThreadEx,
-    NtCreateTimer,
-    NtCreateToken,
-    NtCreateTransaction,
-    NtCreateUserProcess,
-    NtDebugActiveProcess,
-    NtDebugContinue,
-    NtDelayExecution,
-    NtDeleteAtom,
-    NtDeleteFile,
-    NtDeleteKey,
-    NtDeleteValueKey,
-    NtDeviceIoControlFile,
-    NtDisplayString,
-    NtDuplicateObject,
-    NtDuplicateToken,
-    NtEnumerateKey,
-    NtEnumerateValueKey,
-    NtFilterToken,
-    NtFindAtom,
-    NtFlushBuffersFile,
-    NtFlushInstructionCache,
-    NtFlushKey,
-    NtFlushProcessWriteBuffers,
-    NtFlushVirtualMemory,
-    NtFreeVirtualMemory,
-    NtFsControlFile,
-    NtGetContextThread,
-    NtGetCurrentProcessorNumber,
-    NtGetNextThread,
-    NtGetNlsSectionPtr,
-    NtGetWriteWatch,
-    NtImpersonateAnonymousToken,
-    NtInitializeNlsFiles,
-    NtInitiatePowerAction,
-    NtIsProcessInJob,
-    NtListenPort,
-    NtLoadDriver,
-    NtLoadKey,
-    NtLoadKey2,
-    NtLoadKeyEx,
-    NtLockFile,
-    NtLockVirtualMemory,
-    NtMakeTemporaryObject,
-    NtMapViewOfSection,
-    NtMapViewOfSectionEx,
-    NtNotifyChangeDirectoryFile,
-    NtNotifyChangeKey,
-    NtNotifyChangeMultipleKeys,
-    NtOpenDirectoryObject,
-    NtOpenEvent,
-    NtOpenFile,
-    NtOpenIoCompletion,
-    NtOpenJobObject,
-    NtOpenKey,
-    NtOpenKeyEx,
-    NtOpenKeyTransacted,
-    NtOpenKeyTransactedEx,
-    NtOpenKeyedEvent,
-    NtOpenMutant,
-    NtOpenProcess,
-    NtOpenProcessToken,
-    NtOpenProcessTokenEx,
-    NtOpenSection,
-    NtOpenSemaphore,
-    NtOpenSymbolicLinkObject ,
-    NtOpenThread,
-    NtOpenThreadToken,
-    NtOpenThreadTokenEx,
-    NtOpenTimer,
-    NtPowerInformation,
-    NtPrivilegeCheck,
-    NtProtectVirtualMemory,
-    NtPulseEvent,
-    NtQueryAttributesFile,
-    NtQueryDefaultLocale,
-    NtQueryDefaultUILanguage,
-    NtQueryDirectoryFile,
-    NtQueryDirectoryObject,
-    NtQueryEaFile,
-    NtQueryEvent,
-    NtQueryFullAttributesFile,
-    NtQueryInformationAtom,
-    NtQueryInformationFile,
-    NtQueryInformationJobObject,
-    NtQueryInformationProcess,
-    NtQueryInformationThread,
-    NtQueryInformationToken,
-    NtQueryInstallUILanguage,
-    NtQueryIoCompletion,
-    NtQueryKey,
-    NtQueryLicenseValue,
-    NtQueryMultipleValueKey,
-    NtQueryMutant,
-    NtQueryObject,
-    NtQueryPerformanceCounter,
-    NtQuerySection,
-    NtQuerySecurityObject,
-    NtQuerySemaphore ,
-    NtQuerySymbolicLinkObject,
-    NtQuerySystemEnvironmentValue,
-    NtQuerySystemEnvironmentValueEx,
-    NtQuerySystemInformation,
-    NtQuerySystemInformationEx,
-    NtQuerySystemTime,
-    NtQueryTimer,
-    NtQueryTimerResolution,
-    NtQueryValueKey,
-    NtQueryVirtualMemory,
-    NtQueryVolumeInformationFile,
-    NtQueueApcThread,
-    NtRaiseException,
-    NtRaiseHardError,
-    NtReadFile,
-    NtReadFileScatter,
-    NtReadVirtualMemory,
-    NtRegisterThreadTerminatePort,
-    NtReleaseKeyedEvent,
-    NtReleaseMutant,
-    NtReleaseSemaphore,
-    NtRemoveIoCompletion,
-    NtRemoveIoCompletionEx,
-    NtRemoveProcessDebug,
-    NtRenameKey,
-    NtReplaceKey,
-    NtReplyWaitReceivePort,
-    NtRequestWaitReplyPort,
-    NtResetEvent,
-    NtResetWriteWatch,
-    NtRestoreKey,
-    NtResumeProcess,
-    NtResumeThread,
-    NtRollbackTransaction,
-    NtSaveKey,
-    NtSecureConnectPort,
-    NtSetContextThread,
-    NtSetDebugFilterState,
-    NtSetDefaultLocale,
-    NtSetDefaultUILanguage,
-    NtSetEaFile,
-    NtSetEvent,
-    NtSetInformationDebugObject,
-    NtSetInformationFile,
-    NtSetInformationJobObject,
-    NtSetInformationKey,
-    NtSetInformationObject,
-    NtSetInformationProcess,
-    NtSetInformationThread,
-    NtSetInformationToken,
-    NtSetInformationVirtualMemory,
-    NtSetIntervalProfile,
-    NtSetIoCompletion,
-    NtSetLdtEntries,
-    NtSetSecurityObject,
-    NtSetSystemInformation,
-    NtSetSystemTime,
-    NtSetThreadExecutionState,
-    NtSetTimer,
-    NtSetTimerResolution,
-    NtSetValueKey,
-    NtSetVolumeInformationFile,
-    NtShutdownSystem,
-    NtSignalAndWaitForSingleObject,
-    NtSuspendProcess,
-    NtSuspendThread,
-    NtSystemDebugControl,
-    NtTerminateJobObject,
-    NtTerminateProcess,
-    NtTerminateThread,
-    NtTestAlert,
-    NtTraceControl,
-    NtUnloadDriver,
-    NtUnloadKey,
-    NtUnlockFile,
-    NtUnlockVirtualMemory,
-    NtUnmapViewOfSection,
-    NtUnmapViewOfSectionEx,
-    NtWaitForAlertByThreadId,
-    NtWaitForDebugEvent,
-    NtWaitForKeyedEvent,
-    NtWaitForMultipleObjects,
-    NtWaitForSingleObject,
-#ifndef _WIN64
-    NtWow64AllocateVirtualMemory64,
-    NtWow64GetNativeSystemInformation,
-    NtWow64IsProcessorFeaturePresent,
-    NtWow64ReadVirtualMemory64,
-    NtWow64WriteVirtualMemory64,
+#define SYSCALL_ENTRY(id,name,args) name,
+#ifdef _WIN64
+    ALL_SYSCALLS64
+#else
+    ALL_SYSCALLS32
 #endif
-    NtWriteFile,
-    NtWriteFileGather,
-    NtWriteVirtualMemory,
-    NtYieldExecution,
-    wine_nt_to_unix_file_name,
-    wine_unix_to_nt_file_name,
+#undef SYSCALL_ENTRY
 };
 
-static BYTE syscall_args[ARRAY_SIZE(syscalls)];
+static BYTE syscall_args[ARRAY_SIZE(syscalls)] =
+{
+#define SYSCALL_ENTRY(id,name,args) args,
+#ifdef _WIN64
+    ALL_SYSCALLS64
+#else
+    ALL_SYSCALLS32
+#endif
+#undef SYSCALL_ENTRY
+};
 
-SYSTEM_SERVICE_TABLE KeServiceDescriptorTable[4];
+SYSTEM_SERVICE_TABLE KeServiceDescriptorTable[4] =
+{
+    { (ULONG_PTR *)syscalls, NULL, ARRAY_SIZE(syscalls), syscall_args }
+};
 
 #ifdef __GNUC__
 static void fatal_error( const char *err, ... ) __attribute__((noreturn, format(printf,1,2)));
@@ -389,7 +167,6 @@ const char **dll_paths = NULL;
 const char **system_dll_paths = NULL;
 const char *user_name = NULL;
 SECTION_IMAGE_INFORMATION main_image_info = { NULL };
-static const IMAGE_EXPORT_DIRECTORY *ntdll_exports;
 
 /* adjust an array of pointers to make them into RVAs */
 static inline void fixup_rva_ptrs( void *array, BYTE *base, unsigned int count )
@@ -521,10 +298,25 @@ static char *build_path( const char *dir, const char *name )
     size_t len = strlen( dir );
     char *ret = malloc( len + strlen( name ) + 2 );
 
-    memcpy( ret, dir, len );
-    if (len && ret[len - 1] != '/') ret[len++] = '/';
-    if (name[0] == '/') name++;
+    if (len)
+    {
+        memcpy( ret, dir, len );
+        if (ret[len - 1] != '/') ret[len++] = '/';
+        if (name[0] == '/') name++;
+    }
     strcpy( ret + len, name );
+    return ret;
+}
+
+
+/* build a path to a binary and exec it */
+static int build_path_and_exec( pid_t *pid, const char *dir, const char *name, char **argv )
+{
+    int ret;
+
+    argv[0] = build_path( dir, name );
+    ret = posix_spawn( pid, argv[0], NULL, NULL, argv, environ );
+    free( argv[0] );
     return ret;
 }
 
@@ -662,11 +454,14 @@ static void init_paths( char *argv[] )
         data_dir = build_path( bin_dir, BIN_TO_DATADIR );
         wineloader = build_path( bin_dir, basename );
     }
-    else wineloader = build_path( build_path( build_dir, "loader" ), basename );
+    else
+    {
+        char *dirname = build_path( build_dir, "loader" );
+        wineloader = build_path( dirname, basename );
+        free(dirname);
+    }
 
-    env = malloc( sizeof("WINELOADER=") + strlen(wineloader) );
-    strcpy( env, "WINELOADER=" );
-    strcat( env, wineloader );
+    asprintf( &env, "WINELOADER=%s", wineloader );
     putenv( env );
 
     set_dll_path();
@@ -760,8 +555,8 @@ NTSTATUS exec_wineloader( char **argv, int socketfd, const pe_image_info_t *pe_i
 
     signal( SIGPIPE, SIG_DFL );
 
-    sprintf( socket_env, "WINESERVERSOCKET=%u", socketfd );
-    sprintf( preloader_reserve, "WINEPRELOADRESERVE=%x%08x-%x%08x",
+    snprintf( socket_env, sizeof(socket_env), "WINESERVERSOCKET=%u", socketfd );
+    snprintf( preloader_reserve, sizeof(preloader_reserve), "WINEPRELOADRESERVE=%x%08x-%x%08x",
              (UINT)(res_start >> 32), (UINT)res_start, (UINT)(res_end >> 32), (UINT)res_end );
 
     putenv( preloader_reserve );
@@ -776,7 +571,7 @@ NTSTATUS exec_wineloader( char **argv, int socketfd, const pe_image_info_t *pe_i
  *
  * Exec a new wine server.
  */
-static void exec_wineserver( char **argv )
+static int exec_wineserver( pid_t *pid, char **argv )
 {
     char *path;
 
@@ -785,34 +580,20 @@ static void exec_wineserver( char **argv )
         if (!is_win64)  /* look for 64-bit server */
         {
             char *loader = realpath_dirname( build_path( build_dir, "loader/wine64" ));
-            if (loader)
-            {
-                argv[0] = build_path( loader, "../server/wineserver" );
-                execv( argv[0], argv );
-            }
+            if (loader && !build_path_and_exec( pid, loader, "../server/wineserver", argv )) return 0;
         }
-        argv[0] = build_path( build_dir, "server/wineserver" );
-        execv( argv[0], argv );
-        return;
+        return build_path_and_exec( pid, build_dir, "server/wineserver", argv );
     }
 
-    argv[0] = build_path( bin_dir, "wineserver" );
-    execv( argv[0], argv );
-
-    argv[0] = getenv( "WINESERVER" );
-    if (argv[0]) execv( argv[0], argv );
+    if (!build_path_and_exec( pid, bin_dir, "wineserver", argv )) return 0;
+    if ((path = getenv( "WINESERVER" )) && !build_path_and_exec( pid, "", path, argv )) return 0;
 
     if ((path = getenv( "PATH" )))
     {
         for (path = strtok( strdup( path ), ":" ); path; path = strtok( NULL, ":" ))
-        {
-            argv[0] = build_path( path, "wineserver" );
-            execvp( argv[0], argv );
-        }
+            if (!build_path_and_exec( pid, path, "wineserver", argv )) return 0;
     }
-
-    argv[0] = build_path( BINDIR, "wineserver" );
-    execv( argv[0], argv );
+    return build_path_and_exec( pid, BINDIR, "wineserver", argv );
 }
 
 
@@ -830,21 +611,32 @@ void start_server( BOOL debug )
     if (!started)
     {
         int status;
-        int pid = fork();
-        if (pid == -1) fatal_error( "fork: %s", strerror(errno) );
-        if (!pid)
-        {
-            argv[1] = debug ? debug_flag : NULL;
-            argv[2] = NULL;
-            exec_wineserver( argv );
-            fatal_error( "could not exec wineserver\n" );
-        }
+        pid_t pid;
+
+        argv[1] = debug ? debug_flag : NULL;
+        argv[2] = NULL;
+        if (exec_wineserver( &pid, argv )) fatal_error( "could not exec wineserver\n" );
         waitpid( pid, &status, 0 );
         status = WIFEXITED(status) ? WEXITSTATUS(status) : 1;
         if (status == 2) return;  /* server lock held by someone else, will retry later */
         if (status) exit(status);  /* server failed */
         started = TRUE;
     }
+}
+
+
+/***********************************************************************
+ *           KeAddSystemServiceTable
+ */
+BOOLEAN KeAddSystemServiceTable( ULONG_PTR *funcs, ULONG_PTR *counters, ULONG limit,
+                                 BYTE *arguments, ULONG index )
+{
+    if (index >= ARRAY_SIZE(KeServiceDescriptorTable)) return FALSE;
+    KeServiceDescriptorTable[index].ServiceTable  = funcs;
+    KeServiceDescriptorTable[index].CounterTable  = counters;
+    KeServiceDescriptorTable[index].ServiceLimit  = limit;
+    KeServiceDescriptorTable[index].ArgumentTable = arguments;
+    return TRUE;
 }
 
 
@@ -1141,38 +933,6 @@ static NTSTATUS dlopen_dll( const char *so_name, UNICODE_STRING *nt_name, void *
         return STATUS_NO_MEMORY;
     }
     *ret_module = module;
-    return STATUS_SUCCESS;
-}
-
-
-/***********************************************************************
- *           ntdll_init_syscalls
- */
-NTSTATUS ntdll_init_syscalls( SYSTEM_SERVICE_TABLE *table, void **dispatcher )
-{
-    struct syscall_info
-    {
-        void  *dispatcher;
-        UINT   version;
-        USHORT id;
-        USHORT limit;
-     /* USHORT names[limit]; */
-     /* BYTE   args[limit]; */
-    } *info = (struct syscall_info *)dispatcher;
-
-    if (info->version != 0xca110001)
-    {
-        ERR( "invalid syscall table version %x\n", info->version );
-        NtTerminateProcess( GetCurrentProcess(), STATUS_INVALID_PARAMETER );
-    }
-    if (info->limit != table->ServiceLimit)
-    {
-        ERR( "syscall count mismatch %u / %lu\n", info->limit, table->ServiceLimit );
-        NtTerminateProcess( GetCurrentProcess(), STATUS_INVALID_PARAMETER );
-    }
-    info->dispatcher = __wine_syscall_dispatcher;
-    memcpy( table->ArgumentTable, (USHORT *)(info + 1) + info->limit, table->ServiceLimit );
-    KeServiceDescriptorTable[info->id] = *table;
     return STATUS_SUCCESS;
 }
 
@@ -1569,8 +1329,6 @@ static const WCHAR *get_machine_wow64_dir( WORD machine )
     static const WCHAR system32[] = {'\\','?','?','\\','C',':','\\','w','i','n','d','o','w','s','\\','s','y','s','t','e','m','3','2','\\',0};
     static const WCHAR syswow64[] = {'\\','?','?','\\','C',':','\\','w','i','n','d','o','w','s','\\','s','y','s','w','o','w','6','4','\\',0};
     static const WCHAR sysarm32[] = {'\\','?','?','\\','C',':','\\','w','i','n','d','o','w','s','\\','s','y','s','a','r','m','3','2','\\',0};
-    static const WCHAR sysx8664[] = {'\\','?','?','\\','C',':','\\','w','i','n','d','o','w','s','\\','s','y','s','x','8','6','6','4','\\',0};
-    static const WCHAR sysarm64[] = {'\\','?','?','\\','C',':','\\','w','i','n','d','o','w','s','\\','s','y','s','a','r','m','6','4','\\',0};
 
     if (machine == native_machine) machine = IMAGE_FILE_MACHINE_TARGET_HOST;
 
@@ -1579,8 +1337,6 @@ static const WCHAR *get_machine_wow64_dir( WORD machine )
     case IMAGE_FILE_MACHINE_TARGET_HOST: return system32;
     case IMAGE_FILE_MACHINE_I386:        return syswow64;
     case IMAGE_FILE_MACHINE_ARMNT:       return sysarm32;
-    case IMAGE_FILE_MACHINE_AMD64:       return sysx8664;
-    case IMAGE_FILE_MACHINE_ARM64:       return sysarm64;
     default: return NULL;
     }
 }
@@ -1603,6 +1359,7 @@ BOOL is_builtin_path( const UNICODE_STRING *path, WORD *machine )
     for (i = 0; i < supported_machines_count; i++)
     {
         sysdir = get_machine_wow64_dir( supported_machines[i] );
+        if (!sysdir) continue;
         dirlen = wcslen( sysdir );
         if (len <= dirlen) continue;
         if (wcsnicmp( p, sysdir, dirlen )) continue;
@@ -1757,14 +1514,16 @@ NTSTATUS load_start_exe( WCHAR **image, void **module )
  */
 static void load_ntdll_functions( HMODULE module )
 {
+    void **p__wine_syscall_dispatcher;
     void **p__wine_unix_call_dispatcher;
     unixlib_handle_t *p__wine_unixlib_handle;
+    const IMAGE_EXPORT_DIRECTORY *exports;
 
-    ntdll_exports = get_module_data_dir( module, IMAGE_FILE_EXPORT_DIRECTORY, NULL );
-    assert( ntdll_exports );
+    exports = get_module_data_dir( module, IMAGE_DIRECTORY_ENTRY_EXPORT, NULL );
+    assert( exports );
 
 #define GET_FUNC(name) \
-    if (!(p##name = (void *)find_named_export( module, ntdll_exports, #name ))) \
+    if (!(p##name = (void *)find_named_export( module, exports, #name ))) \
         ERR( "%s not found\n", #name )
 
     GET_FUNC( DbgUiRemoteBreakin );
@@ -1779,6 +1538,7 @@ static void load_ntdll_functions( HMODULE module )
     GET_FUNC( __wine_syscall_dispatcher );
     GET_FUNC( __wine_unix_call_dispatcher );
     GET_FUNC( __wine_unixlib_handle );
+    *p__wine_syscall_dispatcher = __wine_syscall_dispatcher;
     *p__wine_unix_call_dispatcher = __wine_unix_call_dispatcher;
     *p__wine_unixlib_handle = (UINT_PTR)unix_call_funcs;
 #undef GET_FUNC
@@ -1825,6 +1585,55 @@ static void load_ntdll_wow64_functions( HMODULE module )
 
 
 /***********************************************************************
+ *           redirect_arm64ec_ptr
+ *
+ * Redirect a function pointer through the arm64ec redirection table.
+ */
+static void *redirect_arm64ec_ptr( void *module, void *ptr,
+                                   const IMAGE_ARM64EC_REDIRECTION_ENTRY *map, ULONG map_count )
+{
+    int min = 0, max = map_count - 1;
+    ULONG_PTR rva = (char *)ptr - (char *)module;
+
+    while (min <= max)
+    {
+        int pos = (min + max) / 2;
+        if (map[pos].Source == rva) return get_rva( module, map[pos].Destination );
+        if (map[pos].Source < rva) min = pos + 1;
+        else max = pos - 1;
+    }
+    return ptr;
+}
+
+
+/***********************************************************************
+ *           redirect_ntdll_functions
+ *
+ * Redirect ntdll functions on arm64ec.
+ */
+static void redirect_ntdll_functions( HMODULE module )
+{
+    const IMAGE_LOAD_CONFIG_DIRECTORY *loadcfg;
+    const IMAGE_ARM64EC_METADATA *metadata;
+    const IMAGE_ARM64EC_REDIRECTION_ENTRY *map;
+
+    if (!(loadcfg = get_module_data_dir( module, IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, NULL ))) return;
+    if (!(metadata = (void *)loadcfg->CHPEMetadataPointer)) return;
+    if (!(map = get_rva( module, metadata->RedirectionMetadata ))) return;
+#define REDIRECT(name) \
+        p##name = redirect_arm64ec_ptr( module, p##name, map, metadata->RedirectionMetadataCount )
+    REDIRECT( DbgUiRemoteBreakin );
+    REDIRECT( KiRaiseUserExceptionDispatcher );
+    REDIRECT( KiUserExceptionDispatcher );
+    REDIRECT( KiUserApcDispatcher );
+    REDIRECT( KiUserCallbackDispatcher );
+    REDIRECT( LdrInitializeThunk );
+    REDIRECT( RtlUserThreadStart );
+#undef REDIRECT
+}
+
+
+/***********************************************************************
  *           load_ntdll
  */
 static void load_ntdll(void)
@@ -1838,24 +1647,25 @@ static void load_ntdll(void)
     UNICODE_STRING str;
     void *module;
     SIZE_T size = 0;
-    char *name;
+    char *name = NULL;
 
     init_unicode_string( &str, path );
     InitializeObjectAttributes( &attr, &str, 0, 0, NULL );
 
-    name = malloc( strlen( ntdll_dir ) + strlen( pe_dir ) + sizeof("/ntdll.dll.so") );
-    if (build_dir) sprintf( name, "%s%s/ntdll.dll", ntdll_dir, pe_dir );
-    else sprintf( name, "%s%s/ntdll.dll", dll_dir, pe_dir );
+    if (build_dir) asprintf( &name, "%s%s/ntdll.dll", ntdll_dir, pe_dir );
+    else asprintf( &name, "%s%s/ntdll.dll", dll_dir, pe_dir );
     status = open_builtin_pe_file( name, &attr, &module, &size, &info, 0, 0, current_machine, FALSE );
     if (status == STATUS_DLL_NOT_FOUND)
     {
-        sprintf( name, "%s/ntdll.dll.so", ntdll_dir );
+        free( name );
+        asprintf( &name, "%s/ntdll.dll.so", ntdll_dir );
         status = open_builtin_so_file( name, &attr, &module, &info, FALSE );
     }
     if (status == STATUS_IMAGE_NOT_AT_BASE) status = virtual_relocate_module( module );
     if (status) fatal_error( "failed to load %s error %x\n", name, status );
     free( name );
     load_ntdll_functions( module );
+    if (is_arm64ec()) redirect_ntdll_functions( module );
 }
 
 
@@ -1876,16 +1686,15 @@ static void load_apiset_dll(void)
     unsigned int status;
     HANDLE handle, mapping;
     SIZE_T size;
-    char *name;
+    char *name = NULL;
     void *ptr;
     UINT i;
 
     init_unicode_string( &str, path );
     InitializeObjectAttributes( &attr, &str, 0, 0, NULL );
 
-    name = malloc( strlen( ntdll_dir ) + strlen( pe_dir ) + sizeof("/apisetschema/apisetschema.dll") );
-    if (build_dir) sprintf( name, "%s/dlls/apisetschema%s/apisetschema.dll", build_dir, pe_dir );
-    else sprintf( name, "%s%s/apisetschema.dll", dll_dir, pe_dir );
+    if (build_dir) asprintf( &name, "%s/dlls/apisetschema%s/apisetschema.dll", build_dir, pe_dir );
+    else asprintf( &name, "%s%s/apisetschema.dll", dll_dir, pe_dir );
     status = open_unix_file( &handle, name, GENERIC_READ | SYNCHRONIZE, &attr, 0,
                              FILE_SHARE_READ | FILE_SHARE_DELETE, FILE_OPEN,
                              FILE_SYNCHRONOUS_IO_NONALERT | FILE_NON_DIRECTORY_FILE, NULL, 0 );
@@ -1941,9 +1750,14 @@ static void load_wow64_ntdll( USHORT machine )
     void *module;
     unsigned int status;
     SIZE_T size;
-    WCHAR *path = malloc( sizeof("\\??\\C:\\windows\\system32\\ntdll.dll") * sizeof(WCHAR) );
+    const WCHAR *wow64_dir;
+    WCHAR *path;
 
-    wcscpy( path, get_machine_wow64_dir( machine ));
+    if (machine == current_machine) return;
+    if (!(wow64_dir = get_machine_wow64_dir( machine ))) return;
+
+    path = malloc( sizeof("\\??\\C:\\windows\\system32\\ntdll.dll") * sizeof(WCHAR) );
+    wcscpy( path, wow64_dir );
     wcscat( path, ntdllW );
     init_unicode_string( &nt_name, path );
     status = find_builtin_dll( &nt_name, &module, &size, &info, 0, 0, machine, 0, FALSE );
@@ -1988,7 +1802,6 @@ static ULONG_PTR get_image_address(void)
  */
 static void start_main_thread(void)
 {
-    SYSTEM_SERVICE_TABLE syscall_table = { (ULONG_PTR *)syscalls, NULL, ARRAY_SIZE(syscalls), syscall_args };
     TEB *teb = virtual_alloc_first_teb();
 
     signal_init_threading();
@@ -2004,9 +1817,8 @@ static void start_main_thread(void)
     init_thread_stack( teb, 0, 0, 0 );
     NtCreateKeyedEvent( &keyed_event, GENERIC_READ | GENERIC_WRITE, NULL, 0 );
     load_ntdll();
-    if (main_image_info.Machine != current_machine) load_wow64_ntdll( main_image_info.Machine );
+    load_wow64_ntdll( main_image_info.Machine );
     load_apiset_dll();
-    ntdll_init_syscalls( &syscall_table, p__wine_syscall_dispatcher );
     server_init_process_done();
 }
 
@@ -2091,9 +1903,13 @@ static jstring wine_init_jni( JNIEnv *env, jobject obj, jobjectArray cmdline, jo
 
     java_object = (*env)->NewGlobalRef( env, obj );
 
+    main_argc = argc;
+    main_argv = argv;
+    main_envp = environ;
+
     init_paths( argv );
     virtual_init();
-    init_environment( argc, argv, environ );
+    init_environment();
 
 #ifdef __i386__
     {
@@ -2306,8 +2122,12 @@ static void check_command_line( int argc, char *argv[] )
  *
  * Main entry point called by the wine loader.
  */
-void __wine_main( int argc, char *argv[], char *envp[] )
+DECLSPEC_EXPORT void __wine_main( int argc, char *argv[], char *envp[] )
 {
+    main_argc = argc;
+    main_argv = argv;
+    main_envp = envp;
+
     init_paths( argv );
 
     if (!getenv( "WINELOADERNOEXEC" ))  /* first time around */
@@ -2333,7 +2153,7 @@ void __wine_main( int argc, char *argv[], char *envp[] )
 #endif
 
     virtual_init();
-    init_environment( argc, argv, envp );
+    init_environment();
 
 #ifdef __APPLE__
     apple_main_thread();

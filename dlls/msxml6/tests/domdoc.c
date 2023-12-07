@@ -39,18 +39,10 @@
 static BSTR alloced_bstrs[256];
 static int alloced_bstrs_count;
 
-static BSTR alloc_str_from_narrow(const char *str)
-{
-    int len = MultiByteToWideChar(CP_ACP, 0, str, -1, NULL, 0);
-    BSTR ret = SysAllocStringLen(NULL, len - 1);  /* NUL character added automatically */
-    MultiByteToWideChar(CP_ACP, 0, str, -1, ret, len);
-    return ret;
-}
-
-static BSTR _bstr_(const char *str)
+static BSTR _bstr_(const WCHAR *str)
 {
     assert(alloced_bstrs_count < ARRAY_SIZE(alloced_bstrs));
-    alloced_bstrs[alloced_bstrs_count] = alloc_str_from_narrow(str);
+    alloced_bstrs[alloced_bstrs_count] = SysAllocString(str);
     return alloced_bstrs[alloced_bstrs_count++];
 }
 
@@ -62,50 +54,166 @@ static void free_bstrs(void)
     alloced_bstrs_count = 0;
 }
 
+struct attrtest_t {
+    const WCHAR *name;
+    const WCHAR *uri;
+    const WCHAR *prefix;
+    const WCHAR *href;
+};
+
+static struct attrtest_t attrtests[] = {
+    { L"xmlns", L"http://www.w3.org/2000/xmlns/", NULL, L"http://www.w3.org/2000/xmlns/" },
+    { L"xmlns", L"nondefaulturi", NULL, L"http://www.w3.org/2000/xmlns/" },
+    { L"c", L"http://www.w3.org/2000/xmlns/", NULL, L"http://www.w3.org/2000/xmlns/" },
+    { L"c", L"nsref1", NULL, L"nsref1" },
+    { L"ns:c", L"nsref1", L"ns", L"nsref1" },
+    { L"xmlns:c", L"http://www.w3.org/2000/xmlns/", L"xmlns", L"http://www.w3.org/2000/xmlns/" },
+    { L"xmlns:c", L"nondefaulturi", L"xmlns", L"http://www.w3.org/2000/xmlns/" },
+    { 0 }
+};
+
+/* see dlls/msxml[34]/tests/domdoc.c */
+static void test_create_attribute(void)
+{
+    struct attrtest_t *ptr = attrtests;
+    IXMLDOMElement *el;
+    IXMLDOMDocument2 *doc;
+    IXMLDOMNode *node;
+    VARIANT var;
+    HRESULT hr;
+    int i = 0;
+    BSTR str;
+
+    hr = CoCreateInstance(&CLSID_DOMDocument60, NULL, CLSCTX_INPROC_SERVER, &IID_IXMLDOMDocument2, (void **)&doc);
+    ok(hr == S_OK, "Failed to create DOMDocument60, hr %#lx.\n", hr);
+
+    while (ptr->name)
+    {
+        V_VT(&var) = VT_I1;
+        V_I1(&var) = NODE_ATTRIBUTE;
+        hr = IXMLDOMDocument2_createNode(doc, var, _bstr_(ptr->name), _bstr_(ptr->uri), &node);
+        ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+
+        str = NULL;
+        hr = IXMLDOMNode_get_prefix(node, &str);
+        if (ptr->prefix)
+        {
+            ok(hr == S_OK, "%d: unexpected hr %#lx\n", i, hr);
+            ok(!lstrcmpW(str, _bstr_(ptr->prefix)), "%d: got prefix %s, expected %s\n",
+                i, wine_dbgstr_w(str), wine_dbgstr_w(ptr->prefix));
+        }
+        else
+        {
+            ok(hr == S_FALSE, "%d: unexpected hr %#lx\n", i, hr);
+            ok(str == NULL, "%d: got prefix %s\n", i, wine_dbgstr_w(str));
+        }
+        SysFreeString(str);
+
+        str = NULL;
+        hr = IXMLDOMNode_get_namespaceURI(node, &str);
+        ok(hr == S_OK, "%d: unexpected hr %#lx\n", i, hr);
+        ok(!lstrcmpW(str, _bstr_(ptr->href)) ||
+            broken(!ptr->prefix && !lstrcmpW(str, L"xmlns")), /* win7 msxml6 */
+            "%d: got uri %s, expected %s\n", i, wine_dbgstr_w(str), wine_dbgstr_w(ptr->href));
+        SysFreeString(str);
+
+        IXMLDOMNode_Release(node);
+        free_bstrs();
+
+        i++;
+        ptr++;
+    }
+
+    V_VT(&var) = VT_I1;
+    V_I1(&var) = NODE_ELEMENT;
+    hr = IXMLDOMDocument2_createNode(doc, var, _bstr_(L"e"), NULL, &node);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+
+    hr = IXMLDOMNode_QueryInterface(node, &IID_IXMLDOMElement, (void**)&el);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    IXMLDOMNode_Release(node);
+
+    V_VT(&var) = VT_I1;
+    V_I1(&var) = NODE_ATTRIBUTE;
+    hr = IXMLDOMDocument2_createNode(doc, var, _bstr_(L"xmlns:a"),
+        _bstr_(L"http://www.w3.org/2000/xmlns/"), &node);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+
+    hr = IXMLDOMElement_setAttributeNode(el, (IXMLDOMAttribute*)node, NULL);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+
+    /* for some reason default namespace uri is not reported */
+    hr = IXMLDOMNode_get_namespaceURI(node, &str);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    ok(!lstrcmpW(str, L"http://www.w3.org/2000/xmlns/") ||
+        broken(!ptr->prefix && !lstrcmpW(str, L"xmlns")), /* win7 msxml6 */
+        "got uri %s\n", wine_dbgstr_w(str));
+    SysFreeString(str);
+
+    IXMLDOMNode_Release(node);
+    IXMLDOMElement_Release(el);
+    IXMLDOMDocument2_Release(doc);
+    free_bstrs();
+}
+
 /* see dlls/msxml[34]/tests/domdoc.c */
 static void test_namespaces_as_attributes(void)
 {
     struct test
     {
-        const char *xml;
+        const WCHAR *xml;
         int explen;
-        const char *names[3];
-        const char *prefixes[3];
-        const char *basenames[3];
-        const char *uris[3];
-        const char *texts[3];
+        const WCHAR *names[3];
+        const WCHAR *prefixes[3];
+        const WCHAR *basenames[3];
+        const WCHAR *uris[3];
+        const WCHAR *texts[3];
+        const WCHAR *xmls[3];
     };
     static const struct test tests[] =
     {
         {
-            "<a ns:b=\"b attr\" d=\"d attr\" xmlns:ns=\"nshref\" />", 3,
-            { "ns:b",   "d",     "xmlns:ns" },  /* nodeName */
-            { "ns",     NULL,     "xmlns" },    /* prefix */
-            { "b",      "d",      "ns" },       /* baseName */
-            { "nshref", NULL,     "" },         /* namespaceURI */
-            { "b attr", "d attr", "nshref" },   /* text */
+            L"<a ns:b=\"b attr\" d=\"d attr\" xmlns:ns=\"nshref\" />", 3,
+            { L"ns:b",   L"d",      L"xmlns:ns" }, /* nodeName */
+            { L"ns",     NULL,      L"xmlns" },    /* prefix */
+            { L"b",      L"d",      L"ns" },       /* baseName */
+            { L"nshref", NULL,      L"" },         /* namespaceURI */
+            { L"b attr", L"d attr", L"nshref" },   /* text */
+            { L"ns:b=\"b attr\"", L"d=\"d attr\"", L"xmlns:ns=\"nshref\"" }, /* xml */
         },
         /* property only */
         {
-            "<a d=\"d attr\" />", 1,
-            { "d" },            /* nodeName */
-            { NULL },           /* prefix */
-            { "d" },            /* baseName */
-            { NULL },           /* namespaceURI */
-            { "d attr" },       /* text */
+            L"<a d=\"d attr\" />", 1,
+            { L"d" },                   /* nodeName */
+            { NULL },                   /* prefix */
+            { L"d" },                   /* baseName */
+            { NULL },                   /* namespaceURI */
+            { L"d attr" },              /* text */
+            { L"d=\"d attr\"" },        /* xml */
         },
         /* namespace only */
         {
-            "<a xmlns:ns=\"nshref\" />", 1,
-            { "xmlns:ns" },             /* nodeName */
-            { "xmlns" },                /* prefix */
-            { "ns" },                   /* baseName */
-            { "" },                     /* namespaceURI */
-            { "nshref" },               /* text */
+            L"<a xmlns:ns=\"nshref\" />", 1,
+            { L"xmlns:ns" },            /* nodeName */
+            { L"xmlns" },               /* prefix */
+            { L"ns" },                  /* baseName */
+            { L"" },                    /* namespaceURI */
+            { L"nshref" },              /* text */
+            { L"xmlns:ns=\"nshref\"" }, /* xml */
+        },
+        /* default namespace */
+        {
+            L"<a xmlns=\"nshref\" />", 1,
+            { L"xmlns" },                           /* nodeName */
+            { NULL },                               /* prefix */
+            { L"xmlns" },                           /* baseName */
+            { L"http://www.w3.org/2000/xmlns/" },   /* namespaceURI */
+            { L"nshref" },                          /* text */
+            { L"xmlns=\"nshref\"" },                /* xml */
         },
         /* no properties or namespaces */
         {
-            "<a />", 0,
+            L"<a />", 0,
         },
 
         { NULL }
@@ -129,7 +237,7 @@ static void test_namespaces_as_attributes(void)
         ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
 
         node = NULL;
-        hr = IXMLDOMDocument2_selectSingleNode(doc, _bstr_("a"), &node);
+        hr = IXMLDOMDocument2_get_firstChild(doc, &node);
         ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
 
         hr = IXMLDOMNode_get_attributes(node, &map);
@@ -154,7 +262,7 @@ static void test_namespaces_as_attributes(void)
             str = NULL;
             hr = IXMLDOMNode_get_nodeName(item, &str);
             ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
-            ok(!lstrcmpW(str, _bstr_(test->names[i])), "got %s\n", wine_dbgstr_w(str));
+            ok(!lstrcmpW(str, test->names[i]), "got %s\n", wine_dbgstr_w(str));
             SysFreeString(str);
 
             str = NULL;
@@ -162,7 +270,7 @@ static void test_namespaces_as_attributes(void)
             if (test->prefixes[i])
             {
                 ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
-                ok(!lstrcmpW(str, _bstr_(test->prefixes[i])), "got %s\n", wine_dbgstr_w(str));
+                ok(!lstrcmpW(str, test->prefixes[i]), "got %s\n", wine_dbgstr_w(str));
                 SysFreeString(str);
             }
             else
@@ -171,7 +279,7 @@ static void test_namespaces_as_attributes(void)
             str = NULL;
             hr = IXMLDOMNode_get_baseName(item, &str);
             ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
-            ok(!lstrcmpW(str, _bstr_(test->basenames[i])), "got %s\n", wine_dbgstr_w(str));
+            ok(!lstrcmpW(str, test->basenames[i]), "got %s\n", wine_dbgstr_w(str));
             SysFreeString(str);
 
             str = NULL;
@@ -179,11 +287,11 @@ static void test_namespaces_as_attributes(void)
             if (test->uris[i])
             {
                 ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
-                if (test->prefixes[i] && !strcmp(test->prefixes[i], "xmlns"))
+                if (test->prefixes[i] && !lstrcmpW(test->prefixes[i], L"xmlns"))
                     ok(!lstrcmpW(str, L"http://www.w3.org/2000/xmlns/"),
                                  "got %s\n", wine_dbgstr_w(str));
                 else
-                    ok(!lstrcmpW(str, _bstr_(test->uris[i])), "got %s\n", wine_dbgstr_w(str));
+                    ok(!lstrcmpW(str, test->uris[i]), "got %s\n", wine_dbgstr_w(str));
                 SysFreeString(str);
             }
             else
@@ -192,7 +300,13 @@ static void test_namespaces_as_attributes(void)
             str = NULL;
             hr = IXMLDOMNode_get_text(item, &str);
             ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
-            ok(!lstrcmpW(str, _bstr_(test->texts[i])), "got %s\n", wine_dbgstr_w(str));
+            ok(!lstrcmpW(str, test->texts[i]), "got %s\n", wine_dbgstr_w(str));
+            SysFreeString(str);
+
+            str = NULL;
+            hr = IXMLDOMNode_get_xml(item, &str);
+            ok(SUCCEEDED(hr), "Failed to get node xml, hr %#lx.\n", hr);
+            ok(!lstrcmpW(str, test->xmls[i]), "got %s\n", wine_dbgstr_w(str));
             SysFreeString(str);
 
             IXMLDOMNode_Release(item);
@@ -224,6 +338,7 @@ START_TEST(domdoc)
     IXMLDOMDocument2_Release(doc);
 
     test_namespaces_as_attributes();
+    test_create_attribute();
 
     CoUninitialize();
 }

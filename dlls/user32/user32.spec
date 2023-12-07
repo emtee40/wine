@@ -395,6 +395,7 @@
 @ stdcall GetTaskmanWindow ()
 @ stdcall GetThreadDesktop(long) NtUserGetThreadDesktop
 @ stdcall GetThreadDpiAwarenessContext()
+@ stdcall GetThreadDpiHostingBehavior()
 @ stdcall GetTitleBarInfo(long ptr) NtUserGetTitleBarInfo
 @ stdcall GetTopWindow(long)
 @ stdcall GetTouchInputInfo(long long ptr long)
@@ -410,6 +411,7 @@
 @ stdcall GetWindowDC(long) NtUserGetWindowDC
 @ stdcall GetWindowDisplayAffinity(long ptr)
 @ stdcall GetWindowDpiAwarenessContext(long)
+@ stdcall GetWindowDpiHostingBehavior(long)
 @ stdcall GetWindowInfo(long ptr)
 @ stdcall GetWindowLongA(long long)
 @ stdcall -arch=win64 GetWindowLongPtrA(long long)
@@ -669,9 +671,9 @@
 @ stub SetCursorContents
 @ stdcall -import SetCursorPos(long long) NtUserSetCursorPos
 @ stdcall SetDebugErrorLevel(long)
-@ stdcall SetDeskWallPaper(str)
-# @ stub SetDeskWallpaper
+@ stdcall SetDeskWallpaper(str)
 # @ stub SetDesktopBitmap
+@ stdcall SetDisplayAutoRotationPreferences(long)
 @ stdcall SetDisplayConfig(long ptr long ptr long)
 @ stdcall SetDlgItemInt(long long long long)
 @ stdcall SetDlgItemTextA(long long str)
@@ -719,6 +721,7 @@
 @ stdcall SetTaskmanWindow (long)
 @ stdcall SetThreadDesktop(long) NtUserSetThreadDesktop
 @ stdcall SetThreadDpiAwarenessContext(ptr)
+@ stdcall SetThreadDpiHostingBehavior(long)
 @ stdcall SetTimer(long long long ptr)
 @ stdcall SetUserObjectInformationA(long long ptr long)
 @ stdcall SetUserObjectInformationW(long long ptr long) NtUserSetObjectInformation

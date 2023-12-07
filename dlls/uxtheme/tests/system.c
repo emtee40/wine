@@ -38,6 +38,8 @@
 
 static HTHEME  (WINAPI * pOpenThemeDataEx)(HWND, LPCWSTR, DWORD);
 static HTHEME (WINAPI *pOpenThemeDataForDpi)(HWND, LPCWSTR, UINT);
+static HRESULT (WINAPI *pOpenThemeFile)(const WCHAR *, const WCHAR *, const WCHAR *, HANDLE, DWORD);
+static HRESULT (WINAPI *pCloseThemeFile)(HANDLE);
 static HPAINTBUFFER (WINAPI *pBeginBufferedPaint)(HDC, const RECT *, BP_BUFFERFORMAT, BP_PAINTPARAMS *, HDC *);
 static HRESULT (WINAPI *pBufferedPaintClear)(HPAINTBUFFER, const RECT *);
 static HRESULT (WINAPI *pDrawThemeBackgroundEx)(HTHEME, HDC, int, int, const RECT *, const DTBGOPTS *);
@@ -76,6 +78,8 @@ static void init_funcs(void)
     HMODULE gdi32 = GetModuleHandleA("gdi32.dll");
     HMODULE uxtheme = GetModuleHandleA("uxtheme.dll");
 
+    pOpenThemeFile = (void *)GetProcAddress(uxtheme, MAKEINTRESOURCEA(2));
+    pCloseThemeFile = (void *)GetProcAddress(uxtheme, MAKEINTRESOURCEA(3));
     pShouldSystemUseDarkMode = (void *)GetProcAddress(uxtheme, MAKEINTRESOURCEA(138));
     pShouldAppsUseDarkMode = (void *)GetProcAddress(uxtheme, MAKEINTRESOURCEA(132));
 
@@ -558,16 +562,45 @@ static void test_OpenThemeData(void)
 
     /* Only do the next checks if we have an active theme */
 
+    hRes = SetWindowTheme(hWnd, L"explorer", NULL);
+    ok(hRes == S_OK, "Got unexpected hr %#lx.\n", hRes);
+    SetLastError(0xdeadbeef);
+    hTheme = OpenThemeData(hWnd, L"explorer::treeview");
+    ok(!hTheme, "OpenThemeData() should fail\n");
+    ok(GetLastError() == E_PROP_ID_UNSUPPORTED, "Got unexpected %#lx.\n", GetLastError());
+    SetWindowTheme(hWnd, NULL, NULL);
+
+    SetLastError(0xdeadbeef);
+    hTheme = OpenThemeData(hWnd, L"dead::beef;explorer::treeview");
+    todo_wine
+    ok(!hTheme, "OpenThemeData() should fail\n");
+    todo_wine
+    ok(GetLastError() == E_PROP_ID_UNSUPPORTED, "Got unexpected %#lx.\n", GetLastError());
+
+    SetLastError(0xdeadbeef);
+    hTheme = OpenThemeData(hWnd, L"explorer::treeview");
+    ok(hTheme != NULL, "OpenThemeData() failed\n");
+    ok(GetLastError() == ERROR_SUCCESS, "Expected ERROR_SUCCESS, got 0x%08lx\n", GetLastError());
+    CloseThemeData(hTheme);
+
+    SetLastError(0xdeadbeef);
+    hTheme = OpenThemeData(hWnd, L"deadbeef::treeview;dead::beef");
+    ok(hTheme != NULL, "OpenThemeData() failed\n");
+    ok(GetLastError() == ERROR_SUCCESS, "Expected ERROR_SUCCESS, got 0x%08lx\n", GetLastError());
+    CloseThemeData(hTheme);
+
     SetLastError(0xdeadbeef);
     hTheme = OpenThemeData(hWnd, szButtonClassList);
     ok( hTheme != NULL, "got NULL, expected a HTHEME handle\n");
     ok( GetLastError() == ERROR_SUCCESS, "Expected ERROR_SUCCESS, got 0x%08lx\n", GetLastError() );
+    CloseThemeData(hTheme);
 
     /* Test with bUtToN instead of Button */
     SetLastError(0xdeadbeef);
     hTheme = OpenThemeData(hWnd, szButtonClassList2);
     ok( hTheme != NULL, "got NULL, expected a HTHEME handle\n");
     ok( GetLastError() == ERROR_SUCCESS, "Expected ERROR_SUCCESS, got 0x%08lx\n", GetLastError() );
+    CloseThemeData(hTheme);
 
     SetLastError(0xdeadbeef);
     hTheme = OpenThemeData(hWnd, szClassList);
@@ -582,6 +615,12 @@ static void test_OpenThemeData(void)
     ok( GetLastError() == 0xdeadbeef,
         "Expected 0xdeadbeef, got 0x%08lx\n",
         GetLastError());
+
+    SetLastError(0xdeadbeef);
+    bTPDefined = IsThemePartDefined(hTheme, 0, 0);
+    todo_wine
+    ok( bTPDefined == FALSE, "Expected FALSE\n" );
+    ok( GetLastError() == ERROR_SUCCESS, "Expected ERROR_SUCCESS, got 0x%08lx\n", GetLastError() );
 
     hRes = CloseThemeData(hTheme);
     ok( hRes == S_OK, "Expected S_OK, got 0x%08lx\n", hRes);
@@ -599,12 +638,6 @@ static void test_OpenThemeData(void)
     ok( GetLastError() == 0xdeadbeef,
         "Expected 0xdeadbeef, got 0x%08lx\n",
         GetLastError());
-
-    SetLastError(0xdeadbeef);
-    bTPDefined = IsThemePartDefined(hTheme, 0 , 0);
-    todo_wine
-    ok( bTPDefined == FALSE, "Expected FALSE\n" );
-    ok( GetLastError() == ERROR_SUCCESS, "Expected ERROR_SUCCESS, got 0x%08lx\n", GetLastError() );
 
     DestroyWindow(hWnd);
 }
@@ -843,6 +876,48 @@ static void test_CloseThemeData(void)
     ok( hRes == E_HANDLE, "Expected E_HANDLE, got 0x%08lx\n", hRes);
     hRes = CloseThemeData((HTHEME)0xdeadbeef);
     ok(hRes == E_HANDLE, "Expected E_HANDLE, got 0x%08lx\n", hRes);
+}
+
+static void test_OpenThemeFile(void)
+{
+    WCHAR currentThemePath[MAX_PATH];
+    DWORD pathSize = sizeof(currentThemePath);
+    HANDLE htf;
+    LSTATUS ls;
+    HRESULT hr;
+    SIZE partSize;
+
+    if (!pOpenThemeFile)
+    {
+        win_skip("OpenThemeFile is unavailable.\n");
+        return;
+    }
+
+    ls = RegGetValueW(HKEY_CURRENT_USER,
+                      L"Software\\Microsoft\\Windows\\CurrentVersion\\ThemeManager", L"DllName",
+                      RRF_RT_REG_SZ, NULL, currentThemePath, &pathSize);
+    if (ls == ERROR_FILE_NOT_FOUND)
+    {
+        win_skip("DllName registry value not found.\n");
+        return;
+    }
+    ok(ls == ERROR_SUCCESS, "RegGetValueW failed: %ld\n", ls);
+
+    htf = (void *)0xdeadbeef;
+    hr = pOpenThemeFile(NULL, NULL, NULL, &htf, 0);
+    todo_wine ok(hr == E_POINTER, "Expected E_POINTER, got 0x%08lx\n", hr);
+    ok(!htf, "Expected NULL, got %p\n", htf);
+
+    htf = (void *)0xdeadbeef;
+    hr = pOpenThemeFile(currentThemePath, NULL, NULL, &htf, 0);
+    ok(hr == S_OK, "Expected S_OK, got 0x%08lx\n", hr);
+    ok(htf != (void *)0xdeadbeef && htf != NULL && htf != INVALID_HANDLE_VALUE, "got %p\n", htf);
+
+    hr = GetThemePartSize(htf, NULL, BP_CHECKBOX, CBS_CHECKEDNORMAL, NULL, TS_DRAW, &partSize);
+    todo_wine ok(hr == E_HANDLE, "Expected E_HANDLE, got 0x%08lx\n", hr);
+
+    hr = pCloseThemeFile(htf);
+    ok(hr == S_OK, "Expected S_OK, got 0x%08lx\n", hr);
 }
 
 static void test_buffer_dc_props(HDC hdc, const RECT *rect)
@@ -2591,7 +2666,7 @@ static void test_theme(void)
     /* > XP use opaque scrollbar arrow parts, but TMT_TRANSPARENT is TRUE */
     else
     {
-        ok(hr == S_OK, "Got unexpected hr %#lx,\n", hr);
+        ok(hr == S_OK, "Got unexpected hr %#lx.\n", hr);
         ok(transparent, "Expected transparent.\n");
 
         transparent = IsThemeBackgroundPartiallyTransparent(htheme, SBP_ARROWBTN, 0);
@@ -2675,6 +2750,7 @@ START_TEST(system)
     test_OpenThemeData();
     test_OpenThemeDataEx();
     test_OpenThemeDataForDpi();
+    test_OpenThemeFile();
     test_GetCurrentThemeName();
     test_GetThemePartSize();
     test_CloseThemeData();

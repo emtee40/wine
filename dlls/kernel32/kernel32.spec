@@ -1326,6 +1326,7 @@
 @ stdcall RtlUnwind(ptr ptr ptr long) NTDLL.RtlUnwind
 @ stdcall -arch=!i386 RtlUnwindEx(long long ptr long ptr) NTDLL.RtlUnwindEx
 @ stdcall -arch=!i386 RtlVirtualUnwind(long long long ptr ptr ptr ptr ptr) NTDLL.RtlVirtualUnwind
+@ stdcall -arch=x86_64 -norelay RtlIsEcCode(ptr) NTDLL.RtlIsEcCode
 @ stdcall RtlZeroMemory(ptr long) NTDLL.RtlZeroMemory
 @ stdcall -i386 -private -norelay SMapLS() krnl386.exe16.SMapLS
 @ stdcall -i386 -private -norelay SMapLS_IP_EBP_12() krnl386.exe16.SMapLS_IP_EBP_12
@@ -1670,6 +1671,7 @@
 @ stdcall -import ZombifyActCtx(ptr)
 @ stdcall -arch=arm,x86_64 -private __C_specific_handler(ptr long ptr ptr) NTDLL.__C_specific_handler
 @ cdecl -arch=arm,x86_64 -norelay __chkstk() NTDLL.__chkstk
+@ cdecl -arch=arm64ec -norelay __chkstk_arm64ec() NTDLL.__chkstk_arm64ec
 @ stub _DebugOut
 @ stub _DebugPrintf
 @ stdcall _hread(long ptr long)

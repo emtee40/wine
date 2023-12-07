@@ -177,6 +177,7 @@ struct options
     int unwind_tables;
     int strip;
     int pic;
+    int no_default_config;
     const char* wine_objdir;
     const char* winebuild;
     const char* output_name;
@@ -299,6 +300,7 @@ static struct strarray build_tool_name( struct options *opts, enum tool tool )
         }
         strarray_add( &ret, "-Wno-unused-command-line-argument" );
         strarray_add( &ret, "-fuse-ld=lld" );
+        if (opts->no_default_config) strarray_add( &ret, "--no-default-config" );
     }
     return ret;
 }
@@ -465,6 +467,8 @@ static struct strarray get_link_args( struct options *opts, const char *output_n
 
         if (opts->out_implib)
             strarray_add(&link_args, strmake("-Wl,-implib:%s", opts->out_implib));
+        else
+            strarray_add(&link_args, strmake("-Wl,-implib:%s", make_temp_file( output_name, ".lib" )));
 
         strarray_add( &link_args, strmake( "-Wl,-filealign:%s", opts->file_align ? opts->file_align : "0x1000" ));
 
@@ -503,8 +507,9 @@ static const char *get_multiarch_dir( struct target target )
    case CPU_x86_64:  return "/x86_64-linux-gnu";
    case CPU_ARM:     return "/arm-linux-gnueabi";
    case CPU_ARM64:   return "/aarch64-linux-gnu";
+   default:
+       assert(0);
    }
-   assert(0);
    return NULL;
 }
 
@@ -697,6 +702,8 @@ static void compile(struct options* opts, const char* lang)
             strarray_add(&comp_args, "-D__stdcall=__attribute__((pcs(\"aapcs-vfp\")))");
             strarray_add(&comp_args, "-D__cdecl=__stdcall");
             strarray_add(&comp_args, "-D__fastcall=__stdcall");
+            break;
+        case CPU_ARM64EC:
             break;
         }
         strarray_add(&comp_args, "-D_stdcall=__stdcall");
@@ -1846,6 +1853,11 @@ int main(int argc, char **argv)
                 case '-':
                     if (strcmp("-static", opts.args.str[i]+1) == 0)
                         linking = -1;
+                    else if (!strcmp( "-no-default-config", opts.args.str[i] + 1 ))
+                    {
+                        opts.no_default_config = 1;
+                        raw_compiler_arg = raw_linker_arg = 1;
+                    }
                     else if (is_option( &opts, i, "--sysroot", &option_arg ))
                     {
                         opts.sysroot = option_arg;

@@ -1078,7 +1078,7 @@ static void contexts_from_server( CONTEXT *context, context_t server_contexts[2]
 /***********************************************************************
  *           pthread_exit_wrapper
  */
-static void pthread_exit_wrapper( int status )
+static DECLSPEC_NORETURN void pthread_exit_wrapper( int status )
 {
     close( ntdll_get_thread_data()->wait_fd[0] );
     close( ntdll_get_thread_data()->wait_fd[1] );
@@ -1404,7 +1404,7 @@ void abort_thread( int status )
 {
     pthread_sigmask( SIG_BLOCK, &server_block_set, NULL );
     if (InterlockedDecrement( &nb_threads ) <= 0) abort_process( status );
-    signal_exit_thread( status, pthread_exit_wrapper, NtCurrentTeb() );
+    pthread_exit_wrapper( status );
 }
 
 
@@ -1439,7 +1439,7 @@ static DECLSPEC_NORETURN void exit_thread( int status )
             virtual_free_teb( teb );
         }
     }
-    signal_exit_thread( status, pthread_exit_wrapper, NtCurrentTeb() );
+    pthread_exit_wrapper( status );
 }
 
 
@@ -1449,7 +1449,7 @@ static DECLSPEC_NORETURN void exit_thread( int status )
 void exit_process( int status )
 {
     pthread_sigmask( SIG_BLOCK, &server_block_set, NULL );
-    signal_exit_thread( get_unix_exit_code( status ), process_exit_wrapper, NtCurrentTeb() );
+    process_exit_wrapper( get_unix_exit_code( status ));
 }
 
 
@@ -1799,9 +1799,9 @@ BOOL get_thread_times(int unix_pid, int unix_tid, LARGE_INTEGER *kernel_time, LA
     int i;
 
     if (unix_tid == -1)
-        sprintf( buf, "/proc/%u/stat", unix_pid );
+        snprintf( buf, sizeof(buf), "/proc/%u/stat", unix_pid );
     else
-        sprintf( buf, "/proc/%u/task/%u/stat", unix_pid, unix_tid );
+        snprintf( buf, sizeof(buf), "/proc/%u/task/%u/stat", unix_pid, unix_tid );
     if (!(f = fopen( buf, "r" )))
     {
         WARN("Failed to open %s: %s\n", buf, strerror(errno));
@@ -1904,7 +1904,7 @@ static void set_native_thread_name( HANDLE handle, const UNICODE_STRING *name )
     }
 
     len = ntdll_wcstoumbs( name->Buffer, name->Length / sizeof(WCHAR), nameA, sizeof(nameA), FALSE );
-    sprintf(path, "/proc/%u/task/%u/comm", unix_pid, unix_tid);
+    snprintf(path, sizeof(path), "/proc/%u/task/%u/comm", unix_pid, unix_tid);
     if ((fd = open( path, O_WRONLY )) != -1)
     {
         write( fd, nameA, len );
@@ -2143,6 +2143,25 @@ NTSTATUS WINAPI NtQueryInformationThread( HANDLE handle, THREADINFOCLASS class,
         if (ret_len) *ret_len = sizeof(BOOL);
         return STATUS_SUCCESS;
 
+    case ThreadIsTerminated:
+    {
+        ULONG terminated;
+
+        if (length != sizeof(ULONG)) return STATUS_INFO_LENGTH_MISMATCH;
+        SERVER_START_REQ( get_thread_info )
+        {
+            req->handle = wine_server_obj_handle( handle );
+            if (!(status = wine_server_call( req ))) terminated = !!(reply->flags & GET_THREAD_INFO_FLAG_TERMINATED);
+        }
+        SERVER_END_REQ;
+        if (!status)
+        {
+            *(ULONG *)data = terminated;
+            if (ret_len) *ret_len = sizeof(ULONG);
+        }
+        return status;
+    }
+
     case ThreadSuspendCount:
         if (length != sizeof(ULONG)) return STATUS_INFO_LENGTH_MISMATCH;
         if (!data) return STATUS_ACCESS_VIOLATION;
@@ -2196,7 +2215,7 @@ NTSTATUS WINAPI NtQueryInformationThread( HANDLE handle, THREADINFOCLASS class,
             req->handle = wine_server_obj_handle( handle );
             req->access = THREAD_QUERY_INFORMATION;
             if ((status = wine_server_call( req ))) return status;
-            *(BOOLEAN*)data = reply->dbg_hidden;
+            *(BOOLEAN*)data = !!(reply->flags & GET_THREAD_INFO_FLAG_DBG_HIDDEN);
         }
         SERVER_END_REQ;
         if (ret_len) *ret_len = sizeof(BOOLEAN);

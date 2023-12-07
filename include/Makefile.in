@@ -695,6 +695,7 @@ SOURCES = \
 	sesprp.idl \
 	setupapi.h \
 	sfc.h \
+	shcore.h \
 	shdeprecated.idl \
 	shdispid.h \
 	shellapi.h \
@@ -857,6 +858,7 @@ SOURCES = \
 	windows.security.credentials.idl \
 	windows.security.credentials.ui.idl \
 	windows.security.cryptography.idl \
+	windows.security.exchangeactivesyncprovisioning.idl \
 	windows.security.isolation.idl \
 	windows.storage.fileproperties.idl \
 	windows.storage.idl \
@@ -864,6 +866,7 @@ SOURCES = \
 	windows.storage.streams.idl \
 	windows.system.idl \
 	windows.system.power.idl \
+	windows.system.profile.idl \
 	windows.system.profile.systemmanufacturers.idl \
 	windows.system.threading.idl \
 	windows.system.userprofile.idl \

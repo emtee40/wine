@@ -137,7 +137,6 @@ struct shader_glsl_priv
     const struct wined3d_fragment_pipe_ops *fragment_pipe;
     struct wine_rb_tree ffp_vertex_shaders;
     struct wine_rb_tree ffp_fragment_shaders;
-    BOOL ffp_proj_control;
     BOOL legacy_lighting;
 };
 
@@ -1299,15 +1298,10 @@ static void shader_glsl_load_np2fixup_constants(const struct glsl_ps_program *ps
 
     for (i = 0; fixup; fixup >>= 1, ++i)
     {
-        const struct wined3d_texture *tex = state->textures[i];
         unsigned char idx = ps->np2_fixup_info->idx[i];
+        const struct wined3d_texture *tex;
 
-        if (!tex)
-        {
-            ERR("Nonexistent texture is flagged for NP2 texcoord fixup.\n");
-            continue;
-        }
-
+        tex = texture_from_resource(state->shader_resource_view[WINED3D_SHADER_TYPE_PIXEL][i]->resource);
         np2fixup_constants[idx].sx = tex->pow2_matrix[0];
         np2fixup_constants[idx].sy = tex->pow2_matrix[5];
     }
@@ -1522,7 +1516,7 @@ static void shader_glsl_load_color_key_constant(const struct glsl_ps_program *ps
         const struct wined3d_gl_info *gl_info, const struct wined3d_state *state)
 {
     struct wined3d_color float_key[2];
-    const struct wined3d_texture *texture = state->textures[0];
+    const struct wined3d_texture *texture = wined3d_state_get_ffp_texture(state, 0);
 
     wined3d_format_get_float_color_key(texture->resource.format, &texture->async.src_blt_color_key, float_key);
     GL_EXTCALL(glUniform4fv(ps->color_key_location, 2, &float_key[0].r));
@@ -4323,12 +4317,40 @@ static void shader_glsl_cast(const struct wined3d_shader_instruction *ins,
 
 static void shader_glsl_to_int(const struct wined3d_shader_instruction *ins)
 {
-    shader_glsl_cast(ins, "ivec", "int");
+    struct wined3d_string_buffer *buffer = ins->ctx->buffer;
+    struct glsl_src_param src_param;
+    unsigned int mask_size;
+    DWORD write_mask;
+
+    write_mask = shader_glsl_append_dst(buffer, ins);
+    mask_size = shader_glsl_get_write_mask_size(write_mask);
+    shader_glsl_add_src_param(ins, &ins->src[0], write_mask, &src_param);
+
+    if (mask_size > 1)
+        shader_addline(buffer, "mix(mix(ivec%u(max(%s, vec%u(-2147483648.0))), ivec%u(0x7fffffff), greaterThanEqual(%s, vec%u(2147483648.0))), ivec%u(0), isnan(%s)));\n",
+                mask_size, src_param.param_str, mask_size, mask_size, src_param.param_str, mask_size, mask_size, src_param.param_str);
+    else
+        shader_addline(buffer, "mix(mix(int(max(%s, -2147483648.0)), 0x7fffffff, %s >= 2147483648.0), 0, isnan(%s)));\n",
+                src_param.param_str, src_param.param_str, src_param.param_str);
 }
 
 static void shader_glsl_to_uint(const struct wined3d_shader_instruction *ins)
 {
-    shader_glsl_cast(ins, "uvec", "uint");
+    struct wined3d_string_buffer *buffer = ins->ctx->buffer;
+    struct glsl_src_param src_param;
+    unsigned int mask_size;
+    DWORD write_mask;
+
+    write_mask = shader_glsl_append_dst(buffer, ins);
+    mask_size = shader_glsl_get_write_mask_size(write_mask);
+    shader_glsl_add_src_param(ins, &ins->src[0], write_mask, &src_param);
+
+    if (mask_size > 1)
+        shader_addline(buffer, "mix(uvec%u(max(%s, vec%u(0.0))), uvec%u(0xffffffffu), greaterThanEqual(%s, vec%u(4294967296.0))));\n",
+                mask_size, src_param.param_str, mask_size, mask_size, src_param.param_str, mask_size);
+    else
+        shader_addline(buffer, "mix(uint(max(%s, 0.0)), 0xffffffffu, %s >= 4294967296.0));\n",
+                src_param.param_str, src_param.param_str);
 }
 
 static void shader_glsl_to_float(const struct wined3d_shader_instruction *ins)
@@ -7552,6 +7574,8 @@ static void shader_glsl_enable_extensions(struct wined3d_string_buffer *buffer,
         shader_addline(buffer, "#extension GL_ARB_viewport_array : enable\n");
     if (gl_info->supported[EXT_GPU_SHADER4])
         shader_addline(buffer, "#extension GL_EXT_gpu_shader4 : enable\n");
+    if (gl_info->supported[EXT_SHADER_INTEGER_MIX])
+        shader_addline(buffer, "#extension GL_EXT_shader_integer_mix : enable\n");
     if (gl_info->supported[EXT_TEXTURE_ARRAY])
         shader_addline(buffer, "#extension GL_EXT_texture_array : enable\n");
     if (gl_info->supported[EXT_TEXTURE_SHADOW_LOD])
@@ -11035,7 +11059,6 @@ static HRESULT shader_glsl_alloc(struct wined3d_device *device, const struct win
         const struct wined3d_fragment_pipe_ops *fragment_pipe)
 {
     SIZE_T stack_size = wined3d_log2i(max(WINED3D_MAX_VS_CONSTS_F, WINED3D_MAX_PS_CONSTS_F)) + 1;
-    struct fragment_caps fragment_caps;
     void *vertex_priv, *fragment_priv;
     struct shader_glsl_priv *priv;
 
@@ -11088,8 +11111,6 @@ static HRESULT shader_glsl_alloc(struct wined3d_device *device, const struct win
     priv->next_constant_version = 1;
     priv->vertex_pipe = vertex_pipe;
     priv->fragment_pipe = fragment_pipe;
-    fragment_pipe->get_caps(device->adapter, &fragment_caps);
-    priv->ffp_proj_control = fragment_caps.proj_control;
     priv->legacy_lighting = device->wined3d->flags & WINED3D_LEGACY_FFP_LIGHTING;
 
     device->vertex_priv = vertex_priv;
@@ -11156,7 +11177,8 @@ static unsigned int shader_glsl_get_shader_model(const struct wined3d_gl_info *g
 {
     BOOL shader_model_4 = gl_info->glsl_version >= MAKEDWORD_VERSION(1, 50)
             && gl_info->supported[ARB_SHADER_BIT_ENCODING]
-            && gl_info->supported[ARB_TEXTURE_SWIZZLE];
+            && gl_info->supported[ARB_TEXTURE_SWIZZLE]
+            && gl_info->supported[EXT_SHADER_INTEGER_MIX];
 
     if (shader_model_4
             && gl_info->supported[ARB_COMPUTE_SHADER]
@@ -11498,13 +11520,6 @@ static void shader_glsl_handle_instruction(const struct wined3d_shader_instructi
     shader_glsl_add_instruction_modifiers(ins);
 }
 
-static BOOL shader_glsl_has_ffp_proj_control(void *shader_priv)
-{
-    struct shader_glsl_priv *priv = shader_priv;
-
-    return priv->ffp_proj_control;
-}
-
 static uint64_t shader_glsl_shader_compile(struct wined3d_context *context, const struct wined3d_shader_desc *shader_desc,
         enum wined3d_shader_type shader_type)
 {
@@ -11530,7 +11545,6 @@ const struct wined3d_shader_backend_ops glsl_shader_backend =
     shader_glsl_init_context_state,
     shader_glsl_get_caps,
     shader_glsl_color_fixup_supported,
-    shader_glsl_has_ffp_proj_control,
     shader_glsl_shader_compile,
 };
 
@@ -11811,7 +11825,7 @@ static void glsl_vertex_pipe_texmatrix_np2(struct wined3d_context *context,
         const struct wined3d_state *state, DWORD state_id)
 {
     DWORD sampler = state_id - STATE_SAMPLER(0);
-    const struct wined3d_texture *texture = state->textures[sampler];
+    const struct wined3d_texture *texture = wined3d_state_get_ffp_texture(state, sampler);
     BOOL np2;
 
     if (!texture)

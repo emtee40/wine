@@ -168,7 +168,7 @@ BOOL  dll_next_symbol (parsed_symbol * sym);
 /* Symbol functions */
 void  symbol_init(parsed_symbol* symbol, const char* name);
 
-BOOL  symbol_demangle (parsed_symbol *symbol);
+char *demangle( const char *name );
 
 BOOL  symbol_search (parsed_symbol *symbol);
 
@@ -224,6 +224,7 @@ unsigned long	Offset(const void* ptr);
 typedef void (*file_dumper)(void);
 BOOL            dump_analysis(const char*, file_dumper, enum FileSig);
 
+void            dump_data_offset( const unsigned char *ptr, unsigned int size, unsigned int offset, const char *prefix );
 void            dump_data( const unsigned char *ptr, unsigned int size, const char *prefix );
 const char*	get_time_str( unsigned long );
 unsigned int    strlenW( const unsigned short *str );

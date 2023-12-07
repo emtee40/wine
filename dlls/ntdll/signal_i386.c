@@ -33,6 +33,7 @@
 #include "ntdll_misc.h"
 #include "wine/exception.h"
 #include "wine/debug.h"
+#include "ntsyscalls.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(seh);
 WINE_DECLARE_DEBUG_CHANNEL(relay);
@@ -70,6 +71,16 @@ typedef struct
 extern DWORD EXC_CallHandler( EXCEPTION_RECORD *record, EXCEPTION_REGISTRATION_RECORD *frame,
                               CONTEXT *context, EXCEPTION_REGISTRATION_RECORD **dispatcher,
                               PEXCEPTION_HANDLER handler, PEXCEPTION_HANDLER nested_handler );
+
+
+/*******************************************************************
+ *         syscalls
+ */
+#define SYSCALL_ENTRY(id,name,args) __ASM_SYSCALL_FUNC( id, name, args )
+ALL_SYSCALLS32
+DEFINE_SYSCALL_HELPER32()
+#undef SYSCALL_ENTRY
+
 
 /*******************************************************************
  *         is_valid_frame
@@ -244,12 +255,14 @@ __ASM_STDCALL_FUNC( KiUserExceptionDispatcher, 8,
 /*******************************************************************
  *		KiUserApcDispatcher (NTDLL.@)
  */
-void WINAPI KiUserApcDispatcher( CONTEXT *context, ULONG_PTR ctx, ULONG_PTR arg1, ULONG_PTR arg2,
-                                 PNTAPCFUNC func )
-{
-    func( ctx, arg1, arg2 );
-    NtContinue( context, TRUE );
-}
+__ASM_STDCALL_FUNC( KiUserApcDispatcher, 20,
+                    "leal 0x14(%esp),%ebx\n\t"  /* context */
+                    "pop %eax\n\t"              /* func */
+                    "call *%eax\n\t"
+                    "pushl -4(%ebx)\n\t"        /* alertable */
+                    "pushl %ebx\n\t"            /* context */
+                    "call " __ASM_STDCALL("NtContinue", 8) "\n\t"
+                    "int3" )
 
 
 /*******************************************************************
@@ -371,8 +384,8 @@ void CDECL RtlRestoreContext( CONTEXT *context, EXCEPTION_RECORD *rec )
 /*******************************************************************
  *		RtlUnwind (NTDLL.@)
  */
-void WINAPI DECLSPEC_HIDDEN __regs_RtlUnwind( EXCEPTION_REGISTRATION_RECORD* pEndFrame, PVOID targetIp,
-                                              PEXCEPTION_RECORD pRecord, PVOID retval, CONTEXT *context )
+void WINAPI __regs_RtlUnwind( EXCEPTION_REGISTRATION_RECORD* pEndFrame, PVOID targetIp,
+                              PEXCEPTION_RECORD pRecord, PVOID retval, CONTEXT *context )
 {
     EXCEPTION_RECORD record;
     EXCEPTION_REGISTRATION_RECORD *frame, *dispatch;
@@ -559,7 +572,7 @@ __ASM_GLOBAL_FUNC( call_thread_func_wrapper,
                    "movl %eax,(%esp)\n\t"
                    "call *8(%ebp)" )
 
-void DECLSPEC_HIDDEN call_thread_func( PRTL_THREAD_START_ROUTINE entry, void *arg )
+void call_thread_func( PRTL_THREAD_START_ROUTINE entry, void *arg )
 {
     __TRY
     {
@@ -575,7 +588,7 @@ void DECLSPEC_HIDDEN call_thread_func( PRTL_THREAD_START_ROUTINE entry, void *ar
 /***********************************************************************
  *           signal_start_thread
  */
-extern void CDECL DECLSPEC_NORETURN signal_start_thread( CONTEXT *ctx ) DECLSPEC_HIDDEN;
+extern void CDECL DECLSPEC_NORETURN signal_start_thread( CONTEXT *ctx );
 __ASM_GLOBAL_FUNC( signal_start_thread,
                    "movl 4(%esp),%esi\n\t"   /* context */
                    "leal -12(%esi),%edi\n\t"

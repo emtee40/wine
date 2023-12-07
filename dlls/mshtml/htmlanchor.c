@@ -48,12 +48,15 @@ static HRESULT navigate_href_new_window(HTMLElement *element, nsAString *href_st
     IUri *uri;
     HRESULT hres;
 
+    if(!element->node.doc->window->base.outer_window)
+        return S_OK;
+
     nsAString_GetData(href_str, &href);
-    hres = create_relative_uri(element->node.doc->outer_window, href, &uri);
+    hres = create_relative_uri(element->node.doc->window->base.outer_window, href, &uri);
     if(FAILED(hres))
         return hres;
 
-    hres = navigate_new_window(element->node.doc->outer_window, uri, target, NULL, NULL);
+    hres = navigate_new_window(element->node.doc->window->base.outer_window, uri, target, NULL, NULL);
     IUri_Release(uri);
     return hres;
 }
@@ -110,7 +113,10 @@ static HRESULT navigate_href(HTMLElement *element, nsAString *href_str, nsAStrin
     const PRUnichar *href;
     HRESULT hres;
 
-    window = get_target_window(element->node.doc->outer_window, target_str, &use_new_window);
+    if(!element->node.doc->window->base.outer_window)
+        return S_OK;
+
+    window = get_target_window(element->node.doc->window->base.outer_window, target_str, &use_new_window);
     if(!window) {
         if(use_new_window) {
             const PRUnichar *target;
@@ -810,7 +816,7 @@ static void *HTMLAnchorElement_query_interface(DispatchEx *dispex, REFIID riid)
 static void HTMLAnchorElement_traverse(DispatchEx *dispex, nsCycleCollectionTraversalCallback *cb)
 {
     HTMLAnchorElement *This = impl_from_DispatchEx(dispex);
-    HTMLDOMNode_traverse(dispex, cb);
+    HTMLElement_traverse(dispex, cb);
 
     if(This->nsanchor)
         note_cc_edge((nsISupports*)This->nsanchor, "nsanchor", cb);
@@ -819,7 +825,7 @@ static void HTMLAnchorElement_traverse(DispatchEx *dispex, nsCycleCollectionTrav
 static void HTMLAnchorElement_unlink(DispatchEx *dispex)
 {
     HTMLAnchorElement *This = impl_from_DispatchEx(dispex);
-    HTMLDOMNode_unlink(dispex);
+    HTMLElement_unlink(dispex);
     unlink_ref(&This->nsanchor);
 }
 

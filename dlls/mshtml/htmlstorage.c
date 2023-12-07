@@ -208,12 +208,21 @@ static void storage_event_proc(event_task_t *_task)
     struct storage_event_task *task = (struct storage_event_task*)_task;
     HTMLInnerWindow *window = task->header.window;
     DOMEvent *event = task->event;
+    compat_mode_t compat_mode;
     VARIANT_BOOL cancelled;
+    HRESULT hres;
+    VARIANT var;
 
-    if(event->event_id == EVENTID_STORAGE && dispex_compat_mode(&window->event_target.dispex) >= COMPAT_MODE_IE9) {
+    if(event->event_id == EVENTID_STORAGE && (compat_mode = dispex_compat_mode(&window->event_target.dispex)) >= COMPAT_MODE_IE9) {
         dispatch_event(&window->event_target, event);
-        if(window->doc)
-            fire_event(&window->doc->node, L"onstorage", NULL, &cancelled);
+        if(window->doc) {
+            hres = create_event_obj(event, compat_mode, (IHTMLEventObj**)&V_DISPATCH(&var));
+            if(SUCCEEDED(hres)) {
+                V_VT(&var) = VT_DISPATCH;
+                fire_event(&window->doc->node, L"onstorage", &var, &cancelled);
+                IDispatch_Release(V_DISPATCH(&var));
+            }
+        }
     }else if(window->doc) {
         dispatch_event(&window->doc->node.event_target, event);
     }
@@ -322,8 +331,11 @@ static HRESULT send_storage_event(HTMLStorage *storage, BSTR key, BSTR old_value
     HRESULT hres = S_OK;
 
     ctx.url = NULL;
-    if(!window)
+
+    /* FIXME: Events are actually sent to the current window on native, even if we're detached. */
+    if(!window->base.outer_window)
         goto done;
+
     if(window->base.outer_window->uri_nofrag) {
         hres = IUri_GetDisplayUri(window->base.outer_window->uri_nofrag, &ctx.url);
         if(hres != S_OK)
@@ -1041,6 +1053,25 @@ static void *HTMLStorage_query_interface(DispatchEx *dispex, REFIID riid)
     return NULL;
 }
 
+static void HTMLStorage_traverse(DispatchEx *dispex, nsCycleCollectionTraversalCallback *cb)
+{
+    HTMLStorage *This = impl_from_DispatchEx(dispex);
+
+    if(This->window)
+        note_cc_edge((nsISupports*)&This->window->base.IHTMLWindow2_iface, "window", cb);
+}
+
+static void HTMLStorage_unlink(DispatchEx *dispex)
+{
+    HTMLStorage *This = impl_from_DispatchEx(dispex);
+
+    if(This->window) {
+        HTMLInnerWindow *window = This->window;
+        This->window = NULL;
+        IHTMLWindow2_Release(&window->base.IHTMLWindow2_iface);
+    }
+}
+
 static void HTMLStorage_destructor(DispatchEx *dispex)
 {
     HTMLStorage *This = impl_from_DispatchEx(dispex);
@@ -1298,6 +1329,8 @@ static HRESULT HTMLStorage_next_dispid(DispatchEx *dispex, DISPID id, DISPID *pi
 static const dispex_static_data_vtbl_t HTMLStorage_dispex_vtbl = {
     .query_interface  = HTMLStorage_query_interface,
     .destructor       = HTMLStorage_destructor,
+    .traverse         = HTMLStorage_traverse,
+    .unlink           = HTMLStorage_unlink,
     .get_dispid       = HTMLStorage_get_dispid,
     .get_name         = HTMLStorage_get_name,
     .invoke           = HTMLStorage_invoke,
@@ -1464,15 +1497,10 @@ HRESULT create_html_storage(HTMLInnerWindow *window, BOOL local, IHTMLStorage **
 
     storage->IHTMLStorage_iface.lpVtbl = &HTMLStorageVtbl;
     storage->window = window;
+    IHTMLWindow2_AddRef(&window->base.IHTMLWindow2_iface);
 
     init_dispatch(&storage->dispex, &HTMLStorage_dispex, dispex_compat_mode(&window->event_target.dispex));
 
     *p = &storage->IHTMLStorage_iface;
     return S_OK;
-}
-
-void detach_html_storage(IHTMLStorage *iface)
-{
-    HTMLStorage *storage = impl_from_IHTMLStorage(iface);
-    storage->window = NULL;
 }

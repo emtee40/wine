@@ -1522,13 +1522,9 @@ static void adapter_vk_destroy_rendertarget_view(struct wined3d_rendertarget_vie
 
     TRACE("view_vk %p.\n", view_vk);
 
-    /* Take a reference to the resource, in case releasing the resource
-     * would cause the device to be destroyed. */
-    wined3d_resource_incref(resource);
     wined3d_rendertarget_view_cleanup(&view_vk->v);
     wined3d_view_vk_destroy(resource->device, NULL, &view_vk->vk_image_view,
             NULL, NULL, NULL, &view_vk->command_buffer_id, view_vk);
-    wined3d_resource_decref(resource);
 }
 
 static HRESULT adapter_vk_create_shader_resource_view(const struct wined3d_view_desc *desc,
@@ -1567,13 +1563,6 @@ static void adapter_vk_destroy_shader_resource_view(struct wined3d_shader_resour
 
     TRACE("srv_vk %p.\n", srv_vk);
 
-    /* Take a reference to the resource. There are two reasons for this:
-     *  - Releasing the resource could in turn cause the device to be
-     *    destroyed, but we still need the device for
-     *    wined3d_view_vk_destroy().
-     *  - We shouldn't free buffer resources until after we've removed the
-     *    view from its bo_user list. */
-    wined3d_resource_incref(resource);
     if (resource->type == WINED3D_RTYPE_BUFFER)
         vk_buffer_view = &view_vk->u.vk_buffer_view;
     else
@@ -1581,7 +1570,6 @@ static void adapter_vk_destroy_shader_resource_view(struct wined3d_shader_resour
     wined3d_shader_resource_view_cleanup(&srv_vk->v);
     wined3d_view_vk_destroy(resource->device, vk_buffer_view, vk_image_view,
             &view_vk->bo_user, NULL, NULL, &view_vk->command_buffer_id, srv_vk);
-    wined3d_resource_decref(resource);
 }
 
 static HRESULT adapter_vk_create_unordered_access_view(const struct wined3d_view_desc *desc,
@@ -1620,13 +1608,6 @@ static void adapter_vk_destroy_unordered_access_view(struct wined3d_unordered_ac
 
     TRACE("uav_vk %p.\n", uav_vk);
 
-    /* Take a reference to the resource. There are two reasons for this:
-     *  - Releasing the resource could in turn cause the device to be
-     *    destroyed, but we still need the device for
-     *    wined3d_view_vk_destroy().
-     *  - We shouldn't free buffer resources until after we've removed the
-     *    view from its bo_user list. */
-    wined3d_resource_incref(resource);
     if (resource->type == WINED3D_RTYPE_BUFFER)
         vk_buffer_view = &view_vk->u.vk_buffer_view;
     else
@@ -1634,7 +1615,6 @@ static void adapter_vk_destroy_unordered_access_view(struct wined3d_unordered_ac
     wined3d_unordered_access_view_cleanup(&uav_vk->v);
     wined3d_view_vk_destroy(resource->device, vk_buffer_view, vk_image_view, &view_vk->bo_user,
             &uav_vk->counter_bo, &uav_vk->vk_counter_view, &view_vk->command_buffer_id, uav_vk);
-    wined3d_resource_decref(resource);
 }
 
 static HRESULT adapter_vk_create_sampler(struct wined3d_device *device, const struct wined3d_sampler_desc *desc,
@@ -1724,7 +1704,6 @@ static void adapter_vk_draw_primitive(struct wined3d_device *device,
     struct wined3d_context_vk *context_vk;
     VkCommandBuffer vk_command_buffer;
     uint32_t instance_count;
-    unsigned int i;
 
     TRACE("device %p, state %p, parameters %p.\n", device, state, parameters);
 
@@ -1744,20 +1723,6 @@ static void adapter_vk_draw_primitive(struct wined3d_device *device,
 
     if (context_vk->c.transform_feedback_active)
     {
-        if (!context_vk->vk_so_counter_bo.vk_buffer)
-        {
-            struct wined3d_bo_vk *bo = &context_vk->vk_so_counter_bo;
-
-            if (!wined3d_context_vk_create_bo(context_vk, ARRAY_SIZE(context_vk->vk_so_counters) * sizeof(uint32_t) * 2,
-                    VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, bo))
-                ERR("Failed to create counter BO.\n");
-            for (i = 0; i < ARRAY_SIZE(context_vk->vk_so_counters); ++i)
-            {
-                context_vk->vk_so_counters[i] = bo->vk_buffer;
-                context_vk->vk_so_offsets[i] = bo->b.buffer_offset + i * sizeof(uint32_t) * 2;
-            }
-        }
-
         wined3d_context_vk_reference_bo(context_vk, &context_vk->vk_so_counter_bo);
         if (context_vk->c.transform_feedback_paused)
             VK_CALL(vkCmdBeginTransformFeedbackEXT(vk_command_buffer, 0, ARRAY_SIZE(context_vk->vk_so_counters),

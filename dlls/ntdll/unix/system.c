@@ -57,8 +57,7 @@
 #ifdef __APPLE__
 # include <CoreFoundation/CoreFoundation.h>
 # include <IOKit/IOKitLib.h>
-# include <IOKit/pwr_mgt/IOPM.h>
-# include <IOKit/pwr_mgt/IOPMLib.h>
+# include <IOKit/ps/IOPSKeys.h>
 # include <IOKit/ps/IOPowerSources.h>
 # include <mach/mach.h>
 # include <mach/machine.h>
@@ -257,7 +256,7 @@ BOOL xstate_compaction_enabled = FALSE;
 #define INEI	0x49656e69	/* "ineI" */
 #define NTEL	0x6c65746e	/* "ntel" */
 
-extern void do_cpuid( unsigned int ax, unsigned int cx, unsigned int *p ) DECLSPEC_HIDDEN;
+extern void do_cpuid( unsigned int ax, unsigned int cx, unsigned int *p );
 #ifdef __i386__
 __ASM_GLOBAL_FUNC( do_cpuid,
                    "pushl %esi\n\t"
@@ -289,7 +288,7 @@ __ASM_GLOBAL_FUNC( do_cpuid,
 #endif
 
 #ifdef __i386__
-extern int have_cpuid(void) DECLSPEC_HIDDEN;
+extern int have_cpuid(void);
 __ASM_GLOBAL_FUNC( have_cpuid,
                    "pushfl\n\t"
                    "pushfl\n\t"
@@ -875,7 +874,7 @@ static void fill_performance_core_info(void)
 
         for(i = beg; i <= end; i++)
         {
-            if (i / 32 > performance_cores_capacity)
+            if (i / 32 >= performance_cores_capacity)
             {
                 p = realloc(performance_cores, performance_cores_capacity * 2 * sizeof(ULONG));
                 if (!p) goto done;
@@ -938,7 +937,7 @@ static NTSTATUS create_logical_proc_info(void)
                 continue;
             }
 
-            sprintf(name, core_info, i, "physical_package_id");
+            snprintf(name, sizeof(name), core_info, i, "physical_package_id");
             f = fopen(name, "r");
             if (f)
             {
@@ -964,13 +963,13 @@ static NTSTATUS create_logical_proc_info(void)
              */
 
             /* Mask of logical threads sharing same physical core in kernel core numbering. */
-            sprintf(name, core_info, i, "thread_siblings");
+            snprintf(name, sizeof(name), core_info, i, "thread_siblings");
             if(!sysfs_parse_bitmap(name, &thread_mask)) thread_mask = 1<<i;
 
             /* Needed later for NumaNode and Group. */
             all_cpus_mask |= thread_mask;
 
-            sprintf(name, core_info, i, "thread_siblings_list");
+            snprintf(name, sizeof(name), core_info, i, "thread_siblings_list");
             f = fopen(name, "r");
             if (f)
             {
@@ -990,31 +989,31 @@ static NTSTATUS create_logical_proc_info(void)
                 CACHE_DESCRIPTOR cache;
                 ULONG_PTR mask = 0;
 
-                sprintf(name, cache_info, i, j, "shared_cpu_map");
+                snprintf(name, sizeof(name), cache_info, i, j, "shared_cpu_map");
                 if(!sysfs_parse_bitmap(name, &mask)) continue;
 
-                sprintf(name, cache_info, i, j, "level");
+                snprintf(name, sizeof(name), cache_info, i, j, "level");
                 f = fopen(name, "r");
                 if(!f) continue;
                 fscanf(f, "%u", &r);
                 fclose(f);
                 cache.Level = r;
 
-                sprintf(name, cache_info, i, j, "ways_of_associativity");
+                snprintf(name, sizeof(name), cache_info, i, j, "ways_of_associativity");
                 f = fopen(name, "r");
                 if(!f) continue;
                 fscanf(f, "%u", &r);
                 fclose(f);
                 cache.Associativity = r;
 
-                sprintf(name, cache_info, i, j, "coherency_line_size");
+                snprintf(name, sizeof(name), cache_info, i, j, "coherency_line_size");
                 f = fopen(name, "r");
                 if(!f) continue;
                 fscanf(f, "%u", &r);
                 fclose(f);
                 cache.LineSize = r;
 
-                sprintf(name, cache_info, i, j, "size");
+                snprintf(name, sizeof(name), cache_info, i, j, "size");
                 f = fopen(name, "r");
                 if(!f) continue;
                 fscanf(f, "%u%c", &r, &op);
@@ -1023,7 +1022,7 @@ static NTSTATUS create_logical_proc_info(void)
                     WARN("unknown cache size %u%c\n", r, op);
                 cache.Size = (op=='K' ? r*1024 : r);
 
-                sprintf(name, cache_info, i, j, "type");
+                snprintf(name, sizeof(name), cache_info, i, j, "type");
                 f = fopen(name, "r");
                 if(!f) continue;
                 fscanf(f, "%s", name);
@@ -1066,7 +1065,7 @@ static NTSTATUS create_logical_proc_info(void)
             {
                 ULONG_PTR mask = 0;
 
-                sprintf(name, numa_info, i);
+                snprintf(name, sizeof(name), numa_info, i);
                 if (!sysfs_parse_bitmap( name, &mask )) continue;
 
                 if (!logical_proc_info_add_numa_node( mask, i ))
@@ -2218,7 +2217,7 @@ static void find_reg_tz_info(RTL_DYNAMIC_TIME_ZONE_INFORMATION *tzi, const char*
     char buffer[128];
     KEY_BASIC_INFORMATION *info = (KEY_BASIC_INFORMATION *)buffer;
 
-    sprintf( buffer, "%u", year );
+    snprintf( buffer, sizeof(buffer), "%u", year );
     ascii_to_unicode( yearW, buffer, strlen(buffer) + 1 );
     init_unicode_string( &nameW, Time_ZonesW );
     InitializeObjectAttributes( &attr, &nameW, 0, 0, NULL );
@@ -3366,6 +3365,7 @@ NTSTATUS WINAPI NtQuerySystemInformationEx( SYSTEM_INFORMATION_CLASS class,
 
     case SystemSupportedProcessorArchitectures:
     {
+        SYSTEM_SUPPORTED_PROCESSOR_ARCHITECTURES_INFORMATION *machines = info;
         HANDLE process;
         ULONG i;
         USHORT machine = 0;
@@ -3383,7 +3383,7 @@ NTSTATUS WINAPI NtQuerySystemInformationEx( SYSTEM_INFORMATION_CLASS class,
             if (ret) return ret;
         }
 
-        len = (supported_machines_count + 1) * sizeof(ULONG);
+        len = (supported_machines_count + 1) * sizeof(*machines);
         if (size < len)
         {
             ret = STATUS_BUFFER_TOO_SMALL;
@@ -3391,12 +3391,22 @@ NTSTATUS WINAPI NtQuerySystemInformationEx( SYSTEM_INFORMATION_CLASS class,
         }
         for (i = 0; i < supported_machines_count; i++)
         {
-            USHORT flags = 2;  /* supported (?) */
-            if (!i) flags |= 5;  /* native machine (?) */
-            if (supported_machines[i] == machine) flags |= 8;  /* current machine */
-            ((DWORD *)info)[i] = MAKELONG( supported_machines[i], flags );
+            machines[i].Machine = supported_machines[i];
+            machines[i].UserMode = 1;
+            machines[i].KernelMode = machines[i].Native = i == 0;
+            machines[i].Process = supported_machines[i] == machine;
+            machines[i].WoW64Container = 0;
+            machines[i].ReservedZero0 = 0;
         }
-        ((DWORD *)info)[i] = 0;
+
+        machines[i].Machine = 0;
+        machines[i].KernelMode = 0;
+        machines[i].UserMode = 0;
+        machines[i].Native = 0;
+        machines[i].Process = 0;
+        machines[i].WoW64Container = 0;
+        machines[i].ReservedZero0 = 0;
+
         ret = STATUS_SUCCESS;
         break;
     }
@@ -3580,66 +3590,106 @@ static NTSTATUS fill_battery_state( SYSTEM_BATTERY_STATE *bs )
 
 static NTSTATUS fill_battery_state( SYSTEM_BATTERY_STATE *bs )
 {
-    CFArrayRef batteries;
-    CFDictionaryRef battery;
-    CFNumberRef prop;
-    uint32_t value, voltage;
-    CFTimeInterval remain;
+    CFTypeRef blob = IOPSCopyPowerSourcesInfo();
+    CFArrayRef sources = IOPSCopyPowerSourcesList( blob );
+    CFIndex count, i;
+    CFDictionaryRef source = NULL;
+    CFTypeRef prop;
+    Boolean is_charging, is_internal, is_present;
+    int32_t value, voltage;
 
-    if (IOPMCopyBatteryInfo( 0, &batteries ) != kIOReturnSuccess)
-        return STATUS_ACCESS_DENIED;
-
-    if (CFArrayGetCount( batteries ) == 0)
+    if (!sources)
     {
-        /* Just assume we're on AC with no battery. */
+        if (blob) CFRelease( blob );
+        return STATUS_ACCESS_DENIED;
+    }
+
+    count = CFArrayGetCount( sources );
+
+    for (i = 0; i < count; i++)
+    {
+        source = IOPSGetPowerSourceDescription( blob, CFArrayGetValueAtIndex( sources, i ) );
+
+        if (!source)
+            continue;
+
+        prop = CFDictionaryGetValue( source, CFSTR(kIOPSTransportTypeKey) );
+        is_internal = !CFStringCompare( prop, CFSTR(kIOPSInternalType), 0 );
+
+        prop = CFDictionaryGetValue( source, CFSTR(kIOPSIsPresentKey) );
+        is_present = CFBooleanGetValue( prop );
+
+        if (is_internal && is_present)
+            break;
+    }
+
+    CFRelease( blob );
+
+    if (!source)
+    {
+        /* Just assume we're on AC with no internal power source. */
         bs->AcOnLine = TRUE;
+        CFRelease( sources );
         return STATUS_SUCCESS;
     }
-    /* Just use the first battery. */
-    battery = CFArrayGetValueAtIndex( batteries, 0 );
 
-    prop = CFDictionaryGetValue( battery, CFSTR(kIOBatteryFlagsKey) );
-    CFNumberGetValue( prop, kCFNumberSInt32Type, &value );
+    bs->BatteryPresent = TRUE;
 
-    if (value & kIOBatteryInstalled)
-        bs->BatteryPresent = TRUE;
-    else
-        /* Since we are executing code, we must have AC power. */
-        bs->AcOnLine = TRUE;
-    if (value & kIOBatteryChargerConnect)
+    prop = CFDictionaryGetValue( source, CFSTR(kIOPSIsChargingKey) );
+    is_charging = CFBooleanGetValue( prop );
+
+    prop = CFDictionaryGetValue( source, CFSTR(kIOPSPowerSourceStateKey) );
+
+    if (!CFStringCompare( prop, CFSTR(kIOPSACPowerValue), 0 ))
     {
         bs->AcOnLine = TRUE;
-        if (value & kIOBatteryCharge)
+        if (is_charging)
             bs->Charging = TRUE;
     }
     else
         bs->Discharging = TRUE;
 
     /* We'll need the voltage to be able to interpret the other values. */
-    prop = CFDictionaryGetValue( battery, CFSTR(kIOBatteryVoltageKey) );
-    CFNumberGetValue( prop, kCFNumberSInt32Type, &voltage );
+    prop = CFDictionaryGetValue( source, CFSTR(kIOPSVoltageKey) );
+    if (prop)
+        CFNumberGetValue( prop, kCFNumberIntType, &voltage );
+    else
+        /* kIOPSVoltageKey is optional and might not be populated.
+         * Assume 11.4 V then, which is a common value for Apple laptops. */
+        voltage = 11400;
 
-    prop = CFDictionaryGetValue( battery, CFSTR(kIOBatteryCapacityKey) );
-    CFNumberGetValue( prop, kCFNumberSInt32Type, &value );
+    prop = CFDictionaryGetValue( source, CFSTR(kIOPSMaxCapacityKey) );
+    CFNumberGetValue( prop, kCFNumberIntType, &value );
     bs->MaxCapacity = value * voltage;
     /* Apple uses "estimated time < 10:00" and "22%" for these, but we'll follow
      * Windows for now (5% and 33%). */
     bs->DefaultAlert1 = bs->MaxCapacity / 20;
     bs->DefaultAlert2 = bs->MaxCapacity / 3;
 
-    prop = CFDictionaryGetValue( battery, CFSTR(kIOBatteryCurrentChargeKey) );
-    CFNumberGetValue( prop, kCFNumberSInt32Type, &value );
+    prop = CFDictionaryGetValue( source, CFSTR(kIOPSCurrentCapacityKey) );
+    CFNumberGetValue( prop, kCFNumberIntType, &value );
     bs->RemainingCapacity = value * voltage;
 
-    prop = CFDictionaryGetValue( battery, CFSTR(kIOBatteryAmperageKey) );
-    CFNumberGetValue( prop, kCFNumberSInt32Type, &value );
-    bs->Rate = value * voltage;
+    prop = CFDictionaryGetValue( source, CFSTR(kIOPSCurrentKey) );
+    if (prop)
+        CFNumberGetValue( prop, kCFNumberIntType, &value );
+    else
+        /* kIOPSCurrentKey is optional and might not be populated. */
+        value = 0;
 
-    remain = IOPSGetTimeRemainingEstimate();
-    if (remain != kIOPSTimeRemainingUnknown && remain != kIOPSTimeRemainingUnlimited)
-        bs->EstimatedTime = (ULONG)remain;
+    bs->Rate = value * voltage / 1000;
 
-    CFRelease( batteries );
+    prop = CFDictionaryGetValue( source, CFSTR(kIOPSTimeToEmptyKey) );
+    if (prop)
+    {
+        CFNumberGetValue( prop, kCFNumberIntType, &value );
+        if (value > 0)
+            /*  A value of -1 indicates "Still Calculating the Time",
+             * otherwise estimated minutes left on the battery. */
+            bs->EstimatedTime = value * 60;
+    }
+
+    CFRelease( sources );
     return STATUS_SUCCESS;
 }
 
@@ -3780,7 +3830,7 @@ NTSTATUS WINAPI NtPowerInformation( POWER_INFORMATION_LEVEL level, void *input, 
             FILE* f;
 
             for(i = 0; i < out_cpus; i++) {
-                sprintf(filename, "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", i);
+                snprintf(filename, sizeof(filename), "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", i);
                 f = fopen(filename, "r");
                 if (f && (fscanf(f, "%u", &val) == 1)) {
                     cpu_power[i].MaxMhz = val / 1000;
@@ -3799,7 +3849,7 @@ NTSTATUS WINAPI NtPowerInformation( POWER_INFORMATION_LEVEL level, void *input, 
                     if(f) fclose(f);
                 }
 
-                sprintf(filename, "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_max_freq", i);
+                snprintf(filename, sizeof(filename), "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_max_freq", i);
                 f = fopen(filename, "r");
                 if(f && (fscanf(f, "%u", &val) == 1)) {
                     cpu_power[i].MhzLimit = val / 1000;

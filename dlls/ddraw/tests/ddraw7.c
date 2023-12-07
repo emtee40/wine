@@ -22,7 +22,6 @@
 
 #include <stdbool.h>
 #include "wine/test.h"
-#include "wine/heap.h"
 #include <limits.h>
 #include <math.h>
 #include "d3d.h"
@@ -320,7 +319,7 @@ static BOOL save_display_modes(DEVMODEW **original_modes, unsigned int *display_
     DISPLAY_DEVICEW display_device;
     DEVMODEW *modes, *tmp;
 
-    if (!(modes = heap_alloc(size * sizeof(*modes))))
+    if (!(modes = malloc(size * sizeof(*modes))))
         return FALSE;
 
     display_device.cb = sizeof(display_device);
@@ -336,9 +335,9 @@ static BOOL save_display_modes(DEVMODEW **original_modes, unsigned int *display_
         if (count >= size)
         {
             size *= 2;
-            if (!(tmp = heap_realloc(modes, size * sizeof(*modes))))
+            if (!(tmp = realloc(modes, size * sizeof(*modes))))
             {
-                heap_free(modes);
+                free(modes);
                 return FALSE;
             }
             modes = tmp;
@@ -348,7 +347,7 @@ static BOOL save_display_modes(DEVMODEW **original_modes, unsigned int *display_
         modes[count].dmSize = sizeof(modes[count]);
         if (!EnumDisplaySettingsW(display_device.DeviceName, ENUM_CURRENT_SETTINGS, &modes[count]))
         {
-            heap_free(modes);
+            free(modes);
             return FALSE;
         }
 
@@ -642,6 +641,29 @@ static bool init_3d_test_context_guid(struct ddraw_test_context *context, const 
     return true;
 }
 
+static bool init_3d_test_context(struct ddraw_test_context *context)
+{
+    HRESULT hr;
+
+    memset(context, 0, sizeof(*context));
+
+    context->window = create_window();
+    if (!(context->device = create_device(context->window, DDSCL_NORMAL)))
+    {
+        skip("Failed to create a D3D device.\n");
+        DestroyWindow(context->window);
+        return false;
+    }
+
+    hr = IDirect3DDevice7_GetDirect3D(context->device, &context->d3d);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    hr = IDirect3D7_QueryInterface(context->d3d, &IID_IDirectDraw7, (void **)&context->ddraw);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    hr = IDirect3DDevice7_GetRenderTarget(context->device, &context->backbuffer);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    return true;
+}
+
 #define release_test_context(a) release_test_context_(__LINE__, a)
 static void release_test_context_(unsigned int line, struct ddraw_test_context *context)
 {
@@ -663,6 +685,36 @@ static void clear_surface(IDirectDrawSurface7 *surface, unsigned int colour)
 
     fx.dwFillColor = colour;
     hr = IDirectDrawSurface7_Blt(surface, NULL, NULL, NULL, DDBLT_COLORFILL | DDBLT_WAIT, &fx);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+}
+
+static void draw_color_quad(struct ddraw_test_context *context, unsigned int colour)
+{
+    IDirect3DDevice7 *device = context->device;
+    HRESULT hr;
+
+    struct
+    {
+        struct vec3 position;
+        unsigned int colour;
+    }
+    quad[] =
+    {
+        {{-1.0f, -1.0f, 0.0f}, colour},
+        {{-1.0f,  1.0f, 0.0f}, colour},
+        {{ 1.0f, -1.0f, 0.0f}, colour},
+        {{ 1.0f,  1.0f, 0.0f}, colour},
+    };
+
+    hr = IDirect3DDevice7_SetRenderState(device, D3DRENDERSTATE_LIGHTING, FALSE);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    hr = IDirect3DDevice7_SetRenderState(device, D3DRENDERSTATE_ZENABLE, FALSE);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    hr = IDirect3DDevice7_BeginScene(device);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    hr = IDirect3DDevice7_DrawPrimitive(device, D3DPT_TRIANGLESTRIP, D3DFVF_XYZ | D3DFVF_DIFFUSE, quad, 4, 0);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    hr = IDirect3DDevice7_EndScene(device);
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
 }
 
@@ -1136,7 +1188,7 @@ static void test_clipper_blt(void)
     ok(SUCCEEDED(hr), "Failed to set clipper window, hr %#lx.\n", hr);
     hr = IDirectDrawClipper_GetClipList(clipper, NULL, NULL, &ret);
     ok(SUCCEEDED(hr), "Failed to get clip list size, hr %#lx.\n", hr);
-    rgn_data = HeapAlloc(GetProcessHeap(), 0, ret);
+    rgn_data = malloc(ret);
     hr = IDirectDrawClipper_GetClipList(clipper, NULL, rgn_data, &ret);
     ok(SUCCEEDED(hr), "Failed to get clip list, hr %#lx.\n", hr);
     ok(rgn_data->rdh.dwSize == sizeof(rgn_data->rdh), "Got unexpected structure size %#lx.\n", rgn_data->rdh.dwSize);
@@ -1145,7 +1197,7 @@ static void test_clipper_blt(void)
     ok(EqualRect(&rgn_data->rdh.rcBound, &client_rect),
             "Got unexpected bounding rect %s, expected %s.\n",
             wine_dbgstr_rect(&rgn_data->rdh.rcBound), wine_dbgstr_rect(&client_rect));
-    HeapFree(GetProcessHeap(), 0, rgn_data);
+    free(rgn_data);
 
     r1 = CreateRectRgn(0, 0, 320, 240);
     ok(!!r1, "Failed to create region.\n");
@@ -1153,7 +1205,7 @@ static void test_clipper_blt(void)
     ok(!!r2, "Failed to create region.\n");
     CombineRgn(r1, r1, r2, RGN_OR);
     ret = GetRegionData(r1, 0, NULL);
-    rgn_data = HeapAlloc(GetProcessHeap(), 0, ret);
+    rgn_data = malloc(ret);
     ret = GetRegionData(r1, ret, rgn_data);
     ok(!!ret, "Failed to get region data.\n");
 
@@ -1167,7 +1219,7 @@ static void test_clipper_blt(void)
     hr = IDirectDrawClipper_SetClipList(clipper, rgn_data, 0);
     ok(SUCCEEDED(hr), "Failed to set clip list, hr %#lx.\n", hr);
 
-    HeapFree(GetProcessHeap(), 0, rgn_data);
+    free(rgn_data);
 
     memset(&surface_desc, 0, sizeof(surface_desc));
     surface_desc.dwSize = sizeof(surface_desc);
@@ -2823,6 +2875,36 @@ static void test_window_style(void)
     expected_style = exstyle | WS_EX_TOPMOST;
     todo_wine ok(tmp == expected_style, "Expected window extended style %#lx, got %#lx.\n", expected_style, tmp);
 
+    /* Test that there is a ~1.5s timer that checks and restores WS_EX_TOPMOST if it's missing */
+    ret = ShowWindow(window, SW_RESTORE);
+    ok(ret, "ShowWindow failed, error %#lx.\n", GetLastError());
+    hr = IDirectDraw7_SetCooperativeLevel(ddraw, window, DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN);
+    ok(SUCCEEDED(hr), "SetCooperativeLevel failed, hr %#lx.\n", hr);
+    flush_events();
+
+    /* Remove WS_VISIBLE and WS_EX_TOPMOST */
+    tmp = GetWindowLongA(window, GWL_STYLE);
+    ok(tmp & WS_VISIBLE, "Expected WS_VISIBLE.\n");
+    tmp = GetWindowLongA(window, GWL_EXSTYLE);
+    ok(tmp & WS_EX_TOPMOST, "Expected WS_EX_TOPMOST.\n");
+    ret = ShowWindow(window, SW_HIDE);
+    ok(ret, "ShowWindow failed, error %#lx.\n", GetLastError());
+    ret = SetWindowPos(window, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+    ok(ret, "SetWindowPos failed, error %#lx.\n", GetLastError());
+    tmp = GetWindowLongA(window, GWL_STYLE);
+    ok(!(tmp & WS_VISIBLE), "Got unexpected WS_VISIBLE.\n");
+    tmp = GetWindowLongA(window, GWL_EXSTYLE);
+    ok(!(tmp & WS_EX_TOPMOST), "Got unexpected WS_EX_TOPMOST.\n");
+
+    Sleep(2000);
+    flush_events();
+
+    /* WS_VISIBLE is not restored but WS_EX_TOPMOST is */
+    tmp = GetWindowLongA(window, GWL_STYLE);
+    ok(!(tmp & WS_VISIBLE), "Got unexpected WS_VISIBLE.\n");
+    tmp = GetWindowLongA(window, GWL_EXSTYLE);
+    ok(tmp & WS_EX_TOPMOST, "Expected WS_EX_TOPMOST.\n");
+
     ref = IDirectDraw7_Release(ddraw);
     ok(!ref, "Unexpected refcount %lu.\n", ref);
 
@@ -3053,7 +3135,7 @@ static void test_coop_level_mode_set(void)
     if (!param.user32_height)
     {
         skip("Fewer than 3 different modes supported, skipping mode restore test.\n");
-        heap_free(original_modes);
+        free(original_modes);
         return;
     }
 
@@ -3841,7 +3923,7 @@ static void test_coop_level_mode_set(void)
     UnregisterClassA("ddraw_test_wndproc_wc2", GetModuleHandleA(NULL));
     ret = restore_display_modes(original_modes, display_count);
     ok(ret, "Failed to restore display modes.\n");
-    heap_free(original_modes);
+    free(original_modes);
 }
 
 static void test_coop_level_mode_set_multi(void)
@@ -4245,7 +4327,7 @@ done:
     DestroyWindow(window);
     ret = restore_display_modes(original_modes, display_count);
     ok(ret, "Failed to restore display modes.\n");
-    heap_free(original_modes);
+    free(original_modes);
 }
 
 static void test_initialize(void)
@@ -5107,8 +5189,8 @@ static void test_specular_lighting(void)
     hr = IDirect3DDevice7_GetDirect3D(device, &d3d);
     ok(hr == D3D_OK, "Got unexpected hr %#lx.\n", hr);
 
-    quad = heap_alloc(vertices_side * vertices_side * sizeof(*quad));
-    indices = heap_alloc(indices_count * sizeof(*indices));
+    quad = malloc(vertices_side * vertices_side * sizeof(*quad));
+    indices = malloc(indices_count * sizeof(*indices));
     for (i = 0, y = 0; y < vertices_side; ++y)
     {
         for (x = 0; x < vertices_side; ++x)
@@ -5245,8 +5327,8 @@ static void test_specular_lighting(void)
     refcount = IDirect3DDevice7_Release(device);
     ok(!refcount, "Device has %lu references left.\n", refcount);
     DestroyWindow(window);
-    heap_free(indices);
-    heap_free(quad);
+    free(indices);
+    free(quad);
 }
 
 static void test_clear_rect_count(void)
@@ -6112,8 +6194,7 @@ static void test_block_formats_creation(void)
 
     hr = IDirectDraw7_GetFourCCCodes(ddraw, &num_fourcc_codes, NULL);
     ok(SUCCEEDED(hr), "Got hr %#lx.\n", hr);
-    fourcc_codes = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
-            num_fourcc_codes * sizeof(*fourcc_codes));
+    fourcc_codes = calloc(num_fourcc_codes, sizeof(*fourcc_codes));
     if (!fourcc_codes)
         goto cleanup;
     hr = IDirectDraw7_GetFourCCCodes(ddraw, &num_fourcc_codes, fourcc_codes);
@@ -6126,14 +6207,14 @@ static void test_block_formats_creation(void)
                 supported_overlay_fmts |= formats[j].support_flag;
         }
     }
-    HeapFree(GetProcessHeap(), 0, fourcc_codes);
+    free(fourcc_codes);
 
     memset(&hal_caps, 0, sizeof(hal_caps));
     hal_caps.dwSize = sizeof(hal_caps);
     hr = IDirectDraw7_GetCaps(ddraw, &hal_caps, NULL);
     ok(SUCCEEDED(hr), "Failed to get caps, hr %#lx.\n", hr);
 
-    mem = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, 2 * 2 * 16 + 1);
+    mem = calloc(1, 2 * 2 * 16 + 1);
 
     for (i = 0; i < ARRAY_SIZE(formats); ++i)
     {
@@ -6254,7 +6335,7 @@ static void test_block_formats_creation(void)
         }
     }
 
-    HeapFree(GetProcessHeap(), 0, mem);
+    free(mem);
 cleanup:
     IDirectDraw7_Release(ddraw);
     IDirect3DDevice7_Release(device);
@@ -9092,7 +9173,7 @@ static void test_create_surface_pitch(void)
     hr = IDirectDraw7_SetCooperativeLevel(ddraw, window, DDSCL_FULLSCREEN | DDSCL_EXCLUSIVE);
     ok(SUCCEEDED(hr), "Failed to set cooperative level, hr %#lx.\n", hr);
 
-    mem = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ((63 * 4) + 8) * 63);
+    mem = calloc((63 * 4) + 8, 63);
 
     /* We need a primary surface and exclusive mode for video memory accounting to work
      * right on Windows. Otherwise it gives us junk data, like creating a video memory
@@ -9199,7 +9280,7 @@ static void test_create_surface_pitch(void)
     }
 
     IDirectDrawSurface7_Release(primary);
-    HeapFree(GetProcessHeap(), 0, mem);
+    free(mem);
     refcount = IDirectDraw7_Release(ddraw);
     ok(!refcount, "Got unexpected refcount %lu.\n", refcount);
     DestroyWindow(window);
@@ -11770,8 +11851,7 @@ static void test_color_fill(void)
 
     hr = IDirectDraw7_GetFourCCCodes(ddraw, &num_fourcc_codes, NULL);
     ok(SUCCEEDED(hr), "Got hr %#lx.\n", hr);
-    fourcc_codes = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
-            num_fourcc_codes * sizeof(*fourcc_codes));
+    fourcc_codes = calloc(num_fourcc_codes, sizeof(*fourcc_codes));
     if (!fourcc_codes)
         goto done;
     hr = IDirectDraw7_GetFourCCCodes(ddraw, &num_fourcc_codes, fourcc_codes);
@@ -11783,7 +11863,7 @@ static void test_color_fill(void)
         else if (fourcc_codes[i] == MAKEFOURCC('U', 'Y', 'V', 'Y'))
             supported_fmts |= SUPPORT_UYVY;
     }
-    HeapFree(GetProcessHeap(), 0, fourcc_codes);
+    free(fourcc_codes);
 
     memset(&hal_caps, 0, sizeof(hal_caps));
     hal_caps.dwSize = sizeof(hal_caps);
@@ -17811,7 +17891,7 @@ static void test_clipper_refcount(void)
 
     /* It looks like the protection against invalid thispointers is part of
      * the IDirectDrawClipper method implementation, not IDirectDrawSurface. */
-    clipper = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, 0x1000);
+    clipper = calloc(1, 0x1000);
     ok(!!clipper, "failed to allocate memory\n");
 
     /* Assigning the vtable to our fake clipper does NOT make a difference on
@@ -17843,7 +17923,7 @@ static void test_clipper_refcount(void)
 
     IDirectDraw_Release(ddraw1);
 
-    HeapFree(GetProcessHeap(), 0, clipper);
+    free(clipper);
 
     refcount = IDirectDraw7_Release(ddraw);
     ok(!refcount, "%lu references left.\n", refcount);
@@ -19862,6 +19942,55 @@ static void test_user_memory(const GUID *device_guid)
     release_test_context(&context);
 }
 
+/* Test that we handle flipping correctly when drawing to a flippable surface. */
+static void test_flip_3d(void)
+{
+    struct ddraw_test_context context;
+    IDirectDrawSurface7 *buffers[4];
+    DDSURFACEDESC2 desc;
+    unsigned int color;
+    HRESULT hr;
+
+    if (!init_3d_test_context(&context))
+        return;
+
+    reset_ddsd(&desc);
+    desc.dwFlags = DDSD_WIDTH | DDSD_HEIGHT | DDSD_CAPS | DDSD_BACKBUFFERCOUNT;
+    desc.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_3DDEVICE | DDSCAPS_FLIP | DDSCAPS_COMPLEX;
+    desc.dwBackBufferCount = ARRAY_SIZE(buffers) - 1;
+    desc.dwWidth = 16;
+    desc.dwHeight = 16;
+    hr = IDirectDraw7_CreateSurface(context.ddraw, &desc, &buffers[0], NULL);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+
+    for (unsigned int i = 0; i < ARRAY_SIZE(buffers) - 1; ++i)
+    {
+        DDSCAPS2 backbuffer_caps = {DDSCAPS_FLIP};
+
+        hr = IDirectDrawSurface7_GetAttachedSurface(buffers[i], &backbuffer_caps, &buffers[i + 1]);
+        ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    }
+
+    hr = IDirect3DDevice7_SetRenderTarget(context.device, buffers[0], 0);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+
+    draw_color_quad(&context, 0x0000ff00);
+
+    hr = IDirectDrawSurface7_Flip(buffers[0], NULL, DDFLIP_WAIT);
+
+    draw_color_quad(&context, 0x000000ff);
+
+    color = get_surface_color(buffers[0], 0, 0);
+    ok(color == 0x000000ff, "Got unexpected colour 0x%08x.\n", color);
+
+    color = get_surface_color(buffers[3], 0, 0);
+    ok(color == 0x0000ff00, "Got unexpected colour 0x%08x.\n", color);
+
+    for (unsigned int i = 0; i < ARRAY_SIZE(buffers); ++i)
+        IDirectDrawSurface7_Release(buffers[ARRAY_SIZE(buffers) - 1 - i]);
+    release_test_context(&context);
+}
+
 static void run_for_each_device_type(void (*test_func)(const GUID *))
 {
     winetest_push_context("Hardware device");
@@ -20046,4 +20175,5 @@ START_TEST(ddraw7)
     test_filling_convention();
     test_enum_devices();
     run_for_each_device_type(test_user_memory);
+    test_flip_3d();
 }

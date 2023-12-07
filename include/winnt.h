@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 #if defined(_NTSYSTEM_) || defined(WINE_UNIX_LIB)
-#define NTSYSAPI
+#define NTSYSAPI DECLSPEC_EXPORT
 #else
 #define NTSYSAPI DECLSPEC_IMPORT
 #endif
@@ -51,16 +51,16 @@ extern "C" {
 #define NTAPI __stdcall
 #define FASTCALL __fastcall
 
-#ifndef MIDL_PASS
+#ifndef DECLSPEC_IMPORT
 # if defined(_MSC_VER)
 #  define DECLSPEC_IMPORT __declspec(dllimport)
 # elif defined(__MINGW32__) || defined(__CYGWIN__)
 #  define DECLSPEC_IMPORT __attribute__((dllimport))
+# elif defined(__GNUC__)
+#  define DECLSPEC_IMPORT __attribute__((visibility ("hidden")))
 # else
-#  define DECLSPEC_IMPORT DECLSPEC_HIDDEN
+#  define DECLSPEC_IMPORT
 # endif
-#else
-# define DECLSPEC_IMPORT
 #endif
 
 #ifndef DECLSPEC_NORETURN
@@ -180,7 +180,10 @@ extern "C" {
 
 /* a couple of useful Wine extensions */
 
-#ifdef _MSC_VER
+#if defined(__WINESRC__) && !defined(WINE_UNIX_LIB)
+/* Wine uses .spec file for PE exports */
+# define DECLSPEC_EXPORT
+#elif defined(_MSC_VER)
 # define DECLSPEC_EXPORT __declspec(dllexport)
 #elif defined(__MINGW32__)
 # define DECLSPEC_EXPORT __attribute__((dllexport))
@@ -188,16 +191,6 @@ extern "C" {
 # define DECLSPEC_EXPORT __attribute__((visibility ("default")))
 #else
 # define DECLSPEC_EXPORT
-#endif
-
-#ifndef DECLSPEC_HIDDEN
-# if defined(_MSC_VER) || defined(__MINGW32__) || defined(__CYGWIN__) || defined(__sun)
-#  define DECLSPEC_HIDDEN
-# elif defined(__GNUC__) && ((__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 3)))
-#  define DECLSPEC_HIDDEN __attribute__((visibility ("hidden")))
-# else
-#  define DECLSPEC_HIDDEN
-# endif
 #endif
 
 #ifndef __has_attribute
@@ -2386,9 +2379,9 @@ struct _TEB;
 
 #ifdef WINE_UNIX_LIB
 # ifdef __GNUC__
-struct _TEB * WINAPI NtCurrentTeb(void) __attribute__((pure));
+NTSYSAPI struct _TEB * WINAPI NtCurrentTeb(void) __attribute__((pure));
 # else
-struct _TEB * WINAPI NtCurrentTeb(void);
+NTSYSAPI struct _TEB * WINAPI NtCurrentTeb(void);
 # endif
 #elif defined(__i386__) && defined(__GNUC__)
 static FORCEINLINE struct _TEB * WINAPI NtCurrentTeb(void)
@@ -6602,6 +6595,17 @@ typedef struct _SYSTEM_CPU_SET_INFORMATION
     } DUMMYUNIONNAME;
 } SYSTEM_CPU_SET_INFORMATION, *PSYSTEM_CPU_SET_INFORMATION;
 
+typedef struct _SYSTEM_SUPPORTED_PROCESSOR_ARCHITECTURES_INFORMATION
+{
+    DWORD Machine : 16;
+    DWORD KernelMode : 1;
+    DWORD UserMode : 1;
+    DWORD Native : 1;
+    DWORD Process : 1;
+    DWORD WoW64Container : 1;
+    DWORD ReservedZero0 : 11;
+} SYSTEM_SUPPORTED_PROCESSOR_ARCHITECTURES_INFORMATION;
+
 /* Threadpool things */
 typedef DWORD TP_VERSION,*PTP_VERSION;
 
@@ -6756,6 +6760,7 @@ typedef enum _FIRMWARE_TYPE
 #define InterlockedDecrement64 _InterlockedDecrement64
 #define InterlockedExchange _InterlockedExchange
 #define InterlockedExchangeAdd _InterlockedExchangeAdd
+#define InterlockedExchangeAdd16 _InterlockedExchangeAdd16
 #define InterlockedExchangeAdd64 _InterlockedExchangeAdd64
 #define InterlockedExchangePointer _InterlockedExchangePointer
 #define InterlockedIncrement _InterlockedIncrement
@@ -6776,6 +6781,7 @@ typedef enum _FIRMWARE_TYPE
 #pragma intrinsic(_InterlockedCompareExchangePointer)
 #pragma intrinsic(_InterlockedExchange)
 #pragma intrinsic(_InterlockedExchangeAdd)
+#pragma intrinsic(_InterlockedExchangeAdd16)
 #pragma intrinsic(_InterlockedExchangePointer)
 #pragma intrinsic(_InterlockedIncrement)
 #pragma intrinsic(_InterlockedIncrement16)
@@ -6795,6 +6801,7 @@ long      _InterlockedDecrement(long volatile*);
 short     _InterlockedDecrement16(short volatile*);
 long      _InterlockedExchange(long volatile*,long);
 long      _InterlockedExchangeAdd(long volatile*,long);
+short     _InterlockedExchangeAdd16(short volatile*,short);
 void *    _InterlockedExchangePointer(void *volatile*,void*);
 long      _InterlockedIncrement(long volatile*);
 short     _InterlockedIncrement16(short volatile*);
@@ -7023,6 +7030,11 @@ static FORCEINLINE LONG WINAPI InterlockedExchange( LONG volatile *dest, LONG va
 }
 
 static FORCEINLINE LONG WINAPI InterlockedExchangeAdd( LONG volatile *dest, LONG incr )
+{
+    return __sync_fetch_and_add( dest, incr );
+}
+
+static FORCEINLINE short WINAPI InterlockedExchangeAdd16( short volatile *dest, short incr )
 {
     return __sync_fetch_and_add( dest, incr );
 }

@@ -25,7 +25,6 @@
 #include <windows.h>
 #include <commdlg.h>
 #include <wine/debug.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include "winecfg.h"
@@ -51,7 +50,7 @@ struct win_version
 static const struct win_version win_versions[] =
 {
     { L"win11",     L"Windows 11",      L"6.3", 10,  0, 22000, VER_PLATFORM_WIN32_NT, L"", 0, 0, L"WinNT"},
-    { L"win10",     L"Windows 10",      L"6.3", 10,  0, 18362, VER_PLATFORM_WIN32_NT, L"", 0, 0, L"WinNT"},
+    { L"win10",     L"Windows 10",      L"6.3", 10,  0, 19043, VER_PLATFORM_WIN32_NT, L"", 0, 0, L"WinNT"},
     { L"win81",     L"Windows 8.1",     NULL,    6,  3,  9600, VER_PLATFORM_WIN32_NT, L"", 0, 0, L"WinNT"},
     { L"win8",      L"Windows 8",       NULL,    6,  2,  9200, VER_PLATFORM_WIN32_NT, L"", 0, 0, L"WinNT"},
     { L"win2008r2", L"Windows 2008 R2", NULL,    6,  1,  7601, VER_PLATFORM_WIN32_NT, L"Service Pack 1", 1, 0, L"ServerNT"},
@@ -516,7 +515,7 @@ void print_windows_versions(void)
 
     for (i = 0; i < ARRAY_SIZE(win_versions); i++)
     {
-        wprintf(L"  %10s  %s\n", win_versions[i].szVersion, win_versions[i].szDescription);
+        MESSAGE("  %10ls  %ls\n", win_versions[i].szVersion, win_versions[i].szDescription);
     }
 }
 
@@ -527,10 +526,10 @@ void print_current_winver(void)
     if (!winver || !winver[0])
     {
         int ver = get_registry_version();
-        wprintf(L"%s\n", ver == -1 ? DEFAULT_WIN_VERSION : win_versions[ver].szVersion);
+        MESSAGE("%ls\n", ver == -1 ? DEFAULT_WIN_VERSION : win_versions[ver].szVersion);
     }
     else
-        wprintf(L"%s\n", winver);
+        MESSAGE("%ls\n", winver);
 
     free(winver);
 }

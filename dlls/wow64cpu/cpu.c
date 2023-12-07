@@ -171,7 +171,7 @@ static void copy_context_64to32( I386_CONTEXT *ctx32, DWORD flags, AMD64_CONTEXT
  *
  * Execute a 64-bit syscall from 32-bit code, then return to 32-bit.
  */
-extern void WINAPI syscall_32to64(void) DECLSPEC_HIDDEN;
+extern void WINAPI syscall_32to64(void);
 __ASM_GLOBAL_FUNC( syscall_32to64,
                    /* cf. BTCpuSimulate prolog */
                    __ASM_SEH(".seh_stackalloc 0x28\n\t")
@@ -234,7 +234,7 @@ __ASM_GLOBAL_FUNC( syscall_32to64,
  *
  * Execute a 64-bit Unix call from 32-bit code, then return to 32-bit.
  */
-extern void WINAPI unix_call_32to64(void) DECLSPEC_HIDDEN;
+extern void WINAPI unix_call_32to64(void);
 __ASM_GLOBAL_FUNC( unix_call_32to64,
                    /* cf. BTCpuSimulate prolog */
                    __ASM_SEH(".seh_stackalloc 0x28\n\t")
@@ -386,6 +386,14 @@ NTSTATUS WINAPI BTCpuResetToConsistentState( EXCEPTION_POINTERS *ptrs )
 {
     CONTEXT *context = ptrs->ContextRecord;
     I386_CONTEXT wow_context;
+    struct machine_frame
+    {
+        ULONG64 rip;
+        ULONG64 cs;
+        ULONG64 eflags;
+        ULONG64 rsp;
+        ULONG64 ss;
+    } *machine_frame;
 
     if (context->SegCs == cs64_sel) return STATUS_SUCCESS;  /* exception in 64-bit code, nothing to do */
 
@@ -397,6 +405,10 @@ NTSTATUS WINAPI BTCpuResetToConsistentState( EXCEPTION_POINTERS *ptrs )
     context->Rip = (ULONG64)syscall_32to64;
     context->SegCs = cs64_sel;
     context->Rsp = context->R14;
+    /* fixup machine frame */
+    machine_frame = (struct machine_frame *)(((ULONG_PTR)(ptrs->ExceptionRecord + 1) + 15) & ~15);
+    machine_frame->rip = context->Rip;
+    machine_frame->rsp = context->Rsp;
     return STATUS_SUCCESS;
 }
 

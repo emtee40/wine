@@ -31,6 +31,8 @@ enum async_op
     ASYNC_START,
     ASYNC_STOP,
     ASYNC_PAUSE,
+    ASYNC_PROCESS,
+    ASYNC_FINALIZE,
 };
 
 struct async_command
@@ -39,6 +41,19 @@ struct async_command
     LONG refcount;
 
     enum async_op op;
+
+    union
+    {
+        struct
+        {
+            IMFSample *sample;
+            UINT32 stream_id;
+        } process;
+        struct
+        {
+            IMFAsyncResult *result;
+        } finalize;
+    } u;
 };
 
 struct stream_sink
@@ -70,6 +85,7 @@ struct media_sink
         STATE_STARTED,
         STATE_STOPPED,
         STATE_PAUSED,
+        STATE_FINALIZED,
         STATE_SHUTDOWN,
     } state;
 
@@ -142,7 +158,13 @@ static ULONG WINAPI async_command_Release(IUnknown *iface)
     ULONG refcount = InterlockedDecrement(&command->refcount);
 
     if (!refcount)
+    {
+        if (command->op == ASYNC_PROCESS && command->u.process.sample)
+            IMFSample_Release(command->u.process.sample);
+        else if (command->op == ASYNC_FINALIZE && command->u.finalize.result)
+            IMFAsyncResult_Release(command->u.finalize.result);
         free(command);
+    }
 
     return refcount;
 }
@@ -301,9 +323,42 @@ static HRESULT WINAPI stream_sink_GetMediaTypeHandler(IMFStreamSink *iface, IMFM
 
 static HRESULT WINAPI stream_sink_ProcessSample(IMFStreamSink *iface, IMFSample *sample)
 {
-    FIXME("iface %p, sample %p stub!\n", iface, sample);
+    struct stream_sink *stream_sink = impl_from_IMFStreamSink(iface);
+    struct media_sink *media_sink = impl_from_IMFFinalizableMediaSink(stream_sink->media_sink);
+    struct async_command *command;
+    HRESULT hr;
 
-    return E_NOTIMPL;
+    TRACE("iface %p, sample %p.\n", iface, sample);
+
+    EnterCriticalSection(&media_sink->cs);
+
+    if (media_sink->state == STATE_SHUTDOWN)
+    {
+        LeaveCriticalSection(&media_sink->cs);
+        return MF_E_SHUTDOWN;
+    }
+
+    if (media_sink->state != STATE_STARTED && media_sink->state != STATE_PAUSED)
+    {
+        LeaveCriticalSection(&media_sink->cs);
+        return MF_E_INVALIDREQUEST;
+    }
+
+    if (FAILED(hr = (async_command_create(ASYNC_PROCESS, &command))))
+    {
+        LeaveCriticalSection(&media_sink->cs);
+        return hr;
+    }
+    IMFSample_AddRef((command->u.process.sample = sample));
+    command->u.process.stream_id = stream_sink->id;
+
+    hr = MFPutWorkItem(MFASYNC_CALLBACK_QUEUE_STANDARD,
+            &media_sink->async_callback, &command->IUnknown_iface);
+    IUnknown_Release(&command->IUnknown_iface);
+
+    LeaveCriticalSection(&media_sink->cs);
+
+    return hr;
 }
 
 static HRESULT WINAPI stream_sink_PlaceMarker(IMFStreamSink *iface, MFSTREAMSINK_MARKER_TYPE marker_type,
@@ -479,7 +534,11 @@ static HRESULT media_sink_queue_command(struct media_sink *media_sink, enum asyn
     if (FAILED(hr = async_command_create(op, &command)))
         return hr;
 
-    return MFPutWorkItem(MFASYNC_CALLBACK_QUEUE_STANDARD, &media_sink->async_callback, &command->IUnknown_iface);
+    hr = MFPutWorkItem(MFASYNC_CALLBACK_QUEUE_STANDARD,
+            &media_sink->async_callback, &command->IUnknown_iface);
+    IUnknown_Release(&command->IUnknown_iface);
+
+    return hr;
 }
 
 static HRESULT media_sink_queue_stream_event(struct media_sink *media_sink, MediaEventType type)
@@ -496,9 +555,37 @@ static HRESULT media_sink_queue_stream_event(struct media_sink *media_sink, Medi
     return S_OK;
 }
 
+static HRESULT media_sink_write_stream(struct media_sink *media_sink)
+{
+    BYTE buffer[1024];
+    UINT32 size = sizeof(buffer);
+    ULONG written;
+    QWORD offset;
+    HRESULT hr;
+
+    while (SUCCEEDED(hr = wg_muxer_read_data(media_sink->muxer, buffer, &size, &offset)))
+    {
+        if (offset != UINT64_MAX && FAILED(hr = IMFByteStream_SetCurrentPosition(media_sink->bytestream, offset)))
+            return hr;
+
+        if (FAILED(hr = IMFByteStream_Write(media_sink->bytestream, buffer, size, &written)))
+            return hr;
+
+        size = sizeof(buffer);
+    }
+
+    return S_OK;
+}
+
 static HRESULT media_sink_start(struct media_sink *media_sink)
 {
+    HRESULT hr;
+
+    if (FAILED(hr = wg_muxer_start(media_sink->muxer)))
+        return hr;
+
     media_sink->state = STATE_STARTED;
+
     return media_sink_queue_stream_event(media_sink, MEStreamSinkStarted);
 }
 
@@ -513,6 +600,88 @@ static HRESULT media_sink_pause(struct media_sink *media_sink)
 {
     media_sink->state = STATE_PAUSED;
     return media_sink_queue_stream_event(media_sink, MEStreamSinkPaused);
+}
+
+static HRESULT media_sink_process(struct media_sink *media_sink, IMFSample *sample, UINT32 stream_id)
+{
+    wg_muxer_t muxer = media_sink->muxer;
+    struct wg_sample *wg_sample;
+    LONGLONG time, duration;
+    UINT32 value;
+    HRESULT hr;
+
+    TRACE("media_sink %p, sample %p, stream_id %u.\n", media_sink, sample, stream_id);
+
+    if (FAILED(hr = media_sink_write_stream(media_sink)))
+        WARN("Failed to write output samples to stream, hr %#lx.\n", hr);
+
+    if (FAILED(hr = wg_sample_create_mf(sample, &wg_sample)))
+        return hr;
+
+    if (SUCCEEDED(IMFSample_GetSampleTime(sample, &time)))
+    {
+        wg_sample->flags |= WG_SAMPLE_FLAG_HAS_PTS;
+        wg_sample->pts = time;
+    }
+    if (SUCCEEDED(IMFSample_GetSampleDuration(sample, &duration)))
+    {
+        wg_sample->flags |= WG_SAMPLE_FLAG_HAS_DURATION;
+        wg_sample->duration = duration;
+    }
+    if (SUCCEEDED(IMFSample_GetUINT32(sample, &MFSampleExtension_CleanPoint, &value)) && value)
+        wg_sample->flags |= WG_SAMPLE_FLAG_SYNC_POINT;
+    if (SUCCEEDED(IMFSample_GetUINT32(sample, &MFSampleExtension_Discontinuity, &value)) && value)
+        wg_sample->flags |= WG_SAMPLE_FLAG_DISCONTINUITY;
+
+    hr = wg_muxer_push_sample(muxer, wg_sample, stream_id);
+    wg_sample_release(wg_sample);
+
+    return hr;
+}
+
+static HRESULT media_sink_begin_finalize(struct media_sink *media_sink, IMFAsyncCallback *callback, IUnknown *state)
+{
+    struct async_command *command;
+    IMFAsyncResult *result;
+    HRESULT hr;
+
+    if (media_sink->state == STATE_SHUTDOWN)
+        return MF_E_SHUTDOWN;
+    if (!callback)
+        return S_OK;
+
+    if (FAILED(hr = async_command_create(ASYNC_FINALIZE, &command)))
+        return hr;
+
+    if (FAILED(hr = MFCreateAsyncResult(NULL, callback, state, &result)))
+    {
+        IUnknown_Release(&command->IUnknown_iface);
+        return hr;
+    }
+    IMFAsyncResult_AddRef((command->u.finalize.result = result));
+
+    hr = MFPutWorkItem(MFASYNC_CALLBACK_QUEUE_STANDARD,
+            &media_sink->async_callback, &command->IUnknown_iface);
+    IUnknown_Release(&command->IUnknown_iface);
+
+    return hr;
+}
+
+static HRESULT media_sink_finalize(struct media_sink *media_sink, IMFAsyncResult *result)
+{
+    HRESULT hr;
+
+    media_sink->state = STATE_FINALIZED;
+
+    hr = wg_muxer_finalize(media_sink->muxer);
+
+    if (SUCCEEDED(hr))
+        hr = media_sink_write_stream(media_sink);
+
+    IMFAsyncResult_SetStatus(result, hr);
+    MFInvokeCallback(result);
+
+    return hr;
 }
 
 static HRESULT WINAPI media_sink_QueryInterface(IMFFinalizableMediaSink *iface, REFIID riid, void **obj)
@@ -588,6 +757,7 @@ static HRESULT WINAPI media_sink_AddStreamSink(IMFFinalizableMediaSink *iface, D
 {
     struct media_sink *media_sink = impl_from_IMFFinalizableMediaSink(iface);
     struct stream_sink *object;
+    struct wg_format format;
     HRESULT hr;
 
     TRACE("iface %p, stream_sink_id %#lx, media_type %p, stream_sink %p.\n",
@@ -605,6 +775,14 @@ static HRESULT WINAPI media_sink_AddStreamSink(IMFFinalizableMediaSink *iface, D
     {
         WARN("Failed to create stream sink, hr %#lx.\n", hr);
         LeaveCriticalSection(&media_sink->cs);
+        return hr;
+    }
+
+    mf_media_type_to_wg_format(media_type, &format);
+    if (FAILED(hr = wg_muxer_add_stream(media_sink->muxer, stream_sink_id, &format)))
+    {
+        LeaveCriticalSection(&media_sink->cs);
+        IMFStreamSink_Release(&object->IMFStreamSink_iface);
         return hr;
     }
 
@@ -745,16 +923,23 @@ static HRESULT WINAPI media_sink_Shutdown(IMFFinalizableMediaSink *iface)
 
 static HRESULT WINAPI media_sink_BeginFinalize(IMFFinalizableMediaSink *iface, IMFAsyncCallback *callback, IUnknown *state)
 {
-    FIXME("iface %p, callback %p, state %p stub!\n", iface, callback, state);
+    struct media_sink *media_sink = impl_from_IMFFinalizableMediaSink(iface);
+    HRESULT hr;
 
-    return E_NOTIMPL;
+    TRACE("iface %p, callback %p, state %p.\n", iface, callback, state);
+
+    EnterCriticalSection(&media_sink->cs);
+    hr =  media_sink_begin_finalize(media_sink, callback, state);
+    LeaveCriticalSection(&media_sink->cs);
+
+    return hr;
 }
 
 static HRESULT WINAPI media_sink_EndFinalize(IMFFinalizableMediaSink *iface, IMFAsyncResult *result)
 {
-    FIXME("iface %p, result %p stub!\n", iface, result);
+    TRACE("iface %p, result %p.\n", iface, result);
 
-    return E_NOTIMPL;
+    return result ? IMFAsyncResult_GetStatus(result) : E_INVALIDARG;
 }
 
 static const IMFFinalizableMediaSinkVtbl media_sink_vtbl =
@@ -998,13 +1183,22 @@ static HRESULT WINAPI media_sink_callback_Invoke(IMFAsyncCallback *iface, IMFAsy
     switch (command->op)
     {
         case ASYNC_START:
-            hr = media_sink_start(media_sink);
+            if (FAILED(hr = media_sink_start(media_sink)))
+                WARN("Failed to start media sink.\n");
             break;
         case ASYNC_STOP:
             hr = media_sink_stop(media_sink);
             break;
         case ASYNC_PAUSE:
             hr = media_sink_pause(media_sink);
+            break;
+        case ASYNC_PROCESS:
+            if (FAILED(hr = media_sink_process(media_sink, command->u.process.sample, command->u.process.stream_id)))
+                WARN("Failed to process sample, hr %#lx.\n", hr);
+            break;
+        case ASYNC_FINALIZE:
+            if (FAILED(hr = media_sink_finalize(media_sink, command->u.finalize.result)))
+                WARN("Failed to finalize, hr %#lx.\n", hr);
             break;
         default:
             WARN("Unsupported op %u.\n", command->op);

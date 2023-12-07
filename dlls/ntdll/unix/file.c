@@ -1613,7 +1613,7 @@ static int fd_set_dos_attrib( int fd, UINT attr, BOOL force_set )
          * this format with more features, but retains compatibility with the
          * earlier format. */
         char data[11];
-        int len = sprintf( data, "0x%x", attr );
+        int len = snprintf( data, sizeof(data), "0x%x", attr );
         return xattr_fset( fd, SAMBA_XATTR_DOS_ATTRIB, data, len );
     }
     else return xattr_fremove( fd, SAMBA_XATTR_DOS_ATTRIB );
@@ -2098,10 +2098,8 @@ static unsigned int get_drives_info( struct file_identity info[MAX_DOS_DRIVES] )
         struct stat st;
         unsigned int i;
 
-        if ((buffer = malloc( strlen(config_dir) + sizeof("/dosdevices/a:") )))
+        if (asprintf( &buffer, "%s/dosdevices/a:", config_dir ) != -1)
         {
-            strcpy( buffer, config_dir );
-            strcat( buffer, "/dosdevices/a:" );
             p = buffer + strlen(buffer) - 2;
 
             for (i = nb_drives = 0; i < MAX_DOS_DRIVES; i++)
@@ -2898,9 +2896,7 @@ static void init_redirects(void)
     char *dir;
     struct stat st;
 
-    if (!(dir = malloc( strlen(config_dir) + sizeof(system_dir) ))) return;
-    strcpy( dir, config_dir );
-    strcat( dir, system_dir );
+    if (asprintf( &dir, "%s%s", config_dir, system_dir ) == -1) return;
     if (!stat( dir, &st ))
     {
         sysdir.dev = st.st_dev;
@@ -3904,11 +3900,9 @@ static NTSTATUS unmount_device( HANDLE handle )
 #else
                 static const char umount[] = "umount >/dev/null 2>&1 ";
 #endif
-                char *cmd = malloc( strlen(mount_point)+sizeof(umount));
-                if (cmd)
+                char *cmd;
+                if (asprintf( &cmd, "%s%s", umount, mount_point ) != -1)
                 {
-                    strcpy( cmd, umount );
-                    strcat( cmd, mount_point );
                     system( cmd );
                     free( cmd );
 #ifdef linux
@@ -4270,7 +4264,7 @@ NTSTATUS WINAPI NtQueryAttributesFile( const OBJECT_ATTRIBUTES *attr, FILE_BASIC
 NTSTATUS WINAPI NtQueryInformationFile( HANDLE handle, IO_STATUS_BLOCK *io,
                                         void *ptr, ULONG len, FILE_INFORMATION_CLASS class )
 {
-    static const size_t info_sizes[] =
+    static const size_t info_sizes[FileMaximumInformation] =
     {
         0,
         sizeof(FILE_DIRECTORY_INFORMATION),            /* FileDirectoryInformation */
@@ -4337,6 +4331,18 @@ NTSTATUS WINAPI NtQueryInformationFile( HANDLE handle, IO_STATUS_BLOCK *io,
         0,                                             /* FileHardLinkFullIdInformation */
         0,                                             /* FileIdExtdBothDirectoryInformation */
         0,                                             /* FileDispositionInformationEx */
+        0,                                             /* FileRenameInformationEx */
+        0,                                             /* FileRenameInformationExBypassAccessCheck */
+        0,                                             /* FileDesiredStorageClassInformation */
+        0,                                             /* FileStatInformation */
+        0,                                             /* FileMemoryPartitionInformation */
+        0,                                             /* FileStatLxInformation */
+        0,                                             /* FileCaseSensitiveInformation */
+        0,                                             /* FileLinkInformationEx */
+        0,                                             /* FileLinkInformationExBypassAccessCheck */
+        0,                                             /* FileStorageReserveIdInformation */
+        0,                                             /* FileCaseSensitiveInformationForceAccessCheck */
+        0,                                             /* FileKnownFolderInformation */
     };
 
     struct stat st;

@@ -2029,7 +2029,7 @@ static void test_GetRawInputDeviceList(void)
                 (info.dwType != RIM_TYPEHID && sz == 0),
                 "Got wrong PPD size for type 0x%lx: %u\n", info.dwType, sz);
 
-        ppd = HeapAlloc(GetProcessHeap(), 0, sz);
+        ppd = malloc(sz);
         ret = pGetRawInputDeviceInfoW(devices[i].hDevice, RIDI_PREPARSEDDATA, ppd, &sz);
         ok(ret == sz, "GetRawInputDeviceInfo gave wrong return: %u, should be %u\n", ret, sz);
 
@@ -2056,7 +2056,7 @@ static void test_GetRawInputDeviceList(void)
                 HidD_FreePreparsedData(preparsed);
         }
 
-        HeapFree(GetProcessHeap(), 0, ppd);
+        free(ppd);
 
         CloseHandle(file);
     }
@@ -2591,7 +2591,7 @@ static LRESULT CALLBACK rawinput_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPA
 
         ret = GetRawInputData((HRAWINPUT)lparam, RID_INPUT, NULL, &raw_size, sizeof(RAWINPUTHEADER));
         ok(ret == 0, "GetRawInputData failed\n");
-        ok(raw_size <= sizeof(raw), "Unexpected rawinput data size: %u", raw_size);
+        ok(raw_size <= sizeof(raw), "Unexpected rawinput data size: %u\n", raw_size);
 
         raw_size = sizeof(raw);
         ret = GetRawInputData((HRAWINPUT)lparam, RID_INPUT, &raw, &raw_size, sizeof(RAWINPUTHEADER));

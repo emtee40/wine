@@ -43,7 +43,7 @@ WINE_DEFAULT_DEBUG_CHANNEL(uxtheme);
 
 static const WCHAR szThemeManager[] = L"Software\\Microsoft\\Windows\\CurrentVersion\\ThemeManager";
 
-DECLSPEC_HIDDEN ATOM atDialogThemeEnabled;
+ATOM atDialogThemeEnabled;
 
 static DWORD dwThemeAppProperties = STAP_ALLOW_NONCLIENT | STAP_ALLOW_CONTROLS;
 static ATOM atWindowTheme;
@@ -641,10 +641,6 @@ static HTHEME open_theme_data(HWND hwnd, LPCWSTR pszClassList, DWORD flags, UINT
 
         if (pszUseClassList)
             hTheme = MSSTYLES_OpenThemeClass(pszAppName, pszUseClassList, dpi);
-
-        /* Fall back to default class if the specified subclass is not found */
-        if (!hTheme)
-            hTheme = MSSTYLES_OpenThemeClass(NULL, pszUseClassList, dpi);
     }
     if(IsWindow(hwnd))
         SetPropW(hwnd, (LPCWSTR)MAKEINTATOM(atWindowTheme), hTheme);
@@ -1258,6 +1254,15 @@ BOOL WINAPI ThemeHooksRemove(void)
 }
 
 /**********************************************************************
+ *      RefreshImmersiveColorPolicyState                  (UXTHEME.104)
+ *
+ */
+void WINAPI RefreshImmersiveColorPolicyState(void)
+{
+    FIXME("stub\n");
+}
+
+/**********************************************************************
  *      ShouldSystemUseDarkMode                           (UXTHEME.138)
  *
  * RETURNS
@@ -1289,6 +1294,16 @@ BOOL WINAPI ShouldAppsUseDarkMode(void)
                  L"AppsUseLightTheme", RRF_RT_REG_DWORD, NULL, &light_theme, &light_theme_size);
 
     return !light_theme;
+}
+
+/**********************************************************************
+ *      AllowDarkModeForWindow                          (UXTHEME.133)
+ *
+ */
+BOOL WINAPI AllowDarkModeForWindow(HWND hwnd, BOOL allow)
+{
+    FIXME("%p %d: stub\n", hwnd, allow);
+    return FALSE;
 }
 
 /**********************************************************************

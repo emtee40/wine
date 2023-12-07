@@ -114,7 +114,6 @@ enum wined3d_cs_op
     WINED3D_CS_OP_SET_DEPTH_BOUNDS,
     WINED3D_CS_OP_SET_RENDER_STATE,
     WINED3D_CS_OP_SET_TEXTURE_STATE,
-    WINED3D_CS_OP_SET_SAMPLER_STATE,
     WINED3D_CS_OP_SET_TRANSFORM,
     WINED3D_CS_OP_SET_CLIP_PLANE,
     WINED3D_CS_OP_SET_COLOR_KEY,
@@ -271,8 +270,9 @@ struct wined3d_cs_set_constant_buffers
 struct wined3d_cs_set_texture
 {
     enum wined3d_cs_op opcode;
-    UINT stage;
-    struct wined3d_texture *texture;
+    enum wined3d_shader_type shader_type;
+    unsigned int bind_index;
+    struct wined3d_shader_resource_view *view;
 };
 
 struct wined3d_cs_set_color_key
@@ -362,14 +362,6 @@ struct wined3d_cs_set_texture_state
     enum wined3d_cs_op opcode;
     UINT stage;
     enum wined3d_texture_stage_state state;
-    DWORD value;
-};
-
-struct wined3d_cs_set_sampler_state
-{
-    enum wined3d_cs_op opcode;
-    UINT sampler_idx;
-    enum wined3d_sampler_state state;
     DWORD value;
 };
 
@@ -604,7 +596,6 @@ static const char *debug_cs_op(enum wined3d_cs_op op)
         WINED3D_TO_STR(WINED3D_CS_OP_SET_DEPTH_BOUNDS);
         WINED3D_TO_STR(WINED3D_CS_OP_SET_RENDER_STATE);
         WINED3D_TO_STR(WINED3D_CS_OP_SET_TEXTURE_STATE);
-        WINED3D_TO_STR(WINED3D_CS_OP_SET_SAMPLER_STATE);
         WINED3D_TO_STR(WINED3D_CS_OP_SET_TRANSFORM);
         WINED3D_TO_STR(WINED3D_CS_OP_SET_CLIP_PLANE);
         WINED3D_TO_STR(WINED3D_CS_OP_SET_COLOR_KEY);
@@ -1046,11 +1037,6 @@ static void reference_graphics_pipeline_resources(struct wined3d_device_context 
         if (state->stream_output[i].buffer)
             wined3d_device_context_reference_resource(context, &state->stream_output[i].buffer->resource);
     }
-    for (i = 0; i < ARRAY_SIZE(state->textures); ++i)
-    {
-        if (state->textures[i])
-            wined3d_device_context_reference_resource(context, &state->textures[i]->resource);
-    }
     for (i = 0; i < d3d_info->limits.max_rt_count; ++i)
     {
         if (state->fb.render_targets[i])
@@ -1338,9 +1324,9 @@ static void wined3d_cs_exec_set_stream_sources(struct wined3d_cs *cs, const void
         struct wined3d_buffer *buffer = op->streams[i].buffer;
 
         if (buffer)
-            InterlockedIncrement(&buffer->resource.bind_count);
+            ++buffer->resource.bind_count;
         if (prev)
-            InterlockedDecrement(&prev->resource.bind_count);
+            --prev->resource.bind_count;
     }
 
     memcpy(&cs->state.streams[op->start_idx], op->streams, op->count * sizeof(*op->streams));
@@ -1373,9 +1359,9 @@ static void wined3d_cs_exec_set_stream_outputs(struct wined3d_cs *cs, const void
         struct wined3d_buffer *buffer = op->outputs[i].buffer;
 
         if (buffer)
-            InterlockedIncrement(&buffer->resource.bind_count);
+            ++buffer->resource.bind_count;
         if (prev)
-            InterlockedDecrement(&prev->resource.bind_count);
+            --prev->resource.bind_count;
     }
 
     memcpy(cs->state.stream_output, op->outputs, sizeof(op->outputs));
@@ -1405,9 +1391,9 @@ static void wined3d_cs_exec_set_index_buffer(struct wined3d_cs *cs, const void *
     cs->state.index_offset = op->offset;
 
     if (op->buffer)
-        InterlockedIncrement(&op->buffer->resource.bind_count);
+        ++op->buffer->resource.bind_count;
     if (prev)
-        InterlockedDecrement(&prev->resource.bind_count);
+        --prev->resource.bind_count;
 
     device_invalidate_state(cs->c.device, STATE_INDEXBUFFER);
 }
@@ -1439,9 +1425,9 @@ static void wined3d_cs_exec_set_constant_buffers(struct wined3d_cs *cs, const vo
         cs->state.cb[op->type][op->start_idx + i] = op->buffers[i];
 
         if (buffer)
-            InterlockedIncrement(&buffer->resource.bind_count);
+            ++buffer->resource.bind_count;
         if (prev)
-            InterlockedDecrement(&prev->resource.bind_count);
+            --prev->resource.bind_count;
     }
 
     device_invalidate_state(cs->c.device, STATE_CONSTANT_BUFFER(op->type));
@@ -1464,76 +1450,97 @@ void wined3d_device_context_emit_set_constant_buffers(struct wined3d_device_cont
     wined3d_device_context_submit(context, WINED3D_CS_QUEUE_DEFAULT);
 }
 
+static bool texture_binding_might_invalidate_ps(struct wined3d_shader_resource_view *view,
+        struct wined3d_shader_resource_view *prev, const struct wined3d_d3d_info *d3d_info)
+{
+    unsigned int old_usage, new_usage, old_caps, new_caps;
+    const struct wined3d_format *old_format, *new_format;
+
+    if (!prev)
+        return true;
+
+    /* 1.x pixel shaders need to be recompiled based on the resource type. */
+    old_usage = prev->resource->usage;
+    new_usage = view->resource->usage;
+    if (view->resource->type != prev->resource->type
+            || ((old_usage & WINED3DUSAGE_LEGACY_CUBEMAP) != (new_usage & WINED3DUSAGE_LEGACY_CUBEMAP)))
+        return true;
+
+    old_format = prev->resource->format;
+    new_format = view->resource->format;
+    old_caps = prev->resource->format_caps;
+    new_caps = view->resource->format_caps;
+    if ((old_caps & WINED3D_FORMAT_CAP_SHADOW) != (new_caps & WINED3D_FORMAT_CAP_SHADOW))
+        return true;
+
+    if (is_same_fixup(old_format->color_fixup, new_format->color_fixup))
+        return false;
+
+    if (can_use_texture_swizzle(d3d_info, new_format) && can_use_texture_swizzle(d3d_info, old_format))
+        return false;
+
+    return true;
+}
+
 static void wined3d_cs_exec_set_texture(struct wined3d_cs *cs, const void *data)
 {
     const struct wined3d_d3d_info *d3d_info = &cs->c.device->adapter->d3d_info;
     const struct wined3d_cs_set_texture *op = data;
-    struct wined3d_texture *prev;
+    struct wined3d_shader_resource_view *prev;
     BOOL old_use_color_key = FALSE, new_use_color_key = FALSE;
 
-    prev = cs->state.textures[op->stage];
-    cs->state.textures[op->stage] = op->texture;
+    prev = cs->state.shader_resource_view[op->shader_type][op->bind_index];
+    cs->state.shader_resource_view[op->shader_type][op->bind_index] = op->view;
 
-    if (op->texture)
+    if (op->view)
     {
-        const struct wined3d_format *new_format = op->texture->resource.format;
-        const struct wined3d_format *old_format = prev ? prev->resource.format : NULL;
-        unsigned int old_fmt_caps = prev ? prev->resource.format_caps : 0;
-        unsigned int new_fmt_caps = op->texture->resource.format_caps;
+        struct wined3d_texture *texture = texture_from_resource(op->view->resource);
 
-        if (InterlockedIncrement(&op->texture->resource.bind_count) == 1)
-            op->texture->sampler = op->stage;
+        ++op->view->resource->bind_count;
 
-        if (!prev || wined3d_texture_gl(op->texture)->target != wined3d_texture_gl(prev)->target
-                || (!is_same_fixup(new_format->color_fixup, old_format->color_fixup)
-                && !(can_use_texture_swizzle(d3d_info, new_format) && can_use_texture_swizzle(d3d_info, old_format)))
-                || (new_fmt_caps & WINED3D_FORMAT_CAP_SHADOW) != (old_fmt_caps & WINED3D_FORMAT_CAP_SHADOW))
-            device_invalidate_state(cs->c.device, STATE_SHADER(WINED3D_SHADER_TYPE_PIXEL));
-
-        if (!prev && op->stage < d3d_info->ffp_fragment_caps.max_blend_stages)
+        if (op->shader_type == WINED3D_SHADER_TYPE_PIXEL)
         {
-            /* The source arguments for color and alpha ops have different
-             * meanings when a NULL texture is bound, so the COLOR_OP and
-             * ALPHA_OP have to be dirtified. */
-            device_invalidate_state(cs->c.device, STATE_TEXTURESTAGE(op->stage, WINED3D_TSS_COLOR_OP));
-            device_invalidate_state(cs->c.device, STATE_TEXTURESTAGE(op->stage, WINED3D_TSS_ALPHA_OP));
-        }
+            if (texture_binding_might_invalidate_ps(op->view, prev, d3d_info))
+                device_invalidate_state(cs->c.device, STATE_SHADER(WINED3D_SHADER_TYPE_PIXEL));
 
-        if (!op->stage && op->texture->async.color_key_flags & WINED3D_CKEY_SRC_BLT)
-            new_use_color_key = TRUE;
+            if (!prev && op->bind_index < d3d_info->ffp_fragment_caps.max_blend_stages)
+            {
+                /* The source arguments for color and alpha ops have different
+                 * meanings when a NULL texture is bound, so the COLOR_OP and
+                 * ALPHA_OP have to be dirtified. */
+                device_invalidate_state(cs->c.device, STATE_TEXTURESTAGE(op->bind_index, WINED3D_TSS_COLOR_OP));
+                device_invalidate_state(cs->c.device, STATE_TEXTURESTAGE(op->bind_index, WINED3D_TSS_ALPHA_OP));
+            }
+
+            if (!op->bind_index && texture->async.color_key_flags & WINED3D_CKEY_SRC_BLT)
+                new_use_color_key = TRUE;
+        }
     }
 
     if (prev)
     {
-        if (InterlockedDecrement(&prev->resource.bind_count) && prev->sampler == op->stage)
-        {
-            unsigned int i;
+        struct wined3d_texture *prev_texture = texture_from_resource(prev->resource);
 
-            /* Search for other stages the texture is bound to. Shouldn't
-             * happen if applications bind textures to a single stage only. */
-            TRACE("Searching for other stages the texture is bound to.\n");
-            for (i = 0; i < WINED3D_MAX_COMBINED_SAMPLERS; ++i)
+        --prev->resource->bind_count;
+
+        if (op->shader_type == WINED3D_SHADER_TYPE_PIXEL)
+        {
+            if (!op->view && op->bind_index < d3d_info->ffp_fragment_caps.max_blend_stages)
             {
-                if (cs->state.textures[i] == prev)
-                {
-                    TRACE("Texture is also bound to stage %u.\n", i);
-                    prev->sampler = i;
-                    break;
-                }
+                device_invalidate_state(cs->c.device, STATE_TEXTURESTAGE(op->bind_index, WINED3D_TSS_COLOR_OP));
+                device_invalidate_state(cs->c.device, STATE_TEXTURESTAGE(op->bind_index, WINED3D_TSS_ALPHA_OP));
             }
-        }
 
-        if (!op->texture && op->stage < d3d_info->ffp_fragment_caps.max_blend_stages)
-        {
-            device_invalidate_state(cs->c.device, STATE_TEXTURESTAGE(op->stage, WINED3D_TSS_COLOR_OP));
-            device_invalidate_state(cs->c.device, STATE_TEXTURESTAGE(op->stage, WINED3D_TSS_ALPHA_OP));
+            if (!op->bind_index && prev_texture->async.color_key_flags & WINED3D_CKEY_SRC_BLT)
+                old_use_color_key = TRUE;
         }
-
-        if (!op->stage && prev->async.color_key_flags & WINED3D_CKEY_SRC_BLT)
-            old_use_color_key = TRUE;
     }
 
-    device_invalidate_state(cs->c.device, STATE_SAMPLER(op->stage));
+    if (op->shader_type == WINED3D_SHADER_TYPE_VERTEX)
+        device_invalidate_state(cs->c.device, STATE_SAMPLER(WINED3D_VERTEX_SAMPLER_OFFSET + op->bind_index));
+    else
+        device_invalidate_state(cs->c.device, STATE_SAMPLER(op->bind_index));
+    device_invalidate_state(cs->c.device, STATE_GRAPHICS_SHADER_RESOURCE_BINDING);
 
     if (new_use_color_key != old_use_color_key)
         device_invalidate_state(cs->c.device, STATE_RENDER(WINED3D_RS_COLORKEYENABLE));
@@ -1542,15 +1549,16 @@ static void wined3d_cs_exec_set_texture(struct wined3d_cs *cs, const void *data)
         device_invalidate_state(cs->c.device, STATE_COLOR_KEY);
 }
 
-void wined3d_device_context_emit_set_texture(struct wined3d_device_context *context, unsigned int stage,
-        struct wined3d_texture *texture)
+void wined3d_device_context_emit_set_texture(struct wined3d_device_context *context,
+        enum wined3d_shader_type shader_type, unsigned int bind_index, struct wined3d_shader_resource_view *view)
 {
     struct wined3d_cs_set_texture *op;
 
     op = wined3d_device_context_require_space(context, sizeof(*op), WINED3D_CS_QUEUE_DEFAULT);
     op->opcode = WINED3D_CS_OP_SET_TEXTURE;
-    op->stage = stage;
-    op->texture = texture;
+    op->shader_type = shader_type;
+    op->bind_index = bind_index;
+    op->view = view;
 
     wined3d_device_context_submit(context, WINED3D_CS_QUEUE_DEFAULT);
 }
@@ -1568,9 +1576,9 @@ static void wined3d_cs_exec_set_shader_resource_views(struct wined3d_cs *cs, con
         cs->state.shader_resource_view[op->type][op->start_idx + i] = view;
 
         if (view)
-            InterlockedIncrement(&view->resource->bind_count);
+            ++view->resource->bind_count;
         if (prev)
-            InterlockedDecrement(&prev->resource->bind_count);
+            --prev->resource->bind_count;
     }
 
     if (op->type != WINED3D_SHADER_TYPE_COMPUTE)
@@ -1610,9 +1618,9 @@ static void wined3d_cs_exec_set_unordered_access_views(struct wined3d_cs *cs, co
         cs->state.unordered_access_view[op->pipeline][op->start_idx + i] = view;
 
         if (view)
-            InterlockedIncrement(&view->resource->bind_count);
+            ++view->resource->bind_count;
         if (prev)
-            InterlockedDecrement(&prev->resource->bind_count);
+            --prev->resource->bind_count;
 
         if (view && initial_count != ~0u)
             wined3d_unordered_access_view_set_counter(view, initial_count);
@@ -1649,7 +1657,14 @@ static void wined3d_cs_exec_set_samplers(struct wined3d_cs *cs, const void *data
     unsigned int i;
 
     for (i = 0; i < op->count; ++i)
+    {
         cs->state.sampler[op->type][op->start_idx + i] = op->samplers[i];
+
+        if (op->type == WINED3D_SHADER_TYPE_PIXEL && i < WINED3D_MAX_FRAGMENT_SAMPLERS)
+            device_invalidate_state(cs->c.device, STATE_SAMPLER(i));
+        else if (op->type == WINED3D_SHADER_TYPE_VERTEX && i < WINED3D_MAX_VERTEX_SAMPLERS)
+            device_invalidate_state(cs->c.device, STATE_SAMPLER(WINED3D_VERTEX_SAMPLER_OFFSET + i));
+    }
 
     if (op->type != WINED3D_SHADER_TYPE_COMPUTE)
         device_invalidate_state(cs->c.device, STATE_GRAPHICS_SHADER_RESOURCE_BINDING);
@@ -1845,28 +1860,6 @@ void wined3d_device_context_emit_set_texture_state(struct wined3d_device_context
     wined3d_device_context_submit(context, WINED3D_CS_QUEUE_DEFAULT);
 }
 
-static void wined3d_cs_exec_set_sampler_state(struct wined3d_cs *cs, const void *data)
-{
-    const struct wined3d_cs_set_sampler_state *op = data;
-
-    cs->state.sampler_states[op->sampler_idx][op->state] = op->value;
-    device_invalidate_state(cs->c.device, STATE_SAMPLER(op->sampler_idx));
-}
-
-void wined3d_device_context_emit_set_sampler_state(struct wined3d_device_context *context, unsigned int sampler_idx,
-        enum wined3d_sampler_state state, unsigned int value)
-{
-    struct wined3d_cs_set_sampler_state *op;
-
-    op = wined3d_device_context_require_space(context, sizeof(*op), WINED3D_CS_QUEUE_DEFAULT);
-    op->opcode = WINED3D_CS_OP_SET_SAMPLER_STATE;
-    op->sampler_idx = sampler_idx;
-    op->state = state;
-    op->value = value;
-
-    wined3d_device_context_submit(context, WINED3D_CS_QUEUE_DEFAULT);
-}
-
 static void wined3d_cs_exec_set_transform(struct wined3d_cs *cs, const void *data)
 {
     const struct wined3d_cs_set_transform *op = data;
@@ -1930,7 +1923,7 @@ static void wined3d_cs_exec_set_color_key(struct wined3d_cs *cs, const void *dat
                 break;
 
             case WINED3D_CKEY_SRC_BLT:
-                if (texture == cs->state.textures[0])
+                if (texture == wined3d_state_get_ffp_texture(&cs->state, 0))
                 {
                     device_invalidate_state(cs->c.device, STATE_COLOR_KEY);
                     if (!(texture->async.color_key_flags & WINED3D_CKEY_SRC_BLT))
@@ -1960,7 +1953,8 @@ static void wined3d_cs_exec_set_color_key(struct wined3d_cs *cs, const void *dat
                 break;
 
             case WINED3D_CKEY_SRC_BLT:
-                if (texture == cs->state.textures[0] && texture->async.color_key_flags & WINED3D_CKEY_SRC_BLT)
+                if (texture == wined3d_state_get_ffp_texture(&cs->state, 0)
+                        && texture->async.color_key_flags & WINED3D_CKEY_SRC_BLT)
                     device_invalidate_state(cs->c.device, STATE_RENDER(WINED3D_RS_COLORKEYENABLE));
 
                 texture->async.color_key_flags &= ~WINED3D_CKEY_SRC_BLT;
@@ -2918,7 +2912,6 @@ static void (* const wined3d_cs_op_handlers[])(struct wined3d_cs *cs, const void
     /* WINED3D_CS_OP_SET_DEPTH_BOUNDS            */ wined3d_cs_exec_set_depth_bounds,
     /* WINED3D_CS_OP_SET_RENDER_STATE            */ wined3d_cs_exec_set_render_state,
     /* WINED3D_CS_OP_SET_TEXTURE_STATE           */ wined3d_cs_exec_set_texture_state,
-    /* WINED3D_CS_OP_SET_SAMPLER_STATE           */ wined3d_cs_exec_set_sampler_state,
     /* WINED3D_CS_OP_SET_TRANSFORM               */ wined3d_cs_exec_set_transform,
     /* WINED3D_CS_OP_SET_CLIP_PLANE              */ wined3d_cs_exec_set_clip_plane,
     /* WINED3D_CS_OP_SET_COLOR_KEY               */ wined3d_cs_exec_set_color_key,
@@ -3464,6 +3457,34 @@ static DWORD WINAPI wined3d_cs_run(void *ctx)
     cs->queue[WINED3D_CS_QUEUE_DEFAULT].tail = cs->queue[WINED3D_CS_QUEUE_DEFAULT].head;
     TRACE("Stopped.\n");
     FreeLibraryAndExitThread(wined3d_module, 0);
+}
+
+void CDECL wined3d_device_context_flush_mapped_buffer(struct wined3d_device_context *context,
+        struct wined3d_buffer *buffer)
+{
+    struct wined3d_client_resource *client = &buffer->resource.client;
+
+    /* d3d9 applications can draw from a mapped dynamic buffer.
+     * Castlevania 2 depends on this behaviour.
+     * This means that we need to upload a pending discard bo, without actually
+     * unmapping it. */
+
+    assert(context == &context->device->cs->c);
+
+    if (wined3d_bo_address_is_null(&client->mapped_upload.addr))
+        return;
+
+    if (client->mapped_upload.flags & UPLOAD_BO_UPLOAD_ON_UNMAP)
+        wined3d_device_context_upload_bo(context, &buffer->resource, 0,
+                &client->mapped_box, &client->mapped_upload, buffer->resource.size, buffer->resource.size);
+
+    if (client->mapped_upload.flags & UPLOAD_BO_RENAME_ON_UNMAP)
+    {
+        client->mapped_upload.flags &= ~UPLOAD_BO_RENAME_ON_UNMAP;
+        /* This logic matches wined3d_cs_map_upload_bo(). */
+        if (client->mapped_upload.addr.buffer_object->coherent && wined3d_map_persistent())
+            client->mapped_upload.flags &= ~UPLOAD_BO_UPLOAD_ON_UNMAP;
+    }
 }
 
 struct wined3d_cs *wined3d_cs_create(struct wined3d_device *device,

@@ -80,6 +80,7 @@ static DWORD (WINAPI *pCtrlRoutine)(void *);
 
 SYSTEM_DLL_INIT_BLOCK LdrSystemDllInitBlock = { 0xf0 };
 
+void *__wine_syscall_dispatcher = NULL;
 unixlib_handle_t __wine_unixlib_handle = 0;
 
 /* windows directory */
@@ -241,6 +242,52 @@ static void module_push_unload_trace( const WINE_MODREF *wm )
     unload_trace_ptr = unload_traces;
 }
 
+#ifdef __arm64ec__
+
+static void update_hybrid_metadata( void *module, IMAGE_NT_HEADERS *nt,
+                                    const IMAGE_ARM64EC_METADATA *metadata )
+{
+    DWORD i, protect_old;
+    const IMAGE_SECTION_HEADER *sec = IMAGE_FIRST_SECTION( nt );
+
+    if (metadata->Version != 1)
+    {
+        ERR( "unknown version %lu\n", metadata->Version );
+        return;
+    }
+
+    /* assume that all pointers are in the same section */
+
+    for (i = 0; i < nt->FileHeader.NumberOfSections; i++, sec++)
+    {
+        if ((sec->VirtualAddress <= metadata->__os_arm64x_dispatch_call) &&
+            (sec->VirtualAddress + sec->Misc.VirtualSize > metadata->__os_arm64x_dispatch_call))
+        {
+            void *base = get_rva( module, sec->VirtualAddress );
+            SIZE_T size = sec->Misc.VirtualSize;
+
+            NtProtectVirtualMemory( NtCurrentProcess(), &base, &size, PAGE_READWRITE, &protect_old );
+
+#define SET_FUNC(func,val) *(void **)get_rva( module, metadata->func ) = val
+            SET_FUNC( __os_arm64x_dispatch_call, __os_arm64x_check_call );
+            SET_FUNC( __os_arm64x_dispatch_call_no_redirect, __os_arm64x_dispatch_call_no_redirect );
+            SET_FUNC( __os_arm64x_dispatch_fptr, __os_arm64x_dispatch_fptr );
+            SET_FUNC( __os_arm64x_dispatch_icall, __os_arm64x_check_icall );
+            SET_FUNC( __os_arm64x_dispatch_icall_cfg, __os_arm64x_check_icall_cfg );
+            SET_FUNC( __os_arm64x_dispatch_ret, __os_arm64x_dispatch_ret );
+            SET_FUNC( GetX64InformationFunctionPointer, __os_arm64x_get_x64_information );
+            SET_FUNC( SetX64InformationFunctionPointer, __os_arm64x_set_x64_information );
+#undef SET_FUNC
+
+            NtProtectVirtualMemory( NtCurrentProcess(), &base, &size, protect_old, &protect_old );
+            return;
+        }
+    }
+    ERR( "module %p no section found for %lx\n", module, metadata->__os_arm64x_dispatch_call );
+}
+
+#endif
+
 /*********************************************************************
  *           RtlGetUnloadEventTrace [NTDLL.@]
  */
@@ -304,7 +351,7 @@ __ASM_GLOBAL_FUNC(call_dll_entry_point,
                   __ASM_CFI(".cfi_def_cfa %esp,4\n\t")
                   __ASM_CFI(".cfi_same_value %ebp\n\t")
                   "ret" )
-#elif defined(__x86_64__)
+#elif defined(__x86_64__) && !defined(__arm64ec__)
 extern BOOL CDECL call_dll_entry_point( DLLENTRYPROC proc, void *module, UINT reason, void *reserved );
 /* Some apps modify rbx in TLS entry point. */
 __ASM_GLOBAL_FUNC(call_dll_entry_point,
@@ -379,7 +426,7 @@ struct stub
     const char *name;
     const void* entry;
 };
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || defined(__arm64ec__)
 struct stub
 {
     DWORD ldr_x0;        /* ldr x0, $dll */
@@ -443,7 +490,7 @@ static ULONG_PTR allocate_stub( const char *dll, const char *name )
     stub->dll       = dll;
     stub->name      = name;
     stub->entry     = stub_entry_point;
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || defined(__arm64ec__)
     stub->ldr_x0    = 0x580000a0; /* ldr x0, #20 ($dll) */
     stub->ldr_x1    = 0x580000c1; /* ldr x1, #24 ($name) */
     stub->mov_x2_lr = 0xaa1e03e2; /* mov x2, lr */
@@ -1019,6 +1066,7 @@ void * WINAPI RtlFindExportedRoutineByName( HMODULE module, const char *name )
     const DWORD *functions;
     DWORD exp_size;
     int ordinal;
+    void *proc;
 
     exports = RtlImageDirectoryEntryToData( module, TRUE, IMAGE_DIRECTORY_ENTRY_EXPORT, &exp_size );
     if (!exports || exp_size < sizeof(*exports)) return NULL;
@@ -1027,7 +1075,12 @@ void * WINAPI RtlFindExportedRoutineByName( HMODULE module, const char *name )
     if (ordinal >= exports->NumberOfFunctions) return NULL;
     functions = get_rva( module, exports->AddressOfFunctions );
     if (!functions[ordinal]) return NULL;
-    return get_rva( module, functions[ordinal] );
+    proc = get_rva( module, functions[ordinal] );
+    /* if the address falls into the export dir, it's a forward */
+    if (((const char *)proc >= (const char *)exports) &&
+        ((const char *)proc < (const char *)exports + exp_size))
+        return NULL;
+    return proc;
 }
 
 
@@ -1953,13 +2006,14 @@ NTSTATUS WINAPI LdrGetProcedureAddress(HMODULE module, const ANSI_STRING *name,
                                        ULONG ord, PVOID *address)
 {
     IMAGE_EXPORT_DIRECTORY *exports;
+    WINE_MODREF *wm;
     DWORD exp_size;
     NTSTATUS ret = STATUS_PROCEDURE_NOT_FOUND;
 
     RtlEnterCriticalSection( &loader_section );
 
     /* check if the module itself is invalid to return the proper error */
-    if (!get_modref( module )) ret = STATUS_DLL_NOT_FOUND;
+    if (!(wm = get_modref( module ))) ret = STATUS_DLL_NOT_FOUND;
     else if ((exports = RtlImageDirectoryEntryToData( module, TRUE,
                                                       IMAGE_DIRECTORY_ENTRY_EXPORT, &exp_size )))
     {
@@ -1969,6 +2023,11 @@ NTSTATUS WINAPI LdrGetProcedureAddress(HMODULE module, const ANSI_STRING *name,
         {
             *address = proc;
             ret = STATUS_SUCCESS;
+        }
+        else
+        {
+            WARN( "%s (ordinal %lu) not found in %s\n", debugstr_a(name ? name->Buffer : NULL),
+                  ord, debugstr_us(&wm->ldr.FullDllName) );
         }
     }
 
@@ -1983,26 +2042,10 @@ NTSTATUS WINAPI LdrGetProcedureAddress(HMODULE module, const ANSI_STRING *name,
  * Create a random security cookie for buffer overflow protection. Make
  * sure it does not accidentally match the default cookie value.
  */
-static void set_security_cookie( void *module, SIZE_T len )
+static void set_security_cookie( ULONG_PTR *cookie )
 {
     static ULONG seed;
-    IMAGE_LOAD_CONFIG_DIRECTORY *loadcfg;
-    ULONG loadcfg_size;
-    ULONG_PTR *cookie;
 
-    loadcfg = RtlImageDirectoryEntryToData( module, TRUE, IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, &loadcfg_size );
-    if (!loadcfg) return;
-    if (loadcfg_size < offsetof(IMAGE_LOAD_CONFIG_DIRECTORY, SecurityCookie) + sizeof(loadcfg->SecurityCookie)) return;
-    if (!loadcfg->SecurityCookie) return;
-    if (loadcfg->SecurityCookie < (ULONG_PTR)module ||
-        loadcfg->SecurityCookie > (ULONG_PTR)module + len - sizeof(ULONG_PTR))
-    {
-        WARN( "security cookie %p outside of image %p-%p\n",
-              (void *)loadcfg->SecurityCookie, module, (char *)module + len );
-        return;
-    }
-
-    cookie = (ULONG_PTR *)loadcfg->SecurityCookie;
     TRACE( "initializing security cookie %p\n", cookie );
 
     if (!seed) seed = NtGetTickCount() ^ GetCurrentProcessId();
@@ -2024,6 +2067,36 @@ static void set_security_cookie( void *module, SIZE_T len )
             break;
     }
 }
+
+
+/***********************************************************************
+ *           update_load_config
+ */
+static void update_load_config( void *module )
+{
+    IMAGE_NT_HEADERS *nt = RtlImageNtHeader( module );
+    IMAGE_LOAD_CONFIG_DIRECTORY *cfg;
+    ULONG size;
+
+    cfg = RtlImageDirectoryEntryToData( module, TRUE, IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, &size );
+    if (!cfg) return;
+    size = min( size, cfg->Size );
+    if (size > offsetof( IMAGE_LOAD_CONFIG_DIRECTORY, SecurityCookie ) &&
+        cfg->SecurityCookie > (ULONG_PTR)module &&
+        cfg->SecurityCookie < (ULONG_PTR)module + nt->OptionalHeader.SizeOfImage)
+    {
+        set_security_cookie( (ULONG_PTR *)cfg->SecurityCookie );
+    }
+#ifdef __arm64ec__
+    if (size > offsetof( IMAGE_LOAD_CONFIG_DIRECTORY, CHPEMetadataPointer ) &&
+        cfg->CHPEMetadataPointer > (ULONG_PTR)module &&
+        cfg->CHPEMetadataPointer < (ULONG_PTR)module + nt->OptionalHeader.SizeOfImage)
+    {
+        update_hybrid_metadata( module, nt, (void *)cfg->CHPEMetadataPointer );
+    }
+#endif
+}
+
 
 static NTSTATUS perform_relocations( void *module, IMAGE_NT_HEADERS *nt, SIZE_T len )
 {
@@ -2135,7 +2208,7 @@ static NTSTATUS build_module( LPCWSTR load_path, const UNICODE_STRING *nt_name, 
     if (image_info->ComPlusILOnly) wm->ldr.Flags |= LDR_COR_ILONLY;
     wm->system = system;
 
-    set_security_cookie( *module, map_size );
+    update_load_config( *module );
 
     /* fixup imports */
 
@@ -4207,7 +4280,6 @@ void loader_init( CONTEXT *context, void **entry )
     if (!imports_fixup_done)
     {
         MEMORY_BASIC_INFORMATION meminfo;
-        ANSI_STRING base_thread_init_thunk = RTL_CONSTANT_STRING( "BaseThreadInitThunk" );
         ANSI_STRING ctrl_routine = RTL_CONSTANT_STRING( "CtrlRoutine" );
         WINE_MODREF *kernel32;
         PEB *peb = NtCurrentTeb()->Peb;
@@ -4244,12 +4316,7 @@ void loader_init( CONTEXT *context, void **entry )
             NtTerminateProcess( GetCurrentProcess(), status );
         }
         node_kernel32 = kernel32->ldr.DdagNode;
-        if ((status = LdrGetProcedureAddress( kernel32->ldr.DllBase, &base_thread_init_thunk,
-                                              0, (void **)&pBaseThreadInitThunk )) != STATUS_SUCCESS)
-        {
-            MESSAGE( "wine: could not find BaseThreadInitThunk in kernel32.dll, status %lx\n", status );
-            NtTerminateProcess( GetCurrentProcess(), status );
-        }
+        pBaseThreadInitThunk = RtlFindExportedRoutineByName( kernel32->ldr.DllBase, "BaseThreadInitThunk" );
         LdrGetProcedureAddress( kernel32->ldr.DllBase, &ctrl_routine, 0, (void **)&pCtrlRoutine );
 
         actctx_init();
