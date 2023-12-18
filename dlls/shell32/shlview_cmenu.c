@@ -946,6 +946,111 @@ static void DoOpenProperties(ContextMenu *This, HWND hwnd)
 	    FIXME("No property pages found.\n");
 }
 
+
+static void do_create_link(ContextMenu *This)
+{
+    IShellLinkW* shelllink;
+    IPersistFile* persistfile;
+    WCHAR filename[MAX_PATH];
+    WCHAR root[MAX_PATH];
+    WCHAR lnkfile[MAX_PATH];
+    ITEMIDLIST *full_pidl;
+    HRESULT hr;
+    int length;
+    int counter = 1;
+
+    static const WCHAR *shortcutW = L"Shortcut";
+
+    if (FAILED(IShellLink_Constructor(NULL, &IID_IShellLinkW, (LPVOID*)&shelllink)))
+    {
+        ERR("couldn't create ShellLink object\n");
+        return;
+    }
+    full_pidl = ILCombine(This->pidl, This->apidl[0]);
+    if (!full_pidl)
+    {
+        ERR("Out of Memory\n");
+        return;
+    }
+
+    hr = IShellLinkW_SetIDList(shelllink, full_pidl);
+    ILFree(full_pidl);
+    if (FAILED(hr))
+    {
+        ERR("SetIDList failed\n");
+        return;
+    }
+    _ILSimpleGetTextW(This->apidl[0], (LPVOID)filename, MAX_PATH);
+    length = wcslen(filename) + wcslen(shortcutW);
+    if (length > MAX_PATH)
+    {
+        ERR("Path maximum length exceeded (%i>%i)\n", length, MAX_PATH);
+        IShellLinkW_Release(shelllink);
+        return;
+    }
+
+    SHGetPathFromIDListW(This->pidl, root);
+
+    if (!SUCCEEDED(IShellLinkW_QueryInterface(shelllink, &IID_IPersistFile, (LPVOID*)&persistfile)))
+    {
+        ERR("couldn't get IPersistFile interface\n");
+        IShellLinkW_Release(shelllink);
+        return;
+    }
+
+    do {
+        WCHAR *link_filename;
+
+        if (counter == 1)
+        {
+            static const WCHAR *fmt = L"%s - %s.lnk";
+            int length = wcslen(filename) + wcslen(shortcutW) + 7; /* length of the format*/
+            link_filename = malloc((length + 1) * sizeof(WCHAR));
+            wsprintfW(link_filename, fmt, filename, shortcutW);
+        }
+        else
+        {
+            static const WCHAR *fmt = L"%s - %s (%s).lnk";
+            int length = wcslen(filename) + wcslen(shortcutW) + 10; /* length of the format*/
+            WCHAR counter_string[34];
+            wsprintfW(counter_string, L"%i", counter);
+            length += wcslen(counter_string);
+            link_filename = malloc((length + 1) * sizeof(WCHAR));
+            wsprintfW(link_filename, fmt, filename, shortcutW, counter_string);
+        }
+
+        length = wcslen(root) + wcslen(link_filename) + 2; /* the path seperator and NULL */
+        if (length > MAX_PATH)
+        {
+            ERR("Path maximum length exceeded (%i>%i)\n", length, MAX_PATH);
+            IShellLinkW_Release(shelllink);
+            free(link_filename);
+            return;
+        }
+
+        PathCombineW(lnkfile, root, link_filename);
+        free(link_filename);
+        counter++;
+
+        if (PathFileExistsW(lnkfile))
+        {
+            hr = HRESULT_FROM_WIN32(ERROR_FILE_EXISTS);
+        }
+        else
+        {
+            ERR("attempting to write link to %s\n", wine_dbgstr_w(lnkfile));
+            hr = IPersistFile_Save(persistfile, lnkfile, FALSE);
+            ERR("ARIC %#lx\n",hr);
+        }
+    } while (hr == HRESULT_FROM_WIN32(ERROR_FILE_EXISTS));
+
+    if (!SUCCEEDED(hr))
+        ERR("couldn't write link to %s : %#lx\n", wine_dbgstr_w(lnkfile), hr);
+
+    IPersistFile_Release(persistfile);
+    IShellLinkW_Release(shelllink);
+}
+
 static HRESULT WINAPI ItemMenu_InvokeCommand(
 	IContextMenu3 *iface,
 	LPCMINVOKECOMMANDINFO lpcmi)
@@ -1013,6 +1118,10 @@ static HRESULT WINAPI ItemMenu_InvokeCommand(
         case FCIDM_SHVIEW_PROPERTIES:
             TRACE("Verb FCIDM_SHVIEW_PROPERTIES\n");
             DoOpenProperties(This, lpcmi->hwnd);
+            break;
+        case FCIDM_SHVIEW_CREATELINK:
+            TRACE("Verb FCIDM_SHVIEW_CREATELINK\n");
+            do_create_link(This);
             break;
         default:
             FIXME("Unhandled verb %#x.\n", id);
