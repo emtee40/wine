@@ -28,6 +28,8 @@
 #include "wingdi.h"
 #include "winuser.h"
 #include "winnls.h"
+#include "winternl.h"
+#include "winreg.h"
 
 #include "wine/test.h"
 
@@ -50,6 +52,17 @@ static BOOL  (WINAPI *pGetFontFileData)(DWORD, DWORD, UINT64, void *, SIZE_T);
 static HMODULE hgdi32 = 0;
 static const MAT2 mat = { {0,1}, {0,0}, {0,0}, {0,1} };
 static WORD system_lang_id;
+
+static const WCHAR font_substitutes_keyW[] =
+{
+    '\\','R','e','g','i','s','t','r','y',
+    '\\','M','a','c','h','i','n','e',
+    '\\','S','o','f','t','w','a','r','e',
+    '\\','M','i','c','r','o','s','o','f','t',
+    '\\','W','i','n','d','o','w','s',' ','N','T',
+    '\\','C','u','r','r','e','n','t','V','e','r','s','i','o','n',
+    '\\','F','o','n','t','S','u','b','s','t','i','t','u','t','e','s'
+};
 
 #ifdef WORDS_BIGENDIAN
 #define GET_BE_WORD(x) (x)
@@ -7767,11 +7780,115 @@ static void test_GetOutlineTextMetrics_subst(void)
     ReleaseDC(0, hdc);
 }
 
+static HKEY reg_open_key( HKEY root, const WCHAR *name, ULONG name_len )
+{
+    UNICODE_STRING nameW = { name_len, name_len, (WCHAR *)name };
+    OBJECT_ATTRIBUTES attr;
+    HANDLE ret;
+
+    attr.Length = sizeof(attr);
+    attr.RootDirectory = root;
+    attr.ObjectName = &nameW;
+    attr.Attributes = 0;
+    attr.SecurityDescriptor = NULL;
+    attr.SecurityQualityOfService = NULL;
+
+    if (NtOpenKeyEx( &ret, MAXIMUM_ALLOWED, &attr, 0 )) return 0;
+    return ret;
+}
+
+static inline UINT asciiz_to_unicode( WCHAR *dst, const char *src )
+{
+    WCHAR *p = dst;
+    while ((*p++ = *src++));
+    return (p - dst) * sizeof(WCHAR);
+}
+
+static BOOL set_reg_value( HKEY hkey, const WCHAR *name, UINT type, const void *value, DWORD count )
+{
+    unsigned int name_size = name ? lstrlenW( name ) * sizeof(WCHAR) : 0;
+    UNICODE_STRING nameW = { name_size, name_size, (WCHAR *)name };
+    return !NtSetValueKey( hkey, &nameW, 0, type, value, count );
+}
+
+static void set_reg_ascii_value( HKEY hkey, const char *name, const char *value )
+{
+    WCHAR nameW[64], valueW[128];
+    asciiz_to_unicode( nameW, name );
+    set_reg_value( hkey, nameW, REG_SZ, valueW, asciiz_to_unicode( valueW, value ));
+}
+
+static void reg_delete_value( HKEY hkey, const WCHAR *name )
+{
+    unsigned int name_size = lstrlenW( name ) * sizeof(WCHAR);
+    UNICODE_STRING nameW = { name_size, name_size, (WCHAR *)name };
+
+    NtDeleteValueKey( hkey, &nameW );
+}
+
+static void test_second_name(void)
+{
+    char ttf_name[MAX_PATH];
+    LOGFONTA font = {0};
+    BOOL found_font;
+    int ret;
+    HDC dc;
+    HKEY hkey;
+    BOOL is_wine = !strcmp(winetest_platform, "wine");
+
+    if (!write_ttf_file("wine_secondname.ttf", ttf_name))
+    {
+        skip("Failed to create ttf file for testing\n");
+        return;
+    }
+
+    if (is_wine)
+    {
+        hkey = reg_open_key(NULL, font_substitutes_keyW, sizeof(font_substitutes_keyW));
+        ok(!!hkey, "open register key for FontSubstitutes failed.\n");
+    }
+
+    dc = GetDC(NULL);
+
+    ret = AddFontResourceExA(ttf_name, FR_PRIVATE, 0);
+    ok(ret, "AddFontResourceEx() failed\n");
+
+    strcpy(font.lfFaceName, "wine_this_is_first_name");
+    found_font = FALSE;
+    EnumFontFamiliesExA(dc, &font, long_enum_proc, (LPARAM)&found_font, 0);
+    ok(found_font == TRUE, "EnumFontFamiliesExA didn't find wine_this_is_first_name font.\n");
+
+    strcpy(font.lfFaceName, "wine_this_is_second_name");
+    found_font = FALSE;
+    EnumFontFamiliesExA(dc, &font, long_enum_proc, (LPARAM)&found_font, 0);
+    ok(found_font == TRUE, "EnumFontFamiliesExA didn't find wine_this_is_second_name font.\n");
+
+    if (is_wine)
+    {
+        strcpy(font.lfFaceName, "wine_this_is_second_name_subst");
+        found_font = FALSE;
+        EnumFontFamiliesExA(dc, &font, long_enum_proc, (LPARAM)&found_font, 0);
+        ok(found_font == TRUE, "EnumFontFamiliesExA didn't find wine_this_is_second_name font.\n");
+    }
+
+    ret = RemoveFontResourceExA(ttf_name, FR_PRIVATE, 0);
+    ok(ret, "RemoveFontResourceEx() failed\n");
+
+    DeleteFileA(ttf_name);
+    ReleaseDC(NULL, dc);
+    if (is_wine)
+    {
+        reg_delete_value( hkey, L"wine_this_is_second_name_subst");
+        NtClose( hkey );
+    }
+}
+
 START_TEST(font)
 {
     static const char *test_names[] =
     {
         "AddFontMemResource",
+        "test_second_name",
     };
     char path_name[MAX_PATH];
     STARTUPINFOA startup;
@@ -7785,6 +7902,8 @@ START_TEST(font)
     {
         if (!strcmp(argv[2], "AddFontMemResource"))
             test_AddFontMemResource();
+        if (!strcmp(argv[2], "test_second_name"))
+            test_second_name();
         return;
     }
 
@@ -7867,6 +7986,14 @@ START_TEST(font)
     for (i = 0; i < ARRAY_SIZE(test_names); ++i)
     {
         PROCESS_INFORMATION info;
+
+        if (!strcmp(winetest_platform, "wine") && !strcmp(test_names[i], "test_second_name"))
+        {
+            HKEY hkey;
+            hkey = reg_open_key(NULL, font_substitutes_keyW, sizeof(font_substitutes_keyW));
+            set_reg_ascii_value( hkey, "wine_this_is_second_name_subst", "wine_this_is_second_name");
+            NtClose( hkey );
+        }
 
         memset(&startup, 0, sizeof(startup));
         startup.cb = sizeof(startup);
