@@ -3552,6 +3552,9 @@ static BOOL font_EnumFonts( PHYSDEV dev, LOGFONTW *lf, font_enum_proc proc, LPAR
         if (face_name)
         {
             orig_name = lf->lfFaceName;
+            if (!find_family_from_name(face_name) && find_family_from_any_name(face_name))
+                face_name = get_gdi_font_subst( face_name, charset, NULL );
+
             TRACE( "substituting %s -> %s\n", debugstr_w(lf->lfFaceName), debugstr_w(face_name) );
         }
         else face_name = lf->lfFaceName;
