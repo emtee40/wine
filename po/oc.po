@@ -1910,71 +1910,71 @@ msgstr "Drets numerics"   ### revirat entà linha 1909
 
 #: dlls/crypt32/crypt32.rc:157 dlls/cryptui/cryptui.rc:138
 msgid "Qualified Subordination"
-msgstr "Subordination conditionnelle"
+msgstr "Subordinacion condicionala"
 
 #: dlls/crypt32/crypt32.rc:158 dlls/cryptui/cryptui.rc:139
 msgid "Key Recovery"
-msgstr "Recouvrement de clau"
+msgstr "Recrubament de clau"
 
 #: dlls/crypt32/crypt32.rc:159 dlls/cryptui/cryptui.rc:140
 msgid "Document Signing"
-msgstr "Signature de documents"
+msgstr "Signatura de documents"
 
 #: dlls/crypt32/crypt32.rc:160
 msgid "IP security IKE intermediate"
-msgstr "Intermédiaire IKE IPsec"
+msgstr "Intermediari IKE IPsec"
 
 #: dlls/crypt32/crypt32.rc:161 dlls/cryptui/cryptui.rc:132
 msgid "File Recovery"
-msgstr "Restauration de fichèr"
+msgstr "Restauracion de fichèr"
 
 #: dlls/crypt32/crypt32.rc:162 dlls/cryptui/cryptui.rc:137
 msgid "Root List Signer"
-msgstr "Signataire de lista racine"
+msgstr "Signatari de que listè rasic"
 
 #: dlls/crypt32/crypt32.rc:163
 msgid "All application policies"
-msgstr "Toutes les politiques applicativas"
+msgstr "Totas las politicas aplicativas"
 
 #: dlls/crypt32/crypt32.rc:164 dlls/cryptui/cryptui.rc:149
 msgid "Directory Service Email Replication"
-msgstr "Réplication de courriers électroniques deu service d'annuaire"
+msgstr "Replicacion de corrièrs electronics deu servici d'annuari"
 
 #: dlls/crypt32/crypt32.rc:165 dlls/cryptui/cryptui.rc:145
 msgid "Certificate Request Agent"
-msgstr "Agent de demande de certificat"
+msgstr "Agent de demanda de certificat"
 
 #: dlls/crypt32/crypt32.rc:166 dlls/cryptui/cryptui.rc:141
 msgid "Lifetime Signing"
-msgstr "Signature à vie"
+msgstr "Signatura a vita"
 
 #: dlls/crypt32/crypt32.rc:167
 msgid "All issuance policies"
-msgstr "Toutes les politiques d'émission"
+msgstr "Totas las politicas d'emission"
 
 #: dlls/crypt32/crypt32.rc:172
 msgid "Trusted Root Certification Authorities"
-msgstr "Autorités de certification de confiance"
+msgstr "Autoritats de certificacion de hidança"
 
 #: dlls/crypt32/crypt32.rc:173
 msgid "Personal"
-msgstr "Personnel"
+msgstr "Personau"
 
 #: dlls/crypt32/crypt32.rc:174
 msgid "Intermediate Certification Authorities"
-msgstr "Autorités de certification intermédiaires"
+msgstr "Autoritats de certificacion intermediàrias"
 
 #: dlls/crypt32/crypt32.rc:175
 msgid "Other People"
-msgstr "Autres personnes"
+msgstr "Autas personas"
 
 #: dlls/crypt32/crypt32.rc:176
 msgid "Trusted Publishers"
-msgstr "Éditeurs de confiance"
+msgstr "Editors de hidança"
 
 #: dlls/crypt32/crypt32.rc:177
 msgid "Untrusted Certificates"
-msgstr "Certificats non autorisés"
+msgstr "Certificats non autorizats"
 
 #: dlls/crypt32/crypt32.rc:182
 msgid "KeyID="
@@ -1990,7 +1990,7 @@ msgstr "Numèro de seria deu certificat ="
 
 #: dlls/crypt32/crypt32.rc:185
 msgid "Other Name="
-msgstr "Autre nom ="
+msgstr "Aute nom  "
 
 #: dlls/crypt32/crypt32.rc:186
 msgid "Email Address="
@@ -2002,7 +2002,7 @@ msgstr "Nom DNS ="
 
 #: dlls/crypt32/crypt32.rc:188
 msgid "Directory Address"
-msgstr "Adreça d'annuaire"
+msgstr "Adreça d'annuari"
 
 #: dlls/crypt32/crypt32.rc:189
 msgid "URL="
@@ -2014,11 +2014,11 @@ msgstr "Adreça IP ="
 
 #: dlls/crypt32/crypt32.rc:191
 msgid "Mask="
-msgstr "Masque ="
+msgstr "Masca ="
 
 #: dlls/crypt32/crypt32.rc:192
 msgid "Registered ID="
-msgstr "ID enregistré ="
+msgstr "ID enregistrat ="
 
 #: dlls/crypt32/crypt32.rc:193
 msgid "Unknown Key Usage"
