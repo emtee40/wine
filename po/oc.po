@@ -2022,11 +2022,11 @@ msgstr "ID enregistrat ="
 
 #: dlls/crypt32/crypt32.rc:193
 msgid "Unknown Key Usage"
-msgstr "Utilisation de la clau inconnue"
+msgstr "Utilizacion de clau desconeguda"
 
 #: dlls/crypt32/crypt32.rc:194
 msgid "Subject Type="
-msgstr "Tipe de sujet ="
+msgstr "Tipe de subjècte ="
 
 #: dlls/crypt32/crypt32.rc:195
 msgctxt "Certificate Authority"
@@ -2035,28 +2035,28 @@ msgstr "AC"
 
 #: dlls/crypt32/crypt32.rc:196
 msgid "End Entity"
-msgstr "Entité terminale"
+msgstr "Entitat terminala"
 
 #: dlls/crypt32/crypt32.rc:197
 msgid "Path Length Constraint="
-msgstr "Constrenta de longueur de chemin ="
+msgstr "Constrenta de longor de camin ="
 
 #: dlls/crypt32/crypt32.rc:198
 msgctxt "path length"
 msgid "None"
-msgstr "Nulle"
+msgstr "Nulla"
 
 #: dlls/crypt32/crypt32.rc:199
 msgid "Information Not Available"
-msgstr "Informations non disponibles"
+msgstr "Informacion non disponibla"
 
 #: dlls/crypt32/crypt32.rc:200
 msgid "Authority Info Access"
-msgstr "Accès aux informacions de l'autorité"
+msgstr "Accès aus informacions de l'autoritat"
 
 #: dlls/crypt32/crypt32.rc:201
 msgid "Access Method="
-msgstr "Méthode d'accès ="
+msgstr "Metòde d'accès ="
 
 #: dlls/crypt32/crypt32.rc:202
 msgctxt "Online Certificate Status Protocol"
@@ -2069,7 +2069,7 @@ msgstr "Emetedors de l'AC"
 
 #: dlls/crypt32/crypt32.rc:204
 msgid "Unknown Access Method"
-msgstr "Méthode d'accès inconnue"
+msgstr "Metòde d'accès desconeguda"
 
 #: dlls/crypt32/crypt32.rc:205
 msgid "Alternative Name"
