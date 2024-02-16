@@ -1,4 +1,4 @@
-# Occitan translations for Wine   ### revirat entà linha 1909
+# Occitan translations for Wine   ### revirat entà linha 2072
 #
 msgid ""
 msgstr ""
@@ -1906,7 +1906,7 @@ msgstr "Connexion d'amb carta a puç"
 
 #: dlls/crypt32/crypt32.rc:156 dlls/cryptui/cryptui.rc:142
 msgid "Digital Rights"
-msgstr "Drets numerics"   ### revirat entà linha 1909
+msgstr "Drets numerics"
 
 #: dlls/crypt32/crypt32.rc:157 dlls/cryptui/cryptui.rc:138
 msgid "Qualified Subordination"
@@ -2067,7 +2067,7 @@ msgstr "OCSP"
 msgid "CA Issuers"
 msgstr "Emetedors de l'AC"
 
-#: dlls/crypt32/crypt32.rc:204
+#: dlls/crypt32/crypt32.rc:204   ### revirat entà linha 2072
 msgid "Unknown Access Method"
 msgstr "Metòde d'accès desconeguda"
 
