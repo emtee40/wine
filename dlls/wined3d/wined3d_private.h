@@ -221,6 +221,7 @@ struct wined3d_d3d_info
     uint32_t shader_output_interpolation : 1;
     uint32_t frag_coord_correction : 1;
     uint32_t viewport_array_index_any_shader : 1;
+    uint32_t stencil_export : 1;
     uint32_t texture_npot : 1;
     uint32_t texture_npot_conditional : 1;
     uint32_t normalized_texrect : 1;
@@ -236,6 +237,7 @@ struct wined3d_d3d_info
     uint32_t subpixel_viewport : 1;
     uint32_t fences : 1;
     uint32_t persistent_map : 1;
+    uint32_t gpu_push_constants : 1;
     enum wined3d_feature_level feature_level;
 
     DWORD multisample_draw_location;
@@ -581,6 +583,7 @@ enum wined3d_shader_register_type
     WINED3DSPR_DEPTHOUTGE,
     WINED3DSPR_DEPTHOUTLE,
     WINED3DSPR_RASTERIZER,
+    WINED3DSPR_STENCILREF,
 };
 
 enum wined3d_data_type
@@ -1155,7 +1158,7 @@ struct wined3d_shader_reg_maps
     DWORD input_rel_addressing : 1;
     DWORD viewport_array : 1;
     DWORD sample_mask    : 1;
-    DWORD padding        : 14;
+    DWORD stencil_ref    : 1;
 
     DWORD rt_mask; /* Used render targets, 32 max. */
 
@@ -2758,7 +2761,8 @@ struct wined3d_ffp_vs_settings
     DWORD texcoords       : 8;  /* WINED3D_MAX_FFP_TEXTURES */
     DWORD ortho_fog       : 1;
     DWORD flatshading     : 1;
-    DWORD padding         : 18;
+    DWORD specular_enable : 1;
+    DWORD padding         : 17;
 
     DWORD swizzle_map; /* MAX_ATTRIBS, 32 */
 
@@ -3199,6 +3203,7 @@ struct wined3d_resource
     UINT depth;
     UINT size;
     unsigned int priority;
+    void *heap_pointer;
     void *heap_memory;
 
     uint32_t pin_sysmem : 1;
@@ -3557,13 +3562,17 @@ enum wined3d_cs_queue_id
     WINED3D_CS_QUEUE_COUNT,
 };
 
-#define WINED3D_CS_QUERY_POLL_INTERVAL  10u
+#define WINED3D_CS_QUERY_POLL_INTERVAL  100u
 #if defined(_WIN64)
 #define WINED3D_CS_QUEUE_SIZE           0x1000000u
 #else
 #define WINED3D_CS_QUEUE_SIZE           0x400000u
 #endif
 #define WINED3D_CS_SPIN_COUNT           2000u
+/* How long to wait for commands when there are active queries, in µs. */
+#define WINED3D_CS_COMMAND_WAIT_WITH_QUERIES_TIMEOUT 100
+/* How long to wait for the CS from the client thread, in µs. */
+#define WINED3D_CS_CLIENT_WAIT_TIMEOUT  0
 #define WINED3D_CS_QUEUE_MASK           (WINED3D_CS_QUEUE_SIZE - 1)
 
 C_ASSERT(!(WINED3D_CS_QUEUE_SIZE & (WINED3D_CS_QUEUE_SIZE - 1)));
@@ -3756,6 +3765,16 @@ static inline void wined3d_resource_reference(struct wined3d_resource *resource)
     resource->access_time = cs->queue[WINED3D_CS_QUEUE_DEFAULT].head;
 }
 
+#define WINED3D_PAUSE_SPIN_COUNT 200u
+
+static inline void wined3d_pause(unsigned int *spin_count)
+{
+    static const LARGE_INTEGER timeout = {.QuadPart = WINED3D_CS_CLIENT_WAIT_TIMEOUT * -10};
+
+    if (++*spin_count >= WINED3D_PAUSE_SPIN_COUNT)
+        NtDelayExecution(FALSE, &timeout);
+}
+
 static inline BOOL wined3d_ge_wrap(ULONG x, ULONG y)
 {
     return (x - y) < UINT_MAX / 2;
@@ -3766,6 +3785,7 @@ static inline void wined3d_resource_wait_idle(const struct wined3d_resource *res
 {
     const struct wined3d_cs *cs = resource->device->cs;
     ULONG access_time, tail, head;
+    unsigned int spin_count = 0;
 
     if (!cs->thread || cs->thread_id == GetCurrentThreadId())
         return;
@@ -3804,7 +3824,7 @@ static inline void wined3d_resource_wait_idle(const struct wined3d_resource *res
         if (!wined3d_ge_wrap(access_time, tail) && access_time != tail)
             break;
 
-        YieldProcessor();
+        wined3d_pause(&spin_count);
     }
 }
 
@@ -4014,7 +4034,9 @@ struct wined3d_swapchain
     unsigned int swap_interval;
     unsigned int max_frame_latency;
 
-    LONG prev_time, frames;   /* Performance tracking */
+    /* Performance tracking */
+    LARGE_INTEGER last_present_time;
+    LONG prev_time, frames;
 
     struct wined3d_swapchain_state state;
     HWND win_handle;
@@ -4232,6 +4254,7 @@ struct wined3d_shader
     void *byte_code;
     unsigned int byte_code_size;
     BOOL load_local_constsF;
+    enum vkd3d_shader_source_type source_type;
     const struct wined3d_shader_frontend *frontend;
     void *frontend_data;
     void *backend_data;
@@ -4316,6 +4339,7 @@ static inline BOOL shader_is_scalar(const struct wined3d_shader_register *reg)
         case WINED3DSPR_PRIMID:     /* primID */
         case WINED3DSPR_COVERAGE: /* vCoverage */
         case WINED3DSPR_SAMPLEMASK: /* oMask */
+        case WINED3DSPR_STENCILREF: /* oStencilRef */
             return TRUE;
 
         case WINED3DSPR_MISCTYPE:

@@ -142,8 +142,6 @@ static const char * const atom_names[NB_XATOMS - FIRST_XATOM] =
     "RAW_ASCENT",
     "RAW_DESCENT",
     "RAW_CAP_HEIGHT",
-    "Rel X",
-    "Rel Y",
     "WM_PROTOCOLS",
     "WM_DELETE_WINDOW",
     "WM_STATE",
@@ -697,7 +695,7 @@ static NTSTATUS x11drv_init( void *arg )
 #ifdef SONAME_LIBXCOMPOSITE
     X11DRV_XComposite_Init();
 #endif
-    X11DRV_XInput2_Init();
+    x11drv_xinput2_load();
 
     XkbUseExtension( gdi_display, NULL, NULL );
     X11DRV_InitKeyboard( gdi_display );
@@ -721,6 +719,7 @@ void X11DRV_ThreadDetach(void)
         vulkan_thread_detach();
         if (data->xim) XCloseIM( data->xim );
         if (data->font_set) XFreeFontSet( data->display, data->font_set );
+        XSync( gdi_display, False ); /* make sure XReparentWindow requests have completed before closing the thread display */
         XCloseDisplay( data->display );
         free( data );
         /* clear data in case we get re-entered from user32 before the thread is truly dead */
@@ -785,6 +784,7 @@ struct x11drv_thread_data *x11drv_init_thread_data(void)
     NtUserGetThreadInfo()->driver_data = (UINT_PTR)data;
 
     if (use_xim) xim_thread_attach( data );
+    x11drv_xinput2_init( data );
 
     return data;
 }
@@ -1302,13 +1302,6 @@ NTSTATUS x11drv_client_func( enum x11drv_client_funcs id, const void *params, UL
     void *ret_ptr;
     ULONG ret_len;
     return KeUserModeCallback( id, params, size, &ret_ptr, &ret_len );
-}
-
-
-NTSTATUS x11drv_client_call( enum client_callback func, UINT arg )
-{
-    struct client_callback_params params = { .id = func, .arg = arg };
-    return x11drv_client_func( client_func_callback, &params, sizeof(params) );
 }
 
 

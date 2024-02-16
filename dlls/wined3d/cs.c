@@ -23,6 +23,10 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d);
 WINE_DECLARE_DEBUG_CHANNEL(d3d_perf);
 WINE_DECLARE_DEBUG_CHANNEL(d3d_sync);
 WINE_DECLARE_DEBUG_CHANNEL(fps);
+WINE_DECLARE_DEBUG_CHANNEL(frametime);
+
+static NTSTATUS (WINAPI *pNtAlertThreadByThreadId)(HANDLE tid);
+static NTSTATUS (WINAPI *pNtWaitForAlertByThreadId)(void *addr, const LARGE_INTEGER *timeout);
 
 #define WINED3D_INITIAL_CS_SIZE 4096
 
@@ -640,11 +644,18 @@ static void wined3d_cs_exec_nop(struct wined3d_cs *cs, const void *data)
 
 static void wined3d_cs_exec_present(struct wined3d_cs *cs, const void *data)
 {
+    static LARGE_INTEGER freq;
+
     struct wined3d_texture *logo_texture, *cursor_texture, *back_buffer;
     struct wined3d_rendertarget_view *dsv = cs->state.fb.depth_stencil;
     const struct wined3d_cs_present *op = data;
     const struct wined3d_swapchain_desc *desc;
     struct wined3d_swapchain *swapchain;
+    LONGLONG elapsed_time;
+    LARGE_INTEGER time;
+
+    if (!freq.QuadPart)
+        QueryPerformanceFrequency(&freq);
 
     swapchain = op->swapchain;
     desc = &swapchain->state.desc;
@@ -700,6 +711,16 @@ static void wined3d_cs_exec_present(struct wined3d_cs *cs, const void *data)
             wined3d_rendertarget_view_validate_location(dsv, WINED3D_LOCATION_DISCARDED);
     }
 
+    if (TRACE_ON(frametime))
+    {
+        QueryPerformanceCounter(&time);
+        if (swapchain->last_present_time.QuadPart)
+        {
+            elapsed_time = time.QuadPart - swapchain->last_present_time.QuadPart;
+            TRACE_(frametime)("Frame duration %u μs.\n", (unsigned int)(elapsed_time * 1000000 / freq.QuadPart));
+        }
+        swapchain->last_present_time = time;
+    }
     if (TRACE_ON(fps))
     {
         DWORD time = GetTickCount();
@@ -868,7 +889,17 @@ static void reference_shader_resources(struct wined3d_device_context *context, u
             continue;
 
         if (!(shader = state->shader[i]))
+        {
+            if (i == WINED3D_SHADER_TYPE_PIXEL)
+            {
+                for (j = 0; j < WINED3D_MAX_FFP_TEXTURES; ++j)
+                {
+                    if ((view = state->shader_resource_view[WINED3D_SHADER_TYPE_PIXEL][j]))
+                        wined3d_device_context_reference_resource(context, view->resource);
+                }
+            }
             continue;
+        }
 
         for (j = 0; j < WINED3D_MAX_CBS; ++j)
         {
@@ -1107,6 +1138,7 @@ static void wined3d_cs_exec_flush(struct wined3d_cs *cs, const void *data)
 {
     struct wined3d_context *context;
 
+    TRACE_(d3d_perf)("Flushing adapter.\n");
     context = context_acquire(cs->c.device, NULL, 0);
     cs->c.device->adapter->adapter_ops->adapter_flush_context(context);
     context_release(context);
@@ -2112,34 +2144,51 @@ static const struct push_constant_info
     size_t size;
     unsigned int max_count;
     DWORD mask;
+    enum wined3d_shader_type shader_type;
+    enum vkd3d_shader_d3dbc_constant_register shader_binding;
 }
 wined3d_cs_push_constant_info[] =
 {
-    [WINED3D_PUSH_CONSTANTS_VS_F] = {sizeof(struct wined3d_vec4),  WINED3D_MAX_VS_CONSTS_F, WINED3D_SHADER_CONST_VS_F},
-    [WINED3D_PUSH_CONSTANTS_PS_F] = {sizeof(struct wined3d_vec4),  WINED3D_MAX_PS_CONSTS_F, WINED3D_SHADER_CONST_PS_F},
-    [WINED3D_PUSH_CONSTANTS_VS_I] = {sizeof(struct wined3d_ivec4), WINED3D_MAX_CONSTS_I,    WINED3D_SHADER_CONST_VS_I},
-    [WINED3D_PUSH_CONSTANTS_PS_I] = {sizeof(struct wined3d_ivec4), WINED3D_MAX_CONSTS_I,    WINED3D_SHADER_CONST_PS_I},
-    [WINED3D_PUSH_CONSTANTS_VS_B] = {sizeof(BOOL),                 WINED3D_MAX_CONSTS_B,    WINED3D_SHADER_CONST_VS_B},
-    [WINED3D_PUSH_CONSTANTS_PS_B] = {sizeof(BOOL),                 WINED3D_MAX_CONSTS_B,    WINED3D_SHADER_CONST_PS_B},
+    [WINED3D_PUSH_CONSTANTS_VS_F] = {sizeof(struct wined3d_vec4),  WINED3D_MAX_VS_CONSTS_F, WINED3D_SHADER_CONST_VS_F, WINED3D_SHADER_TYPE_VERTEX, VKD3D_SHADER_D3DBC_FLOAT_CONSTANT_REGISTER},
+    [WINED3D_PUSH_CONSTANTS_PS_F] = {sizeof(struct wined3d_vec4),  WINED3D_MAX_PS_CONSTS_F, WINED3D_SHADER_CONST_PS_F, WINED3D_SHADER_TYPE_PIXEL,  VKD3D_SHADER_D3DBC_FLOAT_CONSTANT_REGISTER},
+    [WINED3D_PUSH_CONSTANTS_VS_I] = {sizeof(struct wined3d_ivec4), WINED3D_MAX_CONSTS_I,    WINED3D_SHADER_CONST_VS_I, WINED3D_SHADER_TYPE_VERTEX, VKD3D_SHADER_D3DBC_INT_CONSTANT_REGISTER},
+    [WINED3D_PUSH_CONSTANTS_PS_I] = {sizeof(struct wined3d_ivec4), WINED3D_MAX_CONSTS_I,    WINED3D_SHADER_CONST_PS_I, WINED3D_SHADER_TYPE_PIXEL,  VKD3D_SHADER_D3DBC_INT_CONSTANT_REGISTER},
+    [WINED3D_PUSH_CONSTANTS_VS_B] = {sizeof(BOOL),                 WINED3D_MAX_CONSTS_B,    WINED3D_SHADER_CONST_VS_B, WINED3D_SHADER_TYPE_VERTEX, VKD3D_SHADER_D3DBC_BOOL_CONSTANT_REGISTER},
+    [WINED3D_PUSH_CONSTANTS_PS_B] = {sizeof(BOOL),                 WINED3D_MAX_CONSTS_B,    WINED3D_SHADER_CONST_PS_B, WINED3D_SHADER_TYPE_PIXEL,  VKD3D_SHADER_D3DBC_BOOL_CONSTANT_REGISTER},
 };
 
-static bool prepare_push_constant_buffer(struct wined3d_device *device, enum wined3d_push_constants type)
+static bool prepare_push_constant_buffer(struct wined3d_device_context *context, enum wined3d_push_constants type)
 {
     const struct push_constant_info *info = &wined3d_cs_push_constant_info[type];
+    struct wined3d_device *device = context->device;
+    bool gpu = device->adapter->d3d_info.gpu_push_constants;
     HRESULT hr;
 
-    const struct wined3d_buffer_desc desc =
+    struct wined3d_buffer_desc desc =
     {
         .byte_width = info->max_count * info->size,
         .bind_flags = 0,
         .access = WINED3D_RESOURCE_ACCESS_CPU | WINED3D_RESOURCE_ACCESS_MAP_R | WINED3D_RESOURCE_ACCESS_MAP_W,
     };
 
+    if (gpu)
+    {
+        desc.bind_flags = WINED3D_BIND_CONSTANT_BUFFER;
+        desc.access = WINED3D_RESOURCE_ACCESS_GPU;
+    }
+
     if (!device->push_constants[type] && FAILED(hr = wined3d_buffer_create(device,
             &desc, NULL, NULL, &wined3d_null_parent_ops, &device->push_constants[type])))
     {
         ERR("Failed to create push constant buffer, hr %#lx.\n", hr);
         return false;
+    }
+
+    if (gpu)
+    {
+        struct wined3d_constant_buffer_state state = {.buffer = device->push_constants[type], .size = desc.byte_width};
+
+        wined3d_device_context_emit_set_constant_buffers(context, info->shader_type, info->shader_binding, 1, &state);
     }
 
     return true;
@@ -2187,7 +2236,7 @@ void wined3d_device_context_push_constants(struct wined3d_device_context *contex
     unsigned int byte_size = count * info->size;
     struct wined3d_box box;
 
-    if (!prepare_push_constant_buffer(context->device, type))
+    if (!prepare_push_constant_buffer(context, type))
         return;
 
     wined3d_box_set(&box, byte_offset, 0, byte_offset + byte_size, 1, 0, 1);
@@ -2454,6 +2503,8 @@ HRESULT wined3d_device_context_emit_map(struct wined3d_device_context *context,
         return WINED3D_OK;
     }
 
+    TRACE_(d3d_perf)("Mapping resource %p (type %u), flags %#x through the CS.\n", resource, resource->type, flags);
+
     wined3d_resource_wait_idle(resource);
 
     /* We might end up invalidating the resource on the CS thread. */
@@ -2505,6 +2556,8 @@ HRESULT wined3d_device_context_emit_unmap(struct wined3d_device_context *context
     }
 
     wined3d_not_from_cs(context->device->cs);
+
+    TRACE_(d3d_perf)("Unmapping resource %p (type %u) through the CS.\n", resource, resource->type);
 
     if (!(op = wined3d_device_context_require_space(context, sizeof(*op), WINED3D_CS_QUEUE_MAP)))
         return E_OUTOFMEMORY;
@@ -3188,7 +3241,12 @@ static void wined3d_cs_queue_submit(struct wined3d_cs_queue *queue, struct wined
     InterlockedExchange((LONG *)&queue->head, queue->head + packet_size);
 
     if (InterlockedCompareExchange(&cs->waiting_for_event, FALSE, TRUE))
-        SetEvent(cs->event);
+    {
+        if (pNtAlertThreadByThreadId)
+            pNtAlertThreadByThreadId((HANDLE)(ULONG_PTR)cs->thread_id);
+        else
+            SetEvent(cs->event);
+    }
 }
 
 static void wined3d_cs_mt_submit(struct wined3d_device_context *context, enum wined3d_cs_queue_id queue_id)
@@ -3253,7 +3311,7 @@ static void *wined3d_cs_queue_require_space(struct wined3d_cs_queue *queue, size
         if (new_pos < tail && new_pos)
             break;
 
-        TRACE("Waiting for free space. Head %lu, tail %lu, packet size %Iu.\n",
+        TRACE_(d3d_perf)("Waiting for free space. Head %lu, tail %lu, packet size %Iu.\n",
                 head, tail, packet_size);
     }
 
@@ -3276,12 +3334,15 @@ static void *wined3d_cs_mt_require_space(struct wined3d_device_context *context,
 static void wined3d_cs_mt_finish(struct wined3d_device_context *context, enum wined3d_cs_queue_id queue_id)
 {
     struct wined3d_cs *cs = wined3d_cs_from_context(context);
+    unsigned int spin_count = 0;
 
     if (cs->thread_id == GetCurrentThreadId())
         return wined3d_cs_st_finish(context, queue_id);
 
+    TRACE_(d3d_perf)("Waiting for queue %u to be empty.\n", queue_id);
     while (cs->queue[queue_id].head != *(volatile ULONG *)&cs->queue[queue_id].tail)
-        YieldProcessor();
+        wined3d_pause(&spin_count);
+    TRACE_(d3d_perf)("Queue is now empty.\n");
 }
 
 static const struct wined3d_device_context_ops wined3d_cs_mt_ops =
@@ -3314,6 +3375,12 @@ static void poll_queries(struct wined3d_cs *cs)
 
 static void wined3d_cs_wait_event(struct wined3d_cs *cs)
 {
+    static const LARGE_INTEGER query_timeout = {.QuadPart = WINED3D_CS_COMMAND_WAIT_WITH_QUERIES_TIMEOUT * -10};
+    const LARGE_INTEGER *timeout = NULL;
+
+    if (!list_empty(&cs->query_poll_list))
+        timeout = &query_timeout;
+
     InterlockedExchange(&cs->waiting_for_event, TRUE);
 
     /* The main thread might have enqueued a command and blocked on it after
@@ -3328,7 +3395,10 @@ static void wined3d_cs_wait_event(struct wined3d_cs *cs)
             && InterlockedCompareExchange(&cs->waiting_for_event, FALSE, TRUE))
         return;
 
-    WaitForSingleObject(cs->event, INFINITE);
+    if (pNtWaitForAlertByThreadId)
+        pNtWaitForAlertByThreadId(NULL, timeout);
+    else
+        NtWaitForSingleObject(cs->event, FALSE, timeout);
 }
 
 static void wined3d_cs_command_lock(const struct wined3d_cs *cs)
@@ -3440,10 +3510,10 @@ static DWORD WINAPI wined3d_cs_run(void *ctx)
                 YieldProcessor();
                 if (++spin_count >= WINED3D_CS_SPIN_COUNT)
                 {
-                    if (list_empty(&cs->query_poll_list))
-                        wined3d_cs_wait_event(cs);
+                    if (poll)
+                        poll = WINED3D_CS_QUERY_POLL_INTERVAL - 1;
                     else
-                        Sleep(0);
+                        wined3d_cs_wait_event(cs);
                 }
                 continue;
             }
@@ -3529,7 +3599,15 @@ struct wined3d_cs *wined3d_cs_create(struct wined3d_device *device,
     {
         cs->c.ops = &wined3d_cs_mt_ops;
 
-        if (!(cs->event = CreateEventW(NULL, FALSE, FALSE, NULL)))
+        if (!pNtAlertThreadByThreadId)
+        {
+            HANDLE ntdll = GetModuleHandleW(L"ntdll.dll");
+
+            pNtAlertThreadByThreadId = (void *)GetProcAddress(ntdll, "NtAlertThreadByThreadId");
+            pNtWaitForAlertByThreadId = (void *)GetProcAddress(ntdll, "NtWaitForAlertByThreadId");
+        }
+
+        if (!pNtAlertThreadByThreadId && !(cs->event = CreateEventW(NULL, FALSE, FALSE, NULL)))
         {
             ERR("Failed to create command stream event.\n");
             heap_free(cs->data);
@@ -3547,7 +3625,8 @@ struct wined3d_cs *wined3d_cs_create(struct wined3d_device *device,
         {
             ERR("Failed to get wined3d module handle.\n");
             CloseHandle(cs->present_event);
-            CloseHandle(cs->event);
+            if (cs->event)
+                CloseHandle(cs->event);
             heap_free(cs->data);
             goto fail;
         }
@@ -3557,7 +3636,8 @@ struct wined3d_cs *wined3d_cs_create(struct wined3d_device *device,
             ERR("Failed to create wined3d command stream thread.\n");
             FreeLibrary(cs->wined3d_module);
             CloseHandle(cs->present_event);
-            CloseHandle(cs->event);
+            if (cs->event)
+                CloseHandle(cs->event);
             heap_free(cs->data);
             goto fail;
         }
@@ -3581,7 +3661,7 @@ void wined3d_cs_destroy(struct wined3d_cs *cs)
         CloseHandle(cs->thread);
         if (!CloseHandle(cs->present_event))
             ERR("Closing present event failed.\n");
-        if (!CloseHandle(cs->event))
+        if (cs->event && !CloseHandle(cs->event))
             ERR("Closing event failed.\n");
     }
 

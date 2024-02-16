@@ -59,8 +59,9 @@ extern struct wayland process_wayland;
 
 enum wayland_window_message
 {
-    WM_WAYLAND_INIT_DISPLAY_DEVICES = 0x80001000,
-    WM_WAYLAND_CONFIGURE = 0x80001001
+    WM_WAYLAND_INIT_DISPLAY_DEVICES = WM_WINE_FIRST_DRIVER_MSG,
+    WM_WAYLAND_CONFIGURE,
+    WM_WAYLAND_SET_FOREGROUND,
 };
 
 enum wayland_surface_config_state
@@ -200,6 +201,7 @@ struct wayland_surface
     struct wayland_window_config window;
     struct wayland_client_surface *client;
     int buffer_width, buffer_height;
+    HCURSOR hcursor;
 };
 
 struct wayland_shm_buffer

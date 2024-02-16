@@ -233,9 +233,6 @@ static Bool filter_event( Display *display, XEvent *event, char *arg )
     case ButtonPress:
     case ButtonRelease:
         return (mask & QS_MOUSEBUTTON) != 0;
-#ifdef GenericEvent
-    case GenericEvent:
-#endif
     case MotionNotify:
     case EnterNotify:
     case LeaveNotify:
@@ -250,6 +247,13 @@ static Bool filter_event( Display *display, XEvent *event, char *arg )
     case PropertyNotify:
     case ClientMessage:
         return (mask & QS_POSTMESSAGE) != 0;
+#ifdef GenericEvent
+    case GenericEvent:
+#ifdef HAVE_X11_EXTENSIONS_XINPUT2_H
+        if (event->xcookie.extension == xinput2_opcode) return (mask & QS_INPUT) != 0;
+#endif
+        /* fallthrough */
+#endif
     default:
         return (mask & QS_SENDMESSAGE) != 0;
     }
@@ -1754,13 +1758,18 @@ static void handle_xdnd_position_event( HWND hwnd, XClientMessageEvent *event )
 {
     struct dnd_position_event_params params;
     XClientMessageEvent e;
+    void *ret_ptr;
+    ULONG ret_len;
     UINT effect;
 
     params.hwnd = HandleToUlong( hwnd );
     params.point = root_to_virtual_screen( event->data.l[2] >> 16, event->data.l[2] & 0xFFFF );
     params.effect = effect = xdnd_action_to_drop_effect( event->data.l[4] );
 
-    effect = x11drv_client_func( client_func_dnd_position_event, &params, sizeof(params) );
+    if (KeUserModeCallback( client_func_dnd_position_event, &params, sizeof(params),
+                            &ret_ptr, &ret_len ) || ret_len != sizeof(effect))
+        return;
+    effect = *(UINT *)ret_ptr;
 
     TRACE( "actionRequested(%ld) chosen(0x%x) at x(%d),y(%d)\n",
            event->data.l[4], effect, (int)params.point.x, (int)params.point.y );
@@ -1786,9 +1795,15 @@ static void handle_xdnd_position_event( HWND hwnd, XClientMessageEvent *event )
 static void handle_xdnd_drop_event( HWND hwnd, XClientMessageEvent *event )
 {
     XClientMessageEvent e;
-    DWORD effect;
+    void *ret_ptr;
+    ULONG ret_len;
+    ULONG arg = HandleToUlong( hwnd );
+    UINT effect;
 
-    effect = x11drv_client_call( client_dnd_drop_event, HandleToUlong( hwnd ));
+    if (KeUserModeCallback( client_func_dnd_drop_event, &arg, sizeof(arg),
+                            &ret_ptr, &ret_len ) || ret_len != sizeof(effect))
+        return;
+    effect = *(UINT *)ret_ptr;
 
     /* Tell the target we are finished. */
     memset( &e, 0, sizeof(e) );
@@ -1806,7 +1821,7 @@ static void handle_xdnd_drop_event( HWND hwnd, XClientMessageEvent *event )
 
 static void handle_xdnd_leave_event( HWND hwnd, XClientMessageEvent *event )
 {
-    x11drv_client_call( client_dnd_leave_event, 0 );
+    x11drv_client_func( client_func_dnd_leave_event, NULL, 0 );
 }
 
 

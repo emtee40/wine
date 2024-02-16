@@ -3930,15 +3930,15 @@ msgstr ""
 msgid "Expected '@'"
 msgstr ""
 
-#: dlls/jscript/jscript.rc:84
+#: dlls/jscript/jscript.rc:89
 msgid "Microsoft JScript compilation error"
 msgstr ""
 
-#: dlls/jscript/jscript.rc:85
+#: dlls/jscript/jscript.rc:90
 msgid "Microsoft JScript runtime error"
 msgstr ""
 
-#: dlls/jscript/jscript.rc:86 dlls/vbscript/vbscript.rc:64
+#: dlls/jscript/jscript.rc:91 dlls/vbscript/vbscript.rc:64
 msgid "Unknown runtime error"
 msgstr ""
 
@@ -4055,14 +4055,34 @@ msgid "Cannot modify non-writable property '|'"
 msgstr ""
 
 #: dlls/jscript/jscript.rc:80
-msgid "'this' is not a | object"
+msgid "'this' is not a DataView object"
 msgstr ""
 
 #: dlls/jscript/jscript.rc:81
-msgid "'key' is not an object"
+msgid "Required argument offset or value in DataView method is not specified"
 msgstr ""
 
 #: dlls/jscript/jscript.rc:82
+msgid "DataView operation access beyond specified buffer length"
+msgstr ""
+
+#: dlls/jscript/jscript.rc:83
+msgid "DataView constructor argument offset is invalid"
+msgstr ""
+
+#: dlls/jscript/jscript.rc:84
+msgid "'this' is not a | object"
+msgstr ""
+
+#: dlls/jscript/jscript.rc:85
+msgid "'key' is not an object"
+msgstr ""
+
+#: dlls/jscript/jscript.rc:86
+msgid "ArrayBuffer object expected"
+msgstr ""
+
+#: dlls/jscript/jscript.rc:87
 msgid "Property cannot have both accessors and a value"
 msgstr ""
 
@@ -5504,7 +5524,7 @@ msgstr ""
 msgid "File has a user-mapped section.\n"
 msgstr ""
 
-#: dlls/kernelbase/winerror.mc:1758 dlls/kernelbase/winerror.mc:3783
+#: dlls/kernelbase/winerror.mc:1758 dlls/kernelbase/winerror.mc:3788
 msgid "Connection refused.\n"
 msgstr ""
 
@@ -7122,46 +7142,50 @@ msgid "Invalid argument.\n"
 msgstr ""
 
 #: dlls/kernelbase/winerror.mc:3778
+msgid "Cannot assign requested address.\n"
+msgstr ""
+
+#: dlls/kernelbase/winerror.mc:3783
 #, fuzzy
 msgid "Connection reset by peer.\n"
 msgstr "اطلاعات.\n"
 
-#: dlls/kernelbase/winerror.mc:3788
+#: dlls/kernelbase/winerror.mc:3793
 #, fuzzy
 msgid "Host not found.\n"
 msgstr "ذخیره &به نام..."
 
-#: dlls/kernelbase/winerror.mc:3793
+#: dlls/kernelbase/winerror.mc:3798
 #, fuzzy
 msgid "Nonauthoritative host not found.\n"
 msgstr "ذخیره &به نام..."
 
-#: dlls/kernelbase/winerror.mc:3798
+#: dlls/kernelbase/winerror.mc:3803
 msgid "Nonrecoverable error.\n"
 msgstr ""
 
-#: dlls/kernelbase/winerror.mc:3803
+#: dlls/kernelbase/winerror.mc:3808
 msgid "Name valid, no data record.\n"
 msgstr ""
 
-#: dlls/kernelbase/winerror.mc:3817
+#: dlls/kernelbase/winerror.mc:3822
 msgid "Not implemented.\n"
 msgstr ""
 
-#: dlls/kernelbase/winerror.mc:3838
+#: dlls/kernelbase/winerror.mc:3843
 #, fuzzy
 msgid "Call failed.\n"
 msgstr "&پرونده.\n"
 
-#: dlls/kernelbase/winerror.mc:3810
+#: dlls/kernelbase/winerror.mc:3815
 msgid "No Signature found in file.\n"
 msgstr ""
 
-#: dlls/kernelbase/winerror.mc:3824
+#: dlls/kernelbase/winerror.mc:3829
 msgid "Invalid call.\n"
 msgstr ""
 
-#: dlls/kernelbase/winerror.mc:3831
+#: dlls/kernelbase/winerror.mc:3836
 #, fuzzy
 msgid "Resource is not currently available.\n"
 msgstr "اطلاعات.\n"
@@ -14667,6 +14691,17 @@ msgstr ""
 #: programs/explorer/explorer.rc:35 programs/winefile/winefile.rc:36
 msgid "&Run..."
 msgstr ""
+
+#: programs/explorer/explorer.rc:36
+#, fuzzy
+msgid "E&xit desktop"
+msgstr "ذخیره &به نام..."
+
+#: programs/explorer/explorer.rc:37
+#, fuzzy
+msgid ""
+"Are you sure you want to close all programs and exit the virtual desktop?"
+msgstr "پرونده‌های متنی (*.txt).\n"
 
 #: programs/findstr/findstr.rc:28
 #, fuzzy

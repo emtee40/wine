@@ -34,6 +34,7 @@
 #include "ntsyscalls.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(unwind);
+WINE_DECLARE_DEBUG_CHANNEL(seh);
 WINE_DECLARE_DEBUG_CHANNEL(relay);
 
 
@@ -129,7 +130,7 @@ static UINT fpcsr_to_mxcsr( UINT fpcr, UINT fpsr )
     return ret;
 }
 
-static void context_x64_to_arm( ARM64_NT_CONTEXT *arm_ctx, const CONTEXT *ctx )
+void context_x64_to_arm( ARM64_NT_CONTEXT *arm_ctx, const CONTEXT *ctx )
 {
     ARM64EC_NT_CONTEXT *ec_ctx = (ARM64EC_NT_CONTEXT *)ctx;
     UINT64 fpcsr;
@@ -176,7 +177,7 @@ static void context_x64_to_arm( ARM64_NT_CONTEXT *arm_ctx, const CONTEXT *ctx )
     arm_ctx->Fpsr = fpcsr >> 32;
 }
 
-static void context_arm_to_x64( CONTEXT *ctx, const ARM64_NT_CONTEXT *arm_ctx )
+void context_arm_to_x64( CONTEXT *ctx, const ARM64_NT_CONTEXT *arm_ctx )
 {
     ARM64EC_NT_CONTEXT *ec_ctx = (ARM64EC_NT_CONTEXT *)ctx;
 
@@ -373,6 +374,11 @@ NTSTATUS SYSCALL_API NtCommitTransaction( HANDLE transaction, BOOLEAN wait )
 NTSTATUS SYSCALL_API NtCompareObjects( HANDLE first, HANDLE second )
 {
     __ASM_SYSCALL_FUNC( __id_NtCompareObjects );
+}
+
+NTSTATUS SYSCALL_API NtCompareTokens( HANDLE first, HANDLE second, BOOLEAN *equal )
+{
+    __ASM_SYSCALL_FUNC( __id_NtCompareTokens );
 }
 
 NTSTATUS SYSCALL_API NtCompleteConnectPort( HANDLE handle )
@@ -1710,34 +1716,27 @@ __ASM_GLOBAL_FUNC( "#KiUserApcDispatcher",
 /*******************************************************************
  *		KiUserCallbackDispatcher (NTDLL.@)
  */
-void WINAPI dispatch_callback( void *args, ULONG len, ULONG id )
-{
-    NTSTATUS status;
-
-    __TRY
-    {
-        NTSTATUS (WINAPI *func)(void *, ULONG) = ((void **)NtCurrentTeb()->Peb->KernelCallbackTable)[id];
-        status = NtCallbackReturn( NULL, 0, func( args, len ));
-    }
-    __EXCEPT_ALL
-    {
-        ERR_(seh)( "ignoring exception\n" );
-        status = NtCallbackReturn( 0, 0, 0 );
-    }
-    __ENDTRY
-
-    RtlRaiseStatus( status );
-}
 __ASM_GLOBAL_FUNC( "#KiUserCallbackDispatcher",
-                   __ASM_SEH(".seh_pushframe\n\t")
+                   ".seh_pushframe\n\t"
                    "nop\n\t"
-                   __ASM_SEH(".seh_stackalloc 0x20\n\t")
+                   ".seh_stackalloc 0x20\n\t"
                    "nop\n\t"
-                   __ASM_SEH(".seh_save_reg lr, 0x18\n\t")
-                   __ASM_SEH(".seh_endprologue\n\t")
+                   ".seh_save_reg lr, 0x18\n\t"
+                   ".seh_endprologue\n\t"
+                   ".seh_handler " __ASM_NAME("user_callback_handler") ", @except\n\t"
                    "ldr x0, [sp]\n\t"             /* args */
                    "ldp w1, w2, [sp, #0x08]\n\t"  /* len, id */
-                   "bl " __ASM_NAME("dispatch_callback") "\n\t"
+                   "ldr x3, [x18, 0x60]\n\t"      /* peb */
+                   "ldr x3, [x3, 0x58]\n\t"       /* peb->KernelCallbackTable */
+                   "ldr x15, [x3, x2, lsl #3]\n\t"
+                   "blr x15\n\t"
+                   ".globl \"#KiUserCallbackDispatcherReturn\"\n"
+                   "\"#KiUserCallbackDispatcherReturn\":\n\t"
+                   "mov x2, x0\n\t"               /* status */
+                   "mov x1, #0\n\t"               /* ret_len */
+                   "mov x0, x1\n\t"               /* ret_ptr */
+                   "bl " __ASM_NAME("NtCallbackReturn") "\n\t"
+                   "bl " __ASM_NAME("RtlRaiseStatus") "\n\t"
                    "brk #1" )
 
 
@@ -1770,19 +1769,6 @@ void CDECL RtlRestoreContext( CONTEXT *context, EXCEPTION_RECORD *rec )
 }
 
 
-/**********************************************************************
- *              RtlVirtualUnwind   (NTDLL.@)
- */
-PVOID WINAPI RtlVirtualUnwind( ULONG type, ULONG64 base, ULONG64 pc,
-                               RUNTIME_FUNCTION *function, CONTEXT *context,
-                               PVOID *data, ULONG64 *frame_ret,
-                               KNONVOLATILE_CONTEXT_POINTERS *ctx_ptr )
-{
-    FIXME( "not implemented\n" );
-    return NULL;
-}
-
-
 /*******************************************************************
  *		RtlUnwindEx (NTDLL.@)
  */
@@ -1790,25 +1776,6 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
                          PVOID retval, CONTEXT *context, UNWIND_HISTORY_TABLE *table )
 {
     FIXME( "not implemented\n" );
-}
-
-
-/*******************************************************************
- *		RtlUnwind (NTDLL.@)
- */
-void WINAPI RtlUnwind( void *frame, void *target_ip, EXCEPTION_RECORD *rec, void *retval )
-{
-    FIXME( "not implemented\n" );
-}
-
-
-/*******************************************************************
- *		_local_unwind (NTDLL.@)
- */
-void WINAPI _local_unwind( void *frame, void *target_ip )
-{
-    CONTEXT context;
-    RtlUnwindEx( frame, target_ip, NULL, NULL, &context, NULL );
 }
 
 
@@ -2001,6 +1968,41 @@ void WINAPI LdrInitializeThunk( CONTEXT *arm_context, ULONG_PTR unk2, ULONG_PTR 
     NtContinue( &context, TRUE );
 }
 
+
+/***********************************************************************
+ *           process_breakpoint
+ */
+__ASM_GLOBAL_FUNC( "#process_breakpoint",
+                   ".seh_endprologue\n\t"
+                   ".seh_handler process_breakpoint_handler, @except\n\t"
+                   "brk #0xf000\n\t"
+                   "ret\n"
+                   "process_breakpoint_handler:\n\t"
+                   "ldr x4, [x2, #0x108]\n\t" /* context->Pc */
+                   "add x4, x4, #4\n\t"
+                   "str x4, [x2, #0x108]\n\t"
+                   "mov w0, #0\n\t"           /* ExceptionContinueExecution */
+                   "ret" )
+
+/***********************************************************************
+ *		DbgUiRemoteBreakin   (NTDLL.@)
+ */
+void WINAPI DbgUiRemoteBreakin( void *arg )
+{
+    if (NtCurrentTeb()->Peb->BeingDebugged)
+    {
+        __TRY
+        {
+            DbgBreakPoint();
+        }
+        __EXCEPT_ALL
+        {
+            /* do nothing */
+        }
+        __ENDTRY
+    }
+    RtlExitUserThread( STATUS_SUCCESS );
+}
 
 /**********************************************************************
  *              DbgBreakPoint   (NTDLL.@)

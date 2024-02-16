@@ -3993,15 +3993,15 @@ msgstr ""
 msgid "Expected '@'"
 msgstr ""
 
-#: dlls/jscript/jscript.rc:84
+#: dlls/jscript/jscript.rc:89
 msgid "Microsoft JScript compilation error"
 msgstr ""
 
-#: dlls/jscript/jscript.rc:85
+#: dlls/jscript/jscript.rc:90
 msgid "Microsoft JScript runtime error"
 msgstr ""
 
-#: dlls/jscript/jscript.rc:86 dlls/vbscript/vbscript.rc:64
+#: dlls/jscript/jscript.rc:91 dlls/vbscript/vbscript.rc:64
 #, fuzzy
 #| msgid "Unknown error"
 msgid "Unknown runtime error"
@@ -4125,16 +4125,38 @@ msgstr ""
 #: dlls/jscript/jscript.rc:80
 #, fuzzy
 #| msgid "'%s' is not a valid port name"
-msgid "'this' is not a | object"
+msgid "'this' is not a DataView object"
 msgstr "'%s' אינו שם תקני לפתחה"
 
 #: dlls/jscript/jscript.rc:81
+msgid "Required argument offset or value in DataView method is not specified"
+msgstr ""
+
+#: dlls/jscript/jscript.rc:82
+msgid "DataView operation access beyond specified buffer length"
+msgstr ""
+
+#: dlls/jscript/jscript.rc:83
+msgid "DataView constructor argument offset is invalid"
+msgstr ""
+
+#: dlls/jscript/jscript.rc:84
+#, fuzzy
+#| msgid "'%s' is not a valid port name"
+msgid "'this' is not a | object"
+msgstr "'%s' אינו שם תקני לפתחה"
+
+#: dlls/jscript/jscript.rc:85
 #, fuzzy
 #| msgid "'%s' is not a valid port name"
 msgid "'key' is not an object"
 msgstr "'%s' אינו שם תקני לפתחה"
 
-#: dlls/jscript/jscript.rc:82
+#: dlls/jscript/jscript.rc:86
+msgid "ArrayBuffer object expected"
+msgstr ""
+
+#: dlls/jscript/jscript.rc:87
 msgid "Property cannot have both accessors and a value"
 msgstr ""
 
@@ -5671,7 +5693,7 @@ msgstr "תכניות התקנה.\n"
 msgid "File has a user-mapped section.\n"
 msgstr ""
 
-#: dlls/kernelbase/winerror.mc:1758 dlls/kernelbase/winerror.mc:3783
+#: dlls/kernelbase/winerror.mc:1758 dlls/kernelbase/winerror.mc:3788
 #, fuzzy
 msgid "Connection refused.\n"
 msgstr "בהליכי התחברות אל %s.\n"
@@ -7419,51 +7441,55 @@ msgid "Invalid argument.\n"
 msgstr "Error: Invalid key name.\n"
 
 #: dlls/kernelbase/winerror.mc:3778
+msgid "Cannot assign requested address.\n"
+msgstr ""
+
+#: dlls/kernelbase/winerror.mc:3783
 #, fuzzy
 msgid "Connection reset by peer.\n"
 msgstr "בהליכי התחברות אל %s.\n"
 
-#: dlls/kernelbase/winerror.mc:3788
+#: dlls/kernelbase/winerror.mc:3793
 #, fuzzy
 msgid "Host not found.\n"
 msgstr "PATH not found.\n"
 
-#: dlls/kernelbase/winerror.mc:3793
+#: dlls/kernelbase/winerror.mc:3798
 #, fuzzy
 msgid "Nonauthoritative host not found.\n"
 msgstr "הקובץ לא נמצא.\n"
 
-#: dlls/kernelbase/winerror.mc:3798
+#: dlls/kernelbase/winerror.mc:3803
 #, fuzzy
 #| msgid "A printer error occurred."
 msgid "Nonrecoverable error.\n"
 msgstr "אירעה שגיאת מדפסת."
 
-#: dlls/kernelbase/winerror.mc:3803
+#: dlls/kernelbase/winerror.mc:3808
 msgid "Name valid, no data record.\n"
 msgstr ""
 
-#: dlls/kernelbase/winerror.mc:3817
+#: dlls/kernelbase/winerror.mc:3822
 #, fuzzy
 #| msgid "Not implemented"
 msgid "Not implemented.\n"
 msgstr "לא מוטמע"
 
-#: dlls/kernelbase/winerror.mc:3838
+#: dlls/kernelbase/winerror.mc:3843
 #, fuzzy
 msgid "Call failed.\n"
 msgstr "פתיחת קובץ.\n"
 
-#: dlls/kernelbase/winerror.mc:3810
+#: dlls/kernelbase/winerror.mc:3815
 msgid "No Signature found in file.\n"
 msgstr ""
 
-#: dlls/kernelbase/winerror.mc:3824
+#: dlls/kernelbase/winerror.mc:3829
 #, fuzzy
 msgid "Invalid call.\n"
 msgstr "אפשרות שגויה.\n"
 
-#: dlls/kernelbase/winerror.mc:3831
+#: dlls/kernelbase/winerror.mc:3836
 #, fuzzy
 msgid "Resource is not currently available.\n"
 msgstr "הגודל הזמין.\n"
@@ -15499,6 +15525,19 @@ msgstr "תפריט ההתחלה"
 #: programs/explorer/explorer.rc:35 programs/winefile/winefile.rc:36
 msgid "&Run..."
 msgstr "הפע&לה..."
+
+#: programs/explorer/explorer.rc:36
+#, fuzzy
+#| msgid "E&xit Windows"
+msgid "E&xit desktop"
+msgstr "י&ציאה מ־Windows"
+
+#: programs/explorer/explorer.rc:37
+#, fuzzy
+#| msgid "Are you sure you want to delete these values?"
+msgid ""
+"Are you sure you want to close all programs and exit the virtual desktop?"
+msgstr "האם ברצונך למחוק ערכים אלו?"
 
 #: programs/findstr/findstr.rc:28
 #, fuzzy

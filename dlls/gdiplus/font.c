@@ -236,6 +236,7 @@ GpStatus WINGDIPAPI GdipCreateFontFromLogfontW(HDC hdc,
     if (stat != Ok)
     {
         free(*font);
+        *font = NULL;
         return NotTrueTypeFont;
     }
 
@@ -1036,13 +1037,13 @@ GpStatus WINGDIPAPI GdipGetGenericFontFamilySansSerif(GpFontFamily **nativeFamil
     stat = GdipCreateFontFamilyFromName(L"Microsoft Sans Serif", NULL, nativeFamily);
 
     if (stat == FontFamilyNotFound)
+        stat = GdipCreateFontFamilyFromName(L"Tahoma", NULL, nativeFamily);
+
+    if (stat == FontFamilyNotFound)
         stat = GdipCreateFontFamilyFromName(L"Arial", NULL, nativeFamily);
 
     if (stat == FontFamilyNotFound)
         stat = GdipCreateFontFamilyFromName(L"Liberation Sans", NULL, nativeFamily);
-
-    if (stat == FontFamilyNotFound)
-        stat = GdipCreateFontFamilyFromName(L"Tahoma", NULL, nativeFamily);
 
     return stat;
 }

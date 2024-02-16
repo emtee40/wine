@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
+#include "ntstatus.h"
+#define WIN32_NO_STATUS
 #include "user_private.h"
 #include "controls.h"
 #include "wine/asm.h"
@@ -654,14 +656,18 @@ DPI_AWARENESS WINAPI GetAwarenessFromDpiAwarenessContext( DPI_AWARENESS_CONTEXT 
     case 0x10:
     case 0x11:
     case 0x12:
+    case 0x22:
     case 0x80000010:
     case 0x80000011:
     case 0x80000012:
+    case 0x80000022:
         return (ULONG_PTR)context & 3;
     case (ULONG_PTR)DPI_AWARENESS_CONTEXT_UNAWARE:
     case (ULONG_PTR)DPI_AWARENESS_CONTEXT_SYSTEM_AWARE:
     case (ULONG_PTR)DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE:
         return ~(ULONG_PTR)context;
+    case (ULONG_PTR)DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2:
+        return ~(ULONG_PTR)DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE;
     default:
         return DPI_AWARENESS_INVALID;
     }
@@ -849,14 +855,17 @@ __ASM_GLOBAL_FUNC( enum_mon_callback_wrapper,
     "ret" )
 #endif /* __i386__ */
 
-BOOL WINAPI User32CallEnumDisplayMonitor( struct enum_display_monitor_params *params, ULONG size )
+NTSTATUS WINAPI User32CallEnumDisplayMonitor( void *args, ULONG size )
 {
+    struct enum_display_monitor_params *params = args;
+    BOOL ret;
 #ifdef __i386__
-    return enum_mon_callback_wrapper( params->proc, params->monitor, params->hdc,
-                                      &params->rect, params->lparam );
+    ret = enum_mon_callback_wrapper( params->proc, params->monitor, params->hdc,
+                                     &params->rect, params->lparam );
 #else
-    return params->proc( params->monitor, params->hdc, &params->rect, params->lparam );
+    ret = params->proc( params->monitor, params->hdc, &params->rect, params->lparam );
 #endif
+    return NtCallbackReturn( &ret, sizeof(ret), STATUS_SUCCESS );
 }
 
 /***********************************************************************

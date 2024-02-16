@@ -73,6 +73,30 @@ extern DWORD EXC_CallHandler( EXCEPTION_RECORD *record, EXCEPTION_REGISTRATION_R
                               PEXCEPTION_HANDLER handler, PEXCEPTION_HANDLER nested_handler );
 
 
+#ifdef __WINE_PE_BUILD
+
+enum syscall_ids
+{
+#define SYSCALL_ENTRY(id,name,args) __id_##name = id,
+ALL_SYSCALLS32
+#undef SYSCALL_ENTRY
+};
+
+/*******************************************************************
+ *         NtQueryInformationProcess
+ */
+void NtQueryInformationProcess_wrapper(void)
+{
+    asm( ".globl " __ASM_STDCALL("NtQueryInformationProcess", 20) "\n"
+         __ASM_STDCALL("NtQueryInformationProcess", 20) ":\n\t"
+         "movl %0,%%eax\n\t"
+         "call *%%fs:0xc0\n\t"
+         "ret $20"  :: "i" (__id_NtQueryInformationProcess) );
+}
+#define NtQueryInformationProcess syscall_NtQueryInformationProcess
+
+#endif /* __WINE_PE_BUILD */
+
 /*******************************************************************
  *         syscalls
  */
@@ -81,16 +105,6 @@ ALL_SYSCALLS32
 DEFINE_SYSCALL_HELPER32()
 #undef SYSCALL_ENTRY
 
-
-/*******************************************************************
- *         is_valid_frame
- */
-static inline BOOL is_valid_frame( void *frame )
-{
-    if ((ULONG_PTR)frame & 3) return FALSE;
-    return (frame >= NtCurrentTeb()->Tib.StackLimit &&
-            (void **)frame < (void **)NtCurrentTeb()->Tib.StackBase - 1);
-}
 
 /*******************************************************************
  *         raise_handler
@@ -139,7 +153,7 @@ static NTSTATUS call_stack_handlers( EXCEPTION_RECORD *rec, CONTEXT *context )
     while (frame != (EXCEPTION_REGISTRATION_RECORD*)~0UL)
     {
         /* Check frame address */
-        if (!is_valid_frame( frame ))
+        if (!is_valid_frame( (ULONG_PTR)frame ))
         {
             rec->ExceptionFlags |= EH_STACK_INVALID;
             break;
@@ -270,21 +284,9 @@ __ASM_STDCALL_FUNC( KiUserApcDispatcher, 20,
  */
 void WINAPI KiUserCallbackDispatcher( ULONG id, void *args, ULONG len )
 {
-    NTSTATUS status;
-
-    __TRY
-    {
-        NTSTATUS (WINAPI *func)(void *, ULONG) = ((void **)NtCurrentTeb()->Peb->KernelCallbackTable)[id];
-        status = NtCallbackReturn( NULL, 0, func( args, len ));
-    }
-    __EXCEPT_ALL
-    {
-        ERR_(seh)( "ignoring exception\n" );
-        status = NtCallbackReturn( 0, 0, 0 );
-    }
-    __ENDTRY
-
-    RtlRaiseStatus( status );
+    NTSTATUS status = dispatch_user_callback( args, len, id );
+    status = NtCallbackReturn( NULL, 0, status );
+    for (;;) RtlRaiseStatus( status );
 }
 
 
@@ -421,7 +423,7 @@ void WINAPI __regs_RtlUnwind( EXCEPTION_REGISTRATION_RECORD* pEndFrame, PVOID ta
         if (pEndFrame && (frame > pEndFrame))
             raise_status( STATUS_INVALID_UNWIND_TARGET, pRecord );
 
-        if (!is_valid_frame( frame )) raise_status( STATUS_BAD_STACK, pRecord );
+        if (!is_valid_frame( (ULONG_PTR)frame )) raise_status( STATUS_BAD_STACK, pRecord );
 
         /* Call handler */
         TRACE( "calling handler at %p code=%lx flags=%lx\n",
@@ -533,13 +535,13 @@ USHORT WINAPI RtlCaptureStackBackTrace( ULONG skip, ULONG count, PVOID *buffer, 
 
     while (skip--)
     {
-        if (!is_valid_frame( frame )) return 0;
+        if (!is_valid_frame( (ULONG_PTR)frame )) return 0;
         frame = (ULONG *)*frame;
     }
 
     for (i = 0; i < count; i++)
     {
-        if (!is_valid_frame( frame )) break;
+        if (!is_valid_frame( (ULONG_PTR)frame )) break;
         buffer[i] = (void *)frame[1];
         if (hash) *hash += frame[1];
         frame = (ULONG *)*frame;
@@ -614,6 +616,44 @@ void WINAPI LdrInitializeThunk( CONTEXT *context, ULONG_PTR unk2, ULONG_PTR unk3
     loader_init( context, (void **)&context->Eax );
     TRACE_(relay)( "\1Starting thread proc %p (arg=%p)\n", (void *)context->Eax, (void *)context->Ebx );
     signal_start_thread( context );
+}
+
+
+/***********************************************************************
+ *           process_breakpoint
+ */
+void WINAPI process_breakpoint(void)
+{
+    __TRY
+    {
+        __asm__ volatile("int $3");
+    }
+    __EXCEPT_ALL
+    {
+        /* do nothing */
+    }
+    __ENDTRY
+}
+
+
+/***********************************************************************
+ *		DbgUiRemoteBreakin   (NTDLL.@)
+ */
+void WINAPI DbgUiRemoteBreakin( void *arg )
+{
+    if (NtCurrentTeb()->Peb->BeingDebugged)
+    {
+        __TRY
+        {
+            DbgBreakPoint();
+        }
+        __EXCEPT_ALL
+        {
+            /* do nothing */
+        }
+        __ENDTRY
+    }
+    RtlExitUserThread( STATUS_SUCCESS );
 }
 
 

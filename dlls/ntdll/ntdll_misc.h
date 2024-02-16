@@ -41,6 +41,18 @@
 
 #define NTDLL_TLS_ERRNO 16  /* TLS slot for _errno() */
 
+#ifdef __i386__
+static const USHORT current_machine = IMAGE_FILE_MACHINE_I386;
+#elif defined(__x86_64__)
+static const USHORT current_machine = IMAGE_FILE_MACHINE_AMD64;
+#elif defined(__arm__)
+static const USHORT current_machine = IMAGE_FILE_MACHINE_ARMNT;
+#elif defined(__aarch64__)
+static const USHORT current_machine = IMAGE_FILE_MACHINE_ARM64;
+#else
+static const USHORT current_machine = IMAGE_FILE_MACHINE_UNKNOWN;
+#endif
+
 #if defined(__i386__) || defined(__x86_64__) || defined(__arm__) || defined(__aarch64__)
 static const UINT_PTR page_size = 0x1000;
 #else
@@ -49,17 +61,32 @@ extern UINT_PTR page_size;
 
 /* exceptions */
 extern LONG call_vectored_handlers( EXCEPTION_RECORD *rec, CONTEXT *context );
+extern NTSTATUS WINAPI dispatch_user_callback( void *args, ULONG len, ULONG id );
+extern EXCEPTION_DISPOSITION WINAPI user_callback_handler( EXCEPTION_RECORD *record, void *frame,
+                                                           CONTEXT *context, void *dispatch );
+extern EXCEPTION_DISPOSITION WINAPI nested_exception_handler( EXCEPTION_RECORD *rec, void *frame,
+                                                              CONTEXT *context, void *dispatch );
 extern void DECLSPEC_NORETURN raise_status( NTSTATUS status, EXCEPTION_RECORD *rec );
 extern LONG WINAPI call_unhandled_exception_filter( PEXCEPTION_POINTERS eptr );
+extern void WINAPI process_breakpoint(void);
+
+static inline BOOL is_valid_frame( ULONG_PTR frame )
+{
+    if (frame & (sizeof(void*) - 1)) return FALSE;
+    return ((void *)frame >= NtCurrentTeb()->Tib.StackLimit &&
+            (void *)frame <= NtCurrentTeb()->Tib.StackBase);
+}
 
 extern void WINAPI LdrInitializeThunk(CONTEXT*,ULONG_PTR,ULONG_PTR,ULONG_PTR);
 extern NTSTATUS WINAPI KiUserExceptionDispatcher(EXCEPTION_RECORD*,CONTEXT*);
 extern void WINAPI KiUserApcDispatcher(CONTEXT*,ULONG_PTR,ULONG_PTR,ULONG_PTR,PNTAPCFUNC);
 extern void WINAPI KiUserCallbackDispatcher(ULONG,void*,ULONG);
+extern void WINAPI KiUserCallbackDispatcherReturn(void);
 extern void (WINAPI *pWow64PrepareForException)( EXCEPTION_RECORD *rec, CONTEXT *context );
 
-#if defined(__x86_64__) || defined(__arm__) || defined(__aarch64__)
-extern RUNTIME_FUNCTION *lookup_function_info( ULONG_PTR pc, ULONG_PTR *base, LDR_DATA_TABLE_ENTRY **module );
+#ifdef __arm64ec__
+extern void context_x64_to_arm( ARM64_NT_CONTEXT *arm_ctx, const CONTEXT *ctx );
+extern void context_arm_to_x64( CONTEXT *ctx, const ARM64_NT_CONTEXT *arm_ctx );
 #endif
 
 /* debug helpers */

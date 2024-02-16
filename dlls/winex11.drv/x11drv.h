@@ -208,8 +208,6 @@ extern INT X11DRV_GetKeyNameText( LONG lparam, LPWSTR buffer, INT size );
 extern UINT X11DRV_MapVirtualKeyEx( UINT code, UINT map_type, HKL hkl );
 extern INT X11DRV_ToUnicodeEx( UINT virtKey, UINT scanCode, const BYTE *lpKeyState,
                                LPWSTR bufW, int bufW_size, UINT flags, HKL hkl );
-extern UINT X11DRV_ImeToAsciiEx( UINT vkey, UINT vsc, const BYTE *state,
-                                 COMPOSITIONSTRING *compstr, HIMC himc );
 extern SHORT X11DRV_VkKeyScanEx( WCHAR wChar, HKL hkl );
 extern void X11DRV_NotifyIMEStatus( HWND hwnd, UINT status );
 extern void X11DRV_DestroyCursorIcon( HCURSOR handle );
@@ -265,7 +263,6 @@ extern void X11DRV_ThreadDetach(void);
 /* X11 driver internal functions */
 
 extern void X11DRV_Xcursor_Init(void);
-extern void X11DRV_XInput2_Init(void);
 
 extern DWORD copy_image_bits( BITMAPINFO *info, BOOL is_r8g8b8, XImage *image,
                               const struct gdi_image_bits *src_bits, struct gdi_image_bits *dst_bits,
@@ -395,13 +392,9 @@ struct x11drv_thread_data
     Window   clip_window;          /* window used for cursor clipping */
     BOOL     clipping_cursor;      /* whether thread is currently clipping the cursor */
 #ifdef HAVE_X11_EXTENSIONS_XINPUT2_H
-    enum { xi_unavailable = -1, xi_unknown, xi_disabled, xi_enabled } xi2_state; /* XInput2 state */
-    void    *xi2_devices;          /* list of XInput2 devices (valid when state is enabled) */
-    int      xi2_device_count;
     XIValuatorClassInfo x_valuator;
     XIValuatorClassInfo y_valuator;
-    int      xi2_core_pointer;     /* XInput2 core pointer id */
-    int      xi2_current_slave;    /* Current slave driving the Core pointer */
+    int      xinput2_pointer;      /* XInput2 master pointer device id */
 #endif /* HAVE_X11_EXTENSIONS_XINPUT2_H */
 };
 
@@ -478,8 +471,6 @@ enum x11drv_atoms
     XATOM_RAW_ASCENT,
     XATOM_RAW_DESCENT,
     XATOM_RAW_CAP_HEIGHT,
-    XATOM_Rel_X,
-    XATOM_Rel_Y,
     XATOM_WM_PROTOCOLS,
     XATOM_WM_DELETE_WINDOW,
     XATOM_WM_STATE,
@@ -580,15 +571,18 @@ extern BOOL X11DRV_MappingNotify( HWND hWnd, XEvent *event );
 extern BOOL X11DRV_GenericEvent( HWND hwnd, XEvent *event );
 
 extern int xinput2_opcode;
+extern void x11drv_xinput2_load(void);
+extern void x11drv_xinput2_init( struct x11drv_thread_data *data );
+
 extern Bool (*pXGetEventData)( Display *display, XEvent /*XGenericEventCookie*/ *event );
 extern void (*pXFreeEventData)( Display *display, XEvent /*XGenericEventCookie*/ *event );
 
 extern DWORD EVENT_x11_time_to_win32_time(Time time);
 
-/* X11 driver private messages, must be in the range 0x80001000..0x80001fff */
+/* X11 driver private messages */
 enum x11drv_window_messages
 {
-    WM_X11DRV_UPDATE_CLIPBOARD = 0x80001000,
+    WM_X11DRV_UPDATE_CLIPBOARD = WM_WINE_FIRST_DRIVER_MSG,
     WM_X11DRV_SET_WIN_REGION,
     WM_X11DRV_DESKTOP_RESIZED,
     WM_X11DRV_DELETE_TAB,
@@ -846,7 +840,6 @@ extern NTSTATUS x11drv_tablet_info( void *arg );
 
 extern NTSTATUS x11drv_client_func( enum x11drv_client_funcs func, const void *params,
                                     ULONG size );
-extern NTSTATUS x11drv_client_call( enum client_callback func, UINT arg );
 
 /* GDI helpers */
 

@@ -1565,6 +1565,8 @@ size_t server_init_process(void)
     {
         const char *arch = getenv( "WINEARCH" );
 
+        if (is_win64 && arch && !strcmp( arch, "win32" ))
+            fatal_error( "WINEARCH is set to 'win32' but this is not supported in wow64 mode.\n" );
         if (arch && strcmp( arch, "win32" ) && strcmp( arch, "win64" ))
             fatal_error( "WINEARCH set to invalid value '%s', it must be either win32 or win64.\n", arch );
 
@@ -1671,7 +1673,7 @@ size_t server_init_process(void)
  */
 void server_init_process_done(void)
 {
-    void *entry, *teb;
+    void *teb;
     unsigned int status;
     int suspend;
     FILE_FS_DEVICE_INFORMATION info;
@@ -1702,12 +1704,11 @@ void server_init_process_done(void)
 #endif
         status = wine_server_call( req );
         suspend = reply->suspend;
-        entry = wine_server_get_ptr( reply->entry );
     }
     SERVER_END_REQ;
 
     assert( !status );
-    signal_start_thread( entry, peb, suspend, NtCurrentTeb() );
+    signal_start_thread( main_image_info.TransferAddress, peb, suspend, NtCurrentTeb() );
 }
 
 
@@ -1817,6 +1818,16 @@ NTSTATUS WINAPI NtCompareObjects( HANDLE first, HANDLE second )
     SERVER_END_REQ;
 
     return status;
+}
+
+
+/**************************************************************************
+ *           NtCompareTokens   (NTDLL.@)
+ */
+NTSTATUS WINAPI NtCompareTokens( HANDLE first, HANDLE second, BOOLEAN *equal )
+{
+    FIXME( "%p,%p,%p: stub\n", first, second, equal );
+    return STATUS_NOT_IMPLEMENTED;
 }
 
 

@@ -200,6 +200,11 @@ struct draw_text_params
     UINT flags;
     WCHAR str[1];
 };
+struct draw_text_result
+{
+    int height;
+    RECT rect;
+};
 
 /* NtUserFreeCachedClipboardData params */
 struct free_cached_data_params
@@ -262,20 +267,18 @@ struct render_synthesized_format_params
 };
 
 /* NtUserUnpackDDEMessage params */
-struct unpack_dde_message_result
-{
-    WPARAM wparam;
-    LPARAM lparam;
-};
-
 struct unpack_dde_message_params
 {
-    struct unpack_dde_message_result *result;  /* FIXME: Use NtCallbackReturn instead */
     HWND hwnd;
     UINT message;
     WPARAM wparam;
     LPARAM lparam;
     char data[1];
+};
+struct unpack_dde_message_result
+{
+    WPARAM wparam;
+    LPARAM lparam;
 };
 
 /* process DPI awareness contexts */
@@ -294,7 +297,8 @@ struct unpack_dde_message_params
 #define SPY_RESULT_DEFWND  0x0002
 
 /* CreateDesktop wine specific flag */
-#define DF_WINE_CREATE_DESKTOP   0x80000000
+#define DF_WINE_ROOT_DESKTOP      0x40000000
+#define DF_WINE_VIRTUAL_DESKTOP   0x80000000
 
 /* NtUserMessageCall codes */
 enum
@@ -488,10 +492,10 @@ enum wine_internal_message
     WM_WINE_SETACTIVEWINDOW,
     WM_WINE_KEYBOARD_LL_HOOK,
     WM_WINE_MOUSE_LL_HOOK,
-    WM_WINE_CLIPCURSOR,
-    WM_WINE_SETCURSOR,
     WM_WINE_UPDATEWINDOWSTATE,
     WM_WINE_FIRST_DRIVER_MSG = 0x80001000,  /* range of messages reserved for the USER driver */
+    WM_WINE_CLIPCURSOR = 0x80001ff0, /* internal driver notification messages */
+    WM_WINE_SETCURSOR,
     WM_WINE_LAST_DRIVER_MSG = 0x80001fff
 };
 
@@ -511,6 +515,7 @@ enum wine_ime_call
 {
     WINE_IME_PROCESS_KEY,
     WINE_IME_TO_ASCII_EX,
+    WINE_IME_POST_UPDATE,  /* for the user drivers */
 };
 
 /* NtUserImeDriverCall params */
