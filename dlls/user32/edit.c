@@ -387,10 +387,15 @@ static SCRIPT_STRING_ANALYSIS EDIT_UpdateUniscribeData_linedef(EDITSTATE *es, HD
 		tabdef.pTabStops = es->tabs;
 		tabdef.iTabOrigin = 0;
 
-		hr = ScriptStringAnalyse(udc, &es->text[index], line_def->net_length,
-                                         (1.5*line_def->net_length+16), -1,
-                                         SSA_LINK|SSA_FALLBACK|SSA_GLYPHS|SSA_TAB, -1,
-                                         NULL, NULL, NULL, &tabdef, NULL, &line_def->ssa);
+        if (es->style & ES_PASSWORD)
+            hr = ScriptStringAnalyse(udc, &es->password_char, line_def->net_length,
+                                    (1.5*line_def->net_length+16), -1, SSA_LINK|SSA_FALLBACK|SSA_GLYPHS|SSA_TAB|SSA_PASSWORD,
+                                    -1, NULL, NULL, NULL, &tabdef, NULL, &line_def->ssa);
+        else
+            hr = ScriptStringAnalyse(udc, &es->text[index], line_def->net_length,
+                                    (1.5*line_def->net_length+16), -1, SSA_LINK|SSA_FALLBACK|SSA_GLYPHS|SSA_TAB,
+                                    -1, NULL, NULL, NULL, &tabdef, NULL, &line_def->ssa);
+
 		if (FAILED(hr))
 		{
 			WARN("ScriptStringAnalyse failed (%lx)\n",hr);
@@ -2963,9 +2968,6 @@ static void EDIT_EM_SetMargins(EDITSTATE *es, INT action,
 static void EDIT_EM_SetPasswordChar(EDITSTATE *es, WCHAR c)
 {
 	LONG style;
-
-	if (es->style & ES_MULTILINE)
-		return;
 
 	if (es->password_char == c)
 		return;
