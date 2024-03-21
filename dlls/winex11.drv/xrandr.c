@@ -707,11 +707,9 @@ static BOOL get_gpu_properties_from_vulkan( struct gdi_gpu *gpu, const XRRProvid
     {
         for (output_idx = 0; output_idx < provider_info->noutputs; ++output_idx)
         {
-            X11DRV_expect_error( gdi_display, XRandRErrorHandler, NULL );
             vr = pvkGetRandROutputDisplayEXT( vk_physical_devices[device_idx], gdi_display,
                                               provider_info->outputs[output_idx], &vk_display );
-            XSync( gdi_display, FALSE );
-            if (X11DRV_check_error() || vr != VK_SUCCESS || vk_display == VK_NULL_HANDLE)
+            if (vr != VK_SUCCESS || vk_display == VK_NULL_HANDLE)
                 continue;
 
             memset( &id, 0, sizeof(id) );
@@ -1066,7 +1064,6 @@ static BOOL xrandr14_get_monitors( ULONG_PTR adapter_id, struct gdi_monitor **ne
     /* Inactive but attached monitor, no need to check for mirrored/replica monitors */
     if (!output_info->crtc || !crtc_info->mode)
     {
-        monitors[monitor_count].state_flags = DISPLAY_DEVICE_ATTACHED;
         monitors[monitor_count].edid_len = get_edid( adapter_id, &monitors[monitor_count].edid );
         monitor_count = 1;
     }
@@ -1113,10 +1110,6 @@ static BOOL xrandr14_get_monitors( ULONG_PTR adapter_id, struct gdi_monitor **ne
                     SetRect( &monitors[monitor_count].rc_monitor, crtc_info->x, crtc_info->y,
                              crtc_info->x + crtc_info->width, crtc_info->y + crtc_info->height );
                     monitors[monitor_count].rc_work = get_work_area( &monitors[monitor_count].rc_monitor );
-
-                    monitors[monitor_count].state_flags = DISPLAY_DEVICE_ATTACHED;
-                    if (!IsRectEmpty( &monitors[monitor_count].rc_monitor ))
-                        monitors[monitor_count].state_flags |= DISPLAY_DEVICE_ACTIVE;
 
                     if (is_crtc_primary( primary_rect, crtc_info ))
                         primary_index = monitor_count;

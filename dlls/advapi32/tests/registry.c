@@ -195,7 +195,7 @@ static void _test_hkey_main_Value_A(int line, LPCSTR name, LPCSTR string,
     lok(type == REG_SZ, "RegQueryValueExA/1 returned type %ld\n", type);
     lok(cbData == full_byte_len, "cbData=%ld instead of %ld or %ld\n", cbData, full_byte_len, str_byte_len);
 
-    value = HeapAlloc(GetProcessHeap(), 0, cbData+1);
+    value = malloc(cbData+1);
     memset(value, 0xbd, cbData+1);
     type=0xdeadbeef;
     ret = RegQueryValueExA(hkey_main, name, NULL, &type, value, &cbData);
@@ -213,7 +213,7 @@ static void _test_hkey_main_Value_A(int line, LPCSTR name, LPCSTR string,
            debugstr_an(string, full_byte_len), full_byte_len);
         lok(*(value+cbData) == 0xbd, "RegQueryValueExA/2 overflowed at offset %lu: %02x != bd\n", cbData, *(value+cbData));
     }
-    HeapFree(GetProcessHeap(), 0, value);
+    free(value);
 }
 
 #define test_hkey_main_Value_W(name, string, full_byte_len) _test_hkey_main_Value_W(__LINE__, name, string, full_byte_len)
@@ -243,7 +243,7 @@ static void _test_hkey_main_Value_W(int line, LPCWSTR name, LPCWSTR string,
         "cbData=%ld instead of %ld\n", cbData, full_byte_len);
 
     /* Give enough space to overflow by one WCHAR */
-    value = HeapAlloc(GetProcessHeap(), 0, cbData+2);
+    value = malloc(cbData+2);
     memset(value, 0xbd, cbData+2);
     type=0xdeadbeef;
     ret = RegQueryValueExW(hkey_main, name, NULL, &type, value, &cbData);
@@ -258,7 +258,7 @@ static void _test_hkey_main_Value_W(int line, LPCWSTR name, LPCWSTR string,
     /* This implies that when cbData == 0, RegQueryValueExW() should not modify the buffer */
     lok(*(value+cbData) == 0xbd, "RegQueryValueExW/2 overflowed at %lu: %02x != bd\n", cbData, *(value+cbData));
     lok(*(value+cbData+1) == 0xbd, "RegQueryValueExW/2 overflowed at %lu+1: %02x != bd\n", cbData, *(value+cbData+1));
-    HeapFree(GetProcessHeap(), 0, value);
+    free(value);
 }
 
 static void test_set_value(void)
@@ -1218,7 +1218,7 @@ static void test_reg_open_key(void)
     ok(ret == ERROR_SUCCESS,
        "Expected SetEntriesInAclA to return ERROR_SUCCESS, got %lu, last error %lu\n", ret, GetLastError());
 
-    sd = HeapAlloc(GetProcessHeap(), 0, SECURITY_DESCRIPTOR_MIN_LENGTH);
+    sd = malloc(SECURITY_DESCRIPTOR_MIN_LENGTH);
     bRet = InitializeSecurityDescriptor(sd, SECURITY_DESCRIPTOR_REVISION);
     ok(bRet == TRUE,
        "Expected InitializeSecurityDescriptor to return TRUE, got %d, last error %lu\n", bRet, GetLastError());
@@ -1256,7 +1256,7 @@ static void test_reg_open_key(void)
         RegCloseKey(hkResult);
     }
 
-    HeapFree(GetProcessHeap(), 0, sd);
+    free(sd);
     LocalFree(key_acl);
     FreeSid(world_sid);
     RegDeleteKeyA(hkRoot64, "");
@@ -1278,6 +1278,19 @@ static void test_reg_create_key(void)
     EXPLICIT_ACCESSA access;
     PACL key_acl;
     SECURITY_DESCRIPTOR *sd;
+
+    /* NULL return key check */
+    ret = RegCreateKeyA(hkey_main, "Subkey1", NULL);
+    ok(ret == ERROR_INVALID_PARAMETER, "Got unexpected ret %ld.\n", ret);
+
+    ret = RegCreateKeyW(hkey_main, L"Subkey1", NULL);
+    ok(ret == ERROR_INVALID_PARAMETER, "Got unexpected ret %ld.\n", ret);
+
+    ret = RegCreateKeyExA(hkey_main, "Subkey1", 0, NULL, 0, KEY_NOTIFY, NULL, NULL, NULL);
+    ok(ret == ERROR_BADKEY, "Got unexpected ret %ld.\n", ret);
+
+    ret = RegCreateKeyExW(hkey_main, L"Subkey1", 0, NULL, 0, KEY_NOTIFY, NULL, NULL, NULL);
+    ok(ret == ERROR_BADKEY, "Got unexpected ret %ld.\n", ret);
 
     ret = RegCreateKeyExA(hkey_main, "Subkey1", 0, NULL, 0, KEY_NOTIFY, NULL, &hkey1, NULL);
     ok(!ret, "RegCreateKeyExA failed with error %ld\n", ret);
@@ -1380,7 +1393,7 @@ static void test_reg_create_key(void)
     ok(dwRet == ERROR_SUCCESS,
        "Expected SetEntriesInAclA to return ERROR_SUCCESS, got %lu, last error %lu\n", dwRet, GetLastError());
 
-    sd = HeapAlloc(GetProcessHeap(), 0, SECURITY_DESCRIPTOR_MIN_LENGTH);
+    sd = malloc(SECURITY_DESCRIPTOR_MIN_LENGTH);
     bRet = InitializeSecurityDescriptor(sd, SECURITY_DESCRIPTOR_REVISION);
     ok(bRet == TRUE,
        "Expected InitializeSecurityDescriptor to return TRUE, got %d, last error %lu\n", bRet, GetLastError());
@@ -1418,7 +1431,7 @@ static void test_reg_create_key(void)
         RegCloseKey(hkey1);
     }
 
-    HeapFree(GetProcessHeap(), 0, sd);
+    free(sd);
     LocalFree(key_acl);
     FreeSid(world_sid);
     RegDeleteKeyA(hkRoot64, "");
@@ -2425,7 +2438,7 @@ static void test_symlinks(void)
     pRtlFormatCurrentUserKeyPath( &target_str );
 
     target_len = target_str.Length + sizeof(targetW);
-    target = HeapAlloc( GetProcessHeap(), 0, target_len );
+    target = malloc( target_len );
     memcpy( target, target_str.Buffer, target_str.Length );
     memcpy( target + target_str.Length/sizeof(WCHAR), targetW, sizeof(targetW) );
 
@@ -2530,7 +2543,7 @@ static void test_symlinks(void)
     ok( !status, "NtDeleteKey failed: 0x%08lx\n", status );
     RegCloseKey( link );
 
-    HeapFree( GetProcessHeap(), 0, target );
+    free( target );
     pRtlFreeUnicodeString( &target_str );
 }
 
@@ -2777,6 +2790,28 @@ static void test_redirection(void)
     RegCloseKey( key64 );
     RegCloseKey( root32 );
     RegCloseKey( root64 );
+
+    err = RegCreateKeyExW( HKEY_LOCAL_MACHINE, L"Software\\WOW6432Node\\test1\\test2", 0, NULL, 0,
+                              KEY_WRITE | KEY_WOW64_32KEY, NULL, &key, NULL );
+    ok(!err, "got %#lx.\n", err);
+    RegCloseKey(key);
+
+    err = RegCreateKeyExW( HKEY_LOCAL_MACHINE, L"Software\\test1\\test2", 0, NULL, 0, KEY_WRITE | KEY_WOW64_32KEY,
+                              NULL, &key, NULL );
+    ok(!err, "got %#lx.\n", err);
+    RegCloseKey(key);
+
+    err = RegOpenKeyExW( HKEY_LOCAL_MACHINE, L"Software\\test1\\test2", 0, KEY_WRITE | KEY_WOW64_32KEY, &key );
+    ok(!err, "got %#lx.\n", err);
+    RegCloseKey(key);
+
+    if (pRegDeleteTreeA)
+    {
+        err = pRegDeleteTreeA(HKEY_LOCAL_MACHINE, "Software\\WOW6432Node\\test1");
+        ok(!err, "got %#lx.\n", err);
+        err = pRegDeleteTreeA(HKEY_LOCAL_MACHINE, "Software\\test1");
+        ok(err == ERROR_FILE_NOT_FOUND, "got %#lx.\n", err);
+    }
 
     /* Software\Classes is shared/reflected so behavior is different */
 

@@ -1568,6 +1568,7 @@ static void dump_set_process_info_request( const struct set_process_info_request
     fprintf( stderr, ", mask=%d", req->mask );
     fprintf( stderr, ", priority=%d", req->priority );
     dump_uint64( ", affinity=", &req->affinity );
+    fprintf( stderr, ", token=%04x", req->token );
 }
 
 static void dump_get_thread_info_request( const struct get_thread_info_request *req )
@@ -1696,9 +1697,10 @@ static void dump_compare_objects_request( const struct compare_objects_request *
     fprintf( stderr, ", second=%04x", req->second );
 }
 
-static void dump_make_temporary_request( const struct make_temporary_request *req )
+static void dump_set_object_permanence_request( const struct set_object_permanence_request *req )
 {
     fprintf( stderr, " handle=%04x", req->handle );
+    fprintf( stderr, ", permanent=%d", req->permanent );
 }
 
 static void dump_open_process_request( const struct open_process_request *req )
@@ -3381,6 +3383,11 @@ static void dump_open_input_desktop_reply( const struct open_input_desktop_reply
     fprintf( stderr, " handle=%04x", req->handle );
 }
 
+static void dump_set_input_desktop_request( const struct set_input_desktop_request *req )
+{
+    fprintf( stderr, " handle=%04x", req->handle );
+}
+
 static void dump_close_desktop_request( const struct close_desktop_request *req )
 {
     fprintf( stderr, " handle=%04x", req->handle );
@@ -4615,7 +4622,7 @@ static const dump_func req_dumpers[REQ_NB_REQUESTS] = {
     (dump_func)dump_set_handle_info_request,
     (dump_func)dump_dup_handle_request,
     (dump_func)dump_compare_objects_request,
-    (dump_func)dump_make_temporary_request,
+    (dump_func)dump_set_object_permanence_request,
     (dump_func)dump_open_process_request,
     (dump_func)dump_open_thread_request,
     (dump_func)dump_select_request,
@@ -4765,6 +4772,7 @@ static const dump_func req_dumpers[REQ_NB_REQUESTS] = {
     (dump_func)dump_create_desktop_request,
     (dump_func)dump_open_desktop_request,
     (dump_func)dump_open_input_desktop_request,
+    (dump_func)dump_set_input_desktop_request,
     (dump_func)dump_close_desktop_request,
     (dump_func)dump_get_thread_desktop_request,
     (dump_func)dump_set_thread_desktop_request,
@@ -5053,6 +5061,7 @@ static const dump_func reply_dumpers[REQ_NB_REQUESTS] = {
     (dump_func)dump_open_desktop_reply,
     (dump_func)dump_open_input_desktop_reply,
     NULL,
+    NULL,
     (dump_func)dump_get_thread_desktop_reply,
     NULL,
     (dump_func)dump_enum_desktop_reply,
@@ -5189,7 +5198,7 @@ static const char * const req_names[REQ_NB_REQUESTS] = {
     "set_handle_info",
     "dup_handle",
     "compare_objects",
-    "make_temporary",
+    "set_object_permanence",
     "open_process",
     "open_thread",
     "select",
@@ -5339,6 +5348,7 @@ static const char * const req_names[REQ_NB_REQUESTS] = {
     "create_desktop",
     "open_desktop",
     "open_input_desktop",
+    "set_input_desktop",
     "close_desktop",
     "get_thread_desktop",
     "set_thread_desktop",

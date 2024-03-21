@@ -507,6 +507,8 @@ typedef enum
 
 struct tagVIDEOINFOHEADER;
 typedef struct tagVIDEOINFOHEADER VIDEOINFOHEADER;
+struct tagVIDEOINFOHEADER2;
+typedef struct tagVIDEOINFOHEADER2 VIDEOINFOHEADER2;
 typedef struct _AMMediaType AM_MEDIA_TYPE;
 
 HRESULT WINAPI MFAddPeriodicCallback(MFPERIODICCALLBACK callback, IUnknown *context, DWORD *key);
@@ -591,7 +593,10 @@ BOOL WINAPI MFIsFormatYUV(DWORD format);
 HRESULT WINAPI MFInitAttributesFromBlob(IMFAttributes *attributes, const UINT8 *buffer, UINT size);
 HRESULT WINAPI MFInitAMMediaTypeFromMFMediaType(IMFMediaType *media_type, GUID format, AM_MEDIA_TYPE *am_type);
 HRESULT WINAPI MFInitMediaTypeFromAMMediaType(IMFMediaType *mediatype, const AM_MEDIA_TYPE *am_type);
+HRESULT WINAPI MFInitMediaTypeFromMFVideoFormat(IMFMediaType *media_type, const MFVIDEOFORMAT *format, UINT32 size);
 HRESULT WINAPI MFInitMediaTypeFromVideoInfoHeader(IMFMediaType *media_type, const VIDEOINFOHEADER *vih,
+        UINT32 size, const GUID *subtype);
+HRESULT WINAPI MFInitMediaTypeFromVideoInfoHeader2(IMFMediaType *media_type, const VIDEOINFOHEADER2 *vih,
         UINT32 size, const GUID *subtype);
 HRESULT WINAPI MFInitMediaTypeFromWaveFormatEx(IMFMediaType *mediatype, const WAVEFORMATEX *format, UINT32 size);
 HRESULT WINAPI MFInitVideoFormat_RGB(MFVIDEOFORMAT *format, DWORD width, DWORD height, DWORD d3dformat);

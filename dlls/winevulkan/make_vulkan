@@ -64,7 +64,7 @@ from enum import Enum
 LOGGER = logging.Logger("vulkan")
 LOGGER.addHandler(logging.StreamHandler())
 
-VK_XML_VERSION = "1.3.277"
+VK_XML_VERSION = "1.3.279"
 WINE_VK_VERSION = (1, 3)
 
 # Filenames to create.
@@ -129,6 +129,7 @@ UNSUPPORTED_EXTENSIONS = [
 # winevulkan may nonetheless use, or extensions we want to generate headers for
 # but not expose to applications (useful for test commits)
 UNEXPOSED_EXTENSIONS = {
+    "VK_EXT_map_memory_placed",
     "VK_KHR_external_memory_win32",
 }
 
@@ -160,7 +161,7 @@ PERF_CRITICAL_FUNCTIONS = [
 # Functions part of our winevulkan graphics driver interface.
 # DRIVER_VERSION should be bumped on any change to driver interface
 # in FUNCTION_OVERRIDES
-DRIVER_VERSION = 14
+DRIVER_VERSION = 19
 
 # Table of functions for which we have a special implementation.
 # These are regular device / instance functions for which we need
@@ -203,11 +204,6 @@ USER_DRIVER_FUNCS = {
     "vkEnumerateInstanceExtensionProperties",
     "vkGetDeviceProcAddr",
     "vkGetInstanceProcAddr",
-    "vkGetPhysicalDevicePresentRectanglesKHR",
-    "vkGetPhysicalDeviceSurfaceCapabilities2KHR",
-    "vkGetPhysicalDeviceSurfaceCapabilitiesKHR",
-    "vkGetPhysicalDeviceSurfaceFormats2KHR",
-    "vkGetPhysicalDeviceSurfaceFormatsKHR",
     "vkGetPhysicalDeviceWin32PresentationSupportKHR",
     "vkGetSwapchainImagesKHR",
     "vkQueuePresentKHR",
@@ -225,6 +221,7 @@ MANUAL_UNIX_THUNKS = {
     "vkCreateDevice",
     "vkCreateImage",
     "vkCreateInstance",
+    "vkCreateSwapchainKHR",
     "vkCreateWin32SurfaceKHR",
     "vkDestroyCommandPool",
     "vkDestroyDebugReportCallbackEXT",
@@ -233,6 +230,7 @@ MANUAL_UNIX_THUNKS = {
     "vkDestroyDevice",
     "vkDestroyInstance",
     "vkDestroySurfaceKHR",
+    "vkDestroySwapchainKHR",
     "vkEnumerateDeviceExtensionProperties",
     "vkEnumerateDeviceLayerProperties",
     "vkEnumerateInstanceExtensionProperties",
@@ -259,8 +257,10 @@ MANUAL_UNIX_THUNKS = {
     "vkGetPhysicalDeviceExternalSemaphorePropertiesKHR",
     "vkGetPhysicalDeviceImageFormatProperties2",
     "vkGetPhysicalDeviceImageFormatProperties2KHR",
+    "vkGetPhysicalDevicePresentRectanglesKHR",
     "vkGetPhysicalDeviceSurfaceCapabilities2KHR",
     "vkGetPhysicalDeviceSurfaceCapabilitiesKHR",
+    "vkGetPhysicalDeviceSurfaceFormats2KHR",
     "vkMapMemory",
     "vkMapMemory2KHR",
     "vkUnmapMemory",
@@ -1185,6 +1185,8 @@ class VkHandle(object):
             return "wine_queue_from_handle({0})->host_queue".format(name)
         if self.name == "VkSurfaceKHR":
             return "wine_surface_from_handle({0})->host_surface".format(name)
+        if self.name == "VkSwapchainKHR":
+            return "wine_swapchain_from_handle({0})->host_swapchain".format(name)
         if self.is_dispatchable():
             LOGGER.error("Unhandled host handle for: {0}".format(self.name))
         return None
@@ -1314,7 +1316,7 @@ class VkVariable(object):
         Vulkan uses this for dynamically sized arrays for which
         there is a 'count' parameter.
         """
-        return self.dyn_array_len is not None
+        return self.dyn_array_len is not None and self.array_len is None
 
     def is_static_array(self):
         """ Returns if the member is an array.
@@ -2030,14 +2032,11 @@ class VkStruct(Sequence):
 
         # Those structs seem to be broken in spec, they are specified as
         # returned only, but documented as input structs.
-        if name in ["VkSubpassShadingPipelineCreateInfoHUAWEI",
-                    "VkPipelineShaderStageRequiredSubgroupSizeCreateInfo"]:
+        if name in ["VkPipelineShaderStageRequiredSubgroupSizeCreateInfo"]:
             returnedonly = False
 
         # Those structs don't have returnedonly in spec, but they could (should?).
-        if name in ["VkSurfaceCapabilitiesPresentBarrierNV",
-                    "VkCooperativeMatrixPropertiesNV",
-                    "VkPerformanceValueINTEL"]:
+        if name in ["VkSurfaceCapabilitiesPresentBarrierNV"]:
             returnedonly = True
 
         structextends = struct.attrib.get("structextends")

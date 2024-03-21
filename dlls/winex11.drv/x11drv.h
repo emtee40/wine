@@ -158,11 +158,9 @@ extern BOOL X11DRV_Arc( PHYSDEV dev, INT left, INT top, INT right,
                         INT bottom, INT xstart, INT ystart, INT xend, INT yend );
 extern BOOL X11DRV_Chord( PHYSDEV dev, INT left, INT top, INT right, INT bottom,
                           INT xstart, INT ystart, INT xend, INT yend );
-extern NTSTATUS X11DRV_D3DKMTCheckVidPnExclusiveOwnership( const D3DKMT_CHECKVIDPNEXCLUSIVEOWNERSHIP *desc );
 extern NTSTATUS X11DRV_D3DKMTCloseAdapter( const D3DKMT_CLOSEADAPTER *desc );
 extern NTSTATUS X11DRV_D3DKMTOpenAdapterFromLuid( D3DKMT_OPENADAPTERFROMLUID *desc );
 extern NTSTATUS X11DRV_D3DKMTQueryVideoMemoryInfo( D3DKMT_QUERYVIDEOMEMORYINFO *desc );
-extern NTSTATUS X11DRV_D3DKMTSetVidPnSourceOwner( const D3DKMT_SETVIDPNSOURCEOWNER *desc );
 extern BOOL X11DRV_Ellipse( PHYSDEV dev, INT left, INT top, INT right, INT bottom );
 extern BOOL X11DRV_ExtFloodFill( PHYSDEV dev, INT x, INT y, COLORREF color, UINT fillType );
 extern BOOL X11DRV_FillPath( PHYSDEV dev );
@@ -573,6 +571,8 @@ extern BOOL X11DRV_GenericEvent( HWND hwnd, XEvent *event );
 extern int xinput2_opcode;
 extern void x11drv_xinput2_load(void);
 extern void x11drv_xinput2_init( struct x11drv_thread_data *data );
+extern void x11drv_xinput2_enable( Display *display, Window window );
+extern void x11drv_xinput2_disable( Display *display, Window window );
 
 extern Bool (*pXGetEventData)( Display *display, XEvent /*XGenericEventCookie*/ *event );
 extern void (*pXFreeEventData)( Display *display, XEvent /*XGenericEventCookie*/ *event );
@@ -653,7 +653,6 @@ extern void update_user_time( Time time );
 extern void read_net_wm_states( Display *display, struct x11drv_win_data *data );
 extern void update_net_wm_states( struct x11drv_win_data *data );
 extern void make_window_embedded( struct x11drv_win_data *data );
-extern Window create_dummy_client_window(void);
 extern Window create_client_window( HWND hwnd, const XVisualInfo *visual );
 extern void set_window_visual( struct x11drv_win_data *data, const XVisualInfo *vis, BOOL use_alpha );
 extern void change_systray_owner( Display *display, Window systray_window );

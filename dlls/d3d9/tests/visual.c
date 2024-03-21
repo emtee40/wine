@@ -3366,7 +3366,7 @@ static void generate_bumpmap_textures(IDirect3DDevice9 *device) {
         for (y = 0; y < 128; ++y)
         {
             if(i)
-            { /* Set up black texture with 2x2 texel white spot in the middle */
+            {
                 DWORD *ptr = (DWORD *)(((BYTE *)locked_rect.pBits) + (y * locked_rect.Pitch));
                 for (x = 0; x < 128; ++x)
                 {
@@ -26438,16 +26438,23 @@ static void test_desktop_window(void)
     device = create_device(d3d, GetDesktopWindow(), GetDesktopWindow(), TRUE);
     ok(!!device, "Failed to create a D3D device.\n");
 
-    hr = IDirect3DDevice9_Clear(device, 0, NULL, D3DCLEAR_TARGET, 0xffff0000, 1.0f, 0);
-    ok(SUCCEEDED(hr), "Failed to clear, hr %#lx.\n", hr);
-    color = getPixelColor(device, 1, 1);
-    ok(color == 0x00ff0000, "Got unexpected color 0x%08x.\n", color);
+    if (device)
+    {
+        hr = IDirect3DDevice9_Clear(device, 0, NULL, D3DCLEAR_TARGET, 0xffff0000, 1.0f, 0);
+        ok(SUCCEEDED(hr), "Failed to clear, hr %#lx.\n", hr);
+        color = getPixelColor(device, 1, 1);
+        ok(color == 0x00ff0000, "Got unexpected color 0x%08x.\n", color);
 
-    hr = IDirect3DDevice9_Present(device, NULL, NULL, NULL, NULL);
-    ok(SUCCEEDED(hr), "Failed to present, hr %#lx.\n", hr);
+        hr = IDirect3DDevice9_Present(device, NULL, NULL, NULL, NULL);
+        ok(SUCCEEDED(hr), "Failed to present, hr %#lx.\n", hr);
 
-    refcount = IDirect3DDevice9_Release(device);
-    ok(!refcount, "Device has %lu references left.\n", refcount);
+        refcount = IDirect3DDevice9_Release(device);
+        ok(!refcount, "Device has %lu references left.\n", refcount);
+    }
+    else
+    {
+        skip("Failed to create a D3D device for the desktop window, skipping tests.\n");
+    }
 
     /* test device with NULL HWND */
     device = create_device(d3d, NULL, NULL, TRUE);
