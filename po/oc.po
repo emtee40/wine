@@ -1,4 +1,4 @@
-# Occitan translations for Wine   ### revirat entà linha 2154
+# Occitan translations for Wine   ### revirat entà linha 2172
 #
 msgid ""
 msgstr ""
@@ -2151,27 +2151,27 @@ msgstr "Oc"
 msgid "No"
 msgstr "Non"
 
-#: dlls/crypt32/crypt32.rc:224   ### revirat entà linha 2154
+#: dlls/crypt32/crypt32.rc:224
 msgid "Digital Signature"
-msgstr "Signature numérique"
+msgstr "Signatura numerica"
 
 #: dlls/crypt32/crypt32.rc:225
 msgid "Non-Repudiation"
-msgstr "Non-répudiation"
+msgstr "Non-repudiacion"
 
 #: dlls/crypt32/crypt32.rc:226
 msgid "Key Encipherment"
-msgstr "Chiffrement de la clau"
+msgstr "Chiframent de la clau"
 
 #: dlls/crypt32/crypt32.rc:227
 msgid "Data Encipherment"
-msgstr "Chiffrement de dadas"
+msgstr "Chiframent de dadas"
 
 #: dlls/crypt32/crypt32.rc:228
 msgid "Key Agreement"
-msgstr "Accord sur la clau"
+msgstr "Acòrd sus la clau"
 
-#: dlls/crypt32/crypt32.rc:229
+#: dlls/crypt32/crypt32.rc:229   ### revirat entà linha 2172
 msgid "Certificate Signing"
 msgstr "Signature de certificat"
 
