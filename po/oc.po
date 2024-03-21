@@ -1,4 +1,4 @@
-# Occitan translations for Wine   ### revirat entà linha 2072
+# Occitan translations for Wine   ### revirat entà linha 2154
 #
 msgid ""
 msgstr ""
@@ -2067,29 +2067,29 @@ msgstr "OCSP"
 msgid "CA Issuers"
 msgstr "Emetedors de l'AC"
 
-#: dlls/crypt32/crypt32.rc:204   ### revirat entà linha 2072
+#: dlls/crypt32/crypt32.rc:204
 msgid "Unknown Access Method"
 msgstr "Metòde d'accès desconeguda"
 
 #: dlls/crypt32/crypt32.rc:205
 msgid "Alternative Name"
-msgstr "Nom alternatif"
+msgstr "Nòm alternatiu"
 
 #: dlls/crypt32/crypt32.rc:206
 msgid "CRL Distribution Point"
-msgstr "Point de distribution de LRC"
+msgstr "Puent de distribucion de LRC"
 
 #: dlls/crypt32/crypt32.rc:207
 msgid "Distribution Point Name"
-msgstr "Nom deu point de distribution"
+msgstr "Nòm deu puent de distribucion"
 
 #: dlls/crypt32/crypt32.rc:208
 msgid "Full Name"
-msgstr "Nom complet"
+msgstr "Nòm complet"
 
 #: dlls/crypt32/crypt32.rc:209
 msgid "RDN Name"
-msgstr "Nom distingué relatif (RDN)"
+msgstr "Nòm distinguat relatiu (RDN)"
 
 #: dlls/crypt32/crypt32.rc:210
 msgid "CRL Reason="
@@ -2101,31 +2101,31 @@ msgstr "Emetedor de la LRC"
 
 #: dlls/crypt32/crypt32.rc:212
 msgid "Key Compromise"
-msgstr "Clau compromise"
+msgstr "Clau compromisa"
 
 #: dlls/crypt32/crypt32.rc:213
 msgid "CA Compromise"
-msgstr "AC compromise"
+msgstr "AC compromisa"
 
 #: dlls/crypt32/crypt32.rc:214
 msgid "Affiliation Changed"
-msgstr "Affiliation modifiée"
+msgstr "Afiliacion modificada"
 
 #: dlls/crypt32/crypt32.rc:215
 msgid "Superseded"
-msgstr "Supplanté"
+msgstr "Susplantat"
 
 #: dlls/crypt32/crypt32.rc:216
 msgid "Operation Ceased"
-msgstr "Cessation delas opérations"
+msgstr "Cessacion delas operacions"
 
 #: dlls/crypt32/crypt32.rc:217
 msgid "Certificate Hold"
-msgstr "Certificat suspendu"
+msgstr "Certificat suspendut"
 
 #: dlls/crypt32/crypt32.rc:218
 msgid "Financial Information="
-msgstr "Informacions financières ="
+msgstr "Informacions financieras ="
 
 #: dlls/crypt32/crypt32.rc:219 programs/taskmgr/taskmgr.rc:397
 msgid "Available"
@@ -2137,13 +2137,13 @@ msgstr "Non disponible"
 
 #: dlls/crypt32/crypt32.rc:221
 msgid "Meets Criteria="
-msgstr "Respecte les critères ="
+msgstr "Respecta los criteris ="
 
 #: dlls/crypt32/crypt32.rc:222 dlls/cryptui/cryptui.rc:166
 #: dlls/oleaut32/oleaut32.rc:32 dlls/wininet/wininet.rc:94
 #: programs/ipconfig/ipconfig.rc:48
 msgid "Yes"
-msgstr "Oui"
+msgstr "Oc"
 
 #: dlls/crypt32/crypt32.rc:223 dlls/cryptui/cryptui.rc:167
 #: dlls/oleaut32/oleaut32.rc:33 dlls/wininet/wininet.rc:95
@@ -2151,7 +2151,7 @@ msgstr "Oui"
 msgid "No"
 msgstr "Non"
 
-#: dlls/crypt32/crypt32.rc:224
+#: dlls/crypt32/crypt32.rc:224   ### revirat entà linha 2154
 msgid "Digital Signature"
 msgstr "Signature numérique"
 
