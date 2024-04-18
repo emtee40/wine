@@ -187,6 +187,7 @@ struct importer
 {
     struct importer *prev;
     WINE_MODREF *modref;
+    BOOL is_dynamic;
 };
 
 static struct importer *current_importer;
@@ -571,9 +572,10 @@ static inline ULONG_PTR allocate_stub( const char *dll, const char *name ) { ret
 #endif  /* __i386__ */
 
 /* The loader_section must be locked while calling this function. */
-static void push_importer( struct importer *importer, WINE_MODREF *modref )
+static void push_importer( struct importer *importer, WINE_MODREF *modref, BOOL is_dynamic )
 {
     importer->modref = modref;
+    importer->is_dynamic = is_dynamic;
     importer->prev = current_importer;
     current_importer = importer;
 }
@@ -582,6 +584,20 @@ static void push_importer( struct importer *importer, WINE_MODREF *modref )
 static void pop_importer( struct importer *importer )
 {
     current_importer = importer->prev;
+}
+
+/* The loader_section must be locked while calling this function. */
+static const WCHAR *get_last_static_importer_name(void)
+{
+    struct importer *importer;
+    for (importer = current_importer; importer != NULL; importer = importer->prev)
+    {
+        if (!importer->is_dynamic)
+        {
+            return importer->modref->ldr.BaseDllName.Buffer;
+        }
+    }
+    return NULL;
 }
 
 /* call ldr notifications */
@@ -1063,12 +1079,12 @@ static FARPROC find_ordinal_export( HMODULE module, const IMAGE_EXPORT_DIRECTORY
 
     if (TRACE_ON(snoop))
     {
-        const WCHAR *user = current_importer ? current_importer->modref->ldr.BaseDllName.Buffer : NULL;
+        const WCHAR *user = get_last_static_importer_name();
         proc = SNOOP_GetProcAddress( module, exports, exp_size, proc, ordinal, user );
     }
     if (TRACE_ON(relay))
     {
-        const WCHAR *user = current_importer ? current_importer->modref->ldr.BaseDllName.Buffer : NULL;
+        const WCHAR *user = get_last_static_importer_name();
         proc = RELAY_GetProcAddress( module, exports, exp_size, proc, ordinal, user );
     }
     return proc;
@@ -1477,7 +1493,7 @@ static NTSTATUS fixup_imports_ilonly( WINE_MODREF *wm, LPCWSTR load_path, void *
     if (!(wm->ldr.Flags & LDR_DONT_RESOLVE_REFS)) return STATUS_SUCCESS;  /* already done */
     wm->ldr.Flags &= ~LDR_DONT_RESOLVE_REFS;
 
-    push_importer( &importer, wm );
+    push_importer( &importer, wm, FALSE );
     assert( !wm->ldr.DdagNode->Dependencies.Tail );
     if (!(status = load_dll( load_path, L"mscoree.dll", 0, &imp, FALSE ))
           && !add_module_dependency_after( wm->ldr.DdagNode, imp->ldr.DdagNode, NULL ))
@@ -1536,7 +1552,7 @@ static NTSTATUS fixup_imports( WINE_MODREF *wm, LPCWSTR load_path )
     /* load the imported modules. They are automatically
      * added to the modref list of the process.
      */
-    push_importer( &importer, wm );
+    push_importer( &importer, wm, FALSE );
     status = STATUS_SUCCESS;
     for (i = 0; i < nb_imports; i++)
     {
@@ -1828,7 +1844,7 @@ static NTSTATUS process_attach( LDR_DDAG_NODE *node, LPVOID lpReserved )
     {
         struct importer importer;
 
-        push_importer( &importer, wm );
+        push_importer( &importer, wm, FALSE );
 
         call_ldr_notifications( LDR_DLL_NOTIFICATION_REASON_LOADED, &wm->ldr );
         status = MODULE_InitDLL( wm, DLL_PROCESS_ATTACH, lpReserved );
@@ -2112,8 +2128,14 @@ NTSTATUS WINAPI LdrGetProcedureAddress(HMODULE module, const ANSI_STRING *name,
     else if ((exports = RtlImageDirectoryEntryToData( module, TRUE,
                                                       IMAGE_DIRECTORY_ENTRY_EXPORT, &exp_size )))
     {
-        void *proc = name ? find_named_export( module, exports, exp_size, name->Buffer, -1, NULL )
-                          : find_ordinal_export( module, exports, exp_size, ord - exports->Base, NULL );
+        struct importer importer;
+        void *proc;
+
+        push_importer( &importer, wm, TRUE );
+        proc = name ? find_named_export( module, exports, exp_size, name->Buffer, -1, NULL )
+                    : find_ordinal_export( module, exports, exp_size, ord - exports->Base, NULL );
+        pop_importer( &importer );
+
         if (proc)
         {
             *address = proc;
