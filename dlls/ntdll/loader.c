@@ -1033,11 +1033,7 @@ static FARPROC find_forwarded_export( HMODULE module, const char *forward, LPCWS
         if (load_dll( load_path, mod_name, 0, &wm, imp->system ) == STATUS_SUCCESS &&
             !(wm->ldr.Flags & LDR_DONT_RESOLVE_REFS))
         {
-            if (!imports_fixup_done)
-            {
-                add_module_dependency( current_importer->modref->ldr.DdagNode, wm->ldr.DdagNode );
-            }
-            else if (process_attach( wm->ldr.DdagNode, NULL ) != STATUS_SUCCESS)
+            if (imports_fixup_done && process_attach( wm->ldr.DdagNode, NULL ) != STATUS_SUCCESS)
             {
                 LdrUnloadDll( wm->ldr.DllBase );
                 wm = NULL;
@@ -1051,6 +1047,11 @@ static FARPROC find_forwarded_export( HMODULE module, const char *forward, LPCWS
             return NULL;
         }
     }
+    else
+    {
+        if (wm->ldr.LoadCount != -1) wm->ldr.LoadCount++;
+    }
+
     if ((exports = RtlImageDirectoryEntryToData( wm->ldr.DllBase, TRUE,
                                                  IMAGE_DIRECTORY_ENTRY_EXPORT, &exp_size )))
     {
@@ -1070,6 +1071,12 @@ static FARPROC find_forwarded_export( HMODULE module, const char *forward, LPCWS
             forward, debugstr_w(get_modref(module)->ldr.FullDllName.Buffer),
             debugstr_w(get_modref(module)->ldr.BaseDllName.Buffer) );
     }
+    else if (wm->ldr.DdagNode != node_ntdll && wm->ldr.DdagNode != node_kernel32)
+    {
+        add_module_dependency( current_importer->modref->ldr.DdagNode, wm->ldr.DdagNode );
+        wm = NULL;
+    }
+    if (wm) LdrUnloadDll( wm->ldr.DllBase );
     return proc;
 }
 
