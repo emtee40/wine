@@ -719,6 +719,94 @@ static void update_keyboard_lock_state(HWND hwnd, struct xkb_state *xkb_state)
                                                        XKB_STATE_MODS_LOCKED));
 }
 
+static BOOL vkey_is_mod(WORD vkey)
+{
+    return vkey == VK_LSHIFT || vkey == VK_RSHIFT ||
+           vkey == VK_LCONTROL || vkey == VK_RCONTROL ||
+           vkey == VK_RMENU || vkey == VK_LMENU ||
+           vkey == VK_CAPITAL || vkey == VK_NUMLOCK || vkey == VK_SCROLL;
+}
+
+static WORD scan2vkey(WORD scan, BYTE keystate[256])
+{
+    WORD vkey;
+
+    vkey = NtUserMapVirtualKeyEx(scan, MAPVK_VSC_TO_VK_EX, keyboard_hkl);
+
+    if ((keystate[VK_NUMLOCK] & 0x01) && !(keystate[VK_SHIFT] & 0x80))
+    {
+       switch (vkey)
+       {
+       case VK_INSERT: vkey = VK_NUMPAD0; break;
+       case VK_END:    vkey = VK_NUMPAD1; break;
+       case VK_DOWN:   vkey = VK_NUMPAD2; break;
+       case VK_NEXT:   vkey = VK_NUMPAD3; break;
+       case VK_LEFT:   vkey = VK_NUMPAD4; break;
+       case VK_CLEAR:  vkey = VK_NUMPAD5; break;
+       case VK_RIGHT:  vkey = VK_NUMPAD6; break;
+       case VK_HOME:   vkey = VK_NUMPAD7; break;
+       case VK_UP:     vkey = VK_NUMPAD8; break;
+       case VK_PRIOR:  vkey = VK_NUMPAD9; break;
+       case VK_DELETE: vkey = VK_DECIMAL; break;
+       default: break;
+       }
+    }
+
+    return vkey;
+}
+
+static void update_keyboard_pressed_keys(HWND hwnd, struct wl_array *pressed_keys,
+                                         BOOL mods_only)
+{
+    uint32_t *key;
+    BYTE keystate[256];
+    BYTE pressed[256] = {0};
+    WORD vkey;
+
+    if (!get_async_key_state(keystate)) return;
+
+    wl_array_for_each(key, pressed_keys)
+        pressed[scan2vkey(key2scan(*key), keystate) & 0xff] = TRUE;
+
+    for (vkey = 1; vkey < 256; ++vkey)
+    {
+        /* Skip mouse buttons. */
+        if (vkey < 7 && vkey != VK_CANCEL) continue;
+        /* Skip left/right-agnostic modifier vkeys. */
+        if (vkey == VK_SHIFT || vkey == VK_CONTROL || vkey == VK_MENU) continue;
+        /* Skip wrong type of vkeys. */
+        if (vkey_is_mod(vkey) != mods_only) continue;
+        /* Skip unchanged vkeys. */
+        if (!pressed[vkey] == !(keystate[vkey] & 0x80)) continue;
+
+        TRACE_(key)("vkey=0x%03x pressed=%d state=0x%02x\n",
+                    vkey, pressed[vkey], keystate[vkey]);
+
+        send_vkey(hwnd, vkey, pressed[vkey] ? 0 : KEYEVENTF_KEYUP);
+
+        /* Ensure we have the proper state in case key events were blocked by hooks. */
+        if (get_async_key_state(keystate) && (!(keystate[vkey] & 0x80)) == pressed[vkey])
+        {
+            WARN("keystate %x not changed (%#.2x), probably blocked by hooks\n",
+                 vkey, keystate[vkey]);
+            keystate[vkey] ^= 0x80;
+            if ((keystate[VK_LSHIFT] | keystate[VK_RSHIFT]) & 0x80)
+                keystate[VK_SHIFT] |= 0x80;
+            else
+                keystate[VK_SHIFT] &= ~0x80;
+            if ((keystate[VK_LCONTROL] | keystate[VK_RCONTROL]) & 0x80)
+                keystate[VK_CONTROL] |= 0x80;
+            else
+                keystate[VK_CONTROL] &= ~0x80;
+            if ((keystate[VK_LMENU] | keystate[VK_RMENU]) & 0x80)
+                keystate[VK_MENU] |= 0x80;
+            else
+                keystate[VK_MENU] &= ~0x80;
+            set_async_key_state(keystate);
+        }
+    }
+}
+
 /**********************************************************************
  *          Keyboard handling
  */
@@ -827,6 +915,11 @@ static void keyboard_handle_enter(void *data, struct wl_keyboard *wl_keyboard,
 
     pthread_mutex_lock(&keyboard->mutex);
     keyboard->focused_hwnd = hwnd;
+    /* Store pressed keys to be processed after we receive the modifier state. */
+    wl_array_release(&keyboard->pressed_keys_on_enter);
+    wl_array_init(&keyboard->pressed_keys_on_enter);
+    wl_array_copy(&keyboard->pressed_keys_on_enter, keys);
+    keyboard->have_pressed_keys_on_enter = TRUE;
     pthread_mutex_unlock(&keyboard->mutex);
 
     NtUserPostMessage(keyboard->focused_hwnd, WM_INPUTLANGCHANGEREQUEST, 0 /*FIXME*/,
@@ -910,20 +1003,37 @@ static void keyboard_handle_modifiers(void *data, struct wl_keyboard *wl_keyboar
 {
     struct wayland_keyboard *keyboard = &process_wayland.keyboard;
     HWND hwnd = wayland_keyboard_get_focused_hwnd();
+    struct wl_array pressed_keys;
+    BOOL have_pressed_keys;
 
     if (!hwnd) return;
 
     TRACE("serial=%u mods_depressed=%#x mods_latched=%#x mods_locked=%#x xkb_group=%d\n",
           serial, mods_depressed, mods_latched, mods_locked, xkb_group);
 
+    wl_array_init(&pressed_keys);
+
     pthread_mutex_lock(&keyboard->mutex);
     xkb_state_update_mask(keyboard->xkb_state, mods_depressed, mods_latched,
                           mods_locked, 0, 0, xkb_group);
+    if ((have_pressed_keys = keyboard->have_pressed_keys_on_enter))
+    {
+        pressed_keys = keyboard->pressed_keys_on_enter;
+        wl_array_init(&keyboard->pressed_keys_on_enter);
+        keyboard->have_pressed_keys_on_enter = FALSE;
+    }
     pthread_mutex_unlock(&keyboard->mutex);
 
     set_current_xkb_group(xkb_group);
 
+    /* Update the modifier key press state first, so that subsequent pressed
+     * keys will be modified accordingly and the lock state state logic, which
+     * depends on having mod key events before modifiers, will work properly. */
+    if (have_pressed_keys) update_keyboard_pressed_keys(hwnd, &pressed_keys, TRUE);
     update_keyboard_lock_state(hwnd, keyboard->xkb_state);
+    if (have_pressed_keys) update_keyboard_pressed_keys(hwnd, &pressed_keys, FALSE);
+
+    wl_array_release(&pressed_keys);
 }
 
 static void keyboard_handle_repeat_info(void *data, struct wl_keyboard *wl_keyboard,
@@ -979,6 +1089,7 @@ void wayland_keyboard_init(struct wl_keyboard *wl_keyboard)
     pthread_mutex_lock(&keyboard->mutex);
     keyboard->wl_keyboard = wl_keyboard;
     keyboard->xkb_context = xkb_context;
+    wl_array_init(&keyboard->pressed_keys_on_enter);
     pthread_mutex_unlock(&keyboard->mutex);
     wl_keyboard_add_listener(keyboard->wl_keyboard, &keyboard_listener, NULL);
 }
@@ -1006,6 +1117,7 @@ void wayland_keyboard_deinit(void)
         xkb_state_unref(keyboard->xkb_state);
         keyboard->xkb_state = NULL;
     }
+    wl_array_release(&keyboard->pressed_keys_on_enter);
     pthread_mutex_unlock(&keyboard->mutex);
 
     if (rxkb_context)
