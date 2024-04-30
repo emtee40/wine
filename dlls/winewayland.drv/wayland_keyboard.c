@@ -633,6 +633,17 @@ static BOOL get_async_key_state(BYTE state[256])
     return ret;
 }
 
+static void set_async_key_state(const BYTE state[256])
+{
+    SERVER_START_REQ(set_key_state)
+    {
+        req->async = 1;
+        wine_server_add_data(req, state, 256);
+        wine_server_call(req);
+    }
+    SERVER_END_REQ;
+}
+
 static void send_vkey(HWND hwnd, WORD vkey, DWORD flags)
 {
     INPUT input = {.type = INPUT_KEYBOARD};
@@ -660,6 +671,52 @@ static void release_all_keys(HWND hwnd)
 
         if (state[vkey] & 0x80) send_vkey(hwnd, vkey, KEYEVENTF_KEYUP);
     }
+}
+
+static void update_key_lock_state(HWND hwnd, BYTE keystate[256], WORD vkey, BOOL lock)
+{
+    BOOL prev_lock = !!(keystate[vkey] & 0x01);
+
+    /* If the the vkey is pressed use the existing Windows lock state, since it
+     * might differ from the Wayland state (e.g., due to Windows clearing lock
+     * state on key press rather than release). */
+    if (keystate[vkey] & 0x80) return;
+    /* If the vkey already has the requested lock state there is nothing to do. */
+    if (prev_lock == lock) return;
+
+    TRACE_(key)("vkey=0x%03x lock=%d state=0x%02x\n", vkey, lock, keystate[vkey]);
+
+    send_vkey(hwnd, vkey, 0);
+    send_vkey(hwnd, vkey, KEYEVENTF_KEYUP);
+
+    /* Ensure we have the proper state in case key events were blocked by hooks. */
+    if (get_async_key_state(keystate) && !!(keystate[vkey] & 0x01) == prev_lock)
+    {
+        WARN("keystate %x not changed (%#.2x), probably blocked by hooks\n",
+             vkey, keystate[vkey]);
+        keystate[vkey] ^= 0x01;
+        set_async_key_state(keystate);
+    }
+}
+
+static void update_keyboard_lock_state(HWND hwnd, struct xkb_state *xkb_state)
+{
+    BYTE keystate[256];
+
+    if (!get_async_key_state(keystate)) return;
+
+    update_key_lock_state(hwnd, keystate, VK_CAPITAL,
+                          xkb_state_mod_name_is_active(xkb_state,
+                                                       XKB_MOD_NAME_CAPS,
+                                                       XKB_STATE_MODS_LOCKED));
+    update_key_lock_state(hwnd, keystate, VK_NUMLOCK,
+                          xkb_state_mod_name_is_active(xkb_state,
+                                                       XKB_MOD_NAME_NUM,
+                                                       XKB_STATE_MODS_LOCKED));
+    update_key_lock_state(hwnd, keystate, VK_SCROLL,
+                          xkb_state_mod_name_is_active(xkb_state,
+                                                       "ScrollLock",
+                                                       XKB_STATE_MODS_LOCKED));
 }
 
 /**********************************************************************
@@ -852,10 +909,11 @@ static void keyboard_handle_modifiers(void *data, struct wl_keyboard *wl_keyboar
                                       uint32_t xkb_group)
 {
     struct wayland_keyboard *keyboard = &process_wayland.keyboard;
+    HWND hwnd = wayland_keyboard_get_focused_hwnd();
 
-    if (!wayland_keyboard_get_focused_hwnd()) return;
+    if (!hwnd) return;
 
-    TRACE("serial=%u mods_depressed=%#x mods_latched=%#x mods_locked=%#x xkb_group=%d stub!\n",
+    TRACE("serial=%u mods_depressed=%#x mods_latched=%#x mods_locked=%#x xkb_group=%d\n",
           serial, mods_depressed, mods_latched, mods_locked, xkb_group);
 
     pthread_mutex_lock(&keyboard->mutex);
@@ -865,7 +923,7 @@ static void keyboard_handle_modifiers(void *data, struct wl_keyboard *wl_keyboar
 
     set_current_xkb_group(xkb_group);
 
-    /* FIXME: Sync wine modifier state with XKB modifier state. */
+    update_keyboard_lock_state(hwnd, keyboard->xkb_state);
 }
 
 static void keyboard_handle_repeat_info(void *data, struct wl_keyboard *wl_keyboard,
