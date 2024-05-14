@@ -521,7 +521,7 @@ static void test_begin_paint(void)
     ok( rect.bottom == parent_rect.bottom, "rect.bottom = %ld, expected %ld\n", rect.bottom, parent_rect.bottom );
 
     hdc = GetDC( hwnd_parent );
-    todo_wine ok( GetPixel( hdc, 60, 60 ) == cr, "error drawing outside of window client area\n" );
+    ok( GetPixel( hdc, 60, 60 ) == cr, "error drawing outside of window client area\n" );
     ReleaseDC( hwnd_parent, hdc );
 }
 
@@ -566,7 +566,6 @@ static void test_cropped_parentdc_paint_clipbox(void)
 
     hdc = GetDC( hwnd_container );
     MapWindowPoints( hwnd_child, hwnd_container, &dot_pos, 1 );
-    todo_wine
     ok( GetPixel( hdc, dot_pos.x, dot_pos.y ) == cr, "error drawing outside of window client area\n" );
     ReleaseDC( hwnd_container, hdc );
 

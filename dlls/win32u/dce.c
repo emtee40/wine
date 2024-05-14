@@ -420,6 +420,11 @@ static void update_visible_region( struct dce *dce )
                 top_win     = wine_server_ptr_handle( reply->top_win );
                 win_rect    = wine_server_get_rect( reply->win_rect );
                 top_rect    = wine_server_get_rect( reply->top_rect );
+                if (flags & DCX_PARENTCLIP)
+                {
+                    win_rect.right  = top_rect.right;
+                    win_rect.bottom = top_rect.bottom;
+                }
                 paint_flags = reply->paint_flags;
             }
             else size = reply->total_size;
