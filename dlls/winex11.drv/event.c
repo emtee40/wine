@@ -1131,7 +1131,7 @@ static BOOL X11DRV_ConfigureNotify( HWND hwnd, XEvent *xev )
             {
                 TRACE( "win %p/%lx is maximized\n", data->hwnd, data->whole_window );
                 release_win_data( data );
-                send_message( data->hwnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0 );
+                NtUserShowWindow( hwnd, SW_MAXIMIZE );
                 return TRUE;
             }
         }
@@ -1139,7 +1139,7 @@ static BOOL X11DRV_ConfigureNotify( HWND hwnd, XEvent *xev )
         {
             TRACE( "window %p/%lx is no longer maximized\n", data->hwnd, data->whole_window );
             release_win_data( data );
-            send_message( data->hwnd, WM_SYSCOMMAND, SC_RESTORE, 0 );
+            NtUserShowWindow( hwnd, SW_RESTORE );
             return TRUE;
         }
     }
@@ -1266,7 +1266,7 @@ static void handle_wm_state_notify( HWND hwnd, XPropertyEvent *event, BOOL updat
             {
                 TRACE( "restoring to max %p/%lx\n", data->hwnd, data->whole_window );
                 release_win_data( data );
-                send_message( hwnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0 );
+                NtUserShowWindow( hwnd, SW_MAXIMIZE );
                 return;
             }
             TRACE( "not restoring to max win %p/%lx style %08x\n", data->hwnd, data->whole_window, style );
@@ -1279,7 +1279,7 @@ static void handle_wm_state_notify( HWND hwnd, XPropertyEvent *event, BOOL updat
                 release_win_data( data );
                 if ((style & (WS_MINIMIZE | WS_VISIBLE)) == (WS_MINIMIZE | WS_VISIBLE))
                     NtUserSetActiveWindow( hwnd );
-                send_message( hwnd, WM_SYSCOMMAND, SC_RESTORE, 0 );
+                NtUserShowWindow( hwnd, SW_RESTORE );
                 return;
             }
             TRACE( "not restoring win %p/%lx style %08x\n", data->hwnd, data->whole_window, style );
@@ -1292,7 +1292,7 @@ static void handle_wm_state_notify( HWND hwnd, XPropertyEvent *event, BOOL updat
         {
             TRACE( "minimizing win %p/%lx\n", data->hwnd, data->whole_window );
             release_win_data( data );
-            send_message( hwnd, WM_SYSCOMMAND, SC_MINIMIZE, 0 );
+            NtUserShowWindow( hwnd, SW_MINIMIZE );
             return;
         }
         TRACE( "not minimizing win %p/%lx style %08x\n", data->hwnd, data->whole_window, style );
