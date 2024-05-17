@@ -502,6 +502,16 @@ void WAYLAND_WindowPosChanged(HWND hwnd, HWND insert_after, UINT swp_flags,
     wayland_win_data_release(data);
 }
 
+static inline LRESULT send_message_timeout( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam,
+                                            UINT flags, UINT timeout, PDWORD_PTR res_ptr )
+{
+    struct send_message_timeout_params params = { .flags = flags, .timeout = timeout };
+    LRESULT res = NtUserMessageCall( hwnd, msg, wparam, lparam, &params,
+                                     NtUserSendMessageTimeout, FALSE );
+    if (res_ptr) *res_ptr = params.result;
+    return res;
+}
+
 static void wayland_resize_desktop(void)
 {
     RECT virtual_rect = NtUserGetVirtualScreenRect();
@@ -510,6 +520,7 @@ static void wayland_resize_desktop(void)
                        virtual_rect.right - virtual_rect.left,
                        virtual_rect.bottom - virtual_rect.top,
                        SWP_NOZORDER | SWP_NOACTIVATE | SWP_DEFERERASE);
+    send_message_timeout( HWND_BROADCAST, WM_WAYLAND_REFRESH, 0, 0, SMTO_ABORTIFHUNG, 2000, FALSE );
 }
 
 static void wayland_configure_window(HWND hwnd)
@@ -625,6 +636,24 @@ static void wayland_configure_window(HWND hwnd)
     NtUserSetWindowPos(hwnd, 0, 0, 0, window_width, window_height, flags);
 }
 
+static void wayland_refresh_window(HWND hwnd)
+{
+    struct wayland_win_data *data;
+
+    if (!(data = wayland_win_data_get(hwnd))) return;
+
+    if (data->wayland_surface)
+    {
+        pthread_mutex_lock(&data->wayland_surface->mutex);
+        wayland_win_data_get_config(data, &data->wayland_surface->window);
+        if (wayland_surface_reconfigure(data->wayland_surface))
+            wl_surface_commit(data->wayland_surface->wl_surface);
+        pthread_mutex_unlock(&data->wayland_surface->mutex);
+    }
+
+    wayland_win_data_release(data);
+}
+
 /**********************************************************************
  *           WAYLAND_WindowMessage
  */
@@ -641,6 +670,10 @@ LRESULT WAYLAND_WindowMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         return 0;
     case WM_WAYLAND_SET_FOREGROUND:
         NtUserSetForegroundWindow(hwnd);
+        return 0;
+    case WM_WAYLAND_REFRESH:
+        wayland_refresh_window(hwnd);
+        NtUserInvalidateRect( hwnd, NULL, TRUE );
         return 0;
     default:
         FIXME("got window msg %x hwnd %p wp %lx lp %lx\n", msg, hwnd, (long)wp, lp);
@@ -776,4 +809,35 @@ struct wayland_surface *wayland_surface_lock_hwnd(HWND hwnd)
     wayland_win_data_release(data);
 
     return surface;
+}
+
+/**********************************************************************
+ *           enum_process_windows
+ */
+void enum_process_windows(void (*cb)(HWND hwnd))
+{
+    struct wayland_win_data *data;
+    HWND *hwnds = NULL;
+    UINT num_hwnds = 0, i = 0;
+
+    pthread_mutex_lock(&win_data_mutex);
+
+    RB_FOR_EACH_ENTRY(data, &win_data_rb, struct wayland_win_data, entry)
+        ++num_hwnds;
+
+    if (num_hwnds && (hwnds = malloc(num_hwnds * sizeof(*hwnds))))
+    {
+        RB_FOR_EACH_ENTRY(data, &win_data_rb, struct wayland_win_data, entry)
+            hwnds[i++] = data->hwnd;
+    }
+    else
+    {
+        num_hwnds = 0;
+    }
+
+    pthread_mutex_unlock(&win_data_mutex);
+
+    for (i = 0; i < num_hwnds; i++) cb(hwnds[i]);
+
+    free(hwnds);
 }

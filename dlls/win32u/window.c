@@ -903,7 +903,11 @@ UINT get_dpi_for_window( HWND hwnd )
     if (win != WND_OTHER_PROCESS)
     {
         ret = win->dpi;
-        if (!ret) ret = get_win_monitor_dpi( hwnd );
+        if (!ret)
+        {
+            HMONITOR monitor = monitor_from_rect( &win->window_rect, MONITOR_DEFAULTTONEAREST, 0 );
+            ret = get_monitor_dpi( monitor );
+        }
         release_win_ptr( win );
     }
     else
