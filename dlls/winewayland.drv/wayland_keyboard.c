@@ -633,11 +633,21 @@ static BOOL get_async_key_state(BYTE state[256])
     return ret;
 }
 
+static void send_vkey(HWND hwnd, WORD vkey, DWORD flags)
+{
+    INPUT input = {.type = INPUT_KEYBOARD};
+    UINT scan = NtUserMapVirtualKeyEx(vkey, MAPVK_VK_TO_VSC_EX, keyboard_hkl);
+    input.ki.wVk = vkey;
+    input.ki.wScan = scan & 0xff;
+    input.ki.dwFlags = flags;
+    if (scan & ~0xff) input.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY;
+    NtUserSendHardwareInput(hwnd, 0, &input, 0);
+}
+
 static void release_all_keys(HWND hwnd)
 {
     BYTE state[256];
     int vkey;
-    INPUT input = {.type = INPUT_KEYBOARD};
 
     get_async_key_state(state);
 
@@ -648,16 +658,7 @@ static void release_all_keys(HWND hwnd)
         /* Skip left/right-agnostic modifier vkeys. */
         if (vkey == VK_SHIFT || vkey == VK_CONTROL || vkey == VK_MENU) continue;
 
-        if (state[vkey] & 0x80)
-        {
-            UINT scan = NtUserMapVirtualKeyEx(vkey, MAPVK_VK_TO_VSC_EX,
-                                              keyboard_hkl);
-            input.ki.wVk = vkey;
-            input.ki.wScan = scan & 0xff;
-            input.ki.dwFlags = KEYEVENTF_KEYUP;
-            if (scan & ~0xff) input.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY;
-            NtUserSendHardwareInput(hwnd, 0, &input, 0);
-        }
+        if (state[vkey] & 0x80) send_vkey(hwnd, vkey, KEYEVENTF_KEYUP);
     }
 }
 
