@@ -138,6 +138,13 @@ static const SIZE_T kernel_stack_size = 0x100000;
 static const SIZE_T min_kernel_stack  = 0x2000;
 static const LONG teb_offset = 0x2000;
 
+enum large_pages_type
+{
+    LARGE_PAGES_NONE = 0,
+    LARGE_PAGES_LARGE = 1,
+    LARGE_PAGES_HUGE = 2
+};
+
 #define FILE_WRITE_TO_END_OF_FILE      ((LONGLONG)-1)
 #define FILE_USE_FILE_POINTER_POSITION ((LONGLONG)-2)
 
@@ -262,7 +269,7 @@ extern unsigned int alloc_object_attributes( const OBJECT_ATTRIBUTES *attr, stru
 extern NTSTATUS system_time_precise( void *args );
 
 extern void *anon_mmap_fixed( void *start, size_t size, int prot, int flags );
-extern void *anon_mmap_alloc( size_t size, int prot );
+extern void *anon_mmap_alloc( size_t size, int prot, enum large_pages_type );
 extern void virtual_init(void);
 extern ULONG_PTR get_system_affinity_mask(void);
 extern void virtual_get_system_info( SYSTEM_BASIC_INFORMATION *info, BOOL wow64 );

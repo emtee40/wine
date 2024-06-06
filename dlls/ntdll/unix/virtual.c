@@ -195,6 +195,13 @@ static struct list teb_list = LIST_INIT( teb_list );
 #define MAP_NORESERVE 0
 #endif
 
+#if defined( MAP_HUGETLB ) && defined( MAP_LOCKED )
+#define MMAP_LARGE_PAGES_FLAG (MAP_HUGETLB | MAP_LOCKED)
+#else
+#define MMAP_LARGE_PAGES_FLAG 0
+#endif
+#define HUGE_PAGE_SIZE (1 * 1024 * 1024 * 1024)
+
 #ifdef _WIN64  /* on 64-bit the page protection bytes use a 2-level table */
 static const size_t pages_vprot_shift = 20;
 static const size_t pages_vprot_mask = (1 << 20) - 1;
@@ -225,6 +232,26 @@ static inline BOOL is_beyond_limit( const void *addr, size_t size, const void *l
     return (addr >= limit || (const char *)addr + size > (const char *)limit);
 }
 
+static int mmap_large_pages_flags( enum large_pages_type type )
+{
+    switch (type)
+    {
+#ifdef MAP_HUGE_SHIFT
+        case LARGE_PAGES_LARGE:
+        {
+            DWORD log2;
+            BitScanReverse( &log2, user_shared_data->LargePageMinimum | 1 );
+            return MMAP_LARGE_PAGES_FLAG | ( log2 << MAP_HUGE_SHIFT );
+        }
+        case LARGE_PAGES_HUGE: /* On Windows, "huge" pages are 1 GiB*/
+            return MMAP_LARGE_PAGES_FLAG | ( 30 << MAP_HUGE_SHIFT );
+#endif
+        case LARGE_PAGES_NONE:
+        default:
+            return 0;
+    }
+}
+
 /* mmap() anonymous memory at a fixed address */
 void *anon_mmap_fixed( void *start, size_t size, int prot, int flags )
 {
@@ -232,11 +259,10 @@ void *anon_mmap_fixed( void *start, size_t size, int prot, int flags )
 }
 
 /* allocate anonymous mmap() memory at any address */
-void *anon_mmap_alloc( size_t size, int prot )
+void *anon_mmap_alloc( size_t size, int prot, enum large_pages_type type )
 {
-    return mmap( NULL, size, prot, MAP_PRIVATE | MAP_ANON, -1, 0 );
+    return mmap( NULL, size, prot, MAP_PRIVATE | MAP_ANON | mmap_large_pages_flags( type ), -1, 0 );
 }
-
 
 static void mmap_add_reserved_area( void *addr, SIZE_T size )
 {
@@ -1004,7 +1030,7 @@ static BOOL alloc_pages_vprot( const void *addr, size_t size )
     for (i = idx >> pages_vprot_shift; i < (end + pages_vprot_mask) >> pages_vprot_shift; i++)
     {
         if (pages_vprot[i]) continue;
-        if ((ptr = anon_mmap_alloc( pages_vprot_mask + 1, PROT_READ | PROT_WRITE )) == MAP_FAILED)
+        if ((ptr = anon_mmap_alloc( pages_vprot_mask + 1, PROT_READ | PROT_WRITE, LARGE_PAGES_NONE )) == MAP_FAILED)
         {
             ERR( "anon mmap error %s for vprot table, size %08lx\n", strerror(errno), pages_vprot_mask + 1 );
             return FALSE;
@@ -1282,13 +1308,14 @@ static struct wine_rb_entry *find_view_inside_range( void **base_ptr, void **end
  * retrying inside it, and return where it actually succeeded, or NULL.
  */
 static void* try_map_free_area( void *base, void *end, ptrdiff_t step,
-                                void *start, size_t size, int unix_prot )
+                               void *start, size_t size, int unix_prot, enum large_pages_type type )
 {
     void *ptr;
+    int flags = mmap_large_pages_flags(type);
 
     while (start && base <= start && (char*)start + size <= (char*)end)
     {
-        if ((ptr = anon_mmap_tryfixed( start, size, unix_prot, 0 )) != MAP_FAILED) return start;
+        if ((ptr = anon_mmap_tryfixed( start, size, unix_prot, flags )) != MAP_FAILED) return start;
         TRACE( "Found free area is already mapped, start %p.\n", start );
         if (errno != EEXIST)
         {
@@ -1313,7 +1340,7 @@ static void* try_map_free_area( void *base, void *end, ptrdiff_t step,
  * Find a free area between views inside the specified range and map it.
  * virtual_mutex must be held by caller.
  */
-static void *map_free_area( void *base, void *end, size_t size, int top_down, int unix_prot, size_t align_mask )
+static void *map_free_area( void *base, void *end, size_t size, int top_down, int unix_prot, size_t align_mask, BOOL large_pages )
 {
     struct wine_rb_entry *first = find_view_inside_range( &base, &end, top_down );
     ptrdiff_t step = top_down ? -(align_mask + 1) : (align_mask + 1);
@@ -1328,7 +1355,7 @@ static void *map_free_area( void *base, void *end, size_t size, int top_down, in
         {
             struct file_view *view = WINE_RB_ENTRY_VALUE( first, struct file_view, entry );
             if ((start = try_map_free_area( (char *)view->base + view->size, (char *)start + size, step,
-                                            start, size, unix_prot ))) break;
+                                            start, size, unix_prot, large_pages ))) break;
             start = ROUND_ADDR( (char *)view->base - size, align_mask );
             /* stop if remaining space is not large enough */
             if (!start || start >= end || start < base) return NULL;
@@ -1344,7 +1371,7 @@ static void *map_free_area( void *base, void *end, size_t size, int top_down, in
         {
             struct file_view *view = WINE_RB_ENTRY_VALUE( first, struct file_view, entry );
             if ((start = try_map_free_area( start, view->base, step,
-                                            start, size, unix_prot ))) break;
+                                            start, size, unix_prot, large_pages ))) break;
             start = ROUND_ADDR( (char *)view->base + view->size + align_mask, align_mask );
             /* stop if remaining space is not large enough */
             if (!start || start >= end || (char *)end - (char *)start < size) return NULL;
@@ -1353,7 +1380,7 @@ static void *map_free_area( void *base, void *end, size_t size, int top_down, in
     }
 
     if (!first)
-        start = try_map_free_area( base, end, step, start, size, unix_prot );
+        start = try_map_free_area( base, end, step, start, size, unix_prot, large_pages );
 
     if (!start)
         ERR( "couldn't map free area in range %p-%p, size %p\n", base, end, (void *)size );
@@ -1494,7 +1521,7 @@ static struct file_view *alloc_view(void)
     }
     if (view_block_start == view_block_end)
     {
-        void *ptr = anon_mmap_alloc( view_block_size, PROT_READ | PROT_WRITE );
+        void *ptr = anon_mmap_alloc( view_block_size, PROT_READ | PROT_WRITE, LARGE_PAGES_NONE );
         if (ptr == MAP_FAILED) return NULL;
         view_block_start = ptr;
         view_block_end = view_block_start + view_block_size / sizeof(*view_block_start);
@@ -1871,10 +1898,11 @@ static void *find_reserved_free_area_outside_preloader( void *start, void *end, 
  * virtual_mutex must be held by caller.
  */
 static void *map_reserved_area( void *limit_low, void *limit_high, size_t size, int top_down,
-                                int unix_prot, size_t align_mask )
+                                int unix_prot, size_t align_mask, enum large_pages_type type )
 {
     void *ptr = NULL;
     struct reserved_area *area = LIST_ENTRY( ptr, struct reserved_area, entry );
+    int flags = mmap_large_pages_flags( type );
 
     if (top_down)
     {
@@ -1906,7 +1934,7 @@ static void *map_reserved_area( void *limit_low, void *limit_high, size_t size, 
             if (ptr) break;
         }
     }
-    if (ptr && anon_mmap_fixed( ptr, size, unix_prot, 0 ) != ptr) ptr = NULL;
+    if (ptr && anon_mmap_fixed( ptr, size, unix_prot, flags ) != ptr) ptr = NULL;
     return ptr;
 }
 
@@ -1916,12 +1944,13 @@ static void *map_reserved_area( void *limit_low, void *limit_high, size_t size, 
  * Map a memory area at a fixed address.
  * virtual_mutex must be held by caller.
  */
-static NTSTATUS map_fixed_area( void *base, size_t size, unsigned int vprot )
+static NTSTATUS map_fixed_area( void *base, size_t size, unsigned int vprot, enum large_pages_type type )
 {
     int unix_prot = get_unix_prot(vprot);
     struct reserved_area *area;
     NTSTATUS status;
     char *start = base, *end = (char *)base + size;
+    int flags = mmap_large_pages_flags( type );
 
     if (find_view_range( base, size )) return STATUS_CONFLICTING_ADDRESSES;
 
@@ -1934,19 +1963,19 @@ static NTSTATUS map_fixed_area( void *base, size_t size, unsigned int vprot )
         if (area_end <= start) continue;
         if (area_start > start)
         {
-            if (anon_mmap_tryfixed( start, area_start - start, unix_prot, 0 ) == MAP_FAILED) goto failed;
+            if (anon_mmap_tryfixed( start, area_start - start, unix_prot, flags ) == MAP_FAILED) goto failed;
             start = area_start;
         }
         if (area_end >= end)
         {
-            if (anon_mmap_fixed( start, end - start, unix_prot, 0 ) == MAP_FAILED) goto failed;
+            if (anon_mmap_fixed( start, end - start, unix_prot, flags ) == MAP_FAILED) goto failed;
             return STATUS_SUCCESS;
         }
-        if (anon_mmap_fixed( start, area_end - start, unix_prot, 0 ) == MAP_FAILED) goto failed;
+        if (anon_mmap_fixed( start, area_end - start, unix_prot, flags ) == MAP_FAILED) goto failed;
         start = area_end;
     }
 
-    if (anon_mmap_tryfixed( start, end - start, unix_prot, 0 ) == MAP_FAILED) goto failed;
+    if (anon_mmap_tryfixed( start, end - start, unix_prot, flags ) == MAP_FAILED) goto failed;
     return STATUS_SUCCESS;
 
 failed:
@@ -1973,13 +2002,16 @@ failed:
  * virtual_mutex must be held by caller.
  */
 static NTSTATUS map_view( struct file_view **view_ret, void *base, size_t size,
-                          unsigned int alloc_type, unsigned int vprot,
-                          ULONG_PTR limit_low, ULONG_PTR limit_high, size_t align_mask )
+                          unsigned int alloc_type, unsigned int vprot, ULONG_PTR limit_low,
+                          ULONG_PTR limit_high, size_t align_mask,
+                          enum large_pages_type large_pages_type )
 {
     int top_down = alloc_type & MEM_TOP_DOWN;
     void *ptr;
     NTSTATUS status;
+    BOOL large_pages = large_pages_type != LARGE_PAGES_NONE;
 
+    if (large_pages) vprot |= SEC_LARGE_PAGES;
     if (alloc_type & MEM_REPLACE_PLACEHOLDER)
     {
         struct file_view *view;
@@ -1997,6 +2029,16 @@ static NTSTATUS map_view( struct file_view **view_ret, void *base, size_t size,
         return STATUS_SUCCESS;
     }
 
+    if (large_pages)
+    {
+        SIZE_T aligned_to = large_pages_type == LARGE_PAGES_LARGE
+                                ? user_shared_data->LargePageMinimum
+                                : HUGE_PAGE_SIZE;
+        if (size == 0) return STATUS_INVALID_PARAMETER;
+        if (size == 0 || user_shared_data->LargePageMinimum == 0 || size % aligned_to != 0)
+            return STATUS_INVALID_PARAMETER;
+    }
+
     if (limit_high && limit_low >= limit_high) return STATUS_INVALID_PARAMETER;
 
     if (base)
@@ -2005,7 +2047,8 @@ static NTSTATUS map_view( struct file_view **view_ret, void *base, size_t size,
         if (limit_low && base < (void *)limit_low) return STATUS_CONFLICTING_ADDRESSES;
         if (limit_high && is_beyond_limit( base, size, (void *)limit_high )) return STATUS_CONFLICTING_ADDRESSES;
         if (is_beyond_limit( base, size, host_addr_space_limit )) return STATUS_CONFLICTING_ADDRESSES;
-        if ((status = map_fixed_area( base, size, vprot ))) return status;
+        if (large_pages && ((UINT_PTR)base % user_shared_data->LargePageMinimum) != 0) return STATUS_INVALID_PARAMETER;
+        if ((status = map_fixed_area( base, size, vprot, large_pages_type ))) return status;
         if (is_beyond_limit( base, size, working_set_limit )) working_set_limit = address_space_limit;
         ptr = base;
     }
@@ -2021,7 +2064,7 @@ static NTSTATUS map_view( struct file_view **view_ret, void *base, size_t size,
         if (limit_low && (void *)limit_low > start) start = (void *)limit_low;
         if (limit_high && (void *)limit_high < end) end = (char *)limit_high + 1;
 
-        if ((ptr = map_reserved_area( start, end, size, top_down, get_unix_prot(vprot), align_mask )))
+        if ((ptr = map_reserved_area( start, end, size, top_down, get_unix_prot(vprot), align_mask, large_pages_type )))
         {
             TRACE( "got mem in reserved area %p-%p\n", ptr, (char *)ptr + size );
             goto done;
@@ -2029,7 +2072,7 @@ static NTSTATUS map_view( struct file_view **view_ret, void *base, size_t size,
 
         if (start > address_space_start || end < host_addr_space_limit || top_down)
         {
-            if (!(ptr = map_free_area( start, end, size, top_down, get_unix_prot(vprot), align_mask )))
+            if (!(ptr = map_free_area( start, end, size, top_down, get_unix_prot(vprot), align_mask, large_pages_type )))
                 return STATUS_NO_MEMORY;
             TRACE( "got mem with map_free_area %p-%p\n", ptr, (char *)ptr + size );
             goto done;
@@ -2037,7 +2080,7 @@ static NTSTATUS map_view( struct file_view **view_ret, void *base, size_t size,
 
         for (;;)
         {
-            if ((ptr = anon_mmap_alloc( view_size, get_unix_prot(vprot) )) == MAP_FAILED)
+            if ((ptr = anon_mmap_alloc( view_size, get_unix_prot(vprot), large_pages_type )) == MAP_FAILED)
             {
                 status = (errno == ENOMEM) ? STATUS_NO_MEMORY : STATUS_INVALID_PARAMETER;
                 ERR( "anon mmap error %s, size %p, unix_prot %#x\n",
@@ -2055,6 +2098,18 @@ static NTSTATUS map_view( struct file_view **view_ret, void *base, size_t size,
 done:
     status = create_view( view_ret, ptr, size, vprot );
     if (status != STATUS_SUCCESS) unmap_area( ptr, size );
+    if (large_pages && mlock(ptr, size) != 0)
+    {
+        unmap_area( ptr, size );
+        switch (errno)
+        {
+        case EPERM:
+            status = STATUS_ACCESS_DENIED;
+            break;
+        default:
+            status = STATUS_NO_MEMORY;
+        }
+    }
     return status;
 }
 
@@ -2082,10 +2137,17 @@ static NTSTATUS map_file_into_view( struct file_view *view, int fd, size_t start
         prot |= PROT_EXEC;
     }
 
+#ifdef MAP_LOCKED
+    if (vprot & SEC_LARGE_PAGES)
+    {
+        flags |= MAP_LOCKED;
+    }
+#endif
     /* only try mmap if media is not removable (or if we require write access) */
     if (!removable || (flags & MAP_SHARED))
     {
-        if (mmap( (char *)view->base + start, size, prot, flags, fd, offset ) != MAP_FAILED)
+        ptr = mmap( (char *)view->base + start, size, prot, flags, fd, offset );
+        if (ptr != MAP_FAILED)
             goto done;
 
         switch (errno)
@@ -2118,8 +2180,14 @@ static NTSTATUS map_file_into_view( struct file_view *view, int fd, size_t start
     }
 
     /* Reserve the memory with an anonymous mmap */
-    ptr = anon_mmap_fixed( (char *)view->base + start, size, PROT_READ | PROT_WRITE, 0 );
-    if (ptr == MAP_FAILED)
+    ptr = anon_mmap_fixed( (char *)view->base + start, size, PROT_READ | PROT_WRITE,
+#ifdef MAP_LOCKED
+                           vprot & SEC_LARGE_PAGES ? MAP_LOCKED : 0
+#else
+                           0
+#endif
+    );
+    if ( ptr == MAP_FAILED )
     {
         ERR( "anon mmap error %s, range %p-%p\n",
              strerror(errno), (char *)view->base + start, (char *)view->base + start + size );
@@ -2130,6 +2198,16 @@ static NTSTATUS map_file_into_view( struct file_view *view, int fd, size_t start
     if (prot != (PROT_READ|PROT_WRITE)) mprotect( ptr, size, prot );  /* Set the right protection */
 done:
     set_page_vprot( (char *)view->base + start, size, vprot );
+    if ( vprot & SEC_LARGE_PAGES && mlock( ptr, size ) != 0 )
+    {
+        switch (errno)
+        {
+            case EPERM:
+                return STATUS_ACCESS_DENIED;
+            default:
+                return STATUS_NO_MEMORY;
+        }
+    }
     return STATUS_SUCCESS;
 }
 
@@ -2370,7 +2448,7 @@ static NTSTATUS allocate_dos_memory( struct file_view **view, unsigned int vprot
     if (mmap_is_in_reserved_area( low_64k, dosmem_size - 0x10000 ) != 1)
     {
         addr = anon_mmap_tryfixed( low_64k, dosmem_size - 0x10000, unix_prot, 0 );
-        if (addr == MAP_FAILED) return map_view( view, NULL, dosmem_size, 0, vprot, 0, 0, 0 );
+        if (addr == MAP_FAILED) return map_view( view, NULL, dosmem_size, 0, vprot, 0, 0, 0, LARGE_PAGES_NONE );
     }
 
     /* now try to allocate the low 64K too */
@@ -3008,7 +3086,7 @@ static NTSTATUS map_image_view( struct file_view **view_ret, pe_image_info_t *im
     }
     if (base)
     {
-        status = map_view( view_ret, base, size, alloc_type, vprot, limit_low, limit_high, 0 );
+        status = map_view( view_ret, base, size, alloc_type, vprot, limit_low, limit_high, 0, LARGE_PAGES_NONE );
         if (!status) return status;
     }
 
@@ -3026,13 +3104,13 @@ static NTSTATUS map_image_view( struct file_view **view_ret, pe_image_info_t *im
     }
     if (start < end && (start != limit_low || end != limit_high))
     {
-        status = map_view( view_ret, NULL, size, top_down ? MEM_TOP_DOWN : 0, vprot, start, end, 0 );
+        status = map_view( view_ret, NULL, size, top_down ? MEM_TOP_DOWN : 0, vprot, start, end, 0, LARGE_PAGES_NONE );
         if (!status) return status;
     }
 
     /* then any suitable address */
 
-    return map_view( view_ret, NULL, size, top_down ? MEM_TOP_DOWN : 0, vprot, limit_low, limit_high, 0 );
+    return map_view( view_ret, NULL, size, top_down ? MEM_TOP_DOWN : 0, vprot, limit_low, limit_high, 0, LARGE_PAGES_NONE );
 }
 
 
@@ -3186,6 +3264,16 @@ static unsigned int virtual_map_section( HANDLE handle, PVOID *addr_ptr, ULONG_P
     base = *addr_ptr;
     offset.QuadPart = offset_ptr ? offset_ptr->QuadPart : 0;
     if (offset.QuadPart >= full_size) return STATUS_INVALID_PARAMETER;
+
+    if (sec_flags & SEC_LARGE_PAGES)
+    {
+        if (!*size_ptr || user_shared_data->LargePageMinimum == 0 ||
+            *size_ptr % user_shared_data->LargePageMinimum != 0)
+            return STATUS_INVALID_PARAMETER;
+        if (base && ((UINT_PTR)base % user_shared_data->LargePageMinimum != 0))
+            return STATUS_INVALID_PARAMETER;
+    }
+
     if (*size_ptr)
     {
         size = *size_ptr;
@@ -3211,7 +3299,9 @@ static unsigned int virtual_map_section( HANDLE handle, PVOID *addr_ptr, ULONG_P
 
     server_enter_uninterrupted_section( &virtual_mutex, &sigset );
 
-    res = map_view( &view, base, size, alloc_type, vprot, limit_low, limit_high, 0 );
+    res = map_view( &view, base, size, alloc_type, vprot, limit_low, limit_high,
+                   sec_flags & SEC_LARGE_PAGES ? ( user_shared_data->LargePageMinimum - 1 ) : 0,
+                   sec_flags & SEC_LARGE_PAGES ? LARGE_PAGES_LARGE : LARGE_PAGES_NONE );
     if (res) goto done;
 
     TRACE( "handle=%p size=%lx offset=%s\n", handle, size, wine_dbgstr_longlong(offset.QuadPart) );
@@ -3277,7 +3367,7 @@ static void *alloc_virtual_heap( SIZE_T size )
         mmap_remove_reserved_area( ret, size );
         return ret;
     }
-    return anon_mmap_alloc( size, PROT_READ | PROT_WRITE );
+    return anon_mmap_alloc( size, PROT_READ | PROT_WRITE, LARGE_PAGES_NONE );
 }
 
 /***********************************************************************
@@ -3863,7 +3953,7 @@ NTSTATUS virtual_alloc_thread_stack( INITIAL_TEB *stack, ULONG_PTR limit_low, UL
     server_enter_uninterrupted_section( &virtual_mutex, &sigset );
 
     status = map_view( &view, NULL, size, 0, VPROT_READ | VPROT_WRITE | VPROT_COMMITTED,
-                       limit_low, limit_high, 0 );
+                       limit_low, limit_high, 0, LARGE_PAGES_NONE );
     if (status != STATUS_SUCCESS) goto done;
 
 #ifdef VALGRIND_STACK_REGISTER
@@ -4477,33 +4567,60 @@ static NTSTATUS allocate_virtual_memory( void **ret, SIZE_T *size_ptr, ULONG typ
     sigset_t sigset;
     SIZE_T size = *size_ptr;
     NTSTATUS status = STATUS_SUCCESS;
+    enum large_pages_type large_pages_type = LARGE_PAGES_NONE;
+
+    if (type & MEM_LARGE_PAGES)
+    {
+        if (attributes & MEM_EXTENDED_PARAMETER_NONPAGED_HUGE) large_pages_type = LARGE_PAGES_HUGE;
+        else large_pages_type = LARGE_PAGES_LARGE;
+    }
 
     /* Round parameters to a page boundary */
 
     if (is_beyond_limit( 0, size, working_set_limit )) return STATUS_WORKING_SET_LIMIT_RANGE;
-
+    if (large_pages_type != LARGE_PAGES_NONE)
+    {
+        SIZE_T aligned_to = large_pages_type == LARGE_PAGES_LARGE
+                                ? user_shared_data->LargePageMinimum
+                                : HUGE_PAGE_SIZE;
+        if (size == 0 || user_shared_data->LargePageMinimum == 0) return STATUS_INVALID_PARAMETER;
+        if (size % aligned_to != 0) return STATUS_INVALID_PARAMETER;
+        if (!(type & (MEM_RESERVE | MEM_COMMIT))) return STATUS_INVALID_PARAMETER;
+    }
     if (*ret)
     {
-        if (type & MEM_RESERVE && !(type & MEM_REPLACE_PLACEHOLDER)) /* Round down to 64k boundary */
-            base = ROUND_ADDR( *ret, granularity_mask );
-        else
-            base = ROUND_ADDR( *ret, page_mask );
-        size = (((UINT_PTR)*ret + size + page_mask) & ~page_mask) - (UINT_PTR)base;
-
-        /* disallow low 64k, wrap-around and kernel space */
-        if (((char *)base < (char *)0x10000) ||
-            ((char *)base + size < (char *)base) ||
-            is_beyond_limit( base, size, address_space_limit ))
+        if (large_pages_type != LARGE_PAGES_NONE)
         {
-            /* address 1 is magic to mean DOS area */
-            if (!base && *ret == (void *)1 && size == 0x110000) is_dos_memory = TRUE;
-            else return STATUS_INVALID_PARAMETER;
+            SIZE_T aligned_to = large_pages_type == LARGE_PAGES_LARGE
+                                    ? user_shared_data->LargePageMinimum
+                                    : HUGE_PAGE_SIZE;
+            base = *ret;
+            if ((UINT_PTR)base % aligned_to != 0)
+                return STATUS_INVALID_PARAMETER;
+        }
+        else
+        {
+            if (type & MEM_RESERVE &&
+                !(type & MEM_REPLACE_PLACEHOLDER )) /* Round down to 64k boundary */
+                base = ROUND_ADDR( *ret, granularity_mask );
+            else
+                base = ROUND_ADDR( *ret, page_mask );
+            size = (((UINT_PTR)*ret + size + page_mask) & ~page_mask) - (UINT_PTR)base;
+
+            /* disallow low 64k, wrap-around and kernel space */
+            if (((char *)base < (char *)0x10000 ) || ((char *)base + size < (char *)base) ||
+                is_beyond_limit( base, size, address_space_limit ))
+            {
+                /* address 1 is magic to mean DOS area */
+                if (!base && *ret == (void *)1 && size == 0x110000) is_dos_memory = TRUE;
+                else return STATUS_INVALID_PARAMETER;
+            }
         }
     }
     else
     {
         base = NULL;
-        size = (size + page_mask) & ~page_mask;
+        if (large_pages_type == LARGE_PAGES_NONE) size = (size + page_mask) & ~page_mask;
     }
 
     /* Compute the alloc type flags */
@@ -4533,8 +4650,27 @@ static NTSTATUS allocate_virtual_memory( void **ret, SIZE_T *size_ptr, ULONG typ
 
             if (vprot & VPROT_WRITECOPY) status = STATUS_INVALID_PAGE_PROTECTION;
             else if (is_dos_memory) status = allocate_dos_memory( &view, vprot );
-            else status = map_view( &view, base, size, type, vprot, limit_low, limit_high,
-                                    align ? align - 1 : granularity_mask );
+            else
+            {
+                if (!align)
+                {
+                    switch (large_pages_type)
+                    {
+                        case LARGE_PAGES_LARGE:
+                            align = user_shared_data->LargePageMinimum - 1;
+                            break;
+                        case LARGE_PAGES_HUGE:
+                            align = HUGE_PAGE_SIZE - 1;
+                            break;
+                        default:
+                        case LARGE_PAGES_NONE:
+                            align = granularity_mask;
+                    }
+                }
+                else align--;
+                status = map_view( &view, base, size, type, vprot, limit_low, limit_high, align,
+                                   large_pages_type );
+            }
 
             if (status == STATUS_SUCCESS) base = view->base;
         }
@@ -4542,7 +4678,7 @@ static NTSTATUS allocate_virtual_memory( void **ret, SIZE_T *size_ptr, ULONG typ
     else if (type & MEM_RESET)
     {
         if (!(view = find_view( base, size ))) status = STATUS_NOT_MAPPED_VIEW;
-        else madvise( base, size, MADV_DONTNEED );
+        else if (madvise( base, size, MADV_DONTNEED ) == -1) status = STATUS_INVALID_ADDRESS;
     }
     else  /* commit the pages */
     {
@@ -4591,7 +4727,7 @@ static NTSTATUS allocate_virtual_memory( void **ret, SIZE_T *size_ptr, ULONG typ
 NTSTATUS WINAPI NtAllocateVirtualMemory( HANDLE process, PVOID *ret, ULONG_PTR zero_bits,
                                          SIZE_T *size_ptr, ULONG type, ULONG protect )
 {
-    static const ULONG type_mask = MEM_COMMIT | MEM_RESERVE | MEM_TOP_DOWN | MEM_WRITE_WATCH | MEM_RESET;
+    static const ULONG type_mask = MEM_COMMIT | MEM_RESERVE | MEM_TOP_DOWN | MEM_WRITE_WATCH | MEM_RESET | MEM_LARGE_PAGES;
     ULONG_PTR limit;
 
     TRACE("%p %p %08lx %x %08x\n", process, *ret, *size_ptr, (int)type, (int)protect );
@@ -4731,7 +4867,8 @@ NTSTATUS WINAPI NtAllocateVirtualMemoryEx( HANDLE process, PVOID *ret, SIZE_T *s
                                            ULONG count )
 {
     static const ULONG type_mask = MEM_COMMIT | MEM_RESERVE | MEM_TOP_DOWN | MEM_WRITE_WATCH
-                                   | MEM_RESET | MEM_RESERVE_PLACEHOLDER | MEM_REPLACE_PLACEHOLDER;
+                                   | MEM_RESET | MEM_RESERVE_PLACEHOLDER | MEM_REPLACE_PLACEHOLDER
+                                   | MEM_LARGE_PAGES;
     ULONG_PTR limit_low = 0;
     ULONG_PTR limit_high = 0;
     ULONG_PTR align = 0;

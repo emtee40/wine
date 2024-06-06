@@ -46,6 +46,8 @@ static NTSTATUS (WINAPI *pNtMapViewOfSectionEx)(HANDLE, HANDLE, PVOID *, const L
 static NTSTATUS (WINAPI *pNtSetInformationVirtualMemory)(HANDLE, VIRTUAL_MEMORY_INFORMATION_CLASS,
                                                          ULONG_PTR, PMEMORY_RANGE_ENTRY,
                                                          PVOID, ULONG);
+static SIZE_T(WINAPI *pGetLargePageMinimum)(void);
+static NTSTATUS (WINAPI *pRtlAdjustPrivilege)(ULONG,BOOLEAN,BOOLEAN,PBOOLEAN);
 
 static const BOOL is_win64 = sizeof(void*) != sizeof(int);
 static BOOL is_wow64;
@@ -701,6 +703,87 @@ static void test_NtAllocateVirtualMemoryEx(void)
 #endif
     ok(status == STATUS_INVALID_PARAMETER || status == STATUS_NOT_SUPPORTED,
        "Unexpected status %08lx.\n", status);
+}
+
+static void test_NtAllocateVirtualMemoryEx_large_pages(void)
+{
+    SIZE_T size;
+    HANDLE token;
+    HANDLE process_token;
+    BOOLEAN enabled;
+    NTSTATUS status;
+
+    if (!pGetLargePageMinimum)
+    {
+        win_skip( "No GetLargePageMinimum support.\n" );
+        return;
+    }
+    if (!pRtlAdjustPrivilege)
+    {
+        win_skip( "No RtlAdjustPrivilege support.\n" );
+        return;
+    }
+
+    size = pGetLargePageMinimum();
+    if (size == 0)
+    {
+        trace( "No large pages support, skipping test.\n" );
+        return;
+    }
+    ok( OpenProcessToken( GetCurrentProcess(), TOKEN_DUPLICATE | TOKEN_QUERY, &process_token ),
+        "OpenProcessToken failed (%ld)\n", GetLastError() );
+    ok( DuplicateToken( process_token, SecurityImpersonation, &token ),
+       "DuplicateToken failed (%ld)\n", GetLastError() );
+    ok( ImpersonateLoggedOnUser( token ), "ImpersonateLoggedOnUser failed (%ld)\n",
+        GetLastError() );
+    status = pRtlAdjustPrivilege( SE_LOCK_MEMORY_PRIVILEGE, TRUE, TRUE, &enabled );
+    if (status != STATUS_SUCCESS)
+    {
+        trace( "Couldn't get SE_LOCK_MEMORY_PRIVILEGE (%ld), skipping large page file "
+               "mapping test.\n",
+               status );
+    }
+    else
+    {
+        MEM_EXTENDED_PARAMETER ex;
+        void *addr = NULL;
+
+        memset(&ex, 0, sizeof(ex));
+        ex.Type = MemExtendedParameterAttributeFlags;
+        ex.ULong64 = MEM_EXTENDED_PARAMETER_NONPAGED_LARGE;
+
+        status = pNtAllocateVirtualMemoryEx( NtCurrentProcess(), &addr, &size,
+                                             MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES,
+                                             PAGE_READWRITE, &ex, 1 );
+        ok(status == STATUS_SUCCESS || (addr == NULL && status == STATUS_NO_MEMORY), "NtAllocateVirtualMemoryEx failed (%08lx)\n", status);
+        if (addr)
+        {
+            size = 0;
+            status = NtFreeVirtualMemory(NtCurrentProcess(), &addr, &size, MEM_RELEASE);
+            ok(status == STATUS_SUCCESS, "NtFreeVirtualMemory failed (%08lx)\n", status);
+        }
+
+        size = ((SIZE_T)1 * 1024 * 1024 * 1024); /* 1 GiB */
+        ex.Type = MemExtendedParameterAttributeFlags;
+        ex.ULong64 = MEM_EXTENDED_PARAMETER_NONPAGED_HUGE;
+        addr = NULL;
+        status = pNtAllocateVirtualMemoryEx( NtCurrentProcess(), &addr, &size,
+                                             MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES,
+                                             PAGE_READWRITE, &ex, 1 );
+        if (is_wow64)
+            ok( status == STATUS_SUCCESS || (addr == NULL && (status == STATUS_CONFLICTING_ADDRESSES || status == STATUS_NO_MEMORY)),
+                "NtAllocateVirtualMemoryEx failed unexpectedly (%08lx)\n", status );
+        else
+            ok( status == STATUS_SUCCESS || (addr == NULL && status == STATUS_NO_MEMORY),
+               "NtAllocateVirtualMemoryEx failed unexpectedly (%08lx)\n", status );
+        if (addr)
+        {
+            size = 0;
+            status = NtFreeVirtualMemory(NtCurrentProcess(), &addr, &size, MEM_RELEASE);
+            ok(status == STATUS_SUCCESS, "NtFreeVirtualMemory failed (%08lx)\n", status);
+        }
+    }
+    ok( RevertToSelf(), "RevertToSelf failed (%ld)\n", GetLastError() );
 }
 
 static void test_NtAllocateVirtualMemoryEx_address_requirements(void)
@@ -2726,6 +2809,7 @@ START_TEST(virtual)
     mod = GetModuleHandleA("kernel32.dll");
     pIsWow64Process = (void *)GetProcAddress(mod, "IsWow64Process");
     pGetEnabledXStateFeatures = (void *)GetProcAddress(mod, "GetEnabledXStateFeatures");
+    pGetLargePageMinimum = (void *)GetProcAddress(mod, "GetLargePageMinimum");
     mod = GetModuleHandleA("ntdll.dll");
     pRtlCreateUserStack = (void *)GetProcAddress(mod, "RtlCreateUserStack");
     pRtlCreateUserThread = (void *)GetProcAddress(mod, "RtlCreateUserThread");
@@ -2737,6 +2821,7 @@ START_TEST(virtual)
     pNtAllocateVirtualMemoryEx = (void *)GetProcAddress(mod, "NtAllocateVirtualMemoryEx");
     pNtMapViewOfSectionEx = (void *)GetProcAddress(mod, "NtMapViewOfSectionEx");
     pNtSetInformationVirtualMemory = (void *)GetProcAddress(mod, "NtSetInformationVirtualMemory");
+    pRtlAdjustPrivilege = (void *)GetProcAddress(mod, "RtlAdjustPrivilege");
 
     NtQuerySystemInformation(SystemBasicInformation, &sbi, sizeof(sbi), NULL);
     trace("system page size %#lx\n", sbi.PageSize);
@@ -2746,6 +2831,7 @@ START_TEST(virtual)
     test_NtAllocateVirtualMemory();
     test_NtAllocateVirtualMemoryEx();
     test_NtAllocateVirtualMemoryEx_address_requirements();
+    test_NtAllocateVirtualMemoryEx_large_pages();
     test_NtFreeVirtualMemory();
     test_RtlCreateUserStack();
     test_NtMapViewOfSection();
