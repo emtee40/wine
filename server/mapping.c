@@ -29,6 +29,14 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#ifdef HAVE_MEMFD_CREATE
+#include <linux/memfd.h>
+#endif
+#ifdef __linux__ /* For detecting hugepage support. */
+#include <dirent.h>
+#include <errno.h>
+#include <limits.h>
+#endif
 
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
@@ -1426,6 +1434,66 @@ obj_locator_t get_shared_object_locator( const volatile void *object_shm )
     return locator;
 }
 
+#ifdef __linux__
+static size_t linux_get_min_hugepage_size( void )
+{
+    DIR *sysfs_hugepages;
+    struct dirent *supported_size;
+    size_t min_size = 0;
+    size_t total_supported_sizes = 0;
+
+    errno = 0;
+    sysfs_hugepages = opendir("/sys/kernel/mm/hugepages");
+    if (sysfs_hugepages == NULL)
+    {
+        return -1;
+    }
+
+    while(1)
+    {
+        long hugepage_size;
+
+        supported_size = readdir( sysfs_hugepages );
+        if ( supported_size == NULL )
+        {
+            break;
+        }
+        if (strncmp( supported_size->d_name, "hugepages-", 10) != 0)
+        {
+            continue;
+        }
+        errno = 0;
+        hugepage_size = strtol( &supported_size->d_name[10], NULL, 10 );
+        if (hugepage_size == 0 || hugepage_size == LONG_MAX || hugepage_size == LONG_MIN)
+        {
+            if (errno != 0)
+            {
+                fprintf( stderr,
+                         "could not parse page size from directory entry '%s': %s\n",
+                         supported_size->d_name, strerror( errno ) );
+            }
+            continue;
+        }
+        hugepage_size *= 1024;
+        min_size = ( total_supported_sizes == 0 )
+                       ? hugepage_size
+                       : ( hugepage_size < min_size ? hugepage_size : min_size );
+        total_supported_sizes++;
+    }
+
+    closedir(sysfs_hugepages);
+    return min_size;
+}
+#endif /* __linux__ */
+
+static size_t get_min_large_page_size( void )
+{
+#ifdef __linux__
+    return linux_get_min_hugepage_size();
+#endif
+    return 0;
+}
+
 struct object *create_user_data_mapping( struct object *root, const struct unicode_str *name,
                                         unsigned int attr, const struct security_descriptor *sd )
 {
@@ -1437,8 +1505,15 @@ struct object *create_user_data_mapping( struct object *root, const struct unico
     ptr = mmap( NULL, mapping->size, PROT_WRITE, MAP_SHARED, get_unix_fd( mapping->fd ), 0 );
     if (ptr != MAP_FAILED)
     {
+        ULONG min_large_page_size;
+
         user_shared_data = ptr;
         user_shared_data->SystemCall = 1;
+        min_large_page_size = get_min_large_page_size();
+        if (min_large_page_size != 0)
+        {
+            user_shared_data->LargePageMinimum = min_large_page_size;
+        }
     }
     return &mapping->obj;
 }
