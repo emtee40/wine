@@ -1454,6 +1454,12 @@ DECL_HANDLER(create_mapping)
 
     if (!objattr) return;
 
+    if ((req->flags & SEC_LARGE_PAGES) && !thread_single_check_privilege( current, SeLockMemoryPrivilege ))
+    {
+        set_error( STATUS_PRIVILEGE_NOT_HELD );
+        return;
+    }
+
     if ((mapping = create_mapping( root, &name, objattr->attributes, req->size, req->flags,
                                    req->file_handle, req->file_access, sd )))
     {
