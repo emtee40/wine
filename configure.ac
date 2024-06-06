@@ -380,6 +380,7 @@ AC_CHECK_HEADERS(\
 	linux/input.h \
 	linux/ioctl.h \
 	linux/major.h \
+        linux/memfd.h \
 	linux/param.h \
 	linux/serial.h \
 	linux/types.h \
@@ -2078,6 +2079,7 @@ AC_CHECK_FUNCS(\
 	getrandom \
 	kqueue \
 	mach_continuous_time \
+        memfd_create \
 	pipe2 \
 	port_create \
 	posix_fadvise \
