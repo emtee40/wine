@@ -22,6 +22,7 @@
 #ifndef __WINE_D3DX9_PRIVATE_H
 #define __WINE_D3DX9_PRIVATE_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include "wine/debug.h"
 #include "wine/rbtree.h"

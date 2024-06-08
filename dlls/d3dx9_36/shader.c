@@ -24,6 +24,8 @@
 #include "d3dcommon.h"
 #include "d3dcompiler.h"
 
+#include <vkd3d_shader.h>
+
 WINE_DEFAULT_DEBUG_CHANNEL(d3dx);
 
 static inline BOOL is_valid_bytecode(DWORD token)
@@ -431,6 +433,213 @@ HRESULT WINAPI D3DXAssembleShaderFromResourceW(HMODULE module, const WCHAR *reso
                               shader, error_messages);
 }
 
+#if D3DX_SDK_VERSION < 42
+static HRESULT hresult_from_vkd3d_result(int vkd3d_result)
+{
+    switch (vkd3d_result)
+    {
+        case VKD3D_OK:
+            return S_OK;
+        case VKD3D_ERROR_INVALID_SHADER:
+            WARN("Invalid shader bytecode.\n");
+            /* fall-through */
+        case VKD3D_ERROR:
+            return E_FAIL;
+        case VKD3D_ERROR_OUT_OF_MEMORY:
+            return E_OUTOFMEMORY;
+        case VKD3D_ERROR_INVALID_ARGUMENT:
+            return E_INVALIDARG;
+        case VKD3D_ERROR_NOT_IMPLEMENTED:
+            return E_NOTIMPL;
+        default:
+            FIXME("Unhandled vkd3d result %d.\n", vkd3d_result);
+            return E_FAIL;
+    }
+}
+
+static int open_include(const char *filename, bool local, const char *parent_data, void *context,
+        struct vkd3d_shader_code *code)
+{
+    ID3DXInclude *iface = context;
+    unsigned int size = 0;
+
+    if (!iface)
+        return VKD3D_ERROR;
+
+    memset(code, 0, sizeof(*code));
+    if (FAILED(ID3DXInclude_Open(iface, local ? D3DXINC_LOCAL : D3DXINC_SYSTEM,
+            filename, parent_data, &code->code, &size)))
+        return VKD3D_ERROR;
+
+    code->size = size;
+    return VKD3D_OK;
+}
+
+static void close_include(const struct vkd3d_shader_code *code, void *context)
+{
+    ID3DXInclude *iface = context;
+
+    ID3DXInclude_Close(iface, code->code);
+}
+
+static const char *get_line(const char **ptr)
+{
+    const char *p, *q;
+
+    p = *ptr;
+    if (!(q = strstr(p, "\n")))
+    {
+        if (!*p)
+            return NULL;
+        *ptr += strlen(p);
+        return p;
+    }
+    *ptr = q + 1;
+
+    return p;
+}
+
+static HRESULT compile_shader(const void *data, UINT data_size, const D3DXMACRO *macros,
+        ID3DXInclude *include, const char *entry_point, const char *profile,
+        DWORD flags, ID3DXBuffer **shader_blob, ID3DXBuffer **messages_blob)
+{
+    struct vkd3d_shader_preprocess_info preprocess_info;
+    struct vkd3d_shader_hlsl_source_info hlsl_info;
+    struct vkd3d_shader_compile_option options[4];
+    struct vkd3d_shader_compile_info compile_info;
+    struct vkd3d_shader_compile_option *option;
+    struct vkd3d_shader_code byte_code;
+    const D3DXMACRO *macro;
+    char *messages;
+    HRESULT hr;
+    int ret;
+
+    if (flags & ~(D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR | D3DXSHADER_PACKMATRIX_COLUMNMAJOR
+            | D3DXSHADER_ENABLE_BACKWARDS_COMPATIBILITY))
+    {
+        FIXME("Ignoring flags %#lx.\n", flags);
+    }
+
+    if (shader_blob)
+        *shader_blob = NULL;
+    if (messages_blob)
+        *messages_blob = NULL;
+
+    option = &options[0];
+    option->name = VKD3D_SHADER_COMPILE_OPTION_API_VERSION;
+    option->value = VKD3D_SHADER_API_VERSION_1_3;
+
+    compile_info.type = VKD3D_SHADER_STRUCTURE_TYPE_COMPILE_INFO;
+    compile_info.next = &preprocess_info;
+    compile_info.source.code = data;
+    compile_info.source.size = data_size;
+    compile_info.source_type = VKD3D_SHADER_SOURCE_HLSL;
+    compile_info.target_type = VKD3D_SHADER_TARGET_D3D_BYTECODE;
+    compile_info.options = options;
+    compile_info.option_count = 1;
+    compile_info.log_level = VKD3D_SHADER_LOG_INFO;
+    compile_info.source_name = NULL;
+
+    preprocess_info.type = VKD3D_SHADER_STRUCTURE_TYPE_PREPROCESS_INFO;
+    preprocess_info.next = &hlsl_info;
+    preprocess_info.macros = (const struct vkd3d_shader_macro *)macros;
+    preprocess_info.macro_count = 0;
+    if (macros)
+    {
+        for (macro = macros; macro->Name; ++macro)
+            ++preprocess_info.macro_count;
+    }
+    preprocess_info.pfn_open_include = open_include;
+    preprocess_info.pfn_close_include = close_include;
+    preprocess_info.include_context = include;
+
+    hlsl_info.type = VKD3D_SHADER_STRUCTURE_TYPE_HLSL_SOURCE_INFO;
+    hlsl_info.next = NULL;
+    hlsl_info.profile = profile;
+    hlsl_info.entry_point = entry_point;
+    hlsl_info.secondary_code.code = NULL;
+    hlsl_info.secondary_code.size = 0;
+
+    if (!(flags & D3DXSHADER_DEBUG))
+    {
+        option = &options[compile_info.option_count++];
+        option->name = VKD3D_SHADER_COMPILE_OPTION_STRIP_DEBUG;
+        option->value = true;
+    }
+
+    if (flags & D3DXSHADER_PACKMATRIX_ROWMAJOR)
+    {
+        option = &options[compile_info.option_count++];
+        option->name = VKD3D_SHADER_COMPILE_OPTION_PACK_MATRIX_ORDER;
+        option->value = VKD3D_SHADER_COMPILE_OPTION_PACK_MATRIX_ROW_MAJOR;
+    }
+    else if (flags & D3DXSHADER_PACKMATRIX_COLUMNMAJOR)
+    {
+        option = &options[compile_info.option_count++];
+        option->name = VKD3D_SHADER_COMPILE_OPTION_PACK_MATRIX_ORDER;
+        option->value = VKD3D_SHADER_COMPILE_OPTION_PACK_MATRIX_COLUMN_MAJOR;
+    }
+
+    if (flags & D3DXSHADER_ENABLE_BACKWARDS_COMPATIBILITY)
+    {
+        option = &options[compile_info.option_count++];
+        option->name = VKD3D_SHADER_COMPILE_OPTION_BACKWARD_COMPATIBILITY;
+        option->value = VKD3D_SHADER_COMPILE_OPTION_BACKCOMPAT_MAP_SEMANTIC_NAMES;
+    }
+
+    ret = vkd3d_shader_compile(&compile_info, &byte_code, &messages);
+
+    if (ret)
+        ERR("Failed to compile shader, vkd3d result %d.\n", ret);
+
+    if (messages)
+    {
+        if (*messages && ERR_ON(d3dx))
+        {
+            const char *ptr = messages;
+            const char *line;
+
+            ERR("Shader log:\n");
+            while ((line = get_line(&ptr)))
+            {
+                ERR("    %.*s", (int)(ptr - line), line);
+            }
+            ERR("\n");
+        }
+
+        if (messages_blob)
+        {
+            size_t size = strlen(messages);
+            if (FAILED(hr = D3DXCreateBuffer(size, messages_blob)))
+            {
+                vkd3d_shader_free_messages(messages);
+                vkd3d_shader_free_shader_code(&byte_code);
+                return hr;
+            }
+            memcpy(ID3DXBuffer_GetBufferPointer(*messages_blob), messages, size);
+        }
+
+        vkd3d_shader_free_messages(messages);
+    }
+
+    if (ret)
+        return hresult_from_vkd3d_result(ret);
+
+    if (!shader_blob)
+    {
+        vkd3d_shader_free_shader_code(&byte_code);
+        return S_OK;
+    }
+
+    if (SUCCEEDED(hr = D3DXCreateBuffer(byte_code.size, shader_blob)))
+        memcpy(ID3DXBuffer_GetBufferPointer(*shader_blob), byte_code.code, byte_code.size);
+
+    vkd3d_shader_free_shader_code(&byte_code);
+
+    return hr;
+}
+#endif
+
 HRESULT WINAPI D3DXCompileShader(const char *data, UINT length, const D3DXMACRO *defines,
         ID3DXInclude *include, const char *function, const char *profile, DWORD flags,
         ID3DXBuffer **shader, ID3DXBuffer **error_msgs, ID3DXConstantTable **constant_table)
@@ -443,10 +652,14 @@ HRESULT WINAPI D3DXCompileShader(const char *data, UINT length, const D3DXMACRO 
             flags, shader, error_msgs, constant_table);
 
     if (D3DX_SDK_VERSION <= 36)
-        flags |= D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY;
+        flags |= D3DXSHADER_ENABLE_BACKWARDS_COMPATIBILITY;
 
+#if D3DX_SDK_VERSION < 42
+    hr = compile_shader(data, length, defines, include, function, profile, flags, shader, error_msgs);
+#else
     hr = D3DCompile(data, length, NULL, (D3D_SHADER_MACRO *)defines, (ID3DInclude *)include,
                     function, profile, flags, 0, (ID3DBlob **)shader, (ID3DBlob **)error_msgs);
+#endif
 
     if (SUCCEEDED(hr) && constant_table)
     {
@@ -526,16 +739,8 @@ HRESULT WINAPI D3DXCompileShaderFromFileW(const WCHAR *filename, const D3DXMACRO
         return D3DXERR_INVALIDDATA;
     }
 
-    if (D3DX_SDK_VERSION <= 36)
-        flags |= D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY;
-
-    hr = D3DCompile(buffer, len, filename_a, (const D3D_SHADER_MACRO *)defines,
-                    (ID3DInclude *)include, entrypoint, profile, flags, 0,
-                    (ID3DBlob **)shader, (ID3DBlob **)error_messages);
-
-    if (SUCCEEDED(hr) && constant_table)
-        hr = D3DXGetShaderConstantTable(ID3DXBuffer_GetBufferPointer(*shader),
-                                        constant_table);
+    hr = D3DXCompileShader(buffer, len, defines, include, entrypoint,
+            profile, flags, shader, error_messages, constant_table);
 
     ID3DXInclude_Close(include, buffer);
     LeaveCriticalSection(&from_file_mutex);
