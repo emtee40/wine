@@ -505,7 +505,7 @@ static HRESULT compile_shader(const void *data, UINT data_size, const D3DXMACRO 
 {
     struct vkd3d_shader_preprocess_info preprocess_info;
     struct vkd3d_shader_hlsl_source_info hlsl_info;
-    struct vkd3d_shader_compile_option options[4];
+    struct vkd3d_shader_compile_option options[5];
     struct vkd3d_shader_compile_info compile_info;
     struct vkd3d_shader_compile_option *option;
     struct vkd3d_shader_code byte_code;
@@ -528,6 +528,9 @@ static HRESULT compile_shader(const void *data, UINT data_size, const D3DXMACRO 
     option = &options[0];
     option->name = VKD3D_SHADER_COMPILE_OPTION_API_VERSION;
     option->value = VKD3D_SHADER_API_VERSION_1_3;
+    option = &options[1];
+    option->name = VKD3D_SHADER_COMPILE_OPTION_WARN_IMPLICIT_TRUNCATION;
+    option->value = false;
 
     compile_info.type = VKD3D_SHADER_STRUCTURE_TYPE_COMPILE_INFO;
     compile_info.next = &preprocess_info;
@@ -536,7 +539,7 @@ static HRESULT compile_shader(const void *data, UINT data_size, const D3DXMACRO 
     compile_info.source_type = VKD3D_SHADER_SOURCE_HLSL;
     compile_info.target_type = VKD3D_SHADER_TARGET_D3D_BYTECODE;
     compile_info.options = options;
-    compile_info.option_count = 1;
+    compile_info.option_count = 2;
     compile_info.log_level = VKD3D_SHADER_LOG_INFO;
     compile_info.source_name = NULL;
 
