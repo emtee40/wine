@@ -1214,7 +1214,7 @@ struct d3d12_swapchain_op
         {
             unsigned int sync_interval;
             VkImage vk_image;
-            unsigned int frame_number;
+            uint64_t frame_number;
         } present;
         struct
         {
