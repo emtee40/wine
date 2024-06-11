@@ -2630,8 +2630,8 @@ static HRESULT d3d12_swapchain_resize_buffers(struct d3d12_swapchain *swapchain,
 
     EnterCriticalSection(&swapchain->worker_cs);
     list_add_tail(&swapchain->worker_ops, &op->entry);
-    WakeAllConditionVariable(&swapchain->worker_cv);
     LeaveCriticalSection(&swapchain->worker_cs);
+    WakeAllConditionVariable(&swapchain->worker_cv);
 
     swapchain->current_buffer_index = 0;
 
