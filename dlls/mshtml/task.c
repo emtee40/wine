@@ -458,6 +458,7 @@ thread_data_t *get_thread_data(BOOL create)
             return NULL;
 
         TlsSetValue(mshtml_tls, thread_data);
+        list_init(&thread_data->browsers);
         list_init(&thread_data->task_list);
         list_init(&thread_data->event_task_list);
         list_init(&thread_data->timer_list);

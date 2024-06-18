@@ -2292,11 +2292,15 @@ static HRESULT init_browser(GeckoBrowser *browser)
 
 HRESULT create_gecko_browser(HTMLDocumentObj *doc, GeckoBrowser **_ret)
 {
+    thread_data_t *thread_data;
     GeckoBrowser *ret;
     HRESULT hres;
 
     if(!load_gecko())
         return CLASS_E_CLASSNOTAVAILABLE;
+
+    if(!(thread_data = get_thread_data(TRUE)))
+        return E_OUTOFMEMORY;
 
     ret = calloc(1, sizeof(GeckoBrowser));
     if(!ret)
@@ -2318,10 +2322,12 @@ HRESULT create_gecko_browser(HTMLDocumentObj *doc, GeckoBrowser **_ret)
     list_init(&ret->outer_windows);
 
     hres = init_browser(ret);
-    if(SUCCEEDED(hres))
-        *_ret = ret;
-    else
+    if(FAILED(hres))
         nsIWebBrowserChrome_Release(&ret->nsIWebBrowserChrome_iface);
+    else {
+        *_ret = ret;
+        list_add_tail(&thread_data->browsers, &ret->entry);
+    }
     return hres;
 }
 
@@ -2331,6 +2337,7 @@ void detach_gecko_browser(GeckoBrowser *This)
 
     TRACE("(%p)\n", This);
 
+    list_remove(&This->entry);
     This->doc = NULL;
 
     if(This->content_window) {

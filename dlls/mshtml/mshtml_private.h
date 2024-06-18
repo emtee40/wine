@@ -858,6 +858,8 @@ struct GeckoBrowser {
 
     struct list document_nodes;
     struct list outer_windows;
+
+    struct list entry;
 };
 
 typedef struct {
@@ -1352,12 +1354,15 @@ typedef struct {
 
 typedef struct {
     HWND thread_hwnd;
+    struct list browsers;
     struct list task_list;
     struct list event_task_list;
     struct list timer_list;
     struct list *pending_xhr_events_tail;
     struct wine_rb_tree session_storage_map;
     void *blocking_xhr;
+    HWINEVENTHOOK minimize_hook;
+    ULONG minimize_hook_ref;
 } thread_data_t;
 
 thread_data_t *get_thread_data(BOOL);
