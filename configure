@@ -21067,6 +21067,16 @@ printf "%s\n" "#define HAVE_REQUEST_SENSE 1" >>confdefs.h
 
 fi
 
+ac_fn_c_check_type "$LINENO" "struct pm_scan_arg" "ac_cv_type_struct_pm_scan_arg" "#include <linux/fs.h>
+"
+if test "x$ac_cv_type_struct_pm_scan_arg" = xyes
+then :
+
+printf "%s\n" "#define HAVE_STRUCT_PM_SCAN_ARG 1" >>confdefs.h
+
+
+fi
+
 
 ac_fn_c_check_type "$LINENO" "struct xinpgen" "ac_cv_type_struct_xinpgen" "#include <sys/types.h>
 #include <sys/socket.h>

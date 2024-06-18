@@ -63,6 +63,10 @@
 # include <mach/mach_init.h>
 # include <mach/mach_vm.h>
 #endif
+#ifdef HAVE_STRUCT_PM_SCAN_ARG
+#include <linux/fs.h>
+#include <sys/ioctl.h>
+#endif
 
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
@@ -5351,6 +5355,7 @@ static void fill_working_set_info( struct fill_working_set_info_data *d, struct 
 }
 #else
 static int pagemap_fd = -2;
+static BOOL pagemap_ioctl_avail = TRUE;
 
 struct fill_working_set_info_data
 {
@@ -5396,26 +5401,68 @@ static void fill_working_set_info( struct fill_working_set_info_data *d, struct 
         page = (UINT_PTR)ref[i].addr >> page_shift;
         p = &info[ref[i].orig_index];
 
-        assert(page >= d->buffer_start);
-        if (page >= d->buffer_start + d->buffer_len)
+        if (pagemap_ioctl_avail)
         {
-            d->buffer_start = page;
-            len = min( sizeof(d->pm_buffer), (d->end_page - page) * sizeof(pagemap) );
-            if (pagemap_fd != -1)
+            UINT_PTR addr = page;
+            struct page_region output_buf;
+            int count;
+            struct pm_scan_arg scan_arg = {
+                .size = sizeof( scan_arg ),
+                .flags = 0,
+                .start = addr,
+                .end = addr + page_size,
+                .vec = (UINT_PTR)&output_buf,
+                .vec_len = 1,
+                .max_pages = 1,
+                .category_inverted = 0,
+                .category_mask = PAGE_IS_PRESENT,
+                .category_anyof_mask = PAGE_IS_HUGE | PAGE_IS_PRESENT | PAGE_IS_FILE,
+                .return_mask = PAGE_IS_HUGE | PAGE_IS_PRESENT | PAGE_IS_FILE,
+            };
+            memset( &output_buf, 0, sizeof( output_buf ) );
+            count = ioctl( pagemap_fd, PAGEMAP_SCAN, &scan_arg );
+            if (count == -1)
             {
-                d->buffer_len = pread( pagemap_fd, d->pm_buffer, len, page * sizeof(pagemap) );
-                if (d->buffer_len != len)
-                {
-                    d->buffer_len = max( d->buffer_len, 0 );
-                    memset( d->pm_buffer + d->buffer_len / sizeof(pagemap), 0, len - d->buffer_len );
-                }
+                WARN( "ioctl(PAGEMAP_SCAN, %p) failed: '%s'\n", (void *)addr, strerror( errno ) );
+                pagemap_ioctl_avail = FALSE;
+                continue;
             }
-            d->buffer_len = len / sizeof(pagemap);
+            else if (count > 0)
+            {
+                assert( output_buf.start <= addr && output_buf.end > addr );
+                p->VirtualAttributes.Valid = !(vprot & VPROT_GUARD) && (vprot & 0x0f) &&
+                                              (output_buf.categories & PAGE_IS_PRESENT);
+                p->VirtualAttributes.Shared =
+                    !is_view_valloc( view ) && (output_buf.categories & PAGE_IS_FILE);
+                p->VirtualAttributes.LargePage = p->VirtualAttributes.Valid &&
+                                                 (output_buf.categories & PAGE_IS_HUGE) &&
+                                                 (view->protect & SEC_LARGE_PAGES);
+                if (p->VirtualAttributes.LargePage) p->VirtualAttributes.Locked = TRUE;
+            }
         }
-        pagemap = d->pm_buffer[page - d->buffer_start];
+        if (!pagemap_ioctl_avail)
+        {
+            assert(page >= d->buffer_start);
+            if (page >= d->buffer_start + d->buffer_len)
+            {
+                d->buffer_start = page;
+                len = min( sizeof(d->pm_buffer), (d->end_page - page) * sizeof(pagemap) );
+                if (pagemap_fd != -1)
+                {
+                    d->buffer_len = pread( pagemap_fd, d->pm_buffer, len, page * sizeof(pagemap) );
+                    if (d->buffer_len != len)
+                    {
+                        d->buffer_len = max( d->buffer_len, 0 );
+                        memset( d->pm_buffer + d->buffer_len / sizeof(pagemap), 0, len - d->buffer_len );
+                    }
+                }
+                d->buffer_len = len / sizeof(pagemap);
+            }
+            pagemap = d->pm_buffer[page - d->buffer_start];
 
-        p->VirtualAttributes.Valid = !(vprot & VPROT_GUARD) && (vprot & 0x0f) && (pagemap >> 63);
-        p->VirtualAttributes.Shared = !is_view_valloc( view ) && ((pagemap >> 61) & 1);
+            p->VirtualAttributes.Valid = !(vprot & VPROT_GUARD) && (vprot & 0x0f) && (pagemap >> 63);
+            p->VirtualAttributes.Shared = !is_view_valloc( view ) && ((pagemap >> 61) & 1);
+        }
         if (p->VirtualAttributes.Shared && p->VirtualAttributes.Valid)
             p->VirtualAttributes.ShareCount = 1; /* FIXME */
         if (p->VirtualAttributes.Valid)

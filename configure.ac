@@ -2119,6 +2119,7 @@ dnl **** Check for types ****
 
 AC_C_INLINE
 AC_CHECK_TYPES([request_sense],,,[#include <linux/cdrom.h>])
+AC_CHECK_TYPES([struct pm_scan_arg],,,[#include <linux/fs.h>])
 
 AC_CHECK_TYPES([struct xinpgen],,,
 [#include <sys/types.h>
