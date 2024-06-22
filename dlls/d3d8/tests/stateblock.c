@@ -1565,7 +1565,7 @@ static void resource_check_data(IDirect3DDevice8 *device, const struct state_tes
                 chain_stage, i, d->vb[i], ptr);
         if (SUCCEEDED(hr) && ptr)
         {
-            IDirect3DIndexBuffer8_Release((IDirect3DVertexBuffer8 *)ptr);
+            IDirect3DVertexBuffer8_Release((IDirect3DVertexBuffer8 *)ptr);
         }
     }
 
@@ -1744,7 +1744,7 @@ static void resource_test_cleanup(IDirect3DDevice8 *device, struct state_test *t
 
     for (i = 0; i < arg->tex_count; ++i)
     {
-        IDirect3DBaseTexture8_Release(ctx->test_data_all.tex[i]);
+        IDirect3DTexture8_Release(ctx->test_data_all.tex[i]);
     }
 
     free(ctx->default_data.vb);
