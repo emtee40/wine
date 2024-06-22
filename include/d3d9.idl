@@ -1,0 +1,576 @@
+/*
+ * Copyright (C) 2002-2003 Jason Edmeades
+ * Copyright (C) 2002-2003 Raphael Junqueira
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+ */
+
+cpp_quote("#ifndef _D3D9_H_")
+cpp_quote("#define _D3D9_H_")
+
+cpp_quote("#ifndef DIRECT3D_VERSION")
+cpp_quote("#define DIRECT3D_VERSION  0x0900")
+cpp_quote("#endif")
+
+import "unknwn.idl";
+import "d3d9types.h";
+import "d3d9caps.h";
+
+cpp_quote("#if 0")
+typedef struct _LUID LUID;
+typedef struct _RGNDATA RGNDATA;
+cpp_quote("#endif")
+
+#ifndef __MSABI_LONG
+#if !defined(__LP64__) && !defined(WINE_NO_LONG_TYPES)
+#  define __MSABI_LONG(x)         x ## l
+# else
+#  define __MSABI_LONG(x)         x
+# endif
+#endif
+
+const long D3DCREATE_FPU_PRESERVE                   = __MSABI_LONG(0x00000002);
+const long D3DCREATE_MULTITHREADED                  = __MSABI_LONG(0x00000004);
+const long D3DCREATE_PUREDEVICE                     = __MSABI_LONG(0x00000010);
+const long D3DCREATE_SOFTWARE_VERTEXPROCESSING      = __MSABI_LONG(0x00000020);
+const long D3DCREATE_HARDWARE_VERTEXPROCESSING      = __MSABI_LONG(0x00000040);
+const long D3DCREATE_MIXED_VERTEXPROCESSING         = __MSABI_LONG(0x00000080);
+const long D3DCREATE_DISABLE_DRIVER_MANAGEMENT      = __MSABI_LONG(0x00000100);
+const long D3DCREATE_ADAPTERGROUP_DEVICE            = __MSABI_LONG(0x00000200);
+const long D3DCREATE_DISABLE_DRIVER_MANAGEMENT_EX   = __MSABI_LONG(0x00000400);
+const long D3DCREATE_NOWINDOWCHANGES                = __MSABI_LONG(0x00000800);
+const long D3DCREATE_DISABLE_PSGP_THREADING         = __MSABI_LONG(0x00002000);
+const long D3DCREATE_ENABLE_PRESENTSTATS            = __MSABI_LONG(0x00004000);
+const long D3DCREATE_DISABLE_PRINTSCREEN            = __MSABI_LONG(0x00008000);
+const long D3DCREATE_SCREENSAVER                    = __MSABI_LONG(0x10000000);
+
+const long D3DSPD_IUNKNOWN                          = __MSABI_LONG(0x00000001);
+
+const unsigned int D3D_SDK_VERSION                  = 32;
+const unsigned int D3DADAPTER_DEFAULT               = 0;
+const long D3DENUM_WHQL_LEVEL                       = __MSABI_LONG(0x00000002);
+const long D3DPRESENT_DONOTWAIT                     = __MSABI_LONG(1);
+const long D3DPRESENT_LINEAR_CONTENT                = __MSABI_LONG(2);
+const long D3DPRESENT_BACK_BUFFERS_MAX              = __MSABI_LONG(3);
+const long D3DPRESENT_BACK_BUFFERS_MAX_EX           = __MSABI_LONG(30);
+const long D3DSGR_NO_CALIBRATION                    = __MSABI_LONG(0x00000000);
+const long D3DSGR_CALIBRATE                         = __MSABI_LONG(0x00000001);
+const long D3DCURSOR_IMMEDIATE_UPDATE               = __MSABI_LONG(0x00000001);
+
+cpp_quote("#define _FACD3D 0x876")
+cpp_quote("#define MAKE_D3DHRESULT(code) MAKE_HRESULT(1, _FACD3D, code)")
+cpp_quote("#define MAKE_D3DSTATUS(code) MAKE_HRESULT(0, _FACD3D, code)")
+
+const HRESULT D3D_OK                                = __MSABI_LONG(0);
+const HRESULT D3DERR_OUTOFVIDEOMEMORY               = __MSABI_LONG(0x8876017c);
+const HRESULT D3DERR_WASSTILLDRAWING                = __MSABI_LONG(0x8876021c);
+const HRESULT D3DERR_WRONGTEXTUREFORMAT             = __MSABI_LONG(0x88760818);
+const HRESULT D3DERR_UNSUPPORTEDCOLOROPERATION      = __MSABI_LONG(0x88760819);
+const HRESULT D3DERR_UNSUPPORTEDCOLORARG            = __MSABI_LONG(0x8876081a);
+const HRESULT D3DERR_UNSUPPORTEDALPHAOPERATION      = __MSABI_LONG(0x8876081b);
+const HRESULT D3DERR_UNSUPPORTEDALPHAARG            = __MSABI_LONG(0x8876081c);
+const HRESULT D3DERR_TOOMANYOPERATIONS              = __MSABI_LONG(0x8876081d);
+const HRESULT D3DERR_CONFLICTINGTEXTUREFILTER       = __MSABI_LONG(0x8876081e);
+const HRESULT D3DERR_UNSUPPORTEDFACTORVALUE         = __MSABI_LONG(0x8876081f);
+const HRESULT D3DERR_CONFLICTINGRENDERSTATE         = __MSABI_LONG(0x88760821);
+const HRESULT D3DERR_UNSUPPORTEDTEXTUREFILTER       = __MSABI_LONG(0x88760822);
+const HRESULT D3DERR_CONFLICTINGTEXTUREPALETTE      = __MSABI_LONG(0x88760826);
+const HRESULT D3DERR_DRIVERINTERNALERROR            = __MSABI_LONG(0x88760827);
+const HRESULT D3DERR_NOTFOUND                       = __MSABI_LONG(0x88760866);
+const HRESULT D3DERR_MOREDATA                       = __MSABI_LONG(0x88760867);
+const HRESULT D3DERR_DEVICELOST                     = __MSABI_LONG(0x88760868);
+const HRESULT D3DERR_DEVICENOTRESET                 = __MSABI_LONG(0x88760869);
+const HRESULT D3DERR_NOTAVAILABLE                   = __MSABI_LONG(0x8876086a);
+const HRESULT D3DERR_INVALIDDEVICE                  = __MSABI_LONG(0x8876086b);
+const HRESULT D3DERR_INVALIDCALL                    = __MSABI_LONG(0x8876086c);
+const HRESULT D3DERR_DRIVERINVALIDCALL              = __MSABI_LONG(0x8876086d);
+const HRESULT D3DOK_NOAUTOGEN                       = __MSABI_LONG(0x0876086f);
+const HRESULT D3DERR_DEVICEREMOVED                  = __MSABI_LONG(0x88760870);
+const HRESULT D3DERR_DEVICEHUNG                     = __MSABI_LONG(0x88760874);
+const HRESULT S_NOT_RESIDENT                        = __MSABI_LONG(0x08760875);
+const HRESULT S_RESIDENT_IN_SHARED_MEMORY           = __MSABI_LONG(0x08760876);
+const HRESULT S_PRESENT_MODE_CHANGED                = __MSABI_LONG(0x08760877);
+const HRESULT S_PRESENT_OCCLUDED                    = __MSABI_LONG(0x08760878);
+const HRESULT D3DERR_UNSUPPORTEDOVERLAY             = __MSABI_LONG(0x8876087b);
+const HRESULT D3DERR_UNSUPPORTEDOVERLAYFORMAT       = __MSABI_LONG(0x8876087c);
+const HRESULT D3DERR_CANNOTPROTECTCONTENT           = __MSABI_LONG(0x8876087d);
+const HRESULT D3DERR_UNSUPPORTEDCRYPTO              = __MSABI_LONG(0x8876087e);
+const HRESULT D3DERR_PRESENT_STATISTICS_DISJOINT    = __MSABI_LONG(0x88760884);
+
+typedef struct IDirect3D9 *LPDIRECT3D9, *PDIRECT3D9;
+typedef struct IDirect3DDevice9 *LPDIRECT3DDEVICE9;
+typedef struct IDirect3DResource9 *LPDIRECT3DRESOURCE9, *PDIRECT3DRESOURCE9;
+typedef struct IDirect3DVertexBuffer9 *LPDIRECT3DVERTEXBUFFER9, *PDIRECT3DVERTEXBUFFER9;
+typedef struct IDirect3DVolume9 *LPDIRECT3DVOLUME9, *PDIRECT3DVOLUME9;
+typedef struct IDirect3DSwapChain9 *LPDIRECT3DSWAPCHAIN9, *PDIRECT3DSWAPCHAIN9;
+typedef struct IDirect3DSurface9 *LPDIRECT3DSURFACE9, *PDIRECT3DSURFACE9;
+typedef struct IDirect3DIndexBuffer9 *LPDIRECT3DINDEXBUFFER9, *PDIRECT3DINDEXBUFFER9;
+typedef struct IDirect3DBaseTexture9 *LPDIRECT3DBASETEXTURE9, *PDIRECT3DBASETEXTURE9;
+typedef struct IDirect3DTexture9 *LPDIRECT3DTEXTURE9, *PDIRECT3DTEXTURE9;
+typedef struct IDirect3DCubeTexture9 *LPDIRECT3DCUBETEXTURE9, *PDIRECT3DCUBETEXTURE9;
+typedef struct IDirect3DVolumeTexture9 *LPDIRECT3DVOLUMETEXTURE9, *PDIRECT3DVOLUMETEXTURE9;
+typedef struct IDirect3DVertexDeclaration9 *LPDIRECT3DVERTEXDECLARATION9;
+typedef struct IDirect3DVertexShader9 *LPDIRECT3DVERTEXSHADER9;
+typedef struct IDirect3DPixelShader9 *LPDIRECT3DPIXELSHADER9;
+typedef struct IDirect3DStateBlock9 *LPDIRECT3DSTATEBLOCK9;
+typedef struct IDirect3DQuery9 *LPDIRECT3DQUERY9, *PDIRECT3DQUERY9;
+
+[
+    local,
+    object,
+    uuid(81bdcbca-64d4-426d-ae8d-ad0147f4275c),
+]
+interface IDirect3D9 : IUnknown
+{
+    HRESULT RegisterSoftwareDevice(void *init_function);
+    UINT GetAdapterCount();
+    HRESULT GetAdapterIdentifier(UINT adapter_index, DWORD flags, D3DADAPTER_IDENTIFIER9 *identifier);
+    UINT GetAdapterModeCount(UINT adapter_index, D3DFORMAT format);
+    HRESULT EnumAdapterModes(UINT adapter_index, D3DFORMAT format, UINT mode_index, D3DDISPLAYMODE *mode);
+    HRESULT GetAdapterDisplayMode(UINT adapter_index, D3DDISPLAYMODE *mode);
+    HRESULT CheckDeviceType(UINT adapter_index, D3DDEVTYPE device_type,
+            D3DFORMAT display_format, D3DFORMAT backbuffer_format, BOOL windowed);
+    HRESULT CheckDeviceFormat(UINT adapter_index, D3DDEVTYPE device_type,
+            D3DFORMAT adapter_format, DWORD usage, D3DRESOURCETYPE resource_type, D3DFORMAT format);
+    HRESULT CheckDeviceMultiSampleType(UINT adapter_index, D3DDEVTYPE device_type, D3DFORMAT format,
+            BOOL windowed, D3DMULTISAMPLE_TYPE multisample_type, DWORD *quality_levels);
+    HRESULT CheckDepthStencilMatch(UINT adapter_index, D3DDEVTYPE device_type,
+            D3DFORMAT adapter_format, D3DFORMAT render_target_format, D3DFORMAT depth_stencil_format);
+    HRESULT CheckDeviceFormatConversion(UINT adapter_index,
+            D3DDEVTYPE device_type, D3DFORMAT src_format, D3DFORMAT dst_format);
+    HRESULT GetDeviceCaps(UINT adapter_index, D3DDEVTYPE device_type, D3DCAPS9 *caps);
+    HMONITOR GetAdapterMonitor(UINT adapter_index);
+    HRESULT CreateDevice(UINT adapter_index, D3DDEVTYPE device_type, HWND focus_window,
+            DWORD flags, D3DPRESENT_PARAMETERS *parameters, struct IDirect3DDevice9 **device);
+}
+
+[
+    local,
+    object,
+    uuid(24f416e6-1f67-4aa7-b88e-d33f6f3128a1),
+]
+interface IDirect3DVolume9 : IUnknown
+{
+    HRESULT GetDevice(struct IDirect3DDevice9 **device);
+    HRESULT SetPrivateData(REFGUID guid, const void *data, DWORD data_size, DWORD flags);
+    HRESULT GetPrivateData(REFGUID guid, void *data, DWORD *size);
+    HRESULT FreePrivateData(REFGUID guid);
+    HRESULT GetContainer(REFIID iid, void **container);
+    HRESULT GetDesc(D3DVOLUME_DESC *desc);
+    HRESULT LockBox(D3DLOCKED_BOX *locked_box, const D3DBOX *box, DWORD flags);
+    HRESULT UnlockBox();
+}
+
+[
+    local,
+    object,
+    uuid(794950f2-adfc-458a-905e-10a10b0b503b),
+]
+interface IDirect3DSwapChain9 : IUnknown
+{
+    HRESULT Present(const RECT *src_rect, const RECT *dst_rect,
+            HWND dst_window_override, const RGNDATA *dirty_region, DWORD flags);
+    HRESULT GetFrontBufferData(struct IDirect3DSurface9 *dst_surface);
+    HRESULT GetBackBuffer(UINT backbuffer_idx, D3DBACKBUFFER_TYPE type, struct IDirect3DSurface9 **backbuffer);
+    HRESULT GetRasterStatus(D3DRASTER_STATUS *status);
+    HRESULT GetDisplayMode(D3DDISPLAYMODE *mode);
+    HRESULT GetDevice(struct IDirect3DDevice9 **device);
+    HRESULT GetPresentParameters(D3DPRESENT_PARAMETERS *parameters);
+}
+
+[
+    local,
+    object,
+    uuid(05eec05d-8f7d-4362-b999-d1baf357c704),
+]
+interface IDirect3DResource9 : IUnknown
+{
+    HRESULT GetDevice(struct IDirect3DDevice9 **device);
+    HRESULT SetPrivateData(REFGUID guid, const void *data, DWORD data_size, DWORD flags);
+    HRESULT GetPrivateData(REFGUID guid, void *data, DWORD *size);
+    HRESULT FreePrivateData(REFGUID guid);
+    DWORD SetPriority(DWORD priority);
+    DWORD GetPriority();
+    void PreLoad();
+    D3DRESOURCETYPE GetType();
+}
+
+[
+    local,
+    object,
+    uuid(0cfbaf3a-9ff6-429a-99b3-a2796af8b89b),
+]
+interface IDirect3DSurface9 : IDirect3DResource9
+{
+    HRESULT GetContainer(REFIID iid, void **container);
+    HRESULT GetDesc(D3DSURFACE_DESC *desc);
+    HRESULT LockRect(D3DLOCKED_RECT *locked_rect, const RECT *rect, DWORD flags);
+    HRESULT UnlockRect();
+    HRESULT GetDC(HDC *hdc);
+    HRESULT ReleaseDC(HDC hdc);
+}
+
+[
+    local,
+    object,
+    uuid(b64bb1b5-fd70-4df6-bf91-19d0a12455e3),
+]
+interface IDirect3DVertexBuffer9 : IDirect3DResource9
+{
+    HRESULT Lock(UINT offset, UINT size, void **data, DWORD flags);
+    HRESULT Unlock();
+    HRESULT GetDesc(D3DVERTEXBUFFER_DESC *desc);
+}
+
+[
+    local,
+    object,
+    uuid(7c9dd65e-d3f7-4529-acee-785830acde35),
+]
+interface IDirect3DIndexBuffer9 : IDirect3DResource9
+{
+    HRESULT Lock(UINT offset, UINT size, void **data, DWORD flags);
+    HRESULT Unlock();
+    HRESULT GetDesc(D3DINDEXBUFFER_DESC *desc);
+}
+
+[
+    local,
+    object,
+    uuid(580ca87e-1d3c-4d54-991d-b7d3e3c298ce),
+]
+interface IDirect3DBaseTexture9 : IDirect3DResource9
+{
+    DWORD SetLOD(DWORD lod);
+    DWORD GetLOD();
+    DWORD GetLevelCount();
+    HRESULT SetAutoGenFilterType(D3DTEXTUREFILTERTYPE type);
+    D3DTEXTUREFILTERTYPE GetAutoGenFilterType();
+    void GenerateMipSubLevels();
+}
+
+[
+    local,
+    object,
+    uuid(fff32f81-d953-473a-9223-93d652aba93f),
+]
+interface IDirect3DCubeTexture9 : IDirect3DBaseTexture9
+{
+    HRESULT GetLevelDesc(UINT level, D3DSURFACE_DESC *desc);
+    HRESULT GetCubeMapSurface(D3DCUBEMAP_FACES face, UINT level, IDirect3DSurface9 **surface);
+    HRESULT LockRect(D3DCUBEMAP_FACES face, UINT level, D3DLOCKED_RECT *locked_rect, const RECT *rect, DWORD flags);
+    HRESULT UnlockRect(D3DCUBEMAP_FACES face, UINT level);
+    HRESULT AddDirtyRect(D3DCUBEMAP_FACES face, const RECT *dirty_rect);
+}
+
+[
+    local,
+    object,
+    uuid(85c31227-3de5-4f00-9b3a-f11ac38c18b5),
+]
+interface IDirect3DTexture9 : IDirect3DBaseTexture9
+{
+    HRESULT GetLevelDesc(UINT level, D3DSURFACE_DESC *desc);
+    HRESULT GetSurfaceLevel(UINT level, IDirect3DSurface9 **surface);
+    HRESULT LockRect(UINT level, D3DLOCKED_RECT *locked_rect, const RECT *rect, DWORD flags);
+    HRESULT UnlockRect(UINT level);
+    HRESULT AddDirtyRect(const RECT *dirty_rect);
+}
+
+[
+    local,
+    object,
+    uuid(2518526c-e789-4111-a7b9-47ef328d13e6),
+]
+interface IDirect3DVolumeTexture9 : IDirect3DBaseTexture9
+{
+    HRESULT GetLevelDesc(UINT level, D3DVOLUME_DESC *desc);
+    HRESULT GetVolumeLevel(UINT level, IDirect3DVolume9 **volume);
+    HRESULT LockBox(UINT level, D3DLOCKED_BOX *locked_box, const D3DBOX *box, DWORD flags);
+    HRESULT UnlockBox(UINT level);
+    HRESULT AddDirtyBox(const D3DBOX *dirty_box);
+}
+
+[
+    local,
+    object,
+    uuid(dd13c59c-36fa-4098-a8fb-c7ed39dc8546),
+]
+interface IDirect3DVertexDeclaration9 : IUnknown
+{
+    HRESULT GetDevice(struct IDirect3DDevice9 **device);
+    HRESULT GetDeclaration(D3DVERTEXELEMENT9 *elements, UINT *count);
+}
+
+[
+    local,
+    object,
+    uuid(efc5557e-6265-4613-8a94-43857889eb36),
+]
+interface IDirect3DVertexShader9 : IUnknown
+{
+    HRESULT GetDevice(struct IDirect3DDevice9 **device);
+    HRESULT GetFunction(void *data, UINT *size);
+}
+
+[
+    local,
+    object,
+    uuid(6d3bdbdc-5b02-4415-b852-ce5e8bccb289),
+]
+interface IDirect3DPixelShader9 : IUnknown
+{
+    HRESULT GetDevice(struct IDirect3DDevice9 **device);
+    HRESULT GetFunction(void *data, UINT *size);
+}
+
+[
+    local,
+    object,
+    uuid(b07c4fe5-310d-4ba8-a23c-4f0f206f218b),
+]
+interface IDirect3DStateBlock9 : IUnknown
+{
+    HRESULT GetDevice(struct IDirect3DDevice9 **device);
+    HRESULT Capture();
+    HRESULT Apply();
+}
+
+[
+    local,
+    object,
+    uuid(d9771460-a695-4f26-bbd3-27b840b541cc),
+]
+interface IDirect3DQuery9 : IUnknown
+{
+    HRESULT GetDevice(struct IDirect3DDevice9 **device);
+    D3DQUERYTYPE GetType();
+    DWORD GetDataSize();
+    HRESULT Issue(DWORD flags);
+    HRESULT GetData(void *data, DWORD size, DWORD flags);
+}
+
+[
+    local,
+    object,
+    uuid(d0223b96-bf7a-43fd-92bd-a43b0d82b9eb),
+]
+interface IDirect3DDevice9 : IUnknown
+{
+    HRESULT TestCooperativeLevel();
+    UINT GetAvailableTextureMem();
+    HRESULT EvictManagedResources();
+    HRESULT GetDirect3D(IDirect3D9 **d3d);
+    HRESULT GetDeviceCaps(D3DCAPS9 *caps);
+    HRESULT GetDisplayMode(UINT swapchain_idx, D3DDISPLAYMODE *mode);
+    HRESULT GetCreationParameters(D3DDEVICE_CREATION_PARAMETERS *parameters);
+    HRESULT SetCursorProperties(UINT x_hotspot, UINT y_hotspot, IDirect3DSurface9 *bitmap);
+    void SetCursorPosition(int x, int y, DWORD flags);
+    BOOL ShowCursor(BOOL show);
+    HRESULT CreateAdditionalSwapChain(D3DPRESENT_PARAMETERS *parameters, IDirect3DSwapChain9 **swapchain);
+    HRESULT GetSwapChain(UINT index, IDirect3DSwapChain9 **swapchain);
+    UINT GetNumberOfSwapChains();
+    HRESULT Reset(D3DPRESENT_PARAMETERS *parameters);
+    HRESULT Present(const RECT *src_rect, const RECT *dst_rect,
+            HWND dst_window_override, const RGNDATA *dirty_region);
+    HRESULT GetBackBuffer(UINT swapchain_idx, UINT backbuffer_idx,
+            D3DBACKBUFFER_TYPE type, IDirect3DSurface9 **backbuffer);
+    HRESULT GetRasterStatus(UINT swapchain_idx, D3DRASTER_STATUS *status);
+    HRESULT SetDialogBoxMode(BOOL enable_dialogs);
+    void SetGammaRamp(UINT swapchain_idx, DWORD flags, const D3DGAMMARAMP *ramp);
+    void GetGammaRamp(UINT swapchain_idx, D3DGAMMARAMP *ramp);
+    HRESULT CreateTexture(UINT width, UINT height, UINT levels, DWORD usage, D3DFORMAT format,
+            D3DPOOL pool, IDirect3DTexture9 **texture, HANDLE *shared_handle);
+    HRESULT CreateVolumeTexture(UINT width, UINT height, UINT depth, UINT levels, DWORD usage, D3DFORMAT format,
+            D3DPOOL pool, IDirect3DVolumeTexture9 **texture, HANDLE *shared_handle);
+    HRESULT CreateCubeTexture(UINT width, UINT levels, DWORD usage, D3DFORMAT format,
+            D3DPOOL pool, IDirect3DCubeTexture9 **texture, HANDLE *shared_handle);
+    HRESULT CreateVertexBuffer(UINT size, DWORD usage, DWORD fvf,
+            D3DPOOL pool, IDirect3DVertexBuffer9 **buffer, HANDLE *shared_handle);
+    HRESULT CreateIndexBuffer(UINT size, DWORD usage, D3DFORMAT format,
+            D3DPOOL pool, IDirect3DIndexBuffer9 **buffer, HANDLE *shared_handle);
+    HRESULT CreateRenderTarget(UINT width, UINT height, D3DFORMAT format, D3DMULTISAMPLE_TYPE multisample_type,
+            DWORD multisample_quality, BOOL lockable, IDirect3DSurface9 **surface, HANDLE *shared_handle);
+    HRESULT CreateDepthStencilSurface(UINT width, UINT height, D3DFORMAT format, D3DMULTISAMPLE_TYPE multisample_type,
+            DWORD multisample_quality, BOOL discard, IDirect3DSurface9 **surface, HANDLE *shared_handle);
+    HRESULT UpdateSurface(IDirect3DSurface9 *src_surface, const RECT *src_rect,
+            IDirect3DSurface9 *dst_surface, const POINT *dst_point);
+    HRESULT UpdateTexture(IDirect3DBaseTexture9 *src_texture, IDirect3DBaseTexture9 *dst_texture);
+    HRESULT GetRenderTargetData(IDirect3DSurface9 *src_surface, IDirect3DSurface9 *dst_surface);
+    HRESULT GetFrontBufferData(UINT swapchain_idx, IDirect3DSurface9 *dst_surface);
+    HRESULT StretchRect(IDirect3DSurface9 *src_surface, const RECT *src_rect,
+            IDirect3DSurface9 *dst_surface, const RECT *dst_rect, D3DTEXTUREFILTERTYPE filter);
+    HRESULT ColorFill(IDirect3DSurface9 *surface, const RECT *rect, D3DCOLOR color);
+    HRESULT CreateOffscreenPlainSurface(UINT width, UINT height, D3DFORMAT format,
+            D3DPOOL pool, IDirect3DSurface9 **surface, HANDLE *shared_handle);
+    HRESULT SetRenderTarget(DWORD index, IDirect3DSurface9 *surface);
+    HRESULT GetRenderTarget(DWORD index, IDirect3DSurface9 **surface);
+    HRESULT SetDepthStencilSurface(IDirect3DSurface9 *surface);
+    HRESULT GetDepthStencilSurface(IDirect3DSurface9 **surface);
+    HRESULT BeginScene();
+    HRESULT EndScene();
+    HRESULT Clear(DWORD rect_count, const D3DRECT *rects, DWORD flags, D3DCOLOR color, float z, DWORD stencil);
+    HRESULT SetTransform(D3DTRANSFORMSTATETYPE state, const D3DMATRIX *matrix);
+    HRESULT GetTransform(D3DTRANSFORMSTATETYPE state, D3DMATRIX *matrix);
+    HRESULT MultiplyTransform(D3DTRANSFORMSTATETYPE state, const D3DMATRIX *matrix);
+    HRESULT SetViewport(const D3DVIEWPORT9 *viewport);
+    HRESULT GetViewport(D3DVIEWPORT9 *viewport);
+    HRESULT SetMaterial(const D3DMATERIAL9 *material);
+    HRESULT GetMaterial(D3DMATERIAL9 *material);
+    HRESULT SetLight(DWORD index, const D3DLIGHT9 *light);
+    HRESULT GetLight(DWORD index, D3DLIGHT9 *light);
+    HRESULT LightEnable(DWORD index, BOOL enable);
+    HRESULT GetLightEnable(DWORD index, BOOL *enable);
+    HRESULT SetClipPlane(DWORD index, const float *plane);
+    HRESULT GetClipPlane(DWORD index, float *plane);
+    HRESULT SetRenderState(D3DRENDERSTATETYPE state, DWORD value);
+    HRESULT GetRenderState(D3DRENDERSTATETYPE state, DWORD *value);
+    HRESULT CreateStateBlock(D3DSTATEBLOCKTYPE type, IDirect3DStateBlock9 **stateblock);
+    HRESULT BeginStateBlock();
+    HRESULT EndStateBlock(IDirect3DStateBlock9 **stateblock);
+    HRESULT SetClipStatus(const D3DCLIPSTATUS9 *clip_status);
+    HRESULT GetClipStatus(D3DCLIPSTATUS9 *clip_status);
+    HRESULT GetTexture(DWORD index, IDirect3DBaseTexture9 **texture);
+    HRESULT SetTexture(DWORD index, IDirect3DBaseTexture9 *texture);
+    HRESULT GetTextureStageState(DWORD index, D3DTEXTURESTAGESTATETYPE type, DWORD *value);
+    HRESULT SetTextureStageState(DWORD index, D3DTEXTURESTAGESTATETYPE type, DWORD value);
+    HRESULT GetSamplerState(DWORD index, D3DSAMPLERSTATETYPE type, DWORD *value);
+    HRESULT SetSamplerState(DWORD index, D3DSAMPLERSTATETYPE type, DWORD value);
+    HRESULT ValidateDevice(DWORD *pass_count);
+    HRESULT SetPaletteEntries(UINT index, const PALETTEENTRY *entries);
+    HRESULT GetPaletteEntries(UINT index, PALETTEENTRY *entries);
+    HRESULT SetCurrentTexturePalette(UINT index);
+    HRESULT GetCurrentTexturePalette(UINT *index);
+    HRESULT SetScissorRect(const RECT *rect);
+    HRESULT GetScissorRect(RECT *rect);
+    HRESULT SetSoftwareVertexProcessing(BOOL software);
+    BOOL GetSoftwareVertexProcessing();
+    HRESULT SetNPatchMode(float segment_count);
+    float GetNPatchMode();
+    HRESULT DrawPrimitive(D3DPRIMITIVETYPE primitive_type, UINT start_vertex, UINT primitive_count);
+    HRESULT DrawIndexedPrimitive(D3DPRIMITIVETYPE primitive_type, INT base_vertex_idx,
+            UINT min_vertex_idx, UINT vertex_count, UINT start_index, UINT primitive_count);
+    HRESULT DrawPrimitiveUP(D3DPRIMITIVETYPE primitive_type, UINT primitive_count, const void *data, UINT stride);
+    HRESULT DrawIndexedPrimitiveUP(D3DPRIMITIVETYPE primitive_type, UINT min_vertex_idx, UINT vertex_count,
+            UINT primitive_count, const void *index_data, D3DFORMAT index_format, const void *data, UINT stride);
+    HRESULT ProcessVertices(UINT src_start_idx, UINT dst_idx, UINT vertex_count,
+            IDirect3DVertexBuffer9 *dst_buffer, IDirect3DVertexDeclaration9 *declaration, DWORD flags);
+    HRESULT CreateVertexDeclaration(const D3DVERTEXELEMENT9 *elements, IDirect3DVertexDeclaration9 **declaration);
+    HRESULT SetVertexDeclaration(IDirect3DVertexDeclaration9 *declaration);
+    HRESULT GetVertexDeclaration(IDirect3DVertexDeclaration9 **declaration);
+    HRESULT SetFVF(DWORD fvf);
+    HRESULT GetFVF(DWORD *fvf);
+    HRESULT CreateVertexShader(const DWORD *byte_code, IDirect3DVertexShader9 **shader);
+    HRESULT SetVertexShader(IDirect3DVertexShader9 *shader);
+    HRESULT GetVertexShader(IDirect3DVertexShader9 **shader);
+    HRESULT SetVertexShaderConstantF(UINT start_idx, const float *data, UINT count);
+    HRESULT GetVertexShaderConstantF(UINT start_idx, float *data, UINT count);
+    HRESULT SetVertexShaderConstantI(UINT start_idx, const int *data, UINT count);
+    HRESULT GetVertexShaderConstantI(UINT start_idx, int *data, UINT count);
+    HRESULT SetVertexShaderConstantB(UINT start_idx, const BOOL *data, UINT count);
+    HRESULT GetVertexShaderConstantB(UINT start_idx, BOOL *data, UINT count);
+    HRESULT SetStreamSource(UINT stream_idx, IDirect3DVertexBuffer9 *buffer, UINT offset, UINT stride);
+    HRESULT GetStreamSource(UINT stream_idx, IDirect3DVertexBuffer9 **buffer, UINT *offset, UINT *stride);
+    HRESULT SetStreamSourceFreq(UINT stream_idx, UINT divisor);
+    HRESULT GetStreamSourceFreq(UINT stream_idx, UINT *divisor);
+    HRESULT SetIndices(IDirect3DIndexBuffer9 *buffer);
+    HRESULT GetIndices(IDirect3DIndexBuffer9 **buffer);
+    HRESULT CreatePixelShader(const DWORD *byte_code, IDirect3DPixelShader9 **shader);
+    HRESULT SetPixelShader(IDirect3DPixelShader9 *shader);
+    HRESULT GetPixelShader(IDirect3DPixelShader9 **shader);
+    HRESULT SetPixelShaderConstantF(UINT start_idx, const float *data, UINT count);
+    HRESULT GetPixelShaderConstantF(UINT start_idx, float *data, UINT count);
+    HRESULT SetPixelShaderConstantI(UINT start_idx, const int *data, UINT count);
+    HRESULT GetPixelShaderConstantI(UINT start_idx, int *data, UINT count);
+    HRESULT SetPixelShaderConstantB(UINT start_idx, const BOOL *data, UINT count);
+    HRESULT GetPixelShaderConstantB(UINT start_idx, BOOL *data, UINT count);
+    HRESULT DrawRectPatch(UINT handle, const float *segment_count, const D3DRECTPATCH_INFO *patch_info);
+    HRESULT DrawTriPatch(UINT handle, const float *segment_count, const D3DTRIPATCH_INFO *patch_info);
+    HRESULT DeletePatch(UINT handle);
+    HRESULT CreateQuery(D3DQUERYTYPE type, IDirect3DQuery9 **query);
+}
+
+[
+    local,
+    object,
+    uuid(02177241-69fc-400c-8ff1-9ea44df6861d),
+]
+interface IDirect3D9Ex : IDirect3D9
+{
+    UINT GetAdapterModeCountEx(UINT adapter_idx, const D3DDISPLAYMODEFILTER *filter);
+    HRESULT EnumAdapterModesEx(UINT adapter_idx, const D3DDISPLAYMODEFILTER *filter,
+            UINT mode_idx, D3DDISPLAYMODEEX *mode);
+    HRESULT GetAdapterDisplayModeEx(UINT adapter_idx, D3DDISPLAYMODEEX *mode, D3DDISPLAYROTATION *rotation);
+    HRESULT CreateDeviceEx(UINT adapter_idx, D3DDEVTYPE device_type, HWND focus_window, DWORD flags,
+            D3DPRESENT_PARAMETERS *parameters, D3DDISPLAYMODEEX *mode, struct IDirect3DDevice9Ex **device);
+    HRESULT GetAdapterLUID(UINT adapter_idx, LUID *luid);
+}
+
+[
+    local,
+    object,
+    uuid(91886caf-1c3d-4d2e-a0ab-3e4c7d8d3303),
+]
+interface IDirect3DSwapChain9Ex : IDirect3DSwapChain9
+{
+    HRESULT GetLastPresentCount(UINT *last_present_count);
+    HRESULT GetPresentStats(D3DPRESENTSTATS *stats);
+    HRESULT GetDisplayModeEx(D3DDISPLAYMODEEX *mode, D3DDISPLAYROTATION *rotation);
+}
+
+[
+    local,
+    object,
+    uuid(b18b10ce-2649-405a-870f-95f777d4313a),
+]
+interface IDirect3DDevice9Ex : IDirect3DDevice9
+{
+    HRESULT SetConvolutionMonoKernel(UINT width, UINT height, float *rows, float *columns);
+    HRESULT ComposeRects(IDirect3DSurface9 *src_surface, IDirect3DSurface9 *dst_surface,
+            IDirect3DVertexBuffer9 *src_descs, UINT rect_count, IDirect3DVertexBuffer9 *dst_descs,
+            D3DCOMPOSERECTSOP operation, INT offset_x, INT offset_y);
+    HRESULT PresentEx(const RECT *src_rect, const RECT *dst_rect,
+            HWND dst_window_override, const RGNDATA *dirty_region, DWORD flags);
+    HRESULT GetGPUThreadPriority(INT *priority);
+    HRESULT SetGPUThreadPriority(INT priority);
+    HRESULT WaitForVBlank(UINT swapchain_idx);
+    HRESULT CheckResourceResidency(IDirect3DResource9 **resources, UINT32 resource_count);
+    HRESULT SetMaximumFrameLatency(UINT max_latency);
+    HRESULT GetMaximumFrameLatency(UINT *max_latency);
+    HRESULT CheckDeviceState(HWND dst_window);
+    HRESULT CreateRenderTargetEx(UINT width, UINT height, D3DFORMAT format,
+            D3DMULTISAMPLE_TYPE multisample_type, DWORD multisample_quality, BOOL lockable,
+            IDirect3DSurface9 **surface, HANDLE *shared_handle, DWORD usage);
+    HRESULT CreateOffscreenPlainSurfaceEx(UINT width, UINT Height, D3DFORMAT format,
+            D3DPOOL pool, IDirect3DSurface9 **surface, HANDLE *shared_handle, DWORD usage);
+    HRESULT CreateDepthStencilSurfaceEx(UINT width, UINT height, D3DFORMAT format,
+            D3DMULTISAMPLE_TYPE multisample_type, DWORD multisample_quality, BOOL discard,
+            IDirect3DSurface9 **surface, HANDLE *shared_handle, DWORD usage);
+    HRESULT ResetEx(D3DPRESENT_PARAMETERS *parameters, D3DDISPLAYMODEEX *mode);
+    HRESULT GetDisplayModeEx(UINT swapchain_idx, D3DDISPLAYMODEEX *mode, D3DDISPLAYROTATION *rotation);
+}
+
+int __stdcall D3DPERF_BeginEvent(D3DCOLOR color, const WCHAR *name);
+int __stdcall D3DPERF_EndEvent(void);
+DWORD __stdcall D3DPERF_GetStatus(void);
+BOOL __stdcall D3DPERF_QueryRepeatFrame(void);
+void __stdcall D3DPERF_SetMarker(D3DCOLOR color, const WCHAR *name);
+void __stdcall D3DPERF_SetOptions(DWORD options);
+void __stdcall D3DPERF_SetRegion(D3DCOLOR color, const WCHAR *name);
+
+IDirect3D9 * __stdcall Direct3DCreate9(UINT sdk_version);
+HRESULT __stdcall Direct3DCreate9Ex(UINT sdk_version, IDirect3D9Ex **d3d9ex);
+
+cpp_quote("#endif /* _D3D9_H_ */")
