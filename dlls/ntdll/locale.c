@@ -195,22 +195,18 @@ void get_resource_lcids( LANGID *user, LANGID *user_neutral, LANGID *system )
 }
 
 
-static NTSTATUS get_dummy_preferred_ui_language( DWORD flags, LANGID lang, ULONG *count,
-                                                 WCHAR *buffer, ULONG *size )
+static NTSTATUS add_preferred_ui_language( DWORD flags, LANGID lang, WCHAR *buffer, ULONG *pos, ULONG size )
 {
-    WCHAR name[LOCALE_NAME_MAX_LENGTH + 2];
+    WCHAR name[LOCALE_NAME_MAX_LENGTH + 1];
     NTSTATUS status;
     ULONG len;
 
-    FIXME("(0x%lx %#x %p %p %p) returning a dummy value (current locale)\n", flags, lang, count, buffer, size);
+    TRACE( "adding language: %x\n", lang );
 
     if (flags & MUI_LANGUAGE_ID) swprintf( name, ARRAY_SIZE(name), L"%04lX", lang );
     else
     {
         UNICODE_STRING str;
-
-        if (lang == LOCALE_CUSTOM_UNSPECIFIED)
-            NtQueryInstallUILanguage( &lang );
 
         str.Buffer = name;
         str.MaximumLength = sizeof(name);
@@ -218,20 +214,46 @@ static NTSTATUS get_dummy_preferred_ui_language( DWORD flags, LANGID lang, ULONG
         if (status) return status;
     }
 
-    len = wcslen( name ) + 2;
+    len = wcslen( name ) + 1;
     name[len - 1] = 0;
     if (buffer)
     {
-        if (len > *size)
+        if (len + *pos > size)
         {
-            *size = len;
+            *pos += len;
             return STATUS_BUFFER_TOO_SMALL;
         }
-        memcpy( buffer, name, len * sizeof(WCHAR) );
+        memcpy( buffer + *pos, name, len * sizeof(WCHAR) );
     }
-    *size = len;
+
+    *pos += len;
+    return STATUS_SUCCESS;
+}
+
+
+static NTSTATUS get_dummy_preferred_ui_language( DWORD flags, LANGID lang, ULONG *count,
+                                                 WCHAR *buffer, ULONG *size )
+{
+    NTSTATUS status;
+    ULONG pos;
+
+    FIXME("(0x%lx %#x %p %p %p) returning a dummy value (current locale)\n", flags, lang, count, buffer, size);
+
+    if (!(flags & MUI_LANGUAGE_ID) && lang == LOCALE_CUSTOM_UNSPECIFIED)
+        NtQueryInstallUILanguage( &lang );
+
+    pos = 0;
+    status = add_preferred_ui_language( flags, lang, buffer, &pos, *size );
+    if (status != STATUS_BUFFER_TOO_SMALL && status) return status;
+    if (status == STATUS_BUFFER_TOO_SMALL || pos == *size)
+    {
+        *size = pos + 1;
+        return STATUS_BUFFER_TOO_SMALL;
+    }
+
+    if (buffer) buffer[pos] = 0;
+    *size = pos + 1;
     *count = 1;
-    TRACE("returned variable content: %ld, \"%s\", %ld\n", *count, debugstr_w(buffer), *size);
     return STATUS_SUCCESS;
 
 }
