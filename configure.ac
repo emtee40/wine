@@ -1159,6 +1159,7 @@ then
 fi
 
 WINE_EXTLIB_FLAGS(FAUDIO, faudio, "faudio mfplat mfreadwrite mfuuid propsys", "-I\$(top_srcdir)/libs/faudio/include")
+WINE_EXTLIB_FLAGS(FLITE, flite, flite, "-I\$(top_srcdir)/libs/flite/include")
 WINE_EXTLIB_FLAGS(FLUIDSYNTH, fluidsynth, "fluidsynth", "-I\$(top_srcdir)/libs/fluidsynth/include")
 WINE_EXTLIB_FLAGS(GSM, gsm, gsm, "-I\$(top_srcdir)/libs/gsm/inc")
 WINE_EXTLIB_FLAGS(JPEG, jpeg, jpeg, "-I\$(top_srcdir)/libs/jpeg")
@@ -3416,6 +3417,7 @@ WINE_CONFIG_MAKEFILE(libs/dxerr8)
 WINE_CONFIG_MAKEFILE(libs/dxerr9)
 WINE_CONFIG_MAKEFILE(libs/dxguid)
 WINE_CONFIG_MAKEFILE(libs/faudio)
+WINE_CONFIG_MAKEFILE(libs/flite)
 WINE_CONFIG_MAKEFILE(libs/fluidsynth)
 WINE_CONFIG_MAKEFILE(libs/gsm)
 WINE_CONFIG_MAKEFILE(libs/jpeg)
