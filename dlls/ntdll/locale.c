@@ -49,6 +49,7 @@ static RTL_RUN_ONCE mui_init_once = RTL_RUN_ONCE_INIT;
 static struct
 {
     LCID system[2];
+    LCID user[2];
 } mui_settings;
 
 
@@ -242,6 +243,7 @@ static DWORD WINAPI load_mui_settings(RTL_RUN_ONCE *once, void *param, void **co
             L"Control Panel\\Desktop\\MuiCached" );
     UNICODE_STRING settings = RTL_CONSTANT_STRING(
             L"\\Registry\\Machine\\System\\CurrentControlSet\\Control\\MUI\\Settings" );
+    UNICODE_STRING desktop = RTL_CONSTANT_STRING( L"Control Panel\\Desktop" );
     static const WCHAR machine_preferred_lang[] = L"MachinePreferredUILanguages";
     static const WCHAR preferred_lang[] = L"PreferredUILanguages";
     OBJECT_ATTRIBUTES attr;
@@ -272,6 +274,17 @@ static DWORD WINAPI load_mui_settings(RTL_RUN_ONCE *once, void *param, void **co
     }
     NtQueryInstallUILanguage( &lang );
     if (lang != mui_settings.system[0]) mui_settings.system[count] = lang;
+
+    count = 0;
+    attr.RootDirectory = user_hkey;
+    attr.ObjectName = &desktop;
+    if (user_hkey && !NtOpenKey( &hkey, KEY_QUERY_VALUE, &attr ))
+    {
+        count = load_lang_list( hkey, preferred_lang, mui_settings.user );
+        NtClose( hkey );
+    }
+    NtQueryDefaultUILanguage( &lang );
+    if (lang != mui_settings.user[0]) mui_settings.user[count] = lang;
 
     if (user_hkey) NtClose( user_hkey );
     return TRUE;
@@ -410,14 +423,33 @@ NTSTATUS WINAPI RtlGetThreadPreferredUILanguages( DWORD flags, ULONG *count, WCH
 NTSTATUS WINAPI RtlGetUserPreferredUILanguages( DWORD flags, ULONG unknown, ULONG *count,
                                                 WCHAR *buffer, ULONG *size )
 {
-    LANGID ui_language;
+    NTSTATUS status;
+    ULONG i, pos;
+
+    TRACE( "%08lx, %lx, %p, %p, %p\n", flags, unknown, count, buffer, size );
 
     if (flags & ~(MUI_LANGUAGE_NAME | MUI_LANGUAGE_ID)) return STATUS_INVALID_PARAMETER;
     if ((flags & MUI_LANGUAGE_NAME) && (flags & MUI_LANGUAGE_ID)) return STATUS_INVALID_PARAMETER;
     if (*size && !buffer) return STATUS_INVALID_PARAMETER;
 
-    NtQueryDefaultUILanguage( &ui_language );
-    return get_dummy_preferred_ui_language( flags, ui_language, count, buffer, size );
+    RtlRunOnceExecuteOnce( &mui_init_once, load_mui_settings, NULL, NULL );
+
+    pos = 0;
+    for (i = 0; i < ARRAY_SIZE(mui_settings.user) && mui_settings.user[i]; i++)
+    {
+        status = add_preferred_ui_language( flags, mui_settings.user[i], buffer, &pos, *size );
+        if (status && status != STATUS_BUFFER_TOO_SMALL) return status;
+    }
+
+    status = STATUS_SUCCESS;
+    if (buffer)
+    {
+        if (pos >= *size) status = STATUS_BUFFER_TOO_SMALL;
+        else buffer[pos] = 0;
+    }
+    *size = pos + 1;
+    *count = i;
+    return status;
 }
 
 
