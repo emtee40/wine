@@ -41,6 +41,8 @@ static BOOL  (WINAPI *pIsWow64Process)(HANDLE, BOOL *);
 static BOOL  (WINAPI *pWow64DisableWow64FsRedirection)(void **);
 static BOOL  (WINAPI *pWow64RevertWow64FsRedirection)(void *);
 static BOOL  (WINAPI *pQueryWorkingSetEx)(HANDLE, PVOID, DWORD);
+static SIZE_T(WINAPI *pGetLargePageMinimum)(void);
+static NTSTATUS (WINAPI *pRtlAdjustPrivilege)(ULONG,BOOLEAN,BOOLEAN,PBOOLEAN);
 
 static BOOL wow64;
 static char** main_argv;
@@ -53,6 +55,8 @@ static BOOL init_func_ptrs(void)
     pWow64DisableWow64FsRedirection = (void *)GetProcAddress(GetModuleHandleA("kernel32.dll"), "Wow64DisableWow64FsRedirection");
     pWow64RevertWow64FsRedirection = (void *)GetProcAddress(GetModuleHandleA("kernel32.dll"), "Wow64RevertWow64FsRedirection");
     pQueryWorkingSetEx = (void *)GetProcAddress(GetModuleHandleA("psapi.dll"), "QueryWorkingSetEx");
+    pGetLargePageMinimum = (void *)GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetLargePageMinimum");
+    pRtlAdjustPrivilege = (void *)GetProcAddress(GetModuleHandleA("ntdll.dll"), "RtlAdjustPrivilege");
     return TRUE;
 }
 
@@ -1015,7 +1019,7 @@ static void test_GetModuleFileNameEx(void)
             return;
     ok(ret == strlen(szModExPath), "szModExPath=\"%s\" ret=%ld\n", szModExPath, ret);
     GetModuleFileNameA(NULL, szModPath, sizeof(szModPath));
-    ok(!strncmp(szModExPath, szModPath, MAX_PATH), 
+    ok(!strncmp(szModExPath, szModPath, MAX_PATH),
        "szModExPath=\"%s\" szModPath=\"%s\"\n", szModExPath, szModPath);
 
     SetLastError(0xdeadbeef);
@@ -1119,7 +1123,7 @@ static void test_ws_functions(void)
     SetLastError(0xdeadbeef);
     ret = InitializeProcessForWsWatch(ws_handle);
     ok(ret == 1, "failed with %ld\n", GetLastError());
-    
+
     addr = VirtualAlloc(NULL, 1, MEM_COMMIT, PAGE_READWRITE);
     if(!addr)
         return;
@@ -1145,7 +1149,7 @@ static void test_ws_functions(void)
 
 	todo_wine ok(0, "GetWsChanges didn't find our page\n");
     }
-    
+
 free_page:
     VirtualFree(addr, 0, MEM_RELEASE);
 }
@@ -1295,6 +1299,70 @@ static void test_QueryWorkingSetEx(void)
     check_working_set_info(&info[2], "[3] range[2] invalid", 0, 0, 0, FALSE);
 }
 
+static void test_large_pages( void )
+{
+    SIZE_T size;
+    NTSTATUS status;
+    HANDLE process_token;
+    HANDLE token;
+    BOOLEAN enabled;
+
+    if (!pGetLargePageMinimum)
+    {
+        win_skip( "No GetLargePageMinimum support.\n" );
+        return;
+    }
+    if (!pRtlAdjustPrivilege)
+    {
+        win_skip( "No RtlAdjustPrivilege support.\n" );
+        return;
+    }
+
+    size = pGetLargePageMinimum();
+    if (size == 0)
+    {
+        trace( "No large pages support, skipping test.\n" );
+        return;
+    }
+    ok( OpenProcessToken( GetCurrentProcess(), TOKEN_DUPLICATE | TOKEN_QUERY, &process_token ),
+        "OpenProcessToken failed (%ld)\n", GetLastError() );
+    ok( DuplicateToken( process_token, SecurityImpersonation, &token ),
+       "DuplicateToken failed (%ld)\n", GetLastError() );
+    ok( ImpersonateLoggedOnUser( token ), "ImpersonateLoggedOnUser failed (%ld)\n",
+        GetLastError() );
+    status = pRtlAdjustPrivilege( SE_LOCK_MEMORY_PRIVILEGE, TRUE, TRUE, &enabled );
+    if (status != STATUS_SUCCESS)
+    {
+        trace( "Couldn't get SE_LOCK_MEMORY_PRIVILEGE (%ld), skipping large page file "
+               "mapping test.\n",
+               status );
+    }
+    else
+    {
+        void *addr;
+
+        SetLastError( 0xdeadbeef );
+        addr =
+            VirtualAlloc( NULL, size, MEM_LARGE_PAGES | MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
+        ok( addr != NULL || GetLastError() == ERROR_NOT_ENOUGH_MEMORY, "VirtualAlloc failed (%ld)\n", GetLastError() );
+        if (addr != NULL)
+        {
+            PSAPI_WORKING_SET_EX_INFORMATION info = { 0 };
+
+            info.VirtualAddress = addr;
+            SetLastError( 0xdeadbeef );
+            ok( QueryWorkingSetEx( GetCurrentProcess(), &info, sizeof( info ) ),
+                "QueryWorkingSet failed (%ld)\n", GetLastError() );
+            ok( info.VirtualAttributes.Valid, "Expected VirtualAttributes.Valid to be TRUE\n" );
+            ok( info.VirtualAttributes.LargePage, "Expected VirtualAttributes.Large to be TRUE\n" );
+            ok( info.VirtualAttributes.Locked, "Expected VirtualAttributes.Locked to be TRUE\n" );
+            SetLastError( 0xdeadbeef );
+            ok( VirtualFree( addr, 0, MEM_RELEASE ), "VirtualFree failed (%ld)\n", GetLastError() );
+        }
+    }
+    ok( RevertToSelf(), "RevertToSelf failed (%ld)\n", GetLastError() );
+}
+
 START_TEST(psapi_main)
 {
     DWORD pid = GetCurrentProcessId();
@@ -1326,6 +1394,7 @@ START_TEST(psapi_main)
     test_GetModuleBaseName();
     test_QueryWorkingSetEx();
     test_ws_functions();
+    test_large_pages();
 
     CloseHandle(hpSR);
     CloseHandle(hpQI);

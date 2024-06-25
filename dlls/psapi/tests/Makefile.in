@@ -1,5 +1,5 @@
 TESTDLL   = psapi.dll
-IMPORTS   = psapi user32
+IMPORTS   = psapi user32 kernelbase
 
 SOURCES = \
 	psapi_main.c
