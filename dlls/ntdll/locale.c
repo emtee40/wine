@@ -45,6 +45,12 @@ static struct norm_table *norm_tables[16];
 static const NLS_LOCALE_HEADER *locale_table;
 static const WCHAR *locale_strings;
 
+static RTL_RUN_ONCE mui_init_once = RTL_RUN_ONCE_INIT;
+static struct
+{
+    LCID system[2];
+} mui_settings;
+
 
 static WCHAR casemap( USHORT *table, WCHAR ch )
 {
@@ -194,6 +200,82 @@ void get_resource_lcids( LANGID *user, LANGID *user_neutral, LANGID *system )
     *system = LANGIDFROMLCID( system_lcid );
 }
 
+static UINT load_lang_list( HKEY hkey, const WCHAR *value, LCID *lcid )
+{
+    char initial_buf[4096];
+    char *buf = initial_buf;
+    UNICODE_STRING name;
+    NTSTATUS status;
+    UINT ret = 0;
+    DWORD size;
+
+    RtlInitUnicodeString( &name, value );
+    status = NtQueryValueKey( hkey, &name, KeyValuePartialInformation, buf, sizeof(initial_buf), &size );
+    while (status == STATUS_BUFFER_OVERFLOW)
+    {
+        if (buf != initial_buf) RtlFreeHeap( GetProcessHeap(), 0, buf );
+        buf = RtlAllocateHeap( GetProcessHeap(), 0, size );
+        status = NtQueryValueKey( hkey, &name, KeyValuePartialInformation, buf, size, &size );
+    }
+    if (!status && ((KEY_VALUE_PARTIAL_INFORMATION *)buf)->Type == REG_MULTI_SZ)
+    {
+        const WCHAR *p = (WCHAR *)((KEY_VALUE_PARTIAL_INFORMATION *)buf)->Data;
+
+        while(*p)
+        {
+            if (!RtlLocaleNameToLcid( p, lcid, 0 ))
+            {
+                ret = 1;
+                break;
+            }
+            p += wcslen( p ) + 1;
+        }
+    }
+
+    if (buf != initial_buf) RtlFreeHeap( GetProcessHeap(), 0, buf );
+    return ret;
+}
+
+static DWORD WINAPI load_mui_settings(RTL_RUN_ONCE *once, void *param, void **context)
+{
+    UNICODE_STRING mui_cached = RTL_CONSTANT_STRING(
+            L"Control Panel\\Desktop\\MuiCached" );
+    UNICODE_STRING settings = RTL_CONSTANT_STRING(
+            L"\\Registry\\Machine\\System\\CurrentControlSet\\Control\\MUI\\Settings" );
+    static const WCHAR machine_preferred_lang[] = L"MachinePreferredUILanguages";
+    static const WCHAR preferred_lang[] = L"PreferredUILanguages";
+    OBJECT_ATTRIBUTES attr;
+    HANDLE hkey, user_hkey;
+    UINT count = 0;
+    LANGID lang;
+
+    if (RtlOpenCurrentUser( KEY_QUERY_VALUE, &user_hkey )) user_hkey = 0;
+
+    attr.Length = sizeof(attr);
+    attr.RootDirectory = user_hkey;
+    attr.ObjectName = &mui_cached;
+    attr.Attributes = OBJ_CASE_INSENSITIVE;
+    attr.SecurityDescriptor = NULL;
+    attr.SecurityQualityOfService = NULL;
+    if (user_hkey && !NtOpenKey( &hkey, KEY_QUERY_VALUE, &attr ))
+    {
+        count = load_lang_list( hkey, machine_preferred_lang, mui_settings.system );
+        NtClose( hkey );
+    }
+
+    attr.RootDirectory = 0;
+    attr.ObjectName = &settings;
+    if (!count && !NtOpenKey( &hkey, KEY_QUERY_VALUE, &attr ))
+    {
+        count = load_lang_list( hkey, preferred_lang, mui_settings.system );
+        NtClose( hkey );
+    }
+    NtQueryInstallUILanguage( &lang );
+    if (lang != mui_settings.system[0]) mui_settings.system[count] = lang;
+
+    if (user_hkey) NtClose( user_hkey );
+    return TRUE;
+}
 
 static NTSTATUS add_preferred_ui_language( DWORD flags, LANGID lang, WCHAR *buffer, ULONG *pos, ULONG size )
 {
@@ -278,14 +360,33 @@ NTSTATUS WINAPI RtlGetProcessPreferredUILanguages( DWORD flags, ULONG *count, WC
 NTSTATUS WINAPI RtlGetSystemPreferredUILanguages( DWORD flags, ULONG unknown, ULONG *count,
                                                   WCHAR *buffer, ULONG *size )
 {
-    LANGID ui_language;
+    NTSTATUS status;
+    ULONG i, pos;
+
+    TRACE( "%08lx, %lx, %p, %p, %p\n", flags, unknown, count, buffer, size );
 
     if (flags & ~(MUI_LANGUAGE_NAME | MUI_LANGUAGE_ID | MUI_MACHINE_LANGUAGE_SETTINGS)) return STATUS_INVALID_PARAMETER;
     if ((flags & MUI_LANGUAGE_NAME) && (flags & MUI_LANGUAGE_ID)) return STATUS_INVALID_PARAMETER;
     if (*size && !buffer) return STATUS_INVALID_PARAMETER;
 
-    NtQueryInstallUILanguage( &ui_language );
-    return get_dummy_preferred_ui_language( flags, ui_language, count, buffer, size );
+    RtlRunOnceExecuteOnce( &mui_init_once, load_mui_settings, NULL, NULL );
+
+    pos = 0;
+    for (i = 0; i < ARRAY_SIZE(mui_settings.system) && mui_settings.system[i]; i++)
+    {
+        status = add_preferred_ui_language( flags, mui_settings.system[i], buffer, &pos, *size );
+        if (status && status != STATUS_BUFFER_TOO_SMALL) return status;
+    }
+
+    status = STATUS_SUCCESS;
+    if (buffer)
+    {
+        if (pos >= *size) status = STATUS_BUFFER_TOO_SMALL;
+        else buffer[pos] = 0;
+    }
+    *size = pos + 1;
+    *count = i;
+    return status;
 }
 
 
