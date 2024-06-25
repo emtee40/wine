@@ -1017,13 +1017,13 @@ static NSString* WineLocalizedString(unsigned int stringID)
         NSDictionary* frame = cursorFrames[cursorFrame];
         CGImageRef cgimage = (CGImageRef)frame[@"image"];
         CGSize size = CGSizeMake(CGImageGetWidth(cgimage), CGImageGetHeight(cgimage));
-        NSImage* image = [[NSImage alloc] initWithCGImage:cgimage size:NSSizeFromCGSize(cgsize_mac_from_win(size))];
+        NSImage* image = [[NSImage alloc] initWithCGImage:cgimage size:NSSizeFromCGSize(cgsize_mac_from_win(size, retina_on))];
         CFDictionaryRef hotSpotDict = (CFDictionaryRef)frame[@"hotSpot"];
         CGPoint hotSpot;
 
         if (!CGPointMakeWithDictionaryRepresentation(hotSpotDict, &hotSpot))
             hotSpot = CGPointZero;
-        hotSpot = cgpoint_mac_from_win(hotSpot);
+        hotSpot = cgpoint_mac_from_win(hotSpot, retina_on);
         self.cursor = [[[NSCursor alloc] initWithImage:image hotSpot:NSPointFromCGPoint(hotSpot)] autorelease];
         [image release];
         [self unhideCursor];
@@ -1448,7 +1448,7 @@ static NSString* WineLocalizedString(unsigned int stringID)
             {
                 if (self.clippingCursor)
                     [clipCursorHandler clipCursorLocation:&point];
-                point = cgpoint_win_from_mac(point);
+                point = cgpoint_win_from_mac(point, retina_on);
 
                 event = macdrv_create_event(MOUSE_MOVED_ABSOLUTE, targetWindow);
                 event->mouse_moved.x = floor(point.x);
@@ -1593,7 +1593,7 @@ static NSString* WineLocalizedString(unsigned int stringID)
             {
                 macdrv_event* event;
 
-                pt = cgpoint_win_from_mac(pt);
+                pt = cgpoint_win_from_mac(pt, retina_on);
 
                 event = macdrv_create_event(MOUSE_BUTTON, window);
                 event->mouse_button.button = [theEvent buttonNumber];
@@ -1676,7 +1676,7 @@ static NSString* WineLocalizedString(unsigned int stringID)
                 double x, y;
                 BOOL continuous = FALSE;
 
-                pt = cgpoint_win_from_mac(pt);
+                pt = cgpoint_win_from_mac(pt, retina_on);
 
                 event = macdrv_create_event(MOUSE_SCROLL, window);
                 event->mouse_scroll.x = floor(pt.x);
@@ -2538,7 +2538,7 @@ int macdrv_get_cursor_position(CGPoint *pos)
     OnMainThread(^{
         NSPoint location = [NSEvent mouseLocation];
         location = [[WineApplicationController sharedController] flippedMouseLocation:location];
-        *pos = cgpoint_win_from_mac(NSPointToCGPoint(location));
+        *pos = cgpoint_win_from_mac(NSPointToCGPoint(location), retina_on);
     });
 
     return TRUE;
@@ -2555,7 +2555,7 @@ int macdrv_set_cursor_position(CGPoint pos)
     __block int ret;
 
     OnMainThread(^{
-        ret = [[WineApplicationController sharedController] setCursorPosition:cgpoint_mac_from_win(pos)];
+        ret = [[WineApplicationController sharedController] setCursorPosition:cgpoint_mac_from_win(pos, retina_on)];
     });
 
     return ret;
@@ -2578,7 +2578,7 @@ int macdrv_clip_cursor(CGRect r)
         CGRect rect = r;
 
         if (!CGRectIsInfinite(rect))
-            rect = cgrect_mac_from_win(rect);
+            rect = cgrect_mac_from_win(rect, retina_on);
 
         if (!CGRectIsInfinite(rect))
         {
