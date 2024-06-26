@@ -368,6 +368,20 @@ NTSTATUS WINAPI RtlGetProcessPreferredUILanguages( DWORD flags, ULONG *count, WC
 
 
 /**************************************************************************
+ *      RtlpQueryDefaultUILanguage   (NTDLL.@)
+ */
+NTSTATUS WINAPI RtlpQueryDefaultUILanguage( LANGID *lang, BOOLEAN system )
+{
+    TRACE( "%p, %x\n", lang, system );
+
+    RtlRunOnceExecuteOnce( &mui_init_once, load_mui_settings, NULL, NULL );
+
+    *lang = system ? mui_settings.system[0] : mui_settings.user[0];
+    return STATUS_SUCCESS;
+}
+
+
+/**************************************************************************
  *      RtlGetSystemPreferredUILanguages   (NTDLL.@)
  */
 NTSTATUS WINAPI RtlGetSystemPreferredUILanguages( DWORD flags, ULONG unknown, ULONG *count,
