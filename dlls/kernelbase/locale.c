@@ -6975,6 +6975,9 @@ INT WINAPI DECLSPEC_HOTPATCH LCMapStringW( LCID lcid, DWORD flags, const WCHAR *
 {
     const WCHAR *locale = LOCALE_NAME_USER_DEFAULT;
     const NLS_LOCALE_LCID_INDEX *entry;
+    WCHAR buf[LOCALE_NAME_MAX_LENGTH + 1];
+    UNICODE_STRING str;
+    NTSTATUS status;
 
     switch (lcid)
     {
@@ -6983,7 +6986,17 @@ INT WINAPI DECLSPEC_HOTPATCH LCMapStringW( LCID lcid, DWORD flags, const WCHAR *
     case LOCALE_SYSTEM_DEFAULT:
     case LOCALE_CUSTOM_DEFAULT:
     case LOCALE_CUSTOM_UNSPECIFIED:
+        break;
     case LOCALE_CUSTOM_UI_DEFAULT:
+        str.Buffer = buf;
+        str.MaximumLength = sizeof(buf);
+        status = RtlLcidToLocaleName( lcid, &str, 0, FALSE );
+        if (status)
+        {
+            SetLastError( RtlNtStatusToDosError( status ));
+            return 0;
+        }
+        locale = buf;
         break;
     default:
         if (lcid == user_lcid || lcid == system_lcid) break;
