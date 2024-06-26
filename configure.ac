@@ -633,6 +633,10 @@ case $host_os in
     AC_SUBST(APPKIT_LIBS,"-framework AppKit")
     AC_SUBST(SECURITY_LIBS,"-framework Security -framework CoreFoundation")
     AC_SUBST(SYSTEMCONFIGURATION_LIBS,"-framework SystemConfiguration")
+    AC_LANG_PUSH([Objective C])
+    AC_CHECK_HEADER([ScreenCaptureKit/ScreenCaptureKit.h],
+        [AC_SUBST(SCREENCAPTUREKIT_LIBS,"-framework ScreenCaptureKit")])
+    AC_LANG_POP([Objective C])
 
     WINELOADER_LDFLAGS="-Wl,-segalign,0x1000,-pagezero_size,0x1000,-sectcreate,__TEXT,__info_plist,loader/wine_info.plist"
 

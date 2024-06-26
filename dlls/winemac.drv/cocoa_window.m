@@ -25,6 +25,9 @@
 #import <CoreVideo/CoreVideo.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/QuartzCore.h>
+#ifdef MAC_OS_VERSION_14_4
+#import <ScreenCaptureKit/ScreenCaptureKit.h>
+#endif
 
 #import "cocoa_window.h"
 
@@ -2334,6 +2337,69 @@ static CVReturn WineDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTi
         return windowImage;
     }
 
+#ifdef MAC_OS_VERSION_14_4
+    /* Create an image of the given window using the ScreenCaptureKit shareable
+       content APIs. The completion handler block is called on the main thread.
+       The image passed to the block must be released by the caller. In the case
+       of an error, the block is called with NULL. */
+    - (void) shareableContentSnapshotForWindow:(WineWindow *)window
+                         withCompletionHandler:(void (^)(CGImageRef image))completion
+    {
+        [SCShareableContent getCurrentProcessShareableContentWithCompletionHandler:^(SCShareableContent *shareableContent, NSError *error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                SCWindow *scWindow;
+                SCContentFilter *filter;
+                SCStreamConfiguration *streamConfig;
+
+                if (!shareableContent)
+                {
+                    completion(NULL);
+                    return;
+                }
+
+                for (SCWindow *scw in shareableContent.windows)
+                {
+                    if (scw.windowID == window.windowNumber)
+                    {
+                        scWindow = scw;
+                        break;
+                    }
+                }
+
+                if (!scWindow)
+                {
+                    completion(NULL);
+                    return;
+                }
+
+                filter = [[SCContentFilter alloc] initWithDesktopIndependentWindow:scWindow];
+
+                streamConfig = [[SCStreamConfiguration alloc] init];
+                streamConfig.width = NSWidth(window.frame);
+                streamConfig.height = NSHeight(window.frame);
+                streamConfig.scalesToFit = YES;
+                streamConfig.showsCursor = NO;
+                streamConfig.ignoreShadowsSingleWindow = YES;
+                streamConfig.ignoreGlobalClipSingleWindow = YES;
+                streamConfig.includeChildWindows = NO;
+
+                [SCScreenshotManager captureImageWithFilter:filter configuration:streamConfig completionHandler:^(CGImageRef sampleBuffer, NSError *error) {
+                    [filter release];
+                    [streamConfig release];
+
+                    /* We do *not* own the returned image. */
+                    if (sampleBuffer)
+                        CGImageRetain(sampleBuffer);
+
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        completion(sampleBuffer);
+                    });
+                }];
+            });
+        }];
+    }
+#endif
+
     - (void) drawDockTileWithImage:(CGImageRef)windowImage
     {
         NSImage* appImage = [NSApp applicationIconImage];
@@ -2382,8 +2448,6 @@ static CVReturn WineDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTi
 
     - (void) grabDockIconSnapshotFromWindow:(WineWindow*)window force:(BOOL)force
     {
-        CGImageRef windowImage;
-
         if (![self isEmptyShaped])
             return;
 
@@ -2417,12 +2481,28 @@ static CVReturn WineDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTi
                 return;
         }
 
-        windowImage = [self windowListSnapshotForWindow:window];
-        if (windowImage)
+#ifdef MAC_OS_VERSION_14_4
+        if ([SCShareableContent respondsToSelector:@selector(getCurrentProcessShareableContentWithCompletionHandler:)])
         {
-            [self drawDockTileWithImage:windowImage];
-            CGImageRelease(windowImage);
-            lastDockIconSnapshot = now;
+            [self shareableContentSnapshotForWindow:window withCompletionHandler:^(CGImageRef windowImage) {
+                if (windowImage)
+                {
+                    [self drawDockTileWithImage:windowImage];
+                    CGImageRelease(windowImage);
+                    lastDockIconSnapshot = now;
+                }
+            }];
+        }
+        else
+#endif
+        {
+            CGImageRef windowImage = [self windowListSnapshotForWindow:window];
+            if (windowImage)
+            {
+                [self drawDockTileWithImage:windowImage];
+                CGImageRelease(windowImage);
+                lastDockIconSnapshot = now;
+            }
         }
     }
 
