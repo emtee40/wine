@@ -2323,48 +2323,19 @@ static CVReturn WineDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTi
         return (self.windowNumber > 0 && ![self isEmptyShaped]);
     }
 
-    - (void) grabDockIconSnapshotFromWindow:(WineWindow*)window force:(BOOL)force
+    /* Create an image of the given window using the CGWindowList API. The
+       returned image must be released by the caller. */
+    - (CGImageRef) windowListSnapshotForWindow:(WineWindow *)window
     {
-        if (![self isEmptyShaped])
-            return;
-
-        NSTimeInterval now = [[NSProcessInfo processInfo] systemUptime];
-        if (!force && now < lastDockIconSnapshot + 1)
-            return;
-
-        if (window)
-        {
-            if (![window canProvideSnapshot])
-                return;
-        }
-        else
-        {
-            CGFloat bestArea;
-            for (WineWindow* childWindow in self.childWindows)
-            {
-                if (![childWindow isKindOfClass:[WineWindow class]] || ![childWindow canProvideSnapshot])
-                    continue;
-
-                NSSize size = childWindow.frame.size;
-                CGFloat area = size.width * size.height;
-                if (!window || area > bestArea)
-                {
-                    window = childWindow;
-                    bestArea = area;
-                }
-            }
-
-            if (!window)
-                return;
-        }
-
         const void* windowID = (const void*)(uintptr_t)(CGWindowID)window.windowNumber;
         CFArrayRef windowIDs = CFArrayCreate(NULL, &windowID, 1, NULL);
         CGImageRef windowImage = CGWindowListCreateImageFromArray(CGRectNull, windowIDs, kCGWindowImageBoundsIgnoreFraming);
         CFRelease(windowIDs);
-        if (!windowImage)
-            return;
+        return windowImage;
+    }
 
+    - (void) drawDockTileWithImage:(CGImageRef)windowImage
+    {
         NSImage* appImage = [NSApp applicationIconImage];
         if (!appImage)
             appImage = [NSImage imageNamed:NSImageNameApplicationIcon];
@@ -2398,8 +2369,6 @@ static CVReturn WineDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTi
 
         [dockIcon unlockFocus];
 
-        CGImageRelease(windowImage);
-
         NSImageView* imageView = (NSImageView*)self.dockTile.contentView;
         if (![imageView isKindOfClass:[NSImageView class]])
         {
@@ -2409,7 +2378,52 @@ static CVReturn WineDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTi
         }
         imageView.image = dockIcon;
         [self.dockTile display];
-        lastDockIconSnapshot = now;
+    }
+
+    - (void) grabDockIconSnapshotFromWindow:(WineWindow*)window force:(BOOL)force
+    {
+        CGImageRef windowImage;
+
+        if (![self isEmptyShaped])
+            return;
+
+        NSTimeInterval now = [[NSProcessInfo processInfo] systemUptime];
+        if (!force && now < lastDockIconSnapshot + 1)
+            return;
+
+        if (window)
+        {
+            if (![window canProvideSnapshot])
+                return;
+        }
+        else
+        {
+            CGFloat bestArea;
+            for (WineWindow* childWindow in self.childWindows)
+            {
+                if (![childWindow isKindOfClass:[WineWindow class]] || ![childWindow canProvideSnapshot])
+                    continue;
+
+                NSSize size = childWindow.frame.size;
+                CGFloat area = size.width * size.height;
+                if (!window || area > bestArea)
+                {
+                    window = childWindow;
+                    bestArea = area;
+                }
+            }
+
+            if (!window)
+                return;
+        }
+
+        windowImage = [self windowListSnapshotForWindow:window];
+        if (windowImage)
+        {
+            [self drawDockTileWithImage:windowImage];
+            CGImageRelease(windowImage);
+            lastDockIconSnapshot = now;
+        }
     }
 
     - (void) checkEmptyShaped
