@@ -1065,7 +1065,9 @@ NTSTATUS WINAPI RtlLcidToLocaleName( LCID lcid, UNICODE_STRING *str, ULONG flags
         lcid = system_lcid;
         break;
     case LOCALE_CUSTOM_UI_DEFAULT:
-        return STATUS_UNSUCCESSFUL;
+        RtlRunOnceExecuteOnce( &mui_init_once, load_mui_settings, NULL, NULL );
+        lcid = mui_settings.user[0];
+        break;
     case LOCALE_CUSTOM_UNSPECIFIED:
         return STATUS_INVALID_PARAMETER_1;
     }
