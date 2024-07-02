@@ -1589,25 +1589,33 @@ done:
     return hres;
 }
 
-static void Array_on_put(jsdisp_t *dispex, const WCHAR *name)
+static HRESULT Array_prop_put(jsdisp_t *dispex, DISPID id, jsval_t val)
 {
     ArrayInstance *array = array_from_jsdisp(dispex);
-    const WCHAR *ptr = name;
-    DWORD id = 0;
+    const WCHAR *ptr;
+    DWORD idx = 0;
+    HRESULT hres;
 
+    hres = dispex_prop_put(&array->dispex, id, val);
+    if(hres != S_OK)
+        return hres;
+
+    ptr = dispex_prop_get_static_name(&array->dispex, id);
     if(!is_digit(*ptr))
-        return;
+        return hres;
 
     while(*ptr && is_digit(*ptr)) {
-        id = id*10 + (*ptr-'0');
+        idx = idx*10 + (*ptr-'0');
         ptr++;
     }
 
     if(*ptr)
-        return;
+        return hres;
 
-    if(id >= array->length)
-        array->length = id+1;
+    if(idx >= array->length)
+        array->length = idx + 1;
+
+    return hres;
 }
 
 static const builtin_prop_t Array_props[] = {
@@ -1635,11 +1643,16 @@ static const builtin_prop_t Array_props[] = {
 };
 
 static const builtin_info_t Array_info = {
-    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
-    .class      = JSCLASS_ARRAY,
-    .props_cnt  = ARRAY_SIZE(Array_props),
-    .props      = Array_props,
-    .on_put     = Array_on_put,
+    .class          = JSCLASS_ARRAY,
+    .props_cnt      = ARRAY_SIZE(Array_props),
+    .props          = Array_props,
+    .prop_get       = dispex_prop_get,
+    .prop_put       = Array_prop_put,
+    .prop_invoke    = dispex_prop_invoke,
+    .prop_delete    = dispex_prop_delete,
+    .prop_get_desc  = dispex_prop_get_desc,
+    .prop_get_name  = dispex_prop_get_name,
+    .prop_define    = dispex_prop_define
 };
 
 static const builtin_prop_t ArrayInst_props[] = {
@@ -1647,11 +1660,16 @@ static const builtin_prop_t ArrayInst_props[] = {
 };
 
 static const builtin_info_t ArrayInst_info = {
-    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
-    .class      = JSCLASS_ARRAY,
-    .props_cnt  = ARRAY_SIZE(ArrayInst_props),
-    .props      = ArrayInst_props,
-    .on_put     = Array_on_put,
+    .class          = JSCLASS_ARRAY,
+    .props_cnt      = ARRAY_SIZE(ArrayInst_props),
+    .props          = ArrayInst_props,
+    .prop_get       = dispex_prop_get,
+    .prop_put       = Array_prop_put,
+    .prop_invoke    = dispex_prop_invoke,
+    .prop_delete    = dispex_prop_delete,
+    .prop_get_desc  = dispex_prop_get_desc,
+    .prop_get_name  = dispex_prop_get_name,
+    .prop_define    = dispex_prop_define
 };
 
 /* ECMA-262 5.1 Edition    15.4.3.2 */
