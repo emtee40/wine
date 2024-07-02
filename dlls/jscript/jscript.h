@@ -134,7 +134,9 @@ HRESULT dispex_prop_get(jsdisp_t*,IDispatch*,DISPID,jsval_t*);
 HRESULT dispex_prop_put(jsdisp_t*,DISPID,jsval_t);
 HRESULT dispex_prop_invoke(jsdisp_t*,IDispatch*,DISPID,WORD,unsigned,jsval_t*,jsval_t*,IServiceProvider*);
 HRESULT dispex_prop_delete(jsdisp_t*,DISPID,BOOL*);
+HRESULT dispex_prop_get_desc(jsdisp_t*,DISPID,BOOL,property_desc_t*);
 void *dispex_prop_get_name(jsdisp_t*,DISPID,BOOL);
+HRESULT dispex_prop_define(jsdisp_t*,DISPID,const property_desc_t*);
 
 struct thread_data {
     LONG ref;
@@ -194,7 +196,9 @@ typedef struct {
     HRESULT (*prop_put)(jsdisp_t*,DISPID,jsval_t);
     HRESULT (*prop_invoke)(jsdisp_t*,IDispatch*,DISPID,WORD,unsigned,jsval_t*,jsval_t*,IServiceProvider*);
     HRESULT (*prop_delete)(jsdisp_t*,DISPID,BOOL*);
+    HRESULT (*prop_get_desc)(jsdisp_t*,DISPID,BOOL,property_desc_t*);
     void *(*prop_get_name)(jsdisp_t*,DISPID,BOOL);
+    HRESULT (*prop_define)(jsdisp_t*,DISPID,const property_desc_t*);
     unsigned (*idx_length)(jsdisp_t*);
     HRESULT (*idx_get)(jsdisp_t*,unsigned,jsval_t*);
     HRESULT (*idx_put)(jsdisp_t*,unsigned,jsval_t);
@@ -226,7 +230,9 @@ struct jsdisp_t {
     .prop_put       = dispex_prop_put,      \
     .prop_invoke    = dispex_prop_invoke,   \
     .prop_delete    = dispex_prop_delete,   \
-    .prop_get_name  = dispex_prop_get_name
+    .prop_get_desc  = dispex_prop_get_desc, \
+    .prop_get_name  = dispex_prop_get_name, \
+    .prop_define    = dispex_prop_define
 
 static inline IDispatch *to_disp(jsdisp_t *jsdisp)
 {
@@ -268,6 +274,11 @@ jsdisp_t *jsdisp_addref(jsdisp_t*);
 void jsdisp_release(jsdisp_t*);
 
 #endif
+
+static inline BOOL is_dispex_prop_id(DISPID id)
+{
+    return id > 0;
+}
 
 enum jsdisp_enum_type {
     JSDISP_ENUM_ALL,
