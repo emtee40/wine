@@ -122,7 +122,7 @@ static inline BOOL is_started(script_ctx_t *ctx)
 
 HRESULT create_named_item_script_obj(script_ctx_t *ctx, named_item_t *item)
 {
-    static const builtin_info_t disp_info = { .class = JSCLASS_GLOBAL };
+    static const builtin_info_t disp_info = { DEFAULT_DISPEX_PROP_VTBL_ENTRIES, .class = JSCLASS_GLOBAL };
     return create_dispex(ctx, &disp_info, NULL, &item->script_obj);
 }
 

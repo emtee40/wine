@@ -460,12 +460,14 @@ static const builtin_prop_t Object_props[] = {
 };
 
 static const builtin_info_t Object_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class      = JSCLASS_OBJECT,
     .props_cnt  = ARRAY_SIZE(Object_props),
     .props      = Object_props,
 };
 
 static const builtin_info_t ObjectInst_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class = JSCLASS_OBJECT,
 };
 
@@ -1057,6 +1059,7 @@ static const builtin_prop_t ObjectConstr_props[] = {
 };
 
 static const builtin_info_t ObjectConstr_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_FUNCTION,
     .call      = Function_value,
     .props_cnt = ARRAY_SIZE(ObjectConstr_props),

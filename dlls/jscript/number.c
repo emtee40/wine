@@ -586,12 +586,14 @@ static const builtin_prop_t Number_props[] = {
 };
 
 static const builtin_info_t Number_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_NUMBER,
     .props_cnt = ARRAY_SIZE(Number_props),
     .props     = Number_props,
 };
 
 static const builtin_info_t NumberInst_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class = JSCLASS_NUMBER,
 };
 

@@ -569,6 +569,7 @@ static const builtin_prop_t RegExp_props[] = {
 };
 
 static const builtin_info_t RegExp_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class       = JSCLASS_REGEXP,
     .call        = RegExp_value,
     .props_cnt   = ARRAY_SIZE(RegExp_props),
@@ -586,6 +587,7 @@ static const builtin_prop_t RegExpInst_props[] = {
 };
 
 static const builtin_info_t RegExpInst_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class       = JSCLASS_REGEXP,
     .call        = RegExp_value,
     .props_cnt   = ARRAY_SIZE(RegExpInst_props),
@@ -952,6 +954,7 @@ static const builtin_prop_t RegExpConstr_props[] = {
 };
 
 static const builtin_info_t RegExpConstr_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_FUNCTION,
     .call      = Function_value,
     .props_cnt = ARRAY_SIZE(RegExpConstr_props),

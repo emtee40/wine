@@ -544,7 +544,8 @@ static HRESULT scope_gc_traverse(struct gc_ctx *gc_ctx, enum gc_traverse_op op, 
 }
 
 static const builtin_info_t scope_info = {
-    JSCLASS_NONE,
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
+    .class       = JSCLASS_NONE,
     .destructor  = scope_destructor,
     .idx_length  = scope_idx_length,
     .idx_get     = scope_idx_get,

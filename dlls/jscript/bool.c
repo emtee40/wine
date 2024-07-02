@@ -119,6 +119,7 @@ static const builtin_prop_t Bool_props[] = {
 };
 
 static const builtin_info_t Bool_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_BOOLEAN,
     .call      = Bool_value,
     .props_cnt = ARRAY_SIZE(Bool_props),
@@ -126,6 +127,7 @@ static const builtin_info_t Bool_info = {
 };
 
 static const builtin_info_t BoolInst_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class = JSCLASS_BOOLEAN,
     .call  = Bool_value,
 };

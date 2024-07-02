@@ -183,6 +183,7 @@ static HRESULT Arguments_gc_traverse(struct gc_ctx *gc_ctx, enum gc_traverse_op 
 }
 
 static const builtin_info_t Arguments_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class       = JSCLASS_ARGUMENTS,
     .call        = Arguments_value,
     .destructor  = Arguments_destructor,
@@ -597,6 +598,7 @@ static const builtin_prop_t Function_props[] = {
 };
 
 static const builtin_info_t Function_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class       = JSCLASS_FUNCTION,
     .call        = Function_value,
     .props_cnt   = ARRAY_SIZE(Function_props),
@@ -612,6 +614,7 @@ static const builtin_prop_t FunctionInst_props[] = {
 };
 
 static const builtin_info_t FunctionInst_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class       = JSCLASS_FUNCTION,
     .call        = Function_value,
     .props_cnt   = ARRAY_SIZE(FunctionInst_props),
@@ -795,6 +798,7 @@ static const builtin_prop_t InterpretedFunction_props[] = {
 };
 
 static const builtin_info_t InterpretedFunction_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class       = JSCLASS_FUNCTION,
     .call        = Function_value,
     .props_cnt   = ARRAY_SIZE(InterpretedFunction_props),
@@ -923,6 +927,7 @@ static const builtin_prop_t BindFunction_props[] = {
 };
 
 static const builtin_info_t BindFunction_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class       = JSCLASS_FUNCTION,
     .call        = Function_value,
     .props_cnt   = ARRAY_SIZE(BindFunction_props),

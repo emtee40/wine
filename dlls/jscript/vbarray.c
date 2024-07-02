@@ -246,6 +246,7 @@ static const builtin_prop_t VBArray_props[] = {
 };
 
 static const builtin_info_t VBArray_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class      = JSCLASS_VBARRAY,
     .call       = VBArray_value,
     .props_cnt  = ARRAY_SIZE(VBArray_props),

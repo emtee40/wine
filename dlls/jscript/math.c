@@ -491,6 +491,7 @@ static const builtin_prop_t Math_props[] = {
 };
 
 static const builtin_info_t Math_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class = JSCLASS_MATH,    .props_cnt = ARRAY_SIZE(Math_props),
     .props = Math_props,
 };

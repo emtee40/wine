@@ -1568,6 +1568,7 @@ static const builtin_prop_t String_props[] = {
 };
 
 static const builtin_info_t String_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class      = JSCLASS_STRING,
     .props_cnt  = ARRAY_SIZE(String_props),
     .props      = String_props,
@@ -1579,6 +1580,7 @@ static const builtin_prop_t StringInst_props[] = {
 };
 
 static const builtin_info_t StringInst_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class      = JSCLASS_STRING,
     .props_cnt  = ARRAY_SIZE(StringInst_props),
     .props      = StringInst_props,
@@ -1698,6 +1700,7 @@ static const builtin_prop_t StringConstr_props[] = {
 };
 
 static const builtin_info_t StringConstr_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_FUNCTION,
     .call      = Function_value,
     .props_cnt = ARRAY_SIZE(StringConstr_props),

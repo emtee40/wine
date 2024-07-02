@@ -130,6 +130,11 @@ typedef HRESULT (*builtin_getter_t)(script_ctx_t*,jsdisp_t*,jsval_t*);
 typedef HRESULT (*builtin_setter_t)(script_ctx_t*,jsdisp_t*,jsval_t);
 
 HRESULT builtin_set_const(script_ctx_t*,jsdisp_t*,jsval_t);
+HRESULT dispex_prop_get(jsdisp_t*,IDispatch*,DISPID,jsval_t*);
+HRESULT dispex_prop_put(jsdisp_t*,DISPID,jsval_t);
+HRESULT dispex_prop_invoke(jsdisp_t*,IDispatch*,DISPID,WORD,unsigned,jsval_t*,jsval_t*,IServiceProvider*);
+HRESULT dispex_prop_delete(jsdisp_t*,DISPID,BOOL*);
+void *dispex_prop_get_name(jsdisp_t*,DISPID,BOOL);
 
 struct thread_data {
     LONG ref;
@@ -185,6 +190,11 @@ typedef struct {
     const builtin_prop_t *props;
     void (*destructor)(jsdisp_t*);
     void (*on_put)(jsdisp_t*,const WCHAR*);
+    HRESULT (*prop_get)(jsdisp_t*,IDispatch*,DISPID,jsval_t*);
+    HRESULT (*prop_put)(jsdisp_t*,DISPID,jsval_t);
+    HRESULT (*prop_invoke)(jsdisp_t*,IDispatch*,DISPID,WORD,unsigned,jsval_t*,jsval_t*,IServiceProvider*);
+    HRESULT (*prop_delete)(jsdisp_t*,DISPID,BOOL*);
+    void *(*prop_get_name)(jsdisp_t*,DISPID,BOOL);
     unsigned (*idx_length)(jsdisp_t*);
     HRESULT (*idx_get)(jsdisp_t*,unsigned,jsval_t*);
     HRESULT (*idx_put)(jsdisp_t*,unsigned,jsval_t);
@@ -210,6 +220,13 @@ struct jsdisp_t {
     const builtin_info_t *builtin_info;
     struct list entry;
 };
+
+#define DEFAULT_DISPEX_PROP_VTBL_ENTRIES    \
+    .prop_get       = dispex_prop_get,      \
+    .prop_put       = dispex_prop_put,      \
+    .prop_invoke    = dispex_prop_invoke,   \
+    .prop_delete    = dispex_prop_delete,   \
+    .prop_get_name  = dispex_prop_get_name
 
 static inline IDispatch *to_disp(jsdisp_t *jsdisp)
 {

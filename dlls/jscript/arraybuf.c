@@ -121,6 +121,7 @@ static const builtin_prop_t ArrayBuffer_props[] = {
 };
 
 static const builtin_info_t ArrayBuffer_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_ARRAYBUFFER,
     .props_cnt = ARRAY_SIZE(ArrayBuffer_props),
     .props     = ArrayBuffer_props,
@@ -131,6 +132,7 @@ static const builtin_prop_t ArrayBufferInst_props[] = {
 };
 
 static const builtin_info_t ArrayBufferInst_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_ARRAYBUFFER,
     .props_cnt = ARRAY_SIZE(ArrayBufferInst_props),
     .props     = ArrayBufferInst_props,
@@ -208,6 +210,7 @@ static const builtin_prop_t ArrayBufferConstr_props[] = {
 };
 
 static const builtin_info_t ArrayBufferConstr_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_FUNCTION,
     .call      = Function_value,
     .props_cnt = ARRAY_SIZE(ArrayBufferConstr_props),
@@ -601,6 +604,7 @@ static HRESULT DataView_gc_traverse(struct gc_ctx *gc_ctx, enum gc_traverse_op o
 }
 
 static const builtin_info_t DataView_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class       = JSCLASS_DATAVIEW,
     .props_cnt   = ARRAY_SIZE(DataView_props),
     .props       = DataView_props,
@@ -609,6 +613,7 @@ static const builtin_info_t DataView_info = {
 };
 
 static const builtin_info_t DataViewInst_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class       = JSCLASS_DATAVIEW,
     .destructor  = DataView_destructor,
     .gc_traverse = DataView_gc_traverse
@@ -680,6 +685,7 @@ static HRESULT DataViewConstr_value(script_ctx_t *ctx, jsval_t vthis, WORD flags
 }
 
 static const builtin_info_t DataViewConstr_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class = JSCLASS_FUNCTION,
     .call  = Function_value,
 };

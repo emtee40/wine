@@ -1635,6 +1635,7 @@ static const builtin_prop_t Array_props[] = {
 };
 
 static const builtin_info_t Array_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class      = JSCLASS_ARRAY,
     .props_cnt  = ARRAY_SIZE(Array_props),
     .props      = Array_props,
@@ -1646,6 +1647,7 @@ static const builtin_prop_t ArrayInst_props[] = {
 };
 
 static const builtin_info_t ArrayInst_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class      = JSCLASS_ARRAY,
     .props_cnt  = ARRAY_SIZE(ArrayInst_props),
     .props      = ArrayInst_props,
@@ -1752,6 +1754,7 @@ static const builtin_prop_t ArrayConstr_props[] = {
 };
 
 static const builtin_info_t ArrayConstr_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_FUNCTION,
     .call      = Function_value,
     .props_cnt = ARRAY_SIZE(ArrayConstr_props),
