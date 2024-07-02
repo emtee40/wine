@@ -68,6 +68,7 @@ typedef struct {
     jsval_t *buf;
     scope_chain_t *scope;
     unsigned argc;
+    BYTE readonly_flags[];
 } ArgumentsInstance;
 
 static HRESULT create_bind_function(script_ctx_t*,FunctionInstance*,jsval_t,unsigned,jsval_t*,jsdisp_t**r);
@@ -117,12 +118,6 @@ static void Arguments_destructor(jsdisp_t *jsdisp)
         scope_release(arguments->scope);
 }
 
-static unsigned Arguments_idx_length(jsdisp_t *jsdisp)
-{
-    ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
-    return arguments->argc;
-}
-
 static jsval_t *get_argument_ref(ArgumentsInstance *arguments, unsigned idx)
 {
     if(arguments->buf)
@@ -132,22 +127,33 @@ static jsval_t *get_argument_ref(ArgumentsInstance *arguments, unsigned idx)
     return arguments->scope->detached_vars->var + idx;
 }
 
-static HRESULT Arguments_idx_get(jsdisp_t *jsdisp, unsigned idx, jsval_t *r)
+static HRESULT Arguments_prop_get(jsdisp_t *jsdisp, IDispatch *jsthis, DISPID id, jsval_t *r)
 {
     ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
+    DWORD idx = indexed_prop_id_to_idx(id);
 
-    TRACE("%p[%u]\n", arguments, idx);
+    if(is_dispex_prop_id(id))
+        return dispex_prop_get(&arguments->jsdisp, jsthis, id, r);
+
+    TRACE("%p[%lu]\n", arguments, idx);
 
     return jsval_copy(*get_argument_ref(arguments, idx), r);
 }
 
-static HRESULT Arguments_idx_put(jsdisp_t *jsdisp, unsigned idx, jsval_t val)
+static HRESULT Arguments_prop_put(jsdisp_t *jsdisp, DISPID id, jsval_t val)
 {
     ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
+    DWORD idx = indexed_prop_id_to_idx(id);
     jsval_t copy, *ref;
     HRESULT hres;
 
-    TRACE("%p[%u] = %s\n", arguments, idx, debugstr_jsval(val));
+    if(is_dispex_prop_id(id))
+        return dispex_prop_put(&arguments->jsdisp, id, val);
+
+    TRACE("%p[%lu] = %s\n", arguments, idx, debugstr_jsval(val));
+
+    if(arguments->readonly_flags[idx / 8] & (1u << idx % 8))
+        return S_OK;
 
     hres = jsval_copy(val, &copy);
     if(FAILED(hres))
@@ -157,6 +163,51 @@ static HRESULT Arguments_idx_put(jsdisp_t *jsdisp, unsigned idx, jsval_t val)
     jsval_release(*ref);
     *ref = copy;
     return S_OK;
+}
+
+static HRESULT Arguments_prop_get_desc(jsdisp_t *jsdisp, DISPID id, BOOL flags_only, property_desc_t *desc)
+{
+    ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
+    DWORD idx = indexed_prop_id_to_idx(id);
+
+    if(is_dispex_prop_id(id))
+        return dispex_prop_get_desc(&arguments->jsdisp, id, flags_only, desc);
+
+    if(!flags_only) {
+        HRESULT hres = Arguments_prop_get(&arguments->jsdisp, to_disp(&arguments->jsdisp), id, &desc->value);
+        if(FAILED(hres))
+            return hres;
+    }
+
+    desc->explicit_value = TRUE;
+    desc->flags = PROPF_ENUMERABLE;
+    if(!(arguments->readonly_flags[idx / 8] & (1u << idx % 8)))
+        desc->flags |= PROPF_WRITABLE;
+
+    return S_OK;
+}
+
+static HRESULT Arguments_prop_define(jsdisp_t *jsdisp, DISPID id, const property_desc_t *desc)
+{
+    ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
+    DWORD idx = indexed_prop_id_to_idx(id);
+    HRESULT hres;
+
+    hres = indexed_prop_define(&arguments->jsdisp, id, desc);
+    if(FAILED(hres))
+        return hres;
+
+    /* Need to keep track of props made read-only */
+    if((desc->mask & PROPF_WRITABLE) && !(desc->flags & PROPF_WRITABLE))
+        arguments->readonly_flags[idx / 8] |= 1u << idx % 8;
+
+    return hres;
+}
+
+static unsigned Arguments_idx_length(jsdisp_t *jsdisp)
+{
+    ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
+    return arguments->argc;
 }
 
 static HRESULT Arguments_gc_traverse(struct gc_ctx *gc_ctx, enum gc_traverse_op op, jsdisp_t *jsdisp)
@@ -183,14 +234,18 @@ static HRESULT Arguments_gc_traverse(struct gc_ctx *gc_ctx, enum gc_traverse_op 
 }
 
 static const builtin_info_t Arguments_info = {
-    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
-    .class       = JSCLASS_ARGUMENTS,
-    .call        = Arguments_value,
-    .destructor  = Arguments_destructor,
-    .idx_length  = Arguments_idx_length,
-    .idx_get     = Arguments_idx_get,
-    .idx_put     = Arguments_idx_put,
-    .gc_traverse = Arguments_gc_traverse
+    .class          = JSCLASS_ARGUMENTS,
+    .call           = Arguments_value,
+    .destructor     = Arguments_destructor,
+    .prop_get       = Arguments_prop_get,
+    .prop_put       = Arguments_prop_put,
+    .prop_invoke    = indexed_prop_invoke,
+    .prop_delete    = indexed_prop_delete,
+    .prop_get_desc  = Arguments_prop_get_desc,
+    .prop_get_name  = indexed_prop_get_name,
+    .prop_define    = Arguments_prop_define,
+    .idx_length     = Arguments_idx_length,
+    .gc_traverse    = Arguments_gc_traverse
 };
 
 HRESULT setup_arguments_object(script_ctx_t *ctx, call_frame_t *frame)
@@ -198,7 +253,7 @@ HRESULT setup_arguments_object(script_ctx_t *ctx, call_frame_t *frame)
     ArgumentsInstance *args;
     HRESULT hres;
 
-    args = calloc(1, sizeof(*args));
+    args = calloc(1, FIELD_OFFSET(ArgumentsInstance, readonly_flags[(frame->argc + 7) / 8]));
     if(!args)
         return E_OUTOFMEMORY;
 

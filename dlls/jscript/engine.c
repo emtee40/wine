@@ -478,34 +478,58 @@ static void scope_destructor(jsdisp_t *dispex)
         IDispatch_Release(scope->obj);
 }
 
-static unsigned scope_idx_length(jsdisp_t *dispex)
+static HRESULT scope_prop_get(jsdisp_t *dispex, IDispatch *jsthis, DISPID id, jsval_t *r)
 {
     scope_chain_t *scope = scope_from_dispex(dispex);
 
-    return scope->detached_vars->argc;
+    if(is_dispex_prop_id(id))
+        return dispex_prop_get(&scope->dispex, jsthis, id, r);
+
+    return jsval_copy(scope->detached_vars->var[indexed_prop_id_to_idx(id)], r);
 }
 
-static HRESULT scope_idx_get(jsdisp_t *dispex, unsigned idx, jsval_t *r)
-{
-    scope_chain_t *scope = scope_from_dispex(dispex);
-
-    return jsval_copy(scope->detached_vars->var[idx], r);
-}
-
-static HRESULT scope_idx_put(jsdisp_t *dispex, unsigned idx, jsval_t val)
+static HRESULT scope_prop_put(jsdisp_t *dispex, DISPID id, jsval_t val)
 {
     scope_chain_t *scope = scope_from_dispex(dispex);
     jsval_t copy, *ref;
     HRESULT hres;
 
+    if(is_dispex_prop_id(id))
+        return dispex_prop_put(&scope->dispex, id, val);
+
     hres = jsval_copy(val, &copy);
     if(FAILED(hres))
         return hres;
 
-    ref = &scope->detached_vars->var[idx];
+    ref = &scope->detached_vars->var[indexed_prop_id_to_idx(id)];
     jsval_release(*ref);
     *ref = copy;
     return S_OK;
+}
+
+static HRESULT scope_prop_get_desc(jsdisp_t *dispex, DISPID id, BOOL flags_only, property_desc_t *desc)
+{
+    scope_chain_t *scope = scope_from_dispex(dispex);
+
+    if(is_dispex_prop_id(id))
+        return dispex_prop_get_desc(&scope->dispex, id, flags_only, desc);
+
+    if(!flags_only) {
+        HRESULT hres = scope_prop_get(&scope->dispex, to_disp(&scope->dispex), id, &desc->value);
+        if(FAILED(hres))
+            return hres;
+    }
+
+    desc->explicit_value = TRUE;
+    desc->flags = PROPF_ENUMERABLE | PROPF_WRITABLE;
+    return S_OK;
+}
+
+static unsigned scope_idx_length(jsdisp_t *dispex)
+{
+    scope_chain_t *scope = scope_from_dispex(dispex);
+
+    return scope->detached_vars->argc;
 }
 
 static HRESULT scope_gc_traverse(struct gc_ctx *gc_ctx, enum gc_traverse_op op, jsdisp_t *dispex)
@@ -544,13 +568,17 @@ static HRESULT scope_gc_traverse(struct gc_ctx *gc_ctx, enum gc_traverse_op op, 
 }
 
 static const builtin_info_t scope_info = {
-    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
-    .class       = JSCLASS_NONE,
-    .destructor  = scope_destructor,
-    .idx_length  = scope_idx_length,
-    .idx_get     = scope_idx_get,
-    .idx_put     = scope_idx_put,
-    .gc_traverse = scope_gc_traverse
+    .class          = JSCLASS_NONE,
+    .destructor     = scope_destructor,
+    .prop_get       = scope_prop_get,
+    .prop_put       = scope_prop_put,
+    .prop_invoke    = indexed_prop_invoke,
+    .prop_delete    = indexed_prop_delete,
+    .prop_get_desc  = scope_prop_get_desc,
+    .prop_get_name  = indexed_prop_get_name,
+    .prop_define    = indexed_prop_define,
+    .idx_length     = scope_idx_length,
+    .gc_traverse    = scope_gc_traverse
 };
 
 static HRESULT scope_push(script_ctx_t *ctx, scope_chain_t *scope, IDispatch *obj, scope_chain_t **ret)
