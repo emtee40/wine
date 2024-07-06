@@ -32,6 +32,7 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(dwmapi);
 
+static int get_display_frequency(void);
 
 /**********************************************************************
  *           DwmIsCompositionEnabled         (DWMAPI.@)
@@ -88,9 +89,26 @@ HRESULT WINAPI DwmGetColorizationColor(DWORD *colorization, BOOL *opaque_blend)
  */
 HRESULT WINAPI DwmFlush(void)
 {
+    static volatile LONG last_time;
     static BOOL once;
+    DWORD now, interval, last = last_time, target;
+    int freq;
 
-    if (!once++) FIXME("() stub\n");
+    if (!once++) FIXME("() semi-stub\n");
+
+    // simulate the WaitForVBlank-like blocking behavior
+    freq = get_display_frequency();
+    interval = 1000 / freq;
+    now = GetTickCount();
+    if (now - last < interval)
+        target = last + interval;
+    else
+    {
+        // act as if we were called midway between 2 vsyncs
+        target = now + interval / 2;
+    }
+    Sleep(target - now);
+    InterlockedCompareExchange(&last_time, target, last);
 
     return S_OK;
 }
@@ -262,7 +280,8 @@ static int get_display_frequency(void)
     }
     else
     {
-        WARN("Failed to query display frequency, returning a fallback value.\n");
+        static BOOL once;
+        if (!once++) WARN("Failed to query display frequency, returning a fallback value.\n");
         return 60;
     }
 }

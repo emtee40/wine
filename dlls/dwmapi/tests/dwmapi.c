@@ -140,9 +140,50 @@ cleanup:
     DestroyWindow(hwnd);
 }
 
+static void test_DwmFlush(void)
+{
+    LARGE_INTEGER frequency, ts[2];
+    int i, result, ms;
+    DEVMODEA mode;
+    BOOL enabled;
+    HRESULT hr;
+
+    enabled = FALSE;
+    hr = DwmIsCompositionEnabled(&enabled);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    if (!enabled)
+    {
+        skip("DWM is disabled.\n");
+        return;
+    }
+
+    memset(&mode, 0, sizeof(mode));
+    mode.dmSize = sizeof(mode);
+    result = EnumDisplaySettingsA(NULL, ENUM_CURRENT_SETTINGS, &mode);
+    ok(result, "Failed to get display mode %#lx.\n", GetLastError());
+    ok(mode.dmDisplayFrequency != 0, "dmDisplayFrequency is 0.\n");
+
+    result = QueryPerformanceFrequency(&frequency);
+    ok(result, "Failed to get performance counter frequency.\n");
+
+    result = QueryPerformanceCounter(&ts[0]);
+    ok(result, "Failed to read performance counter.\n");
+    for (i = 0; i < 2; i++)
+    {
+        hr = DwmFlush();
+        ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    }
+    result = QueryPerformanceCounter(&ts[1]);
+    ok(result, "Failed to read performance counter.\n");
+    ms = (ts[1].QuadPart - ts[0].QuadPart) * 1000 / frequency.QuadPart;
+    ok(ms >= 1000 / mode.dmDisplayFrequency,
+        "DwmFlush() took %dms with dmDisplayFrequency %ld.\n", ms, mode.dmDisplayFrequency);
+}
+
 START_TEST(dwmapi)
 {
     test_DwmIsCompositionEnabled();
     test_DwmGetCompositionTimingInfo();
     test_DWMWA_EXTENDED_FRAME_BOUNDS();
+    test_DwmFlush();
 }
