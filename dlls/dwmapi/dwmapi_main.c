@@ -184,9 +184,9 @@ HRESULT WINAPI DwmEnableBlurBehindWindow(HWND hWnd, const DWM_BLURBEHIND *pBlurB
  */
 BOOL WINAPI DwmDefWindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam, LRESULT *plResult)
 {
-    static int i;
+    static BOOL once;
 
-    if (!i++) FIXME("stub\n");
+    if (!once++) FIXME("stub\n");
 
     return FALSE;
 }
@@ -273,7 +273,8 @@ static int get_display_frequency(void)
 HRESULT WINAPI DwmGetCompositionTimingInfo(HWND hwnd, DWM_TIMING_INFO *info)
 {
     LARGE_INTEGER performance_frequency, qpc;
-    static int i, display_frequency;
+    int display_frequency;
+    static BOOL once;
 
     if (!info)
         return E_INVALIDARG;
@@ -281,7 +282,7 @@ HRESULT WINAPI DwmGetCompositionTimingInfo(HWND hwnd, DWM_TIMING_INFO *info)
     if (info->cbSize != sizeof(DWM_TIMING_INFO))
         return MILERR_MISMATCHED_SIZE;
 
-    if(!i++) FIXME("(%p %p)\n", hwnd, info);
+    if (!once++) FIXME("(%p %p)\n", hwnd, info);
 
     memset(info, 0, info->cbSize);
     info->cbSize = sizeof(DWM_TIMING_INFO);
