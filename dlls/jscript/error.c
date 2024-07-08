@@ -139,6 +139,7 @@ static const builtin_prop_t Error_props[] = {
 };
 
 static const builtin_info_t Error_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_ERROR,
     .call      = Error_value,
     .props_cnt = ARRAY_SIZE(Error_props),
@@ -146,6 +147,7 @@ static const builtin_info_t Error_info = {
 };
 
 static const builtin_info_t ErrorInst_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class = JSCLASS_ERROR,
     .call  = Error_value,
 };

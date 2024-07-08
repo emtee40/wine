@@ -399,6 +399,7 @@ static const builtin_prop_t Map_props[] = {
 };
 
 static const builtin_info_t Map_prototype_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_OBJECT,
     .call      = Map_value,
     .props_cnt = ARRAY_SIZE(Map_prototype_props),
@@ -406,6 +407,7 @@ static const builtin_info_t Map_prototype_info = {
 };
 
 static const builtin_info_t Map_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class       = JSCLASS_MAP,
     .call        = Map_value,
     .props_cnt   = ARRAY_SIZE(Map_props),
@@ -552,6 +554,7 @@ static const builtin_prop_t Set_prototype_props[] = {
 };
 
 static const builtin_info_t Set_prototype_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_OBJECT,
     .call      = Set_value,
     .props_cnt = ARRAY_SIZE(Set_prototype_props),
@@ -559,6 +562,7 @@ static const builtin_info_t Set_prototype_info = {
 };
 
 static const builtin_info_t Set_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class       = JSCLASS_SET,
     .call        = Set_value,
     .props_cnt   = ARRAY_SIZE(Map_props),
@@ -841,6 +845,7 @@ static const builtin_prop_t WeakMap_prototype_props[] = {
 };
 
 static const builtin_info_t WeakMap_prototype_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_OBJECT,
     .call      = WeakMap_value,
     .props_cnt = ARRAY_SIZE(WeakMap_prototype_props),
@@ -848,6 +853,7 @@ static const builtin_info_t WeakMap_prototype_info = {
 };
 
 static const builtin_info_t WeakMap_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class       = JSCLASS_WEAKMAP,
     .call        = WeakMap_value,
     .destructor  = WeakMap_destructor,

@@ -181,12 +181,14 @@ static const builtin_prop_t Enumerator_props[] = {
 };
 
 static const builtin_info_t Enumerator_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_ENUMERATOR,
     .props_cnt = ARRAY_SIZE(Enumerator_props),
     .props     = Enumerator_props,
 };
 
 static const builtin_info_t EnumeratorInst_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class       = JSCLASS_ENUMERATOR,
     .destructor  = Enumerator_destructor,
     .gc_traverse = Enumerator_gc_traverse
@@ -313,6 +315,7 @@ static HRESULT EnumeratorConstr_value(script_ctx_t *ctx, jsval_t vthis, WORD fla
 }
 
 static const builtin_info_t EnumeratorConstr_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class = JSCLASS_FUNCTION,
     .call  = Function_value,
 };

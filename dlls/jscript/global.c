@@ -905,6 +905,7 @@ static const builtin_prop_t JSGlobal_props[] = {
 };
 
 static const builtin_info_t JSGlobal_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_GLOBAL,
     .props_cnt = ARRAY_SIZE(JSGlobal_props),
     .props     = JSGlobal_props,

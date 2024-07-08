@@ -948,6 +948,7 @@ static const builtin_prop_t JSON_props[] = {
 };
 
 static const builtin_info_t JSON_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_JSON,
     .props_cnt = ARRAY_SIZE(JSON_props),
     .props     = JSON_props,

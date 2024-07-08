@@ -1900,12 +1900,14 @@ static const builtin_prop_t Date_props[] = {
 };
 
 static const builtin_info_t Date_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_DATE,
     .props_cnt = ARRAY_SIZE(Date_props),
     .props     = Date_props,
 };
 
 static const builtin_info_t DateInst_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class = JSCLASS_DATE,
 };
 
@@ -2429,6 +2431,7 @@ static const builtin_prop_t DateConstr_props[] = {
 };
 
 static const builtin_info_t DateConstr_info = {
+    DEFAULT_DISPEX_PROP_VTBL_ENTRIES,
     .class     = JSCLASS_FUNCTION,
     .call      = Function_value,
     .props_cnt = ARRAY_SIZE(DateConstr_props),
