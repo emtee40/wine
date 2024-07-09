@@ -25,6 +25,7 @@
 
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
+#define UNICODE
 #include "windef.h"
 #include "winbase.h"
 #include "winreg.h"
@@ -257,10 +258,24 @@ NTSTATUS WINAPI LsaEnumerateAccountRights(
     PLSA_UNICODE_STRING *rights,
     PULONG count)
 {
-    FIXME("(%p,%p,%p,%p) stub\n", policy, sid, rights, count);
-    *rights = 0;
-    *count = 0;
-    return STATUS_OBJECT_NAME_NOT_FOUND;
+    LSA_UNICODE_STRING *right;
+    WCHAR *strW;
+
+    FIXME("(%p,%p,%p,%p)\n", policy, sid, rights, count);
+    if (rights == NULL || count == NULL) return STATUS_INVALID_PARAMETER;
+
+    /* Some apps may only use large pages after checking whether the user holds
+     * SeLockMemoryPrivilege. */
+    right = malloc( sizeof( LSA_UNICODE_STRING ) + sizeof( SE_LOCK_MEMORY_NAME ) );
+    if (right == NULL) return STATUS_NO_MEMORY;
+    strW = (WCHAR *)(right + 1);
+    memcpy( strW, SE_LOCK_MEMORY_NAME, sizeof( SE_LOCK_MEMORY_NAME ) );
+    strW[sizeof( SE_LOCK_MEMORY_NAME ) - 1] = 0;
+    RtlInitUnicodeString( right, strW );
+
+    *rights = right;
+    *count = 1;
+    return STATUS_SUCCESS;
 }
 
 /******************************************************************************
