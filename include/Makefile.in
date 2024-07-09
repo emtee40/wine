@@ -920,6 +920,7 @@ SOURCES = \
 	wine/mmsystem16.h \
 	wine/mscvpdb.h \
 	wine/mssign.h \
+	wine/mutex.h \
 	wine/nsi.h \
 	wine/orpc.idl \
 	wine/plugplay.idl \
