@@ -2289,7 +2289,7 @@ static void test_permanence(void)
     ok(!status, "got %#lx\n", status);
 
     attr.Attributes = 0;
-    status = ZwOpenDirectoryObject( &handle, 0, &attr );
+    status = ZwOpenDirectoryObject( &handle, DIRECTORY_ALL_ACCESS, &attr );
     ok(!status, "got %#lx\n", status);
     status = ZwMakeTemporaryObject( handle );
     ok(!status, "got %#lx\n", status);
@@ -2303,7 +2303,7 @@ static void test_permanence(void)
     status = ZwCreateDirectoryObject( &handle, GENERIC_ALL, &attr );
     ok(!status, "got %#lx\n", status);
     attr.Attributes = OBJ_PERMANENT;
-    status = ZwOpenDirectoryObject( &handle2, 0, &attr );
+    status = ZwOpenDirectoryObject( &handle2, DIRECTORY_ALL_ACCESS, &attr );
     ok(status == STATUS_SUCCESS, "got %#lx\n", status);
     status = ZwClose( handle2 );
     ok(!status, "got %#lx\n", status);
