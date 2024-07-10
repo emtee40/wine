@@ -98,6 +98,7 @@
 #include "ws2tcpip.h"
 #include "wsipx.h"
 #include "af_irda.h"
+#include "wine/mutex.h"
 #include "wine/debug.h"
 
 #include "ws2_32_private.h"
@@ -106,7 +107,7 @@ WINE_DEFAULT_DEBUG_CHANNEL(winsock);
 WINE_DECLARE_DEBUG_CHANNEL(winediag);
 
 #ifndef HAVE_LINUX_GETHOSTBYNAME_R_6
-static pthread_mutex_t host_mutex = PTHREAD_MUTEX_INITIALIZER;
+static WINE_MUTEX_TYPE host_mutex = WINE_MUTEX_INIT;
 #endif
 
 #define MAP(x) {WS_ ## x, x}
@@ -923,18 +924,18 @@ static NTSTATUS unix_gethostbyaddr( void *args )
         return ret;
     }
 #else
-    pthread_mutex_lock( &host_mutex );
+    WINE_MUTEX_LOCK( &host_mutex );
 
     if (!(unix_host = gethostbyaddr( addr, params->len, unix_family )))
     {
         ret = (h_errno < 0 ? errno_from_unix( errno ) : host_errno_from_unix( h_errno ));
-        pthread_mutex_unlock( &host_mutex );
+        WINE_MUTEX_UNLOCK( &host_mutex );
         return ret;
     }
 
     ret = hostent_from_unix( unix_host, params->host, params->size );
 
-    pthread_mutex_unlock( &host_mutex );
+    WINE_MUTEX_UNLOCK( &host_mutex );
     return ret;
 #endif
 }
@@ -1022,19 +1023,19 @@ static NTSTATUS unix_gethostbyname( void *args )
     struct hostent *unix_host;
     int ret;
 
-    pthread_mutex_lock( &host_mutex );
+    WINE_MUTEX_LOCK( &host_mutex );
 
     if (!(unix_host = gethostbyname( params->name )))
     {
         ret = (h_errno < 0 ? errno_from_unix( errno ) : host_errno_from_unix( h_errno ));
-        pthread_mutex_unlock( &host_mutex );
+        WINE_MUTEX_UNLOCK( &host_mutex );
         return ret;
     }
 
     sort_addrs_hashed( unix_host );
     ret = hostent_from_unix( unix_host, params->host, params->size );
 
-    pthread_mutex_unlock( &host_mutex );
+    WINE_MUTEX_UNLOCK( &host_mutex );
     return ret;
 }
 #endif
