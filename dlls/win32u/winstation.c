@@ -37,6 +37,7 @@
 #include "ntgdi_private.h"
 #include "ntuser_private.h"
 #include "wine/server.h"
+#include "wine/mutex.h"
 #include "wine/debug.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(winstation);
@@ -69,7 +70,7 @@ struct session_block
     SIZE_T      size;       /* size of the mmaped data */
 };
 
-static pthread_mutex_t session_lock = PTHREAD_MUTEX_INITIALIZER;
+static WINE_MUTEX_TYPE session_lock = WINE_MUTEX_INIT;
 static struct list session_blocks = LIST_INIT(session_blocks);
 
 static struct session_thread_data *get_session_thread_data(void)
@@ -156,14 +157,14 @@ static NTSTATUS find_shared_session_block( SIZE_T offset, SIZE_T size, struct se
 
     assert( offset + size > offset );
 
-    pthread_mutex_lock( &session_lock );
+    WINE_MUTEX_LOCK( &session_lock );
 
     LIST_FOR_EACH_ENTRY( block, &session_blocks, struct session_block, entry )
     {
         if (block->offset < offset && offset + size <= block->offset + block->size)
         {
             *ret = block;
-            pthread_mutex_unlock( &session_lock );
+            WINE_MUTEX_UNLOCK( &session_lock );
             return STATUS_SUCCESS;
         }
     }
@@ -174,7 +175,7 @@ static NTSTATUS find_shared_session_block( SIZE_T offset, SIZE_T size, struct se
             wine_dbgstr_longlong(offset), wine_dbgstr_longlong(size), status );
     }
 
-    pthread_mutex_unlock( &session_lock );
+    WINE_MUTEX_UNLOCK( &session_lock );
 
     return status;
 }

@@ -38,6 +38,7 @@
 
 #include "ntgdi_private.h"
 #include "wine/debug.h"
+#include "wine/mutex.h"
 #include "wine/unixlib.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(gdi);
@@ -88,7 +89,7 @@ static const LOGBRUSH DkGrayBrush = { BS_SOLID, RGB(64,64,64), 0 };
 
 static const LOGBRUSH DCBrush = { BS_SOLID, RGB(255,255,255), 0 };
 
-static pthread_mutex_t gdi_lock;
+static WINE_MUTEX_RECURSIVE_TYPE gdi_lock;
 
 
 /****************************************************************************
@@ -454,9 +455,9 @@ void make_gdi_object_system( HGDIOBJ handle, BOOL set)
 {
     GDI_HANDLE_ENTRY *entry;
 
-    pthread_mutex_lock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_LOCK( &gdi_lock  );
     if ((entry = handle_entry( handle ))) entry_obj( entry )->system = !!set;
-    pthread_mutex_unlock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
 }
 
 /******************************************************************************
@@ -492,9 +493,9 @@ UINT GDI_get_ref_count( HGDIOBJ handle )
     GDI_HANDLE_ENTRY *entry;
     UINT ret = 0;
 
-    pthread_mutex_lock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_LOCK( &gdi_lock  );
     if ((entry = handle_entry( handle ))) ret = entry_obj( entry )->selcount;
-    pthread_mutex_unlock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
     return ret;
 }
 
@@ -508,10 +509,10 @@ HGDIOBJ GDI_inc_ref_count( HGDIOBJ handle )
 {
     GDI_HANDLE_ENTRY *entry;
 
-    pthread_mutex_lock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_LOCK( &gdi_lock  );
     if ((entry = handle_entry( handle ))) entry_obj( entry )->selcount++;
     else handle = 0;
-    pthread_mutex_unlock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
     return handle;
 }
 
@@ -525,7 +526,7 @@ BOOL GDI_dec_ref_count( HGDIOBJ handle )
 {
     GDI_HANDLE_ENTRY *entry;
 
-    pthread_mutex_lock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_LOCK( &gdi_lock  );
     if ((entry = handle_entry( handle )))
     {
         assert( entry_obj( entry )->selcount );
@@ -533,13 +534,13 @@ BOOL GDI_dec_ref_count( HGDIOBJ handle )
         {
             /* handle delayed DeleteObject*/
             entry_obj( entry )->deleted = 0;
-            pthread_mutex_unlock( &gdi_lock );
+            WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
             TRACE( "executing delayed DeleteObject for %p\n", handle );
             NtGdiDeleteObjectApp( handle );
             return TRUE;
         }
     }
-    pthread_mutex_unlock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
     return entry != NULL;
 }
 
@@ -696,7 +697,7 @@ static void dump_gdi_objects( void )
 
     TRACE( "%u objects:\n", GDI_MAX_HANDLE_COUNT );
 
-    pthread_mutex_lock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_LOCK( &gdi_lock  );
     for (entry = gdi_shared->Handles; entry < next_unused; entry++)
     {
         if (!entry->Type)
@@ -707,7 +708,7 @@ static void dump_gdi_objects( void )
                    gdi_obj_type( entry->ExtType << NTGDI_HANDLE_TYPE_SHIFT ),
                    entry_obj( entry )->selcount, entry_obj( entry )->deleted );
     }
-    pthread_mutex_unlock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
 }
 
 /***********************************************************************
@@ -722,7 +723,7 @@ HGDIOBJ alloc_gdi_handle( struct gdi_obj_header *obj, DWORD type, const struct g
 
     assert( type );  /* type 0 is reserved to mark free entries */
 
-    pthread_mutex_lock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_LOCK( &gdi_lock  );
 
     entry = next_free;
     if (entry)
@@ -731,7 +732,7 @@ HGDIOBJ alloc_gdi_handle( struct gdi_obj_header *obj, DWORD type, const struct g
         entry = next_unused++;
     else
     {
-        pthread_mutex_unlock( &gdi_lock );
+        WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
         ERR( "out of GDI object handles, expect a crash\n" );
         if (TRACE_ON(gdi)) dump_gdi_objects();
         return 0;
@@ -745,7 +746,7 @@ HGDIOBJ alloc_gdi_handle( struct gdi_obj_header *obj, DWORD type, const struct g
     entry->Type    = entry->ExtType & 0x1f;
     if (++entry->Generation == 0x80) entry->Generation = 1;
     ret = entry_to_handle( entry );
-    pthread_mutex_unlock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
     TRACE( "allocated %s %p %u/%u\n", gdi_obj_type(type), ret,
            (int)InterlockedIncrement( &debug_count ), GDI_MAX_HANDLE_COUNT );
     return ret;
@@ -762,7 +763,7 @@ void *free_gdi_handle( HGDIOBJ handle )
     void *object = NULL;
     GDI_HANDLE_ENTRY *entry;
 
-    pthread_mutex_lock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_LOCK( &gdi_lock  );
     if ((entry = handle_entry( handle )))
     {
         TRACE( "freed %s %p %u/%u\n", gdi_obj_type( entry->ExtType << NTGDI_HANDLE_TYPE_SHIFT ),
@@ -772,7 +773,7 @@ void *free_gdi_handle( HGDIOBJ handle )
         entry->Object = (UINT_PTR)next_free;
         next_free = entry;
     }
-    pthread_mutex_unlock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
     return object;
 }
 
@@ -800,7 +801,7 @@ void *get_any_obj_ptr( HGDIOBJ handle, DWORD *type )
     void *ptr = NULL;
     GDI_HANDLE_ENTRY *entry;
 
-    pthread_mutex_lock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_LOCK( &gdi_lock  );
 
     if ((entry = handle_entry( handle )))
     {
@@ -808,7 +809,7 @@ void *get_any_obj_ptr( HGDIOBJ handle, DWORD *type )
         *type = entry->ExtType << NTGDI_HANDLE_TYPE_SHIFT;
     }
 
-    if (!ptr) pthread_mutex_unlock( &gdi_lock );
+    if (!ptr) WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
     return ptr;
 }
 
@@ -837,7 +838,7 @@ void *GDI_GetObjPtr( HGDIOBJ handle, DWORD type )
  */
 void GDI_ReleaseObj( HGDIOBJ handle )
 {
-    pthread_mutex_unlock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
 }
 
 
@@ -861,10 +862,10 @@ BOOL WINAPI NtGdiDeleteObjectApp( HGDIOBJ obj )
     const struct gdi_obj_funcs *funcs = NULL;
     struct gdi_obj_header *header;
 
-    pthread_mutex_lock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_LOCK( &gdi_lock  );
     if (!(entry = handle_entry( obj )))
     {
-        pthread_mutex_unlock( &gdi_lock );
+        WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
         return FALSE;
     }
 
@@ -872,7 +873,7 @@ BOOL WINAPI NtGdiDeleteObjectApp( HGDIOBJ obj )
     if (header->system)
     {
 	TRACE("Preserving system object %p\n", obj);
-        pthread_mutex_unlock( &gdi_lock );
+        WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
 	return TRUE;
     }
 
@@ -885,7 +886,7 @@ BOOL WINAPI NtGdiDeleteObjectApp( HGDIOBJ obj )
     }
     else funcs = header->funcs;
 
-    pthread_mutex_unlock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
 
     TRACE("%p\n", obj );
 
@@ -932,13 +933,13 @@ INT WINAPI NtGdiExtGetObjectW( HGDIOBJ handle, INT count, void *buffer )
 
     TRACE("%p %d %p\n", handle, count, buffer );
 
-    pthread_mutex_lock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_LOCK( &gdi_lock  );
     if ((entry = handle_entry( handle )))
     {
         funcs = entry_obj( entry )->funcs;
         handle = entry_to_handle( entry );  /* make it a full handle */
     }
-    pthread_mutex_unlock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
 
     if (funcs && funcs->pGetObjectW)
     {
@@ -990,13 +991,13 @@ BOOL WINAPI NtGdiUnrealizeObject( HGDIOBJ obj )
     const struct gdi_obj_funcs *funcs = NULL;
     GDI_HANDLE_ENTRY *entry;
 
-    pthread_mutex_lock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_LOCK( &gdi_lock  );
     if ((entry = handle_entry( obj )))
     {
         funcs = entry_obj( entry )->funcs;
         obj = entry_to_handle( entry );  /* make it a full handle */
     }
-    pthread_mutex_unlock( &gdi_lock );
+    WINE_MUTEX_RECURSIVE_UNLOCK( &gdi_lock  );
 
     if (funcs && funcs->pUnrealizeObject) return funcs->pUnrealizeObject( obj );
     return funcs != NULL;
@@ -1032,13 +1033,9 @@ BOOL WINAPI NtGdiSetColorAdjustment( HDC hdc, const COLORADJUSTMENT *ca )
 
 void gdi_init(void)
 {
-    pthread_mutexattr_t attr;
     unsigned int dpi;
 
-    pthread_mutexattr_init( &attr );
-    pthread_mutexattr_settype( &attr, PTHREAD_MUTEX_RECURSIVE );
-    pthread_mutex_init( &gdi_lock, &attr );
-    pthread_mutexattr_destroy( &attr );
+    WINE_MUTEX_RECURSIVE_INIT(&gdi_lock);
 
     NtQuerySystemInformation( SystemBasicInformation, &system_info, sizeof(system_info), NULL );
     init_gdi_shared();

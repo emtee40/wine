@@ -34,6 +34,7 @@
 #include "winreg.h"
 #include "cfgmgr32.h"
 #include "d3dkmdt.h"
+#include "wine/mutex.h"
 #include "wine/wingdi16.h"
 #include "wine/server.h"
 
@@ -145,7 +146,7 @@ static struct list gpus = LIST_INIT(gpus);
 static struct list sources = LIST_INIT(sources);
 static struct list monitors = LIST_INIT(monitors);
 static INT64 last_query_display_time;
-static pthread_mutex_t display_lock = PTHREAD_MUTEX_INITIALIZER;
+static WINE_MUTEX_TYPE display_lock = WINE_MUTEX_INIT;
 
 BOOL enable_thunk_lock = FALSE;
 
@@ -279,21 +280,21 @@ static RECT work_area;
 static DWORD process_layout = ~0u;
 
 static HDC display_dc;
-static pthread_mutex_t display_dc_lock = PTHREAD_MUTEX_INITIALIZER;
+static WINE_MUTEX_TYPE display_dc_lock = WINE_MUTEX_INIT;
 
-static pthread_mutex_t user_mutex;
+static WINE_MUTEX_RECURSIVE_TYPE user_mutex;
 static unsigned int user_lock_thread, user_lock_rec;
 
 void user_lock(void)
 {
-    pthread_mutex_lock( &user_mutex );
+    WINE_MUTEX_RECURSIVE_LOCK( &user_mutex );
     if (!user_lock_rec++) user_lock_thread = GetCurrentThreadId();
 }
 
 void user_unlock(void)
 {
     if (!--user_lock_rec) user_lock_thread = 0;
-    pthread_mutex_unlock( &user_mutex );
+    WINE_MUTEX_RECURSIVE_UNLOCK( &user_mutex );
 }
 
 void user_check_not_lock(void)
@@ -1229,7 +1230,7 @@ static void add_gpu( const char *name, const struct pci_id *pci_id, const GUID *
 
     if (!ctx->mutex)
     {
-        pthread_mutex_lock( &display_lock );
+        WINE_MUTEX_LOCK( &display_lock );
         ctx->mutex = get_display_device_init_mutex();
         prepare_devices();
     }
@@ -1536,7 +1537,7 @@ static void release_display_manager_ctx( struct device_manager_ctx *ctx )
 {
     if (ctx->mutex)
     {
-        pthread_mutex_unlock( &display_lock );
+        WINE_MUTEX_UNLOCK( &display_lock );
         release_display_device_init_mutex( ctx->mutex );
         ctx->mutex = 0;
     }
@@ -1718,7 +1719,7 @@ static BOOL update_display_cache_from_registry(void)
 
     if (key.LastWriteTime.QuadPart <= last_query_display_time) return TRUE;
 
-    pthread_mutex_lock( &display_lock );
+    WINE_MUTEX_LOCK( &display_lock );
     mutex = get_display_device_init_mutex();
 
     clear_display_devices();
@@ -1773,7 +1774,7 @@ static BOOL update_display_cache_from_registry(void)
 
     if ((ret = !list_empty( &sources ) && !list_empty( &monitors )))
         last_query_display_time = key.LastWriteTime.QuadPart;
-    pthread_mutex_unlock( &display_lock );
+    WINE_MUTEX_UNLOCK( &display_lock );
     release_display_device_init_mutex( mutex );
     return ret;
 }
@@ -2035,10 +2036,10 @@ BOOL update_display_cache( BOOL force )
     if (NtUserGetObjectInformation( winstation, UOI_NAME, name, sizeof(name), NULL )
         && !wcscmp( name, wine_service_station_name ))
     {
-        pthread_mutex_lock( &display_lock );
+        WINE_MUTEX_LOCK( &display_lock );
         clear_display_devices();
         list_add_tail( &monitors, &virtual_monitor.entry );
-        pthread_mutex_unlock( &display_lock );
+        WINE_MUTEX_UNLOCK( &display_lock );
         return TRUE;
     }
 
@@ -2073,25 +2074,25 @@ BOOL update_display_cache( BOOL force )
 static BOOL lock_display_devices(void)
 {
     if (!update_display_cache( FALSE )) return FALSE;
-    pthread_mutex_lock( &display_lock );
+    WINE_MUTEX_LOCK( &display_lock );
     return TRUE;
 }
 
 static void unlock_display_devices(void)
 {
-    pthread_mutex_unlock( &display_lock );
+    WINE_MUTEX_UNLOCK( &display_lock );
 }
 
 static HDC get_display_dc(void)
 {
-    pthread_mutex_lock( &display_dc_lock );
+    WINE_MUTEX_LOCK( &display_dc_lock );
     if (!display_dc)
     {
         HDC dc;
 
-        pthread_mutex_unlock( &display_dc_lock );
+        WINE_MUTEX_UNLOCK( &display_dc_lock );
         dc = NtGdiOpenDCW( NULL, NULL, NULL, 0, TRUE, NULL, NULL, NULL );
-        pthread_mutex_lock( &display_dc_lock );
+        WINE_MUTEX_LOCK( &display_dc_lock );
         if (display_dc)
             NtGdiDeleteObjectApp( dc );
         else
@@ -2108,7 +2109,7 @@ HBITMAP get_display_bitmap(void)
     HBITMAP ret;
 
     virtual_rect = get_virtual_screen_rect( 0 );
-    pthread_mutex_lock( &display_dc_lock );
+    WINE_MUTEX_LOCK( &display_dc_lock );
     if (!EqualRect( &old_virtual_rect, &virtual_rect ))
     {
         if (hbitmap) NtGdiDeleteObjectApp( hbitmap );
@@ -2117,13 +2118,13 @@ HBITMAP get_display_bitmap(void)
         old_virtual_rect = virtual_rect;
     }
     ret = hbitmap;
-    pthread_mutex_unlock( &display_dc_lock );
+    WINE_MUTEX_UNLOCK( &display_dc_lock );
     return ret;
 }
 
 static void release_display_dc( HDC hdc )
 {
-    pthread_mutex_unlock( &display_dc_lock );
+    WINE_MUTEX_UNLOCK( &display_dc_lock );
 }
 
 /**********************************************************************
@@ -4838,17 +4839,13 @@ void sysparams_init(void)
     WCHAR buffer[MAX_PATH+16], *p, *appname;
     DWORD i, dispos, dpi_scaling;
     WCHAR layout[KL_NAMELENGTH];
-    pthread_mutexattr_t attr;
     HKEY hkey, appkey = 0;
     DWORD len;
 
     static const WCHAR oneW[] = {'1',0};
     static const WCHAR x11driverW[] = {'\\','X','1','1',' ','D','r','i','v','e','r',0};
 
-    pthread_mutexattr_init( &attr );
-    pthread_mutexattr_settype( &attr, PTHREAD_MUTEX_RECURSIVE );
-    pthread_mutex_init( &user_mutex, &attr );
-    pthread_mutexattr_destroy( &attr );
+    WINE_MUTEX_RECURSIVE_INIT( &user_mutex );
 
     if ((hkey = reg_create_ascii_key( hkcu_key, "Keyboard Layout\\Preload", 0, NULL )))
     {

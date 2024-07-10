@@ -29,6 +29,7 @@
 #include "ntgdi_private.h"
 #include "win32u_private.h"
 #include "ntuser_private.h"
+#include "wine/mutex.h"
 #include "wine/vulkan.h"
 #include "wine/vulkan_driver.h"
 
@@ -55,7 +56,7 @@ struct d3dkmt_vidpn_source
     struct list entry;                      /* List entry */
 };
 
-static pthread_mutex_t d3dkmt_lock = PTHREAD_MUTEX_INITIALIZER;
+static WINE_MUTEX_TYPE d3dkmt_lock = WINE_MUTEX_INIT;
 static struct list d3dkmt_adapters = LIST_INIT( d3dkmt_adapters );
 static struct list d3dkmt_devices = LIST_INIT( d3dkmt_devices );
 static struct list d3dkmt_vidpn_sources = LIST_INIT( d3dkmt_vidpn_sources );   /* VidPN source information list */
@@ -158,13 +159,13 @@ NTSTATUS WINAPI NtGdiDdDDICloseAdapter( const D3DKMT_CLOSEADAPTER *desc )
 
     if (!desc || !desc->hAdapter) return STATUS_INVALID_PARAMETER;
 
-    pthread_mutex_lock( &d3dkmt_lock );
+    WINE_MUTEX_LOCK( &d3dkmt_lock );
     if ((adapter = find_adapter_from_handle( desc->hAdapter )))
     {
         list_remove( &adapter->entry );
         status = STATUS_SUCCESS;
     }
-    pthread_mutex_unlock( &d3dkmt_lock );
+    WINE_MUTEX_UNLOCK( &d3dkmt_lock );
 
     free( adapter );
     return status;
@@ -256,10 +257,10 @@ NTSTATUS WINAPI NtGdiDdDDIOpenAdapterFromLuid( D3DKMT_OPENADAPTERFROMLUID *desc 
     else if (!(adapter->vk_device = get_vulkan_physical_device( &uuid )))
         WARN( "Failed to find vulkan device with GUID %s\n", debugstr_guid( &uuid ) );
 
-    pthread_mutex_lock( &d3dkmt_lock );
+    WINE_MUTEX_LOCK( &d3dkmt_lock );
     desc->hAdapter = adapter->handle = ++handle_start;
     list_add_tail( &d3dkmt_adapters, &adapter->entry );
-    pthread_mutex_unlock( &d3dkmt_lock );
+    WINE_MUTEX_UNLOCK( &d3dkmt_lock );
 
     return STATUS_SUCCESS;
 }
@@ -277,9 +278,9 @@ NTSTATUS WINAPI NtGdiDdDDICreateDevice( D3DKMT_CREATEDEVICE *desc )
 
     if (!desc) return STATUS_INVALID_PARAMETER;
 
-    pthread_mutex_lock( &d3dkmt_lock );
+    WINE_MUTEX_LOCK( &d3dkmt_lock );
     found = !!find_adapter_from_handle( desc->hAdapter );
-    pthread_mutex_unlock( &d3dkmt_lock );
+    WINE_MUTEX_UNLOCK( &d3dkmt_lock );
 
     if (!found) return STATUS_INVALID_PARAMETER;
 
@@ -289,10 +290,10 @@ NTSTATUS WINAPI NtGdiDdDDICreateDevice( D3DKMT_CREATEDEVICE *desc )
     device = calloc( 1, sizeof(*device) );
     if (!device) return STATUS_NO_MEMORY;
 
-    pthread_mutex_lock( &d3dkmt_lock );
+    WINE_MUTEX_LOCK( &d3dkmt_lock );
     device->handle = ++handle_start;
     list_add_tail( &d3dkmt_devices, &device->entry );
-    pthread_mutex_unlock( &d3dkmt_lock );
+    WINE_MUTEX_UNLOCK( &d3dkmt_lock );
 
     desc->hDevice = device->handle;
     return STATUS_SUCCESS;
@@ -310,7 +311,7 @@ NTSTATUS WINAPI NtGdiDdDDIDestroyDevice( const D3DKMT_DESTROYDEVICE *desc )
 
     if (!desc || !desc->hDevice) return STATUS_INVALID_PARAMETER;
 
-    pthread_mutex_lock( &d3dkmt_lock );
+    WINE_MUTEX_LOCK( &d3dkmt_lock );
     LIST_FOR_EACH_ENTRY( device, &d3dkmt_devices, struct d3dkmt_device, entry )
     {
         if (device->handle == desc->hDevice)
@@ -320,7 +321,7 @@ NTSTATUS WINAPI NtGdiDdDDIDestroyDevice( const D3DKMT_DESTROYDEVICE *desc )
             break;
         }
     }
-    pthread_mutex_unlock( &d3dkmt_lock );
+    WINE_MUTEX_UNLOCK( &d3dkmt_lock );
 
     if (!found) return STATUS_INVALID_PARAMETER;
 
@@ -382,7 +383,7 @@ NTSTATUS WINAPI NtGdiDdDDIQueryVideoMemoryInfo( D3DKMT_QUERYVIDEOMEMORYINFO *des
     desc->CurrentReservation = 0;
     desc->AvailableForReservation = 0;
 
-    pthread_mutex_lock( &d3dkmt_lock );
+    WINE_MUTEX_LOCK( &d3dkmt_lock );
     if ((adapter = find_adapter_from_handle( desc->hAdapter )) && adapter->vk_device)
     {
         memset( &budget, 0, sizeof(budget) );
@@ -403,7 +404,7 @@ NTSTATUS WINAPI NtGdiDdDDIQueryVideoMemoryInfo( D3DKMT_QUERYVIDEOMEMORYINFO *des
         }
         desc->AvailableForReservation = desc->Budget / 2;
     }
-    pthread_mutex_unlock( &d3dkmt_lock );
+    WINE_MUTEX_UNLOCK( &d3dkmt_lock );
 
     return adapter ? STATUS_SUCCESS : STATUS_INVALID_PARAMETER;
 }
@@ -431,7 +432,7 @@ NTSTATUS WINAPI NtGdiDdDDISetVidPnSourceOwner( const D3DKMT_SETVIDPNSOURCEOWNER 
     if (!desc || !desc->hDevice || (desc->VidPnSourceCount && (!desc->pType || !desc->pVidPnSourceId)))
         return STATUS_INVALID_PARAMETER;
 
-    pthread_mutex_lock( &d3dkmt_lock );
+    WINE_MUTEX_LOCK( &d3dkmt_lock );
 
     /* Check parameters */
     for (i = 0; i < desc->VidPnSourceCount; ++i)
@@ -449,7 +450,7 @@ NTSTATUS WINAPI NtGdiDdDDISetVidPnSourceOwner( const D3DKMT_SETVIDPNSOURCEOWNER 
                         (source->type == D3DKMT_VIDPNSOURCEOWNER_EMULATED &&
                          desc->pType[i] == D3DKMT_VIDPNSOURCEOWNER_EXCLUSIVE))
                     {
-                        pthread_mutex_unlock( &d3dkmt_lock );
+                        WINE_MUTEX_UNLOCK( &d3dkmt_lock );
                         return STATUS_INVALID_PARAMETER;
                     }
                 }
@@ -460,7 +461,7 @@ NTSTATUS WINAPI NtGdiDdDDISetVidPnSourceOwner( const D3DKMT_SETVIDPNSOURCEOWNER 
                         (desc->pType[i] == D3DKMT_VIDPNSOURCEOWNER_EXCLUSIVE ||
                          desc->pType[i] == D3DKMT_VIDPNSOURCEOWNER_EMULATED))
                     {
-                        pthread_mutex_unlock( &d3dkmt_lock );
+                        WINE_MUTEX_UNLOCK( &d3dkmt_lock );
                         return STATUS_GRAPHICS_VIDPN_SOURCE_IN_USE;
                     }
                 }
@@ -471,14 +472,14 @@ NTSTATUS WINAPI NtGdiDdDDISetVidPnSourceOwner( const D3DKMT_SETVIDPNSOURCEOWNER 
          * D3DKMT_VIDPNSOURCEOWNER_SHARED come back STATUS_GRAPHICS_VIDPN_SOURCE_IN_USE */
         if (desc->pType[i] == D3DKMT_VIDPNSOURCEOWNER_SHARED)
         {
-            pthread_mutex_unlock( &d3dkmt_lock );
+            WINE_MUTEX_UNLOCK( &d3dkmt_lock );
             return STATUS_GRAPHICS_VIDPN_SOURCE_IN_USE;
         }
 
         /* FIXME: D3DKMT_VIDPNSOURCEOWNER_EXCLUSIVEGDI unsupported */
         if (desc->pType[i] == D3DKMT_VIDPNSOURCEOWNER_EXCLUSIVEGDI || desc->pType[i] > D3DKMT_VIDPNSOURCEOWNER_EMULATED)
         {
-            pthread_mutex_unlock( &d3dkmt_lock );
+            WINE_MUTEX_UNLOCK( &d3dkmt_lock );
             return STATUS_INVALID_PARAMETER;
         }
     }
@@ -495,7 +496,7 @@ NTSTATUS WINAPI NtGdiDdDDISetVidPnSourceOwner( const D3DKMT_SETVIDPNSOURCEOWNER 
             }
         }
 
-        pthread_mutex_unlock( &d3dkmt_lock );
+        WINE_MUTEX_UNLOCK( &d3dkmt_lock );
         return STATUS_SUCCESS;
     }
 
@@ -518,7 +519,7 @@ NTSTATUS WINAPI NtGdiDdDDISetVidPnSourceOwner( const D3DKMT_SETVIDPNSOURCEOWNER 
             source = malloc( sizeof(*source) );
             if (!source)
             {
-                pthread_mutex_unlock( &d3dkmt_lock );
+                WINE_MUTEX_UNLOCK( &d3dkmt_lock );
                 return STATUS_NO_MEMORY;
             }
 
@@ -529,7 +530,7 @@ NTSTATUS WINAPI NtGdiDdDDISetVidPnSourceOwner( const D3DKMT_SETVIDPNSOURCEOWNER 
         }
     }
 
-    pthread_mutex_unlock( &d3dkmt_lock );
+    WINE_MUTEX_UNLOCK( &d3dkmt_lock );
     return STATUS_SUCCESS;
 }
 
@@ -544,18 +545,18 @@ NTSTATUS WINAPI NtGdiDdDDICheckVidPnExclusiveOwnership( const D3DKMT_CHECKVIDPNE
 
     if (!desc || !desc->hAdapter) return STATUS_INVALID_PARAMETER;
 
-    pthread_mutex_lock( &d3dkmt_lock );
+    WINE_MUTEX_LOCK( &d3dkmt_lock );
 
     LIST_FOR_EACH_ENTRY( source, &d3dkmt_vidpn_sources, struct d3dkmt_vidpn_source, entry )
     {
         if (source->id == desc->VidPnSourceId && source->type == D3DKMT_VIDPNSOURCEOWNER_EXCLUSIVE)
         {
-            pthread_mutex_unlock( &d3dkmt_lock );
+            WINE_MUTEX_UNLOCK( &d3dkmt_lock );
             return STATUS_GRAPHICS_PRESENT_OCCLUDED;
         }
     }
 
-    pthread_mutex_unlock( &d3dkmt_lock );
+    WINE_MUTEX_UNLOCK( &d3dkmt_lock );
     return STATUS_SUCCESS;
 }
 
