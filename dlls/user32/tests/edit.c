@@ -1394,6 +1394,22 @@ static void test_edit_control_6(void)
     ret = SendMessageA(hWnd, WM_GETTEXT, MAXLEN, (LPARAM)buf);
     ok(ret == strlen(str), "Expected %s, got len %ld\n", str, ret);
     ok(!strcmp(buf, str), "Expected %s, got %s\n", str, buf);
+
+    ret = SendMessageW(hWnd, WM_GETTEXT, 0, (LPARAM)NULL);
+    ok(ret == 0, "Expected 0, got len %ld\n", ret);
+    ret = SendMessageW(hWnd, WM_GETTEXT, MAXLEN, (LPARAM)NULL);
+    ok(ret == 0, "Expected 0, got len %ld\n", ret);
+    ret = SendMessageA(hWnd, WM_GETTEXT, 0, (LPARAM)NULL);
+    ok(ret == 0, "Expected 0, got len %ld\n", ret);
+
+    if (0) /* Crashes on Windows. */
+    {
+        ret = SendMessageA(hWnd, WM_GETTEXT, 1, (LPARAM)NULL);
+        ok(ret == 0, "Expected 0, got len %ld\n", ret);
+        ret = SendMessageA(hWnd, WM_GETTEXT, MAXLEN, (LPARAM)NULL);
+        ok(ret == 0, "Expected 0, got len %ld\n", ret);
+    }
+
     buf[0] = 0;
     ret = SendMessageA(hWnd, WM_DESTROY, 0, 0);
     ok(ret == 0, "Expected 0, got %ld\n", ret);
