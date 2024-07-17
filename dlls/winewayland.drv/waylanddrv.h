@@ -79,6 +79,8 @@ struct wayland_keyboard
     struct xkb_context *xkb_context;
     struct xkb_state *xkb_state;
     HWND focused_hwnd;
+    struct wl_array pressed_keys_on_enter;
+    BOOL have_pressed_keys_on_enter;
     pthread_mutex_t mutex;
 };
 
