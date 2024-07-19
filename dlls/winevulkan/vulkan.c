@@ -169,6 +169,17 @@ static uint64_t client_handle_from_host(struct wine_instance *instance, uint64_t
     return result;
 }
 
+static void set_transient_client_handle(struct wine_instance *instance, uint64_t client_handle)
+{
+    if (!instance->enable_wrapper_list) return;
+    NtUserGetThreadInfo()->vulkan_data = client_handle;
+}
+
+static uint64_t get_transient_handle(void)
+{
+    return (uint64_t)NtUserGetThreadInfo()->vulkan_data;
+}
+
 static VkBool32 debug_utils_callback_conversion(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     VkDebugUtilsMessageTypeFlagsEXT message_types,
     const VkDebugUtilsMessengerCallbackDataEXT *callback_data,
@@ -210,6 +221,8 @@ static VkBool32 debug_utils_callback_conversion(VkDebugUtilsMessageSeverityFlagB
         if (wine_vk_is_type_wrapped(callback_data->pObjects[i].objectType))
         {
             object_name_infos[i].objectHandle = client_handle_from_host(object->instance, callback_data->pObjects[i].objectHandle);
+            if (!object_name_infos[i].objectHandle)
+                object_name_infos[i].objectHandle = get_transient_handle();
             if (!object_name_infos[i].objectHandle)
             {
                 WARN("handle conversion failed 0x%s\n", wine_dbgstr_longlong(callback_data->pObjects[i].objectHandle));
@@ -1911,7 +1924,10 @@ VkResult wine_vkAllocateMemory(VkDevice handle, const VkMemoryAllocateInfo *allo
     if (!(memory = malloc(sizeof(*memory))))
         return VK_ERROR_OUT_OF_HOST_MEMORY;
 
+    set_transient_client_handle(device->phys_dev->instance, (uintptr_t)memory);
     result = device->funcs.p_vkAllocateMemory(device->host_device, &info, NULL, &memory->host_memory);
+    set_transient_client_handle(device->phys_dev->instance, 0);
+
     if (result != VK_SUCCESS)
     {
         free(memory);
