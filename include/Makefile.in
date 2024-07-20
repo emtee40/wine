@@ -45,6 +45,7 @@ SOURCES = \
 	axextendenums.h \
 	basetsd.h \
 	basetyps.h \
+	bcp47langs.h \
 	bcrypt.h \
 	bdaiface.idl \
 	bdaiface_enums.h \
