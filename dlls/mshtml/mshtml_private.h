@@ -414,6 +414,7 @@ typedef struct {
 } dispex_static_data_t;
 
 extern const tid_t no_iface_tids[1];
+extern DISPID propput_dispid;
 
 typedef HRESULT (*dispex_hook_invoke_t)(DispatchEx*,WORD,DISPPARAMS*,VARIANT*,
                                         EXCEPINFO*,IServiceProvider*);
