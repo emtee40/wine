@@ -1275,15 +1275,11 @@ static dispex_static_data_vtbl_t mutation_observer_ctor_dispex_vtbl = {
     .value            = mutation_observer_ctor_value
 };
 
-static const tid_t mutation_observer_ctor_iface_tids[] = {
-    0
-};
-
 static dispex_static_data_t mutation_observer_ctor_dispex = {
     "Function",
     &mutation_observer_ctor_dispex_vtbl,
     NULL_tid,
-    mutation_observer_ctor_iface_tids
+    no_iface_tids
 };
 
 HRESULT create_mutation_observer_ctor(compat_mode_t compat_mode, IDispatch **ret)

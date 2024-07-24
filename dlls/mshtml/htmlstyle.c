@@ -9764,14 +9764,11 @@ static const dispex_static_data_vtbl_t HTMLW3CComputedStyle_dispex_vtbl = {
     .unlink            = CSSStyle_unlink
 };
 
-static const tid_t HTMLW3CComputedStyle_iface_tids[] = {
-    0
-};
 static dispex_static_data_t HTMLW3CComputedStyle_dispex = {
     "CSSStyleDeclaration",
     &HTMLW3CComputedStyle_dispex_vtbl,
     DispHTMLW3CComputedStyle_tid,
-    HTMLW3CComputedStyle_iface_tids,
+    no_iface_tids,
     CSSStyle_init_dispex_info
 };
 
