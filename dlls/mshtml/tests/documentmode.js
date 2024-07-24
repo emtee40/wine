@@ -19,6 +19,10 @@
 var compat_version;
 var tests = [];
 
+if(performance.now) {
+    var t = performance.now();
+    ok(t - performance.timing.navigationStart < 2000, "performance.now() more than 2 sec away from navigationStart: " + t + " vs " + performance.timing.navigationStart);
+}
 ok(performance.timing.navigationStart > 0, "navigationStart <= 0");
 ok(performance.timing.fetchStart == performance.timing.navigationStart, "fetchStart != navigationStart");
 ok(performance.timing.domainLookupStart >= performance.timing.fetchStart, "domainLookupStart < fetchStart");
@@ -578,6 +582,11 @@ sync_test("perf_props", function() {
     test_exposed("timing", true);
     test_exposed("toJSON", v >= 9);
     test_exposed("toString", true);
+    test_exposed("now", v >= 10);
+    test_exposed("eventCounts", false);
+    test_exposed("measureUserAgentSpecificMemory", false);
+    test_exposed("memory", false);
+    test_exposed("timeOrigin", false);
 
     obj = window.performance.navigation, name = "PerformanceNavigation";
 

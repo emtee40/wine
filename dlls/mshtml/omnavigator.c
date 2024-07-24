@@ -1672,6 +1672,7 @@ static dispex_static_data_t HTMLPerformanceNavigation_dispex = {
 typedef struct {
     DispatchEx dispex;
     IHTMLPerformance IHTMLPerformance_iface;
+    IWinePerformancePrivate IWinePerformancePrivate_iface;
 
     HTMLInnerWindow *window;
     IHTMLPerformanceNavigation *navigation;
@@ -1772,6 +1773,34 @@ static const IHTMLPerformanceVtbl HTMLPerformanceVtbl = {
     HTMLPerformance_toJSON
 };
 
+static inline HTMLPerformance *impl_from_IWinePerformancePrivate(IWinePerformancePrivate *iface)
+{
+    return CONTAINING_RECORD(iface, HTMLPerformance, IWinePerformancePrivate_iface);
+}
+
+DISPEX_IDISPATCH_IMPL(HTMLPerformancePrivate, IWinePerformancePrivate, impl_from_IWinePerformancePrivate(iface)->dispex)
+
+static HRESULT WINAPI HTMLPerformancePrivate_now(IWinePerformancePrivate *iface, double *p)
+{
+    HTMLPerformance *This = impl_from_IWinePerformancePrivate(iface);
+
+    TRACE("(%p)->(%p)\n", This, p);
+
+    *p = get_time_stamp() - This->window->navigation_start_time;
+    return S_OK;
+}
+
+static const IWinePerformancePrivateVtbl WinePerformancePrivateVtbl = {
+    HTMLPerformancePrivate_QueryInterface,
+    HTMLPerformancePrivate_AddRef,
+    HTMLPerformancePrivate_Release,
+    HTMLPerformancePrivate_GetTypeInfoCount,
+    HTMLPerformancePrivate_GetTypeInfo,
+    HTMLPerformancePrivate_GetIDsOfNames,
+    HTMLPerformancePrivate_Invoke,
+    HTMLPerformancePrivate_now,
+};
+
 static inline HTMLPerformance *HTMLPerformance_from_DispatchEx(DispatchEx *iface)
 {
     return CONTAINING_RECORD(iface, HTMLPerformance, dispex);
@@ -1783,6 +1812,8 @@ static void *HTMLPerformance_query_interface(DispatchEx *dispex, REFIID riid)
 
     if(IsEqualGUID(&IID_IHTMLPerformance, riid))
         return &This->IHTMLPerformance_iface;
+    if(IsEqualGUID(&IID_IWinePerformancePrivate, riid))
+        return &This->IWinePerformancePrivate_iface;
 
     return NULL;
 }
@@ -1830,6 +1861,8 @@ static void HTMLPerformance_init_dispex_info(dispex_data_t *info, compat_mode_t 
         {DISPID_UNKNOWN}
     };
     dispex_info_add_interface(info, IHTMLPerformance_tid, mode < COMPAT_MODE_IE9 ? hooks : NULL);
+    if(mode >= COMPAT_MODE_IE10)
+        dispex_info_add_interface(info, IWinePerformancePrivate_tid, NULL);
 }
 
 static dispex_static_data_t HTMLPerformance_dispex = {
@@ -1850,6 +1883,7 @@ HRESULT create_performance(HTMLInnerWindow *window, IHTMLPerformance **ret)
         return E_OUTOFMEMORY;
 
     performance->IHTMLPerformance_iface.lpVtbl = &HTMLPerformanceVtbl;
+    performance->IWinePerformancePrivate_iface.lpVtbl = &WinePerformancePrivateVtbl;
     performance->window = window;
     IHTMLWindow2_AddRef(&window->base.IHTMLWindow2_iface);
 

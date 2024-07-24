@@ -304,6 +304,7 @@ typedef struct ScriptHost ScriptHost;
     XIID(IWineHTMLWindowCompatPrivate) \
     XIID(IWinePageTransitionEvent) \
     XIID(IWineXMLHttpRequestPrivate) \
+    XIID(IWinePerformancePrivate) \
     XIID(IWineMSHTMLConsole) \
     XIID(IWineMSHTMLMediaQueryList) \
     XIID(IWineMSHTMLMutationObserver)

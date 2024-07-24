@@ -113,6 +113,19 @@ interface IWineMSHTMLMediaQueryList : IDispatch
     HRESULT removeListener([in] VARIANT *listener);
 }
 
+[
+    odl,
+    oleautomation,
+    dual,
+    hidden,
+    uuid(6ac5491e-1758-4b82-98a2-83e31a7c8870)
+]
+interface IWinePerformancePrivate : IDispatch
+{
+    [id(1)]
+    HRESULT now([retval, out] double *p);
+}
+
 const long DISPID_IWINEHTMLWINDOWPRIVATE_MUTATIONOBSERVER = 55;
 [
     odl,
