@@ -2435,6 +2435,7 @@ sync_test("functions scope", function() {
 
 sync_test("perf toJSON", function() {
     var tests = [
+        [ "performance", "navigation", "timing" ],
         [ "performance.navigation", "redirectCount", "type" ],
         [ "performance.timing", "connectEnd", "connectStart", "domComplete", "domContentLoadedEventEnd",
           "domContentLoadedEventStart", "domInteractive", "domLoading", "domainLookupEnd", "domainLookupStart",

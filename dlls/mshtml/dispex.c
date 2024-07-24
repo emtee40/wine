@@ -2430,11 +2430,13 @@ static IWineJSDispatchHostVtbl JSDispatchHostVtbl = {
 
 HRESULT dispex_builtin_props_to_json(DispatchEx *dispex, VARIANT *ret)
 {
+    IWineJSDispatchHost *subdispex_iface;
+    static WCHAR toJSONW[] = L"toJSON";
     func_info_t *func, *end;
     IWineJSDispatch *json;
+    DISPID id, to_json;
     HRESULT hres;
     VARIANT var;
-    DISPID id;
     DISPPARAMS dp = { 0 }, put_dp = { &var, &propput_dispid, 1, 1 };
 
     if(!dispex->jsdisp)
@@ -2452,9 +2454,20 @@ HRESULT dispex_builtin_props_to_json(DispatchEx *dispex, VARIANT *ret)
 
         if(SUCCEEDED(hres)) {
             hres = IWineJSDispatch_GetDispID(json, func->name, fdexNameEnsure | fdexNameCaseSensitive, &id);
-            if(SUCCEEDED(hres)) {
-                hres = IWineJSDispatch_InvokeEx(json, id, 0, DISPATCH_PROPERTYPUT, &put_dp, NULL, NULL, NULL);
+
+            if(SUCCEEDED(hres) && V_VT(&var) == VT_DISPATCH && SUCCEEDED(IDispatch_QueryInterface(V_DISPATCH(&var), &IID_IWineJSDispatchHost, (void**)&subdispex_iface))) {
+                if(subdispex_iface->lpVtbl == &JSDispatchHostVtbl) {
+                    DispatchEx *subdispex = impl_from_IWineJSDispatchHost(subdispex_iface);
+
+                    if(SUCCEEDED(get_builtin_id(subdispex, toJSONW, fdexNameCaseSensitive, &to_json))) {
+                        VariantClear(&var);
+                        hres = dispex_call_builtin(subdispex, to_json, &dp, &var, NULL, NULL);
+                    }
+                }
+                IWineJSDispatchHost_Release(subdispex_iface);
             }
+            if(SUCCEEDED(hres))
+                hres = IWineJSDispatch_InvokeEx(json, id, 0, DISPATCH_PROPERTYPUT, &put_dp, NULL, NULL, NULL);
             VariantClear(&var);
         }
         if(FAILED(hres)) {
