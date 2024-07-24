@@ -2304,6 +2304,18 @@ static HRESULT WINAPI DispatchEx_GetNameSpaceParent(IWineJSDispatch *iface, IUnk
     return E_NOTIMPL;
 }
 
+static HRESULT WINAPI WineJSDispatch_CreateObject(IWineJSDispatch *iface, IWineJSDispatch **obj)
+{
+    jsdisp_t *This = impl_from_IWineJSDispatch(iface);
+    jsdisp_t *jsdisp;
+    HRESULT hres;
+
+    hres = create_object(This->ctx, NULL, &jsdisp);
+    if(SUCCEEDED(hres))
+        *obj = &jsdisp->IWineJSDispatch_iface;
+    return hres;
+}
+
 static void WINAPI WineJSDispatch_Free(IWineJSDispatch *iface)
 {
    jsdisp_t *This = impl_from_IWineJSDispatch(iface);
@@ -2342,6 +2354,7 @@ static IWineJSDispatchVtbl DispatchExVtbl = {
     DispatchEx_GetNameSpaceParent,
     WineJSDispatch_Free,
     WineJSDispatch_GetScriptGlobal,
+    WineJSDispatch_CreateObject,
 };
 
 jsdisp_t *as_jsdisp(IDispatch *disp)
