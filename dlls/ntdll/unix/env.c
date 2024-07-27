@@ -935,6 +935,13 @@ static const char overrides_help_message[] =
  *		get_initial_environment
  *
  * Return the initial environment.
+ *  converts HOSTENV (char*) to WINENV (WCHAR*)
+ *  HOSTENV is stored in global var main_envp
+ *  WINENV is returned in *env.
+ *  pos:  returns size [in WCHAR] of win environment
+ *  size: returns size [in bytes] of host environment
+ *  return value is host env converted to win env
+      with special and dynamic envvars beeing ignored
  */
 static WCHAR *get_initial_environment( SIZE_T *pos, SIZE_T *size )
 {
@@ -963,6 +970,12 @@ static WCHAR *get_initial_environment( SIZE_T *pos, SIZE_T *size )
             }
         }
         else if (is_special_env_var( str )) continue;  /* skip it */
+
+#if 1
+	// do whitelisting instead of blacklisting of envvars
+	// prevents propagating nixenv to winenv, except "WINE"+special-env-var
+	else continue;
+#endif
 
         if (is_dynamic_env_var( str )) continue;
         ptr += ntdll_umbstowcs( str, strlen(str) + 1, ptr, end - ptr );
