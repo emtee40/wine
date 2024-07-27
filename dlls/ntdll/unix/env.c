@@ -488,6 +488,8 @@ const char *ntdll_get_data_dir(void)
  *           build_envp
  *
  * Build the environment of a new child process.
+ * converts WINENV (WCHAR*) to NIXENV (char*)
+ * Use HOSTENV stored in global var main_envp
  */
 char **build_envp( const WCHAR *envW )
 {
@@ -497,6 +499,12 @@ char **build_envp( const WCHAR *envW )
     int count = 1, length, lenW;
     unsigned int i;
 
+#if 1
+    /* to not convert from WINENV but use HOSTENV */
+    return main_envp;
+#else
+
+    /* convert WINENV to NIXENV */
     lenW = get_env_length( envW );
     if (!(env = malloc( lenW * 3 ))) return NULL;
     length = ntdll_wcstoumbs( envW, lenW, env, lenW * 3, FALSE );
@@ -549,6 +557,7 @@ char **build_envp( const WCHAR *envW )
     }
     free( env );
     return envp;
+#endif
 }
 
 
