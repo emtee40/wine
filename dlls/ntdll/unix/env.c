@@ -499,65 +499,8 @@ char **build_envp( const WCHAR *envW )
     int count = 1, length, lenW;
     unsigned int i;
 
-#if 1
     /* to not convert from WINENV but use HOSTENV */
     return main_envp;
-#else
-
-    /* convert WINENV to NIXENV */
-    lenW = get_env_length( envW );
-    if (!(env = malloc( lenW * 3 ))) return NULL;
-    length = ntdll_wcstoumbs( envW, lenW, env, lenW * 3, FALSE );
-
-    for (p = env; *p; p += strlen(p) + 1, count++)
-    {
-        if (is_dynamic_env_var( p )) continue;
-        if (is_special_env_var( p )) length += 4; /* prefix it with "WINE" */
-    }
-
-    for (i = 0; i < ARRAY_SIZE( unix_vars ); i++)
-    {
-        if (!(p = getenv(unix_vars[i]))) continue;
-        length += strlen(unix_vars[i]) + strlen(p) + 2;
-        count++;
-    }
-
-    if ((envp = malloc( count * sizeof(*envp) + length )))
-    {
-        char **envptr = envp;
-        char *dst = (char *)(envp + count);
-
-        /* some variables must not be modified, so we get them directly from the unix env */
-        for (i = 0; i < ARRAY_SIZE( unix_vars ); i++)
-        {
-            if (!(p = getenv( unix_vars[i] ))) continue;
-            *envptr++ = strcpy( dst, unix_vars[i] );
-            strcat( dst, "=" );
-            strcat( dst, p );
-            dst += strlen(dst) + 1;
-        }
-
-        /* now put the Windows environment strings */
-        for (p = env; *p; p += strlen(p) + 1)
-        {
-            if (*p == '=') continue;  /* skip drive curdirs, this crashes some unix apps */
-            if (is_dynamic_env_var( p )) continue;
-            if (is_special_env_var( p ))  /* prefix it with "WINE" */
-            {
-                *envptr++ = strcpy( dst, "WINE" );
-                strcat( dst, p );
-            }
-            else
-            {
-                *envptr++ = strcpy( dst, p );
-            }
-            dst += strlen(dst) + 1;
-        }
-        *envptr = 0;
-    }
-    free( env );
-    return envp;
-#endif
 }
 
 
@@ -962,23 +905,16 @@ static WCHAR *get_initial_environment( SIZE_T *pos, SIZE_T *size )
         /* skip Unix special variables and use the Wine variants instead */
         if (!strncmp( str, "WINE", 4 ))
         {
-            if (is_special_env_var( str + 4 )) str += 4;
+            if (is_special_env_var( str + 4 )) {
+                str += 4;
+                ptr += ntdll_umbstowcs( str, strlen(str) + 1, ptr, end - ptr );
+            }
             else if (!strcmp( str, "WINEDLLOVERRIDES=help" ))
             {
                 MESSAGE( overrides_help_message );
                 exit(0);
             }
         }
-        else if (is_special_env_var( str )) continue;  /* skip it */
-
-#if 1
-	// do whitelisting instead of blacklisting of envvars
-	// prevents propagating nixenv to winenv, except "WINE"+special-env-var
-	else continue;
-#endif
-
-        if (is_dynamic_env_var( str )) continue;
-        ptr += ntdll_umbstowcs( str, strlen(str) + 1, ptr, end - ptr );
     }
     *pos = ptr - env;
     return env;
