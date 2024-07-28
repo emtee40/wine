@@ -348,24 +348,6 @@ static BOOL is_special_env_var( const char *var )
             STARTS_WITH( var, "XDG_SESSION_TYPE=" ));
 }
 
-/* check if an environment variable changes dynamically in every new process */
-static BOOL is_dynamic_env_var( const char *var )
-{
-    return (STARTS_WITH( var, "WINEDLLOVERRIDES=" ) ||
-            STARTS_WITH( var, "WINEDATADIR=" ) ||
-            STARTS_WITH( var, "WINEHOMEDIR=" ) ||
-            STARTS_WITH( var, "WINEBUILDDIR=" ) ||
-            STARTS_WITH( var, "WINECONFIGDIR=" ) ||
-            STARTS_WITH( var, "WINELOADER=" ) ||
-            STARTS_WITH( var, "WINEDLLDIR" ) ||
-            STARTS_WITH( var, "WINEUNIXCP=" ) ||
-            STARTS_WITH( var, "WINEUSERLOCALE=" ) ||
-            STARTS_WITH( var, "WINEUSERNAME=" ) ||
-            STARTS_WITH( var, "WINEPRELOADRESERVE=" ) ||
-            STARTS_WITH( var, "WINELOADERNOEXEC=" ) ||
-            STARTS_WITH( var, "WINESERVERSOCKET=" ));
-}
-
 /******************************************************************
  *      ntdll_umbstowcs  (ntdll.so)
  *
