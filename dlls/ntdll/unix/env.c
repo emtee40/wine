@@ -493,12 +493,6 @@ const char *ntdll_get_data_dir(void)
  */
 char **build_envp( const WCHAR *envW )
 {
-    static const char * const unix_vars[] = { "PATH", "TEMP", "TMP", "HOME" };
-    char **envp;
-    char *env, *p;
-    int count = 1, length, lenW;
-    unsigned int i;
-
     /* to not convert from WINENV but use HOSTENV */
     return main_envp;
 }
