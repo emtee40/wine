@@ -471,12 +471,12 @@ const char *ntdll_get_data_dir(void)
  *
  * Build the environment of a new child process.
  * converts WINENV (WCHAR*) to NIXENV (char*)
- * Use HOSTENV stored in global var main_envp
+ * Use HOSTENV stored in global var environ
  */
 char **build_envp( const WCHAR *envW )
 {
     /* to not convert from WINENV but use HOSTENV */
-    return main_envp;
+    return environ;
 }
 
 
@@ -855,7 +855,7 @@ static const char overrides_help_message[] =
  *
  * Return the initial environment.
  *  converts HOSTENV (char*) to WINENV (WCHAR*)
- *  HOSTENV is stored in global var main_envp
+ *  HOSTENV is stored in global var environ
  *  WINENV is returned in *env.
  *  pos:  returns size [in WCHAR] of win environment
  *  size: returns size [in bytes] of host environment
