@@ -304,6 +304,7 @@ typedef struct ScriptHost ScriptHost;
     XIID(IWineHTMLWindowCompatPrivate) \
     XIID(IWinePageTransitionEvent) \
     XIID(IWineXMLHttpRequestPrivate) \
+    XIID(IWinePerformancePrivate) \
     XIID(IWineMSHTMLConsole) \
     XIID(IWineMSHTMLMediaQueryList) \
     XIID(IWineMSHTMLMutationObserver)
@@ -416,6 +417,9 @@ typedef struct {
     dispex_data_t *delayed_init_info;
 } dispex_static_data_t;
 
+extern const tid_t no_iface_tids[1];
+extern DISPID propput_dispid;
+
 typedef HRESULT (*dispex_hook_invoke_t)(DispatchEx*,WORD,DISPPARAMS*,VARIANT*,
                                         EXCEPINFO*,IServiceProvider*);
 
@@ -503,6 +507,7 @@ HRESULT dispex_get_dprop_ref(DispatchEx*,const WCHAR*,BOOL,VARIANT**);
 HRESULT get_dispids(tid_t,DWORD*,DISPID**);
 HRESULT remove_attribute(DispatchEx*,DISPID,VARIANT_BOOL*);
 HRESULT dispex_get_dynid(DispatchEx*,const WCHAR*,BOOL,DISPID*);
+HRESULT dispex_builtin_props_to_json(DispatchEx*,VARIANT*);
 void release_typelib(void);
 HRESULT get_class_typeinfo(const CLSID*,ITypeInfo**);
 const void *dispex_get_vtbl(DispatchEx*);
@@ -1393,7 +1398,7 @@ LONG get_task_target_magic(void);
 HRESULT push_task(task_t*,task_proc_t,task_proc_t,LONG);
 HRESULT push_event_task(event_task_t*,HTMLInnerWindow*,event_task_proc_t,event_task_proc_t,LONG);
 void remove_target_tasks(LONG);
-ULONGLONG get_time_stamp(void);
+double get_time_stamp(void);
 
 enum timer_type {
     TIMER_TIMEOUT,

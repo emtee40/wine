@@ -47,6 +47,7 @@ interface IWineJSDispatch : IDispatchEx
 {
     void Free();
     HRESULT GetScriptGlobal(IWineJSDispatchHost **ret);
+    HRESULT CreateObject(IWineJSDispatch **obj);
 }
 
 [

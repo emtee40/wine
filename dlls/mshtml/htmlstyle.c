@@ -2869,13 +2869,12 @@ static HRESULT WINAPI HTMLStyle_setAttribute(IHTMLStyle *iface, BSTR strAttribut
     if(hres == S_OK)
     {
         VARIANT ret;
-        DISPID dispidNamed = DISPID_PROPERTYPUT;
         DISPPARAMS params;
 
         params.cArgs = 1;
         params.rgvarg = &AttributeValue;
         params.cNamedArgs = 1;
-        params.rgdispidNamedArgs = &dispidNamed;
+        params.rgdispidNamedArgs = &propput_dispid;
 
         hres = HTMLStyle_Invoke(iface, dispid, &IID_NULL, LOCALE_SYSTEM_DEFAULT,
             DISPATCH_PROPERTYPUT, &params, &ret, NULL, NULL);
@@ -9764,14 +9763,11 @@ static const dispex_static_data_vtbl_t HTMLW3CComputedStyle_dispex_vtbl = {
     .unlink            = CSSStyle_unlink
 };
 
-static const tid_t HTMLW3CComputedStyle_iface_tids[] = {
-    0
-};
 static dispex_static_data_t HTMLW3CComputedStyle_dispex = {
     "CSSStyleDeclaration",
     &HTMLW3CComputedStyle_dispex_vtbl,
     DispHTMLW3CComputedStyle_tid,
-    HTMLW3CComputedStyle_iface_tids,
+    no_iface_tids,
     CSSStyle_init_dispex_info
 };
 

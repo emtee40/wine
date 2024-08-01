@@ -19,6 +19,10 @@
 var compat_version;
 var tests = [];
 
+if(performance.now) {
+    var t = performance.now();
+    ok(t - performance.timing.navigationStart < 2000, "performance.now() more than 2 sec away from navigationStart: " + t + " vs " + performance.timing.navigationStart);
+}
 ok(performance.timing.navigationStart > 0, "navigationStart <= 0");
 ok(performance.timing.fetchStart == performance.timing.navigationStart, "fetchStart != navigationStart");
 ok(performance.timing.domainLookupStart >= performance.timing.fetchStart, "domainLookupStart < fetchStart");
@@ -559,6 +563,61 @@ sync_test("domimpl_props", function() {
     test_exposed("createDocument", v >= 9);
     test_exposed("createDocumentType", v >= 9);
     test_exposed("createHTMLDocument", v >= 9);
+});
+
+sync_test("perf_props", function() {
+    var obj = window.performance, name = "Performance";
+    var v = document.documentMode;
+
+    function test_exposed(prop, expect) {
+        if(expect)
+            ok(prop in obj, prop + " not found in " + name + ".");
+        else
+            ok(!(prop in obj), prop + " found in " + name + ".");
+    }
+
+    test_exposed("navigation", true);
+    test_exposed("timing", true);
+    test_exposed("toJSON", v >= 9);
+    test_exposed("toString", true);
+    test_exposed("now", v >= 10);
+    test_exposed("eventCounts", false);
+    test_exposed("measureUserAgentSpecificMemory", false);
+    test_exposed("memory", false);
+    test_exposed("timeOrigin", false);
+
+    obj = window.performance.navigation, name = "PerformanceNavigation";
+
+    test_exposed("redirectCount", true);
+    test_exposed("type", true);
+    test_exposed("toJSON", v >= 9);
+    test_exposed("toString", true);
+
+    obj = window.performance.timing, name = "PerformanceTiming";
+
+    test_exposed("connectEnd", true);
+    test_exposed("connectStart", true);
+    test_exposed("domComplete", true);
+    test_exposed("domContentLoadedEventEnd", true);
+    test_exposed("domContentLoadedEventStart", true);
+    test_exposed("domInteractive", true);
+    test_exposed("domLoading", true);
+    test_exposed("domainLookupEnd", true);
+    test_exposed("domainLookupStart", true);
+    test_exposed("fetchStart", true);
+    test_exposed("loadEventEnd", true);
+    test_exposed("loadEventStart", true);
+    test_exposed("msFirstPaint", true);
+    test_exposed("navigationStart", true);
+    test_exposed("redirectEnd", true);
+    test_exposed("redirectStart", true);
+    test_exposed("requestStart", true);
+    test_exposed("responseEnd", true);
+    test_exposed("responseStart", true);
+    test_exposed("unloadEventEnd", true);
+    test_exposed("unloadEventStart", true);
+    test_exposed("toJSON", v >= 9);
+    test_exposed("toString", true);
 });
 
 sync_test("xhr_props", function() {

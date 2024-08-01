@@ -34,6 +34,7 @@ WINE_DEFAULT_DEBUG_CHANNEL(mshtml);
 
 #define MAX_ARGS 16
 
+DISPID propput_dispid = DISPID_PROPERTYPUT;
 static ExternalCycleCollectionParticipant dispex_ccp;
 
 static CRITICAL_SECTION cs_dispex_static_data;
@@ -124,6 +125,8 @@ PRIVATE_TID_LIST
 #undef XIID
 #undef XDIID
 };
+
+const tid_t no_iface_tids[1] = { 0 };
 
 static HRESULT load_typelib(void)
 {
@@ -1066,13 +1069,11 @@ static const dispex_static_data_vtbl_t function_dispex_vtbl = {
     .invoke           = function_invoke
 };
 
-static const tid_t function_iface_tids[] = {0};
-
 static dispex_static_data_t function_dispex = {
     "Function",
     &function_dispex_vtbl,
     NULL_tid,
-    function_iface_tids
+    no_iface_tids
 };
 
 static func_disp_t *create_func_disp(DispatchEx *obj, func_info_t *info)
@@ -1975,8 +1976,6 @@ HRESULT dispex_prop_get(DispatchEx *dispex, DISPID id, LCID lcid, VARIANT *r, EX
 
 HRESULT dispex_prop_put(DispatchEx *dispex, DISPID id, LCID lcid, VARIANT *v, EXCEPINFO *ei, IServiceProvider *caller)
 {
-    static DISPID propput_dispid = DISPID_PROPERTYPUT;
-
     switch(get_dispid_type(id)) {
     case DISPEXPROP_CUSTOM: {
         DISPPARAMS dp = { .cArgs = 1, .rgvarg = v, .cNamedArgs = 1, .rgdispidNamedArgs = &propput_dispid };
@@ -2519,6 +2518,61 @@ static IWineJSDispatchHostVtbl JSDispatchHostVtbl = {
     JSDispatchHost_GetOuterDispatch,
     JSDispatchHost_ToString,
 };
+
+HRESULT dispex_builtin_props_to_json(DispatchEx *dispex, VARIANT *ret)
+{
+    IWineJSDispatchHost *subdispex_iface;
+    static WCHAR toJSONW[] = L"toJSON";
+    func_info_t *func, *end;
+    IWineJSDispatch *json;
+    DISPID id, to_json;
+    HRESULT hres;
+    VARIANT var;
+    DISPPARAMS dp = { 0 }, put_dp = { &var, &propput_dispid, 1, 1 };
+
+    if(!dispex->jsdisp)
+        return E_UNEXPECTED;
+
+    hres = IWineJSDispatch_CreateObject(dispex->jsdisp, &json);
+    if(FAILED(hres))
+        return hres;
+
+    for(func = dispex->info->funcs, end = func + dispex->info->func_cnt; func < end; func++) {
+        if(func->func_disp_idx != -1)
+            continue;
+        if(!func->hook || (hres = func->hook(dispex, DISPATCH_PROPERTYGET, &dp, &var, NULL, NULL)) == S_FALSE)
+            hres = builtin_propget(dispex, func, &dp, &var);
+
+        if(SUCCEEDED(hres)) {
+            hres = IWineJSDispatch_GetDispID(json, func->name, fdexNameEnsure | fdexNameCaseSensitive, &id);
+
+            if(SUCCEEDED(hres) && V_VT(&var) == VT_DISPATCH && SUCCEEDED(IDispatch_QueryInterface(V_DISPATCH(&var), &IID_IWineJSDispatchHost, (void**)&subdispex_iface))) {
+                if(subdispex_iface->lpVtbl == &JSDispatchHostVtbl) {
+                    DispatchEx *subdispex = impl_from_IWineJSDispatchHost(subdispex_iface);
+
+                    if(SUCCEEDED(get_builtin_id(subdispex, toJSONW, fdexNameCaseSensitive, &to_json))) {
+                        VariantClear(&var);
+                        hres = dispex_call_builtin(subdispex, to_json, &dp, &var, NULL, NULL);
+                    }
+                }
+                IWineJSDispatchHost_Release(subdispex_iface);
+            }
+            if(SUCCEEDED(hres))
+                hres = IWineJSDispatch_InvokeEx(json, id, 0, DISPATCH_PROPERTYPUT, &put_dp, NULL, NULL, NULL);
+            VariantClear(&var);
+        }
+        if(FAILED(hres)) {
+            IWineJSDispatch_Release(json);
+            return hres;
+        }
+    }
+
+    if(ret) {
+        V_VT(ret) = VT_DISPATCH;
+        V_DISPATCH(ret) = (IDispatch*)json;
+    }
+    return hres;
+}
 
 static nsresult NSAPI dispex_traverse(void *ccp, void *p, nsCycleCollectionTraversalCallback *cb)
 {
