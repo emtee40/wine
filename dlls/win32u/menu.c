@@ -4242,10 +4242,6 @@ static BOOL track_menu( HMENU hmenu, UINT flags, int x, int y, HWND hwnd, const 
                     menu_right_key( &mt, flags, msg.message );
                     break;
 
-                case VK_ESCAPE:
-                    exit_menu = menu_key_escape( &mt, flags );
-                    break;
-
                 case VK_F1:
                     {
                         HELPINFO hi;
@@ -4262,8 +4258,9 @@ static BOOL track_menu( HMENU hmenu, UINT flags, int x, int y, HWND hwnd, const 
                         break;
                     }
 
+                case VK_ESCAPE:
                 default:
-                    NtUserTranslateMessage( &msg, 0 );
+                    exit_menu = menu_key_escape( &mt, flags );
                     break;
                 }
                 break;  /* WM_KEYDOWN */
