@@ -29,7 +29,12 @@
 #include "ntuser.h"
 
 /* snidrv */
-extern BOOL snidrv_init(void);
+extern BOOL snidrv_notification_init(void);
 extern BOOL snidrv_run_loop(void);
+
+
+extern BOOL create_bitmap_from_icon(HANDLE icon, unsigned *p_width, unsigned *p_height, void** p_bits);
+
+extern BOOL snidrv_show_balloon( HWND owner, UINT id, BOOL hidden, const struct systray_balloon* balloon );
 
 #endif
