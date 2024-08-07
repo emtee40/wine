@@ -365,6 +365,7 @@ struct gamepad_statics
     IGamepadStatics IGamepadStatics_iface;
     IGamepadStatics2 IGamepadStatics2_iface;
     ICustomGameControllerFactory ICustomGameControllerFactory_iface;
+    IAgileObject IAgileObject_iface;
     LONG ref;
 };
 
@@ -381,7 +382,6 @@ static HRESULT WINAPI factory_QueryInterface( IActivationFactory *iface, REFIID 
 
     if (IsEqualGUID( iid, &IID_IUnknown ) ||
         IsEqualGUID( iid, &IID_IInspectable ) ||
-        IsEqualGUID( iid, &IID_IAgileObject ) ||
         IsEqualGUID( iid, &IID_IActivationFactory ))
     {
         IInspectable_AddRef( (*out = &impl->IActivationFactory_iface) );
@@ -403,6 +403,12 @@ static HRESULT WINAPI factory_QueryInterface( IActivationFactory *iface, REFIID 
     if (IsEqualGUID( iid, &IID_ICustomGameControllerFactory ))
     {
         IInspectable_AddRef( (*out = &impl->ICustomGameControllerFactory_iface) );
+        return S_OK;
+    }
+
+    if (IsEqualGUID( iid, &IID_IAgileObject ))
+    {
+        IInspectable_AddRef( (*out = &impl->IAgileObject_iface) );
         return S_OK;
     }
 
@@ -644,12 +650,15 @@ static const struct ICustomGameControllerFactoryVtbl controller_factory_vtbl =
     controller_factory_OnGameControllerRemoved,
 };
 
+DEFINE_IAGILEOBJECT( gamepad_statics, IActivationFactory, &object->IActivationFactory_iface );
+
 static struct gamepad_statics gamepad_statics =
 {
     {&factory_vtbl},
     {&statics_vtbl},
     {&statics2_vtbl},
     {&controller_factory_vtbl},
+    {&gamepad_statics_IAgileObject_vtbl},
     1,
 };
 
