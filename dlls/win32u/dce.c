@@ -655,6 +655,11 @@ static void update_visible_region( struct dce *dce )
                 top_win     = wine_server_ptr_handle( reply->top_win );
                 win_rect    = wine_server_get_rect( reply->win_rect );
                 top_rect    = wine_server_get_rect( reply->top_rect );
+                if (flags & DCX_PARENTCLIP)
+                {
+                    win_rect.right  = top_rect.right;
+                    win_rect.bottom = top_rect.bottom;
+                }
                 paint_flags = reply->paint_flags;
             }
             else size = reply->total_size;
@@ -1318,9 +1323,12 @@ static BOOL get_update_flags( HWND hwnd, HWND *child, UINT *flags )
  */
 static HRGN send_ncpaint( HWND hwnd, HWND *child, UINT *flags )
 {
-    HRGN whole_rgn = get_update_region( hwnd, flags, child );
-    HRGN client_rgn = 0;
+    HRGN whole_rgn;
     DWORD style;
+
+    TRACE( "hwnd %p, flags %08x\n", hwnd, *flags );
+
+    whole_rgn = get_update_region( hwnd, flags, child );
 
     if (child) hwnd = *child;
 
@@ -1331,6 +1339,7 @@ static HRGN send_ncpaint( HWND hwnd, HWND *child, UINT *flags )
         UINT context;
         RECT client, window, update;
         INT type;
+        HRGN nc_rgn = 0;
 
         context = set_thread_dpi_awareness_context( get_window_dpi_awareness_context( hwnd ));
 
@@ -1342,23 +1351,17 @@ static HRGN send_ncpaint( HWND hwnd, HWND *child, UINT *flags )
             update.left < client.left || update.top < client.top ||
             update.right > client.right || update.bottom > client.bottom)
         {
-            client_rgn = NtGdiCreateRectRgn( client.left, client.top, client.right, client.bottom );
-            NtGdiCombineRgn( client_rgn, client_rgn, whole_rgn, RGN_AND );
-
             /* check if update rgn contains complete nonclient area */
-            if (type == SIMPLEREGION && EqualRect( &window, &update ))
+            if (type == SIMPLEREGION && update.left <= window.left && update.top <= window.top &&
+                update.right >= window.right && update.bottom >= window.bottom)
             {
-                NtGdiDeleteObjectApp( whole_rgn );
-                whole_rgn = (HRGN)1;
+                nc_rgn = (HRGN)1;
             }
-        }
-        else
-        {
-            client_rgn = whole_rgn;
-            whole_rgn = 0;
+            else
+                nc_rgn = whole_rgn;
         }
 
-        if (whole_rgn) /* NOTE: WM_NCPAINT allows wParam to be 1 */
+        if (nc_rgn) /* NOTE: WM_NCPAINT allows wParam to be 1 */
         {
             if (*flags & UPDATE_NONCLIENT)
             {
@@ -1369,13 +1372,12 @@ static HRGN send_ncpaint( HWND hwnd, HWND *child, UINT *flags )
                 if (style & WS_VSCROLL)
                     set_standard_scroll_painted( hwnd, SB_VERT, FALSE );
 
-                send_message( hwnd, WM_NCPAINT, (WPARAM)whole_rgn, 0 );
+                send_message( hwnd, WM_NCPAINT, (WPARAM)nc_rgn, 0 );
             }
-            if (whole_rgn > (HRGN)1) NtGdiDeleteObjectApp( whole_rgn );
         }
         set_thread_dpi_awareness_context( context );
     }
-    return client_rgn;
+    return whole_rgn;
 }
 
 /***********************************************************************
@@ -1392,6 +1394,8 @@ static BOOL send_erase( HWND hwnd, UINT flags, HRGN client_rgn,
     HDC hdc = 0;
     RECT dummy;
 
+    TRACE( "hwnd %p, flags %08x, client_rgn %p\n", hwnd, flags, client_rgn );
+
     if (!clip_rect) clip_rect = &dummy;
     if (hdc_ret || (flags & UPDATE_ERASE))
     {
@@ -1401,6 +1405,13 @@ static BOOL send_erase( HWND hwnd, UINT flags, HRGN client_rgn,
         if ((hdc = NtUserGetDCEx( hwnd, client_rgn, dcx_flags )))
         {
             INT type = NtGdiGetAppClipBox( hdc, clip_rect );
+
+            if (get_class_long( hwnd, GCL_STYLE, FALSE ) & CS_PARENTDC)
+            {
+                RECT client_rect;
+                get_client_rect( hwnd, &client_rect, get_thread_dpi() );
+                intersect_rect( clip_rect, clip_rect, &client_rect );
+            }
 
             if (flags & UPDATE_ERASE)
             {
@@ -1490,6 +1501,8 @@ HDC WINAPI NtUserBeginPaint( HWND hwnd, PAINTSTRUCT *ps )
     RECT rect;
     UINT flags = UPDATE_NONCLIENT | UPDATE_ERASE | UPDATE_PAINT | UPDATE_INTERNALPAINT | UPDATE_NOCHILDREN;
 
+    TRACE( "hwnd %p, %p\n", hwnd, ps );
+
     NtUserHideCaret( hwnd );
 
     if (!(hrgn = send_ncpaint( hwnd, NULL, &flags ))) return 0;
@@ -1514,6 +1527,8 @@ HDC WINAPI NtUserBeginPaint( HWND hwnd, PAINTSTRUCT *ps )
  */
 BOOL WINAPI NtUserEndPaint( HWND hwnd, const PAINTSTRUCT *ps )
 {
+    TRACE( "hwnd %p, %p\n", hwnd, ps );
+
     NtUserShowCaret( hwnd );
     flush_window_surfaces( FALSE );
     if (!ps) return FALSE;
@@ -1670,7 +1685,15 @@ INT WINAPI NtUserGetUpdateRgn( HWND hwnd, HRGN hrgn, BOOL erase )
 
     if ((update_rgn = send_ncpaint( hwnd, NULL, &flags )))
     {
-        retval = NtGdiCombineRgn( hrgn, update_rgn, 0, RGN_COPY );
+        RECT client_rect;
+        HRGN client_rgn;
+
+        get_window_rects( hwnd, COORDS_SCREEN, NULL, &client_rect, get_thread_dpi() );
+
+        client_rgn = NtGdiCreateRectRgn( client_rect.left, client_rect.top, client_rect.right, client_rect.bottom );
+        retval = NtGdiCombineRgn( hrgn, update_rgn, client_rgn, RGN_AND );
+        NtGdiDeleteObjectApp( client_rgn );
+
         if (send_erase( hwnd, flags, update_rgn, NULL, NULL ))
         {
             flags = UPDATE_DELAYED_ERASE;
@@ -1689,12 +1712,19 @@ INT WINAPI NtUserGetUpdateRgn( HWND hwnd, HRGN hrgn, BOOL erase )
 BOOL WINAPI NtUserGetUpdateRect( HWND hwnd, RECT *rect, BOOL erase )
 {
     UINT flags = UPDATE_NOCHILDREN;
-    HRGN update_rgn;
+    HRGN update_rgn, client_rgn;
+    RECT client_rect;
     BOOL need_erase;
 
     if (erase) flags |= UPDATE_NONCLIENT | UPDATE_ERASE;
 
     if (!(update_rgn = send_ncpaint( hwnd, NULL, &flags ))) return FALSE;
+
+    get_window_rects( hwnd, COORDS_SCREEN, NULL, &client_rect, get_thread_dpi() );
+
+    client_rgn = NtGdiCreateRectRgn( client_rect.left, client_rect.top, client_rect.right, client_rect.bottom );
+    NtGdiCombineRgn( update_rgn, update_rgn, client_rgn, RGN_AND );
+    NtGdiDeleteObjectApp( client_rgn );
 
     if (rect && NtGdiGetRgnBox( update_rgn, rect ) != NULLREGION)
     {
