@@ -703,6 +703,9 @@ static HRESULT WINAPI IDirectSound3DBufferImpl_SetPosition(IDirectSound3DBuffer 
 
     TRACE("setting: Position vector = (%f,%f,%f); dwApply = %ld\n", x, y, z, dwApply);
 
+    if (isnan(x) || isnan(y) || isnan(z))
+        return DSERR_INVALIDPARAM;
+
     AcquireSRWLockExclusive(&This->lock);
 
     This->ds3db_ds3db.vPosition.x = x;
