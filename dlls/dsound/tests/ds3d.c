@@ -1354,6 +1354,8 @@ static void check_doppler(IDirectSound *dsound, IDirectSound3DListener *listener
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
     hr = IDirectSound3DListener_SetVelocity(listener, 0, 0, 0, DS3D_DEFERRED);
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    hr = IDirectSound3DListener_SetOrientation(listener, NAN, NAN, NAN, NAN, NAN, NAN, DS3D_DEFERRED);
+    ok(hr == DSERR_INVALIDPARAM, "Got hr %#lx.\n", hr);
     hr = IDirectSound3DBuffer_SetPosition(buffer_3d, 0, 1, 0, DS3D_DEFERRED);
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
     hr = IDirectSound3DBuffer_SetVelocity(buffer_3d, 0, -60, 0, DS3D_DEFERRED);
