@@ -22,6 +22,7 @@
 #include "initguid.h"
 #include "windef.h"
 #include "winbase.h"
+#include "shlwapi.h"
 #include "winstring.h"
 #include "wine/debug.h"
 #include "objbase.h"
@@ -379,12 +380,49 @@ HRESULT WINAPI RoResolveNamespace(HSTRING name, HSTRING windowsMetaDataDir,
                                   DWORD *metaDataFilePathsCount, HSTRING **metaDataFilePaths,
                                   DWORD *subNamespacesCount, HSTRING **subNamespaces)
 {
-    FIXME("name %s, windowsMetaDataDir %s, metaDataFilePaths %p, subNamespaces %p stub!\n",
+    HRESULT hr;
+    const WCHAR *name_buffer;
+    /* We use a single giant .winmd file that combines lots of different .winmd files
+     * This works because winmd files are allowed to contain nested sub-namespaces:
+     * https://learn.microsoft.com/en-us/uwp/winrt-cref/winmd-files#winmd-file-name
+     * It gets copied into 'c:\windows\system32\WinMetadata' by wine.inf
+     * See wintypes.rc
+     */
+    const WCHAR *path = L"C:\\windows\\system32\\WinMetadata\\Windows.winmd";
+
+    FIXME("name %s, windowsMetaDataDir %s, metaDataFilePaths %p, subNamespaces %p partial stub!\n",
             debugstr_hstring(name), debugstr_hstring(windowsMetaDataDir),
             metaDataFilePaths, subNamespaces);
 
+    name_buffer = WindowsGetStringRawBuffer( name, NULL );
+
     if (!metaDataFilePaths && !subNamespaces)
         return E_INVALIDARG;
+
+    if (!StrCmpNIW(name_buffer, L"Windows", 7)) {
+        if (metaDataFilePathsCount) {
+            HSTRING *str = malloc(sizeof(HSTRING));
+            if (!str)
+                return E_OUTOFMEMORY;
+
+            if (FAILED(hr = WindowsCreateString(path, wcslen(path), str))) {
+                free(str);
+                return hr;
+            }
+            /* FIXME - when windowsMetaDataDir is passed in, we need to use the correct individual .winmd
+             * file path, instead of our special combined .winmd file
+             */
+            *metaDataFilePaths = str;
+            *metaDataFilePathsCount = 1;
+        }
+
+        /* FIXME - fill in subNamespaces correctly */
+        if(subNamespacesCount) {
+            *subNamespacesCount = 0;
+        }
+        /* FIXME - check that the requested name actually exists */
+        return S_OK;
+    }
 
     return RO_E_METADATA_NAME_NOT_FOUND;
 }

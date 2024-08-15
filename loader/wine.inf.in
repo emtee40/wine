@@ -54,7 +54,7 @@ AddService=MountMgr,0x800,MountMgrService
 RegisterDlls=RegisterDllsSection
 WineFakeDlls=FakeDllsWin32,FakeDlls
 UpdateInis=SystemIni
-CopyFiles=ColorFiles,EtcFiles,InfFiles,NlsFiles,SortFiles
+CopyFiles=ColorFiles,EtcFiles,InfFiles,NlsFiles,SortFiles,WinmdFiles
 AddReg=\
     Classes,\
     ContentIndex,\
@@ -77,7 +77,7 @@ AddReg=\
 RegisterDlls=RegisterDllsSection
 WineFakeDlls=FakeDllsWin32,FakeDlls
 UpdateInis=SystemIni
-CopyFiles=ColorFiles,EtcFiles,InfFiles,NlsFiles,SortFiles
+CopyFiles=ColorFiles,EtcFiles,InfFiles,NlsFiles,SortFiles,WinmdFiles
 AddReg=\
     Classes,\
     ContentIndex,\
@@ -101,7 +101,7 @@ AddReg=\
 RegisterDlls=RegisterDllsSection
 WineFakeDlls=FakeDllsWin64,FakeDlls
 UpdateInis=SystemIni
-CopyFiles=ColorFiles,EtcFiles,InfFiles,NlsFiles,SortFiles
+CopyFiles=ColorFiles,EtcFiles,InfFiles,NlsFiles,SortFiles,WinmdFiles
 AddReg=\
     Classes,\
     ContentIndex,\
@@ -126,7 +126,7 @@ AddReg=\
 RegisterDlls=RegisterDllsSection
 WineFakeDlls=FakeDllsWin64,FakeDlls
 UpdateInis=SystemIni
-CopyFiles=ColorFiles,EtcFiles,InfFiles,NlsFiles,SortFiles
+CopyFiles=ColorFiles,EtcFiles,InfFiles,NlsFiles,SortFiles,WinmdFiles
 AddReg=\
     Classes,\
     ContentIndex,\
@@ -2621,6 +2621,9 @@ winehid.inf,"@%12%\winehid.sys,-1"
 wineusb.inf,"@%12%\wineusb.sys,-1"
 winexinput.inf,"@%12%\winexinput.sys,-1"
 
+[WinmdFiles]
+Windows.winmd,"@%11%\wintypes.dll,-1"
+
 [NlsFiles]
 c_037.nls
 c_10000.nls
@@ -2711,3 +2714,4 @@ EtcFiles  = 12,etc
 InfFiles  = 17
 NlsFiles  = 11
 SortFiles = 10,globalization\sorting
+WinmdFiles = 11,WinMetadata
