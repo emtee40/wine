@@ -964,6 +964,11 @@ static HRESULT WINAPI IDirectSound3DListenerImpl_SetOrientation(IDirectSound3DLi
 
 	TRACE("setting: Front vector = (%f,%f,%f); Top vector = (%f,%f,%f); dwApply = %ld\n",
 	xFront, yFront, zFront, xTop, yTop, zTop, dwApply);
+
+	if (isnan(xFront) || isnan(yFront) || isnan(zFront)
+		|| isnan(xTop) || isnan(yTop) || isnan(zTop))
+		return DSERR_INVALIDPARAM;
+
 	This->device->ds3dl.vOrientFront.x = xFront;
 	This->device->ds3dl.vOrientFront.y = yFront;
 	This->device->ds3dl.vOrientFront.z = zFront;
