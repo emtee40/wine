@@ -669,6 +669,10 @@ void test_buffer(LPDIRECTSOUND dso, LPDIRECTSOUNDBUFFER *dsbo,
                     buffer_param.vPosition.x,buffer_param.vPosition.y,
                     buffer_param.vPosition.z,DS3D_IMMEDIATE);
                 ok(rc==DS_OK,"IDirectSound3dBuffer_SetPosition() failed: %08lx\n", rc);
+                rc=IDirectSound3DBuffer_SetPosition(buffer,
+                    NAN,NAN,NAN,DS3D_IMMEDIATE);
+                ok(rc==DSERR_INVALIDPARAM,"IDirectSound3dBuffer_SetPosition() returned %08lx\n", rc);
+
             }
         }
         /* Check the sound duration was within 10% of the expected value */
