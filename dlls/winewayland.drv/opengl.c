@@ -74,7 +74,7 @@ DECL_FUNCPTR(eglSwapInterval);
 DECL_FUNCPTR(glClear);
 #undef DECL_FUNCPTR
 
-static pthread_mutex_t gl_object_mutex = PTHREAD_MUTEX_INITIALIZER;
+static WINE_MUTEX_TYPE gl_object_mutex = WINE_MUTEX_INIT;
 static struct list gl_drawables = LIST_INIT(gl_drawables);
 static struct list gl_contexts = LIST_INIT(gl_contexts);
 
@@ -120,10 +120,10 @@ static struct wayland_gl_drawable *wayland_gl_drawable_get(HWND hwnd)
 {
     struct wayland_gl_drawable *ret;
 
-    pthread_mutex_lock(&gl_object_mutex);
+    WINE_MUTEX_LOCK(&gl_object_mutex);
     if ((ret = find_drawable_for_hwnd(hwnd)))
         ret = wayland_gl_drawable_acquire(ret);
-    pthread_mutex_unlock(&gl_object_mutex);
+    WINE_MUTEX_UNLOCK(&gl_object_mutex);
 
     return ret;
 }
@@ -141,7 +141,7 @@ static void wayland_gl_drawable_release(struct wayland_gl_drawable *gl)
         if (wayland_client_surface_release(gl->client) && wayland_surface)
             wayland_surface->client = NULL;
 
-        if (wayland_surface) pthread_mutex_unlock(&wayland_surface->mutex);
+        if (wayland_surface) WINE_MUTEX_UNLOCK(&wayland_surface->mutex);
     }
 
     free(gl);
@@ -174,7 +174,7 @@ static struct wayland_gl_drawable *wayland_gl_drawable_create(HWND hwnd, int for
                         wayland_surface->window.client_rect.top;
         if (client_width == 0 || client_height == 0)
             client_width = client_height = 1;
-        pthread_mutex_unlock(&wayland_surface->mutex);
+        WINE_MUTEX_UNLOCK(&wayland_surface->mutex);
     }
     else if ((wayland_surface = wayland_surface_create(0)))
     {
@@ -227,7 +227,7 @@ static void wayland_update_gl_drawable(HWND hwnd, struct wayland_gl_drawable *ne
 {
     struct wayland_gl_drawable *old;
 
-    pthread_mutex_lock(&gl_object_mutex);
+    WINE_MUTEX_LOCK(&gl_object_mutex);
 
     if ((old = find_drawable_for_hwnd(hwnd))) list_remove(&old->entry);
     if (new) list_add_head(&gl_drawables, &new->entry);
@@ -237,7 +237,7 @@ static void wayland_update_gl_drawable(HWND hwnd, struct wayland_gl_drawable *ne
         new->swap_interval = old->swap_interval;
     }
 
-    pthread_mutex_unlock(&gl_object_mutex);
+    WINE_MUTEX_UNLOCK(&gl_object_mutex);
 
     if (old) wayland_gl_drawable_release(old);
 }
@@ -260,7 +260,7 @@ static void wayland_gl_drawable_sync_size(struct wayland_gl_drawable *gl)
 
         wl_egl_window_resize(gl->wl_egl_window, client_width, client_height, 0, 0);
 
-        pthread_mutex_unlock(&wayland_surface->mutex);
+        WINE_MUTEX_UNLOCK(&wayland_surface->mutex);
     }
 }
 
@@ -281,7 +281,7 @@ static void wayland_gl_drawable_sync_surface_state(struct wayland_gl_drawable *g
         wl_surface_commit(wayland_surface->wl_surface);
     }
 
-    pthread_mutex_unlock(&wayland_surface->mutex);
+    WINE_MUTEX_UNLOCK(&wayland_surface->mutex);
 }
 
 static BOOL wgl_context_make_current(struct wgl_context *ctx, HWND draw_hwnd,
@@ -303,7 +303,7 @@ static BOOL wgl_context_make_current(struct wgl_context *ctx, HWND draw_hwnd,
      * perform any pending resizes before calling it. */
     if (draw) wayland_gl_drawable_sync_size(draw);
 
-    pthread_mutex_lock(&gl_object_mutex);
+    WINE_MUTEX_LOCK(&gl_object_mutex);
 
     ret = p_eglMakeCurrent(egl_display,
                            draw ? draw->surface : EGL_NO_SURFACE,
@@ -325,7 +325,7 @@ static BOOL wgl_context_make_current(struct wgl_context *ctx, HWND draw_hwnd,
         old_read = read;
     }
 
-    pthread_mutex_unlock(&gl_object_mutex);
+    WINE_MUTEX_UNLOCK(&gl_object_mutex);
 
     if (old_draw) wayland_gl_drawable_release(old_draw);
     if (old_read) wayland_gl_drawable_release(old_read);
@@ -400,7 +400,7 @@ static void wgl_context_refresh(struct wgl_context *ctx)
     BOOL refresh = FALSE;
     struct wayland_gl_drawable *old_draw = NULL, *old_read = NULL;
 
-    pthread_mutex_lock(&gl_object_mutex);
+    WINE_MUTEX_LOCK(&gl_object_mutex);
 
     if (ctx->new_draw)
     {
@@ -422,7 +422,7 @@ static void wgl_context_refresh(struct wgl_context *ctx)
         if (ctx->draw) p_eglSwapInterval(egl_display, ctx->draw->swap_interval);
     }
 
-    pthread_mutex_unlock(&gl_object_mutex);
+    WINE_MUTEX_UNLOCK(&gl_object_mutex);
 
     if (old_draw) wayland_gl_drawable_release(old_draw);
     if (old_read) wayland_gl_drawable_release(old_read);
@@ -492,9 +492,9 @@ static struct wgl_context *create_context(HDC hdc, struct wgl_context *share,
                                       share ? share->context : EGL_NO_CONTEXT,
                                       ctx->attribs);
 
-    pthread_mutex_lock(&gl_object_mutex);
+    WINE_MUTEX_LOCK(&gl_object_mutex);
     list_add_head(&gl_contexts, &ctx->entry);
-    pthread_mutex_unlock(&gl_object_mutex);
+    WINE_MUTEX_UNLOCK(&gl_object_mutex);
 
     TRACE("ctx=%p egl_context=%p\n", ctx, ctx->context);
 
@@ -535,9 +535,9 @@ static struct wgl_context *wayland_wglCreateContextAttribsARB(HDC hdc,
 
 static BOOL wayland_wglDeleteContext(struct wgl_context *ctx)
 {
-    pthread_mutex_lock(&gl_object_mutex);
+    WINE_MUTEX_LOCK(&gl_object_mutex);
     list_remove(&ctx->entry);
-    pthread_mutex_unlock(&gl_object_mutex);
+    WINE_MUTEX_UNLOCK(&gl_object_mutex);
     p_eglDestroyContext(egl_display, ctx->context);
     if (ctx->draw) wayland_gl_drawable_release(ctx->draw);
     if (ctx->read) wayland_gl_drawable_release(ctx->read);
@@ -696,12 +696,12 @@ static BOOL wayland_wglSwapIntervalEXT(int interval)
 
     /* Lock to protect against concurrent access to drawable swap_interval
      * from wayland_update_gl_drawable */
-    pthread_mutex_lock(&gl_object_mutex);
+    WINE_MUTEX_LOCK(&gl_object_mutex);
     if ((ret = p_eglSwapInterval(egl_display, interval)))
         ctx->draw->swap_interval = interval;
     else
         RtlSetLastWin32Error(ERROR_DC_NOT_FOUND);
-    pthread_mutex_unlock(&gl_object_mutex);
+    WINE_MUTEX_UNLOCK(&gl_object_mutex);
 
     return ret;
 }
@@ -1067,9 +1067,9 @@ err:
 
 static BOOL has_opengl(void)
 {
-    static pthread_once_t init_once = PTHREAD_ONCE_INIT;
+    static WINE_ONCE_TYPE init_once = WINE_ONCE_INIT;
 
-    return !pthread_once(&init_once, init_opengl) && egl_handle;
+    return !WINE_ONCE(&init_once, init_opengl) && egl_handle;
 }
 
 static struct opengl_funcs opengl_funcs =

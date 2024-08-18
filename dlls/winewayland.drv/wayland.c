@@ -34,11 +34,11 @@ WINE_DEFAULT_DEBUG_CHANNEL(waylanddrv);
 
 struct wayland process_wayland =
 {
-    .seat.mutex = PTHREAD_MUTEX_INITIALIZER,
-    .keyboard.mutex = PTHREAD_MUTEX_INITIALIZER,
-    .pointer.mutex = PTHREAD_MUTEX_INITIALIZER,
+    .seat.mutex = WINE_MUTEX_INIT,
+    .keyboard.mutex = WINE_MUTEX_INIT,
+    .pointer.mutex = WINE_MUTEX_INIT,
     .output_list = {&process_wayland.output_list, &process_wayland.output_list},
-    .output_mutex = PTHREAD_MUTEX_INITIALIZER
+    .output_mutex = WINE_MUTEX_INIT
 };
 
 /**********************************************************************
@@ -137,12 +137,12 @@ static void registry_handle_global(void *data, struct wl_registry *registry,
             WARN("Only a single seat is currently supported, ignoring additional seats.\n");
             return;
         }
-        pthread_mutex_lock(&seat->mutex);
+        WINE_MUTEX_LOCK(&seat->mutex);
         seat->wl_seat = wl_registry_bind(registry, id, &wl_seat_interface,
                                          version < 5 ? version : 5);
         seat->global_id = id;
         wl_seat_add_listener(seat->wl_seat, &seat_listener, NULL);
-        pthread_mutex_unlock(&seat->mutex);
+        WINE_MUTEX_UNLOCK(&seat->mutex);
     }
     else if (strcmp(interface, "wp_viewporter") == 0)
     {
@@ -189,11 +189,11 @@ static void registry_handle_global_remove(void *data, struct wl_registry *regist
     {
         TRACE("removing seat\n");
         if (process_wayland.pointer.wl_pointer) wayland_pointer_deinit();
-        pthread_mutex_lock(&seat->mutex);
+        WINE_MUTEX_LOCK(&seat->mutex);
         wl_seat_release(seat->wl_seat);
         seat->wl_seat = NULL;
         seat->global_id = 0;
-        pthread_mutex_unlock(&seat->mutex);
+        WINE_MUTEX_UNLOCK(&seat->mutex);
     }
 }
 

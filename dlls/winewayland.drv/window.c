@@ -68,7 +68,7 @@ static int wayland_win_data_cmp_rb(const void *key,
     return 0;
 }
 
-static pthread_mutex_t win_data_mutex = PTHREAD_MUTEX_INITIALIZER;
+static WINE_MUTEX_TYPE win_data_mutex = WINE_MUTEX_INIT;
 static struct rb_tree win_data_rb = { wayland_win_data_cmp_rb };
 
 /***********************************************************************
@@ -95,7 +95,7 @@ static struct wayland_win_data *wayland_win_data_create(HWND hwnd,
     data->window_rect = *window_rect;
     data->client_rect = *client_rect;
 
-    pthread_mutex_lock(&win_data_mutex);
+    WINE_MUTEX_LOCK(&win_data_mutex);
 
     /* Check that another thread hasn't already created the wayland_win_data. */
     if ((rb_entry = rb_get(&win_data_rb, hwnd)))
@@ -120,7 +120,7 @@ static void wayland_win_data_destroy(struct wayland_win_data *data)
 
     rb_remove(&win_data_rb, &data->entry);
 
-    pthread_mutex_unlock(&win_data_mutex);
+    WINE_MUTEX_UNLOCK(&win_data_mutex);
 
     if (data->window_surface)
     {
@@ -140,12 +140,12 @@ struct wayland_win_data *wayland_win_data_get(HWND hwnd)
 {
     struct rb_entry *rb_entry;
 
-    pthread_mutex_lock(&win_data_mutex);
+    WINE_MUTEX_LOCK(&win_data_mutex);
 
     if ((rb_entry = rb_get(&win_data_rb, hwnd)))
         return RB_ENTRY_VALUE(rb_entry, struct wayland_win_data, entry);
 
-    pthread_mutex_unlock(&win_data_mutex);
+    WINE_MUTEX_UNLOCK(&win_data_mutex);
 
     return NULL;
 }
@@ -158,7 +158,7 @@ struct wayland_win_data *wayland_win_data_get(HWND hwnd)
 void wayland_win_data_release(struct wayland_win_data *data)
 {
     assert(data);
-    pthread_mutex_unlock(&win_data_mutex);
+    WINE_MUTEX_UNLOCK(&win_data_mutex);
 }
 
 static void wayland_win_data_get_config(struct wayland_win_data *data,
@@ -225,7 +225,7 @@ static void wayland_win_data_update_wayland_surface(struct wayland_win_data *dat
     visible = (NtUserGetWindowLongW(data->hwnd, GWL_STYLE) & WS_VISIBLE) == WS_VISIBLE;
     xdg_visible = surface->xdg_toplevel != NULL;
 
-    pthread_mutex_lock(&surface->mutex);
+    WINE_MUTEX_LOCK(&surface->mutex);
 
     if (visible != xdg_visible)
     {
@@ -248,7 +248,7 @@ static void wayland_win_data_update_wayland_surface(struct wayland_win_data *dat
 
     wayland_win_data_get_config(data, &surface->window);
 
-    pthread_mutex_unlock(&surface->mutex);
+    WINE_MUTEX_UNLOCK(&surface->mutex);
 
     if (data->window_surface)
         wayland_window_surface_update_wayland_surface(data->window_surface, visible_rect, surface);
@@ -267,7 +267,7 @@ static void wayland_win_data_update_wayland_state(struct wayland_win_data *data)
     struct wayland_surface *surface = data->wayland_surface;
     BOOL processing_config;
 
-    pthread_mutex_lock(&surface->mutex);
+    WINE_MUTEX_LOCK(&surface->mutex);
 
     if (!surface->xdg_toplevel) goto out;
 
@@ -313,7 +313,7 @@ static void wayland_win_data_update_wayland_state(struct wayland_win_data *data)
     }
 
 out:
-    pthread_mutex_unlock(&surface->mutex);
+    WINE_MUTEX_UNLOCK(&surface->mutex);
     wl_display_flush(process_wayland.wl_display);
 }
 
@@ -488,14 +488,14 @@ static void wayland_configure_window(HWND hwnd)
     if (!surface->xdg_toplevel)
     {
         TRACE("missing xdg_toplevel, returning\n");
-        pthread_mutex_unlock(&surface->mutex);
+        WINE_MUTEX_UNLOCK(&surface->mutex);
         return;
     }
 
     if (!surface->requested.serial)
     {
         TRACE("requested configure event already handled, returning\n");
-        pthread_mutex_unlock(&surface->mutex);
+        WINE_MUTEX_UNLOCK(&surface->mutex);
         return;
     }
 
@@ -557,7 +557,7 @@ static void wayland_configure_window(HWND hwnd)
     wayland_surface_coords_to_window(surface, width, height,
                                      &window_width, &window_height);
 
-    pthread_mutex_unlock(&surface->mutex);
+    WINE_MUTEX_UNLOCK(&surface->mutex);
 
     TRACE("processing=%dx%d,%#x\n", width, height, state);
 
@@ -643,7 +643,7 @@ void WAYLAND_SetWindowText(HWND hwnd, LPCWSTR text)
     if (surface)
     {
         if (surface->xdg_toplevel) wayland_surface_set_title(surface, text);
-        pthread_mutex_unlock(&surface->mutex);
+        WINE_MUTEX_UNLOCK(&surface->mutex);
     }
 }
 
@@ -661,18 +661,18 @@ LRESULT WAYLAND_SysCommand(HWND hwnd, WPARAM wparam, LPARAM lparam)
     TRACE("cmd=%lx hwnd=%p, %lx, %lx\n",
           (long)command, hwnd, (long)wparam, lparam);
 
-    pthread_mutex_lock(&process_wayland.pointer.mutex);
+    WINE_MUTEX_LOCK(&process_wayland.pointer.mutex);
     if (process_wayland.pointer.focused_hwnd == hwnd)
         button_serial = process_wayland.pointer.button_serial;
     else
         button_serial = 0;
-    pthread_mutex_unlock(&process_wayland.pointer.mutex);
+    WINE_MUTEX_UNLOCK(&process_wayland.pointer.mutex);
 
     if (command == SC_MOVE || command == SC_SIZE)
     {
         if ((surface = wayland_surface_lock_hwnd(hwnd)))
         {
-            pthread_mutex_lock(&process_wayland.seat.mutex);
+            WINE_MUTEX_LOCK(&process_wayland.seat.mutex);
             wl_seat = process_wayland.seat.wl_seat;
             if (wl_seat && surface->xdg_toplevel && button_serial)
             {
@@ -686,8 +686,8 @@ LRESULT WAYLAND_SysCommand(HWND hwnd, WPARAM wparam, LPARAM lparam)
                                         hittest_to_resize_edge(wparam & 0x0f));
                 }
             }
-            pthread_mutex_unlock(&process_wayland.seat.mutex);
-            pthread_mutex_unlock(&surface->mutex);
+            WINE_MUTEX_UNLOCK(&process_wayland.seat.mutex);
+            WINE_MUTEX_UNLOCK(&surface->mutex);
             ret = 0;
         }
     }
@@ -706,7 +706,7 @@ struct wayland_surface *wayland_surface_lock_hwnd(HWND hwnd)
 
     if (!data) return NULL;
 
-    if ((surface = data->wayland_surface)) pthread_mutex_lock(&surface->mutex);
+    if ((surface = data->wayland_surface)) WINE_MUTEX_LOCK(&surface->mutex);
 
     wayland_win_data_release(data);
 

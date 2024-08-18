@@ -60,7 +60,7 @@ static void xdg_surface_handle_configure(void *data, struct xdg_surface *xdg_sur
         if (should_post) NtUserPostMessage(hwnd, WM_WAYLAND_CONFIGURE, 0, 0);
     }
 
-    pthread_mutex_unlock(&surface->mutex);
+    WINE_MUTEX_UNLOCK(&surface->mutex);
 
     /* Flush the window surface in case there is content that we weren't
      * able to flush before due to the lack of the initial configure. */
@@ -120,7 +120,7 @@ static void xdg_toplevel_handle_configure(void *data,
         surface->pending.state = config_state;
     }
 
-    pthread_mutex_unlock(&surface->mutex);
+    WINE_MUTEX_UNLOCK(&surface->mutex);
 }
 
 static void xdg_toplevel_handle_close(void *data, struct xdg_toplevel *xdg_toplevel)
@@ -152,7 +152,11 @@ struct wayland_surface *wayland_surface_create(HWND hwnd)
 
     TRACE("surface=%p\n", surface);
 
+#ifdef USE_AFL
+    __atomic_store_n(&surface->mutex, 0, __ATOMIC_RELEASE);
+#else
     pthread_mutex_init(&surface->mutex, NULL);
+#endif
 
     surface->hwnd = hwnd;
     surface->wl_surface = wl_compositor_create_surface(process_wayland.wl_compositor);
@@ -186,7 +190,7 @@ err:
  */
 void wayland_surface_destroy(struct wayland_surface *surface)
 {
-    pthread_mutex_lock(&process_wayland.pointer.mutex);
+    WINE_MUTEX_LOCK(&process_wayland.pointer.mutex);
     if (process_wayland.pointer.focused_hwnd == surface->hwnd)
     {
         process_wayland.pointer.focused_hwnd = NULL;
@@ -194,14 +198,14 @@ void wayland_surface_destroy(struct wayland_surface *surface)
     }
     if (process_wayland.pointer.constraint_hwnd == surface->hwnd)
         wayland_pointer_clear_constraint();
-    pthread_mutex_unlock(&process_wayland.pointer.mutex);
+    WINE_MUTEX_UNLOCK(&process_wayland.pointer.mutex);
 
-    pthread_mutex_lock(&process_wayland.keyboard.mutex);
+    WINE_MUTEX_LOCK(&process_wayland.keyboard.mutex);
     if (process_wayland.keyboard.focused_hwnd == surface->hwnd)
         process_wayland.keyboard.focused_hwnd = NULL;
-    pthread_mutex_unlock(&process_wayland.keyboard.mutex);
+    WINE_MUTEX_UNLOCK(&process_wayland.keyboard.mutex);
 
-    pthread_mutex_lock(&surface->mutex);
+    WINE_MUTEX_LOCK(&surface->mutex);
 
     if (surface->wp_viewport)
     {
@@ -227,14 +231,14 @@ void wayland_surface_destroy(struct wayland_surface *surface)
         surface->wl_surface = NULL;
     }
 
-    pthread_mutex_unlock(&surface->mutex);
+    WINE_MUTEX_UNLOCK(&surface->mutex);
 
     if (surface->latest_window_buffer)
         wayland_shm_buffer_unref(surface->latest_window_buffer);
 
     wl_display_flush(process_wayland.wl_display);
 
-    pthread_mutex_destroy(&surface->mutex);
+    WINE_MUTEX_DESTROY(&surface->mutex);
 
     free(surface);
 }

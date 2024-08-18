@@ -41,6 +41,7 @@
 #include "wine/gdi_driver.h"
 #include "wine/list.h"
 #include "wine/rbtree.h"
+#include "wine/mutex.h"
 
 #include "unixlib.h"
 
@@ -79,7 +80,7 @@ struct wayland_keyboard
     struct xkb_context *xkb_context;
     struct xkb_state *xkb_state;
     HWND focused_hwnd;
-    pthread_mutex_t mutex;
+    WINE_MUTEX_TYPE mutex;
 };
 
 struct wayland_cursor
@@ -101,14 +102,14 @@ struct wayland_pointer
     uint32_t enter_serial;
     uint32_t button_serial;
     struct wayland_cursor cursor;
-    pthread_mutex_t mutex;
+    WINE_MUTEX_TYPE mutex;
 };
 
 struct wayland_seat
 {
     struct wl_seat *wl_seat;
     uint32_t global_id;
-    pthread_mutex_t mutex;
+    WINE_MUTEX_TYPE mutex;
 };
 
 struct wayland
@@ -130,7 +131,7 @@ struct wayland
     struct wayland_pointer pointer;
     struct wl_list output_list;
     /* Protects the output_list and the wayland_output.current states. */
-    pthread_mutex_t output_mutex;
+    WINE_MUTEX_TYPE output_mutex;
 };
 
 struct wayland_output_mode
@@ -196,7 +197,7 @@ struct wayland_surface
     struct xdg_surface *xdg_surface;
     struct xdg_toplevel *xdg_toplevel;
     struct wp_viewport *wp_viewport;
-    pthread_mutex_t mutex;
+    WINE_MUTEX_TYPE mutex;
     struct wayland_surface_config pending, requested, processing, current;
     struct wayland_shm_buffer *latest_window_buffer;
     BOOL resizing;
