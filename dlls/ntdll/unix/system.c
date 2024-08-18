@@ -230,7 +230,7 @@ static SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *logical_proc_info_ex;
 static unsigned int logical_proc_info_ex_size, logical_proc_info_ex_alloc_size;
 static ULONG_PTR system_cpu_mask;
 
-static pthread_mutex_t timezone_mutex = PTHREAD_MUTEX_INITIALIZER;
+static WINE_MUTEX_TYPE timezone_mutex = WINE_MUTEX_INIT;
 
 /*******************************************************************************
  * Architecture specific feature detection for CPUs
@@ -2483,7 +2483,7 @@ static void get_timezone_info( RTL_DYNAMIC_TIME_ZONE_INFORMATION *tzi )
     time_t year_start, year_end, tmp, dlt = 0, std = 0;
     int is_dst, bias;
 
-    mutex_lock( &timezone_mutex );
+    WINENTDLL_MUTEX_LOCK( &timezone_mutex );
 
     year_start = time(NULL);
     tm = gmtime(&year_start);
@@ -2493,7 +2493,7 @@ static void get_timezone_info( RTL_DYNAMIC_TIME_ZONE_INFORMATION *tzi )
     if (current_year == tm->tm_year && current_bias == bias)
     {
         *tzi = cached_tzi;
-        mutex_unlock( &timezone_mutex );
+        WINENTDLL_MUTEX_UNLOCK( &timezone_mutex );
         return;
     }
 
@@ -2586,7 +2586,7 @@ static void get_timezone_info( RTL_DYNAMIC_TIME_ZONE_INFORMATION *tzi )
 
     find_reg_tz_info(tzi, tz_name, current_year + 1900);
     cached_tzi = *tzi;
-    mutex_unlock( &timezone_mutex );
+    WINENTDLL_MUTEX_UNLOCK( &timezone_mutex );
 }
 
 
@@ -2796,7 +2796,7 @@ NTSTATUS WINAPI NtQuerySystemInformation( SYSTEM_INFORMATION_CLASS class,
         sti.BootTime.QuadPart = server_start_time;
 
         utc = time( NULL );
-        pthread_mutex_lock( &timezone_mutex );
+        WINENTDLL_MUTEX_LOCK( &timezone_mutex );
         if (utc != last_utc)
         {
             last_utc = utc;
@@ -2807,7 +2807,7 @@ NTSTATUS WINAPI NtQuerySystemInformation( SYSTEM_INFORMATION_CLASS class,
             last_bias *= TICKSPERSEC;
         }
         sti.TimeZoneBias.QuadPart = last_bias;
-        pthread_mutex_unlock( &timezone_mutex );
+        WINENTDLL_MUTEX_UNLOCK( &timezone_mutex );
 
         NtQuerySystemTime( &sti.SystemTime );
 

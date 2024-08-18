@@ -103,7 +103,7 @@ sigset_t server_block_set;  /* signals to block during server calls */
 static int fd_socket = -1;  /* socket to exchange file descriptors with the server */
 static int initial_cwd = -1;
 static pid_t server_pid;
-static pthread_mutex_t fd_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
+static WINE_MUTEX_TYPE fd_cache_mutex = WINE_MUTEX_INIT;
 
 /* atomically exchange a 64-bit value */
 static inline LONG64 interlocked_xchg64( LONG64 *dest, LONG64 val )
@@ -297,22 +297,40 @@ NTSTATUS unixcall_wine_server_call( void *args )
 /***********************************************************************
  *           server_enter_uninterrupted_section
  */
-void server_enter_uninterrupted_section( pthread_mutex_t *mutex, sigset_t *sigset )
+void server_enter_uninterrupted_section( WINE_MUTEX_TYPE *mutex, sigset_t *sigset )
 {
     pthread_sigmask( SIG_BLOCK, &server_block_set, sigset );
-    mutex_lock( mutex );
+    WINENTDLL_MUTEX_LOCK( mutex );
 }
 
 
 /***********************************************************************
  *           server_leave_uninterrupted_section
  */
-void server_leave_uninterrupted_section( pthread_mutex_t *mutex, sigset_t *sigset )
+void server_leave_uninterrupted_section( WINE_MUTEX_TYPE *mutex, sigset_t *sigset )
 {
-    mutex_unlock( mutex );
+    WINENTDLL_MUTEX_UNLOCK( mutex );
     pthread_sigmask( SIG_SETMASK, sigset, NULL );
 }
 
+/***********************************************************************
+ *           server_enter_uninterrupted_section_recursive
+ */
+void server_enter_uninterrupted_section_recursive( WINE_MUTEX_RECURSIVE_TYPE *mutex, sigset_t *sigset )
+{
+    pthread_sigmask( SIG_BLOCK, &server_block_set, sigset );
+    WINENTDLL_MUTEX_RECURSIVE_LOCK( mutex );
+}
+
+
+/***********************************************************************
+ *           server_leave_uninterrupted_section_recursive
+ */
+void server_leave_uninterrupted_section_recursive( WINE_MUTEX_RECURSIVE_TYPE *mutex, sigset_t *sigset )
+{
+    WINENTDLL_MUTEX_RECURSIVE_UNLOCK( mutex );
+    pthread_sigmask( SIG_SETMASK, sigset, NULL );
+}
 
 /***********************************************************************
  *              wait_select_reply

@@ -2223,7 +2223,7 @@ struct ldt_copy
     unsigned char flags[LDT_SIZE];
 } __wine_ldt_copy;
 
-static pthread_mutex_t ldt_mutex = PTHREAD_MUTEX_INITIALIZER;
+static WINE_MUTEX_TYPE ldt_mutex = WINE_MUTEX_INIT;
 
 static inline void *ldt_get_base( LDT_ENTRY ent )
 {
