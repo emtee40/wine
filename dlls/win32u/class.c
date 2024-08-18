@@ -30,6 +30,7 @@
 #define WIN32_NO_STATUS
 #include "win32u_private.h"
 #include "ntuser_private.h"
+#include "wine/mutex.h"
 #include "wine/server.h"
 #include "wine/debug.h"
 
@@ -79,7 +80,7 @@ typedef struct tagWINDOWPROC
 
 static WINDOWPROC winproc_array[MAX_WINPROCS];
 static UINT winproc_used = NB_BUILTIN_WINPROCS;
-static pthread_mutex_t winproc_lock = PTHREAD_MUTEX_INITIALIZER;
+static WINE_MUTEX_TYPE winproc_lock = WINE_MUTEX_INIT;
 
 static struct list class_list = LIST_INIT( class_list );
 
@@ -132,7 +133,7 @@ static inline WINDOWPROC *alloc_winproc_ptr( WNDPROC func, BOOL ansi )
     if (!func) return NULL;
     if ((proc = get_winproc_ptr( func ))) return proc;
 
-    pthread_mutex_lock( &winproc_lock );
+    WINE_MUTEX_LOCK( &winproc_lock );
 
     /* check if we already have a winproc for that function */
     if (!(proc = find_winproc( func, ansi )))
@@ -150,7 +151,7 @@ static inline WINDOWPROC *alloc_winproc_ptr( WNDPROC func, BOOL ansi )
     }
     else TRACE_(win)( "reusing %p for %p\n", proc_to_handle(proc), func );
 
-    pthread_mutex_unlock( &winproc_lock );
+    WINE_MUTEX_UNLOCK( &winproc_lock );
     return proc;
 }
 

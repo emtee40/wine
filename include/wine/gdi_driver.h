@@ -38,6 +38,7 @@
 #include "shellapi.h"
 #include "ddk/d3dkmthk.h"
 #include "kbd.h"
+#include "wine/mutex.h"
 #include "wine/list.h"
 #include "wine/debug.h"
 
@@ -240,7 +241,7 @@ struct window_surface
     HWND                               hwnd;  /* window the surface was created for */
     RECT                               rect;  /* constant, no locking needed */
 
-    pthread_mutex_t                    mutex;        /* mutex needed for any field below */
+    WINE_MUTEX_TYPE                    mutex;        /* mutex needed for any field below */
     RECT                               bounds;       /* dirty area rectangle */
     HRGN                               clip_region;  /* visible region of the surface, fully visible if 0 */
     DWORD                              draw_start_ticks; /* start ticks of fresh draw */

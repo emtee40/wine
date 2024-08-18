@@ -2179,7 +2179,7 @@ struct ldt_copy
 } __wine_ldt_copy;
 
 static WORD gdt_fs_sel;
-static pthread_mutex_t ldt_mutex = PTHREAD_MUTEX_INITIALIZER;
+static WINE_MUTEX_TYPE ldt_mutex = WINE_MUTEX_INIT;
 static const LDT_ENTRY null_entry;
 
 static inline void *ldt_get_base( LDT_ENTRY ent )

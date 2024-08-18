@@ -73,7 +73,7 @@ static void wine_vk_surface_destroy(struct wayland_client_surface *client)
         wayland_surface->client = NULL;
     }
 
-    if (wayland_surface) pthread_mutex_unlock(&wayland_surface->mutex);
+    if (wayland_surface) WINE_MUTEX_UNLOCK(&wayland_surface->mutex);
 }
 
 static VkResult wayland_vulkan_surface_create(HWND hwnd, VkInstance instance, VkSurfaceKHR *surface, void **private)
@@ -93,7 +93,7 @@ static VkResult wayland_vulkan_surface_create(HWND hwnd, VkInstance instance, Vk
     }
 
     client = wayland_surface_get_client(wayland_surface);
-    pthread_mutex_unlock(&wayland_surface->mutex);
+    WINE_MUTEX_UNLOCK(&wayland_surface->mutex);
 
     if (!client)
     {
@@ -153,7 +153,7 @@ static void wayland_vulkan_surface_presented(HWND hwnd, VkResult result)
             wl_surface_commit(wayland_surface->wl_surface);
         }
 
-        pthread_mutex_unlock(&wayland_surface->mutex);
+        WINE_MUTEX_UNLOCK(&wayland_surface->mutex);
     }
 }
 

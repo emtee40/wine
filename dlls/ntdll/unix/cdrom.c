@@ -290,7 +290,7 @@ struct cdrom_cache {
 #define MAX_CACHE_ENTRIES       5
 static struct cdrom_cache cdrom_cache[MAX_CACHE_ENTRIES];
 
-static pthread_mutex_t cache_mutex = PTHREAD_MUTEX_INITIALIZER;
+static WINE_MUTEX_TYPE cache_mutex = WINE_MUTEX_INIT;
 
 /* Proposed media change function: not really needed at this time */
 /* This is a 1 or 0 type of function */
@@ -551,9 +551,9 @@ static NTSTATUS CDROM_SyncCache(int dev, int fd)
 
 static void CDROM_ClearCacheEntry(int dev)
 {
-    mutex_lock( &cache_mutex );
+    WINENTDLL_MUTEX_LOCK( &cache_mutex );
     cdrom_cache[dev].toc_good = 0;
-    mutex_unlock( &cache_mutex );
+    WINENTDLL_MUTEX_UNLOCK( &cache_mutex );
 }
 
 
@@ -659,7 +659,7 @@ static NTSTATUS CDROM_Open(int fd, int* dev)
 
     if (fstat(fd, &st) == -1) return errno_to_status( errno );
 
-    mutex_lock( &cache_mutex );
+    WINENTDLL_MUTEX_LOCK( &cache_mutex );
     for (*dev = 0; *dev < MAX_CACHE_ENTRIES; (*dev)++)
     {
         if (empty == -1 &&
@@ -680,7 +680,7 @@ static NTSTATUS CDROM_Open(int fd, int* dev)
             cdrom_cache[*dev].inode   = st.st_ino;
         }
     }
-    mutex_unlock( &cache_mutex );
+    WINENTDLL_MUTEX_UNLOCK( &cache_mutex );
 
     TRACE("%d, %d\n", *dev, fd);
     return ret;
@@ -832,13 +832,13 @@ static NTSTATUS CDROM_ReadTOC(int dev, int fd, CDROM_TOC* toc)
     if (dev < 0 || dev >= MAX_CACHE_ENTRIES)
         return STATUS_INVALID_PARAMETER;
 
-    mutex_lock( &cache_mutex );
+    WINENTDLL_MUTEX_LOCK( &cache_mutex );
     if (cdrom_cache[dev].toc_good || !(ret = CDROM_SyncCache(dev, fd)))
     {
         *toc = cdrom_cache[dev].toc;
         ret = STATUS_SUCCESS;
     }
-    mutex_unlock( &cache_mutex );
+    WINENTDLL_MUTEX_UNLOCK( &cache_mutex );
     return ret;
 }
 
@@ -918,7 +918,7 @@ static NTSTATUS CDROM_ReadQChannel(int dev, int fd, const CDROM_SUB_Q_DATA_FORMA
     switch (fmt->Format)
     {
     case IOCTL_CDROM_CURRENT_POSITION:
-        mutex_lock( &cache_mutex );
+        WINENTDLL_MUTEX_LOCK( &cache_mutex );
 	if (hdr->AudioStatus==AUDIO_STATUS_IN_PROGRESS) {
           data->CurrentPosition.FormatCode = IOCTL_CDROM_CURRENT_POSITION;
           data->CurrentPosition.Control = sc.cdsc_ctrl;
@@ -943,7 +943,7 @@ static NTSTATUS CDROM_ReadQChannel(int dev, int fd, const CDROM_SUB_Q_DATA_FORMA
 	  cdrom_cache[dev].CurrentPosition.Header = *hdr; /* Preserve header info */
 	  data->CurrentPosition = cdrom_cache[dev].CurrentPosition;
 	}
-        mutex_unlock( &cache_mutex );
+        WINENTDLL_MUTEX_UNLOCK( &cache_mutex );
         break;
     case IOCTL_CDROM_MEDIA_CATALOG:
         data->MediaCatalog.FormatCode = IOCTL_CDROM_MEDIA_CATALOG;
@@ -1029,7 +1029,7 @@ static NTSTATUS CDROM_ReadQChannel(int dev, int fd, const CDROM_SUB_Q_DATA_FORMA
     switch (fmt->Format)
     {
     case IOCTL_CDROM_CURRENT_POSITION:
-        mutex_lock( &cache_mutex );
+        WINENTDLL_MUTEX_LOCK( &cache_mutex );
 	if (hdr->AudioStatus==AUDIO_STATUS_IN_PROGRESS) {
           data->CurrentPosition.FormatCode = IOCTL_CDROM_CURRENT_POSITION;
           data->CurrentPosition.Control = sc.what.position.control;
@@ -1051,7 +1051,7 @@ static NTSTATUS CDROM_ReadQChannel(int dev, int fd, const CDROM_SUB_Q_DATA_FORMA
 	  cdrom_cache[dev].CurrentPosition.Header = *hdr; /* Preserve header info */
 	  data->CurrentPosition = cdrom_cache[dev].CurrentPosition;
 	}
-        mutex_unlock( &cache_mutex );
+        WINENTDLL_MUTEX_UNLOCK( &cache_mutex );
         break;
     case IOCTL_CDROM_MEDIA_CATALOG:
         data->MediaCatalog.FormatCode = IOCTL_CDROM_MEDIA_CATALOG;
@@ -1240,7 +1240,7 @@ static NTSTATUS CDROM_SeekAudioMSF(int dev, int fd, const CDROM_SEEK_AUDIO_MSF* 
     if (i <= toc.FirstTrack || i > toc.LastTrack+1)
       return STATUS_INVALID_PARAMETER;
     i--;
-    mutex_lock( &cache_mutex );
+    WINENTDLL_MUTEX_LOCK( &cache_mutex );
     cp = &cdrom_cache[dev].CurrentPosition;
     cp->FormatCode = IOCTL_CDROM_CURRENT_POSITION;
     cp->Control = toc.TrackData[i-toc.FirstTrack].Control;
@@ -1254,7 +1254,7 @@ static NTSTATUS CDROM_SeekAudioMSF(int dev, int fd, const CDROM_SEEK_AUDIO_MSF* 
     frame -= FRAME_OF_TOC(toc,i);
     cp->TrackRelativeAddress[0] = 0;
     MSF_OF_FRAME(cp->TrackRelativeAddress[1], frame);
-    mutex_unlock( &cache_mutex );
+    WINENTDLL_MUTEX_UNLOCK( &cache_mutex );
 
     /* If playing, then issue a seek command, otherwise do nothing */
 #ifdef linux

@@ -27,6 +27,7 @@
 #include "wine/unixlib.h"
 #include "wine/server.h"
 #include "wine/list.h"
+#include "wine/mutex.h"
 #include "wine/debug.h"
 
 struct msghdr;
@@ -205,8 +206,10 @@ extern ULONG_PTR redirect_arm64ec_rva( void *module, ULONG_PTR rva, const IMAGE_
 extern void start_server( BOOL debug );
 
 extern unsigned int server_call_unlocked( void *req_ptr );
-extern void server_enter_uninterrupted_section( pthread_mutex_t *mutex, sigset_t *sigset );
-extern void server_leave_uninterrupted_section( pthread_mutex_t *mutex, sigset_t *sigset );
+extern void server_enter_uninterrupted_section( WINE_MUTEX_TYPE *mutex, sigset_t *sigset );
+extern void server_leave_uninterrupted_section( WINE_MUTEX_TYPE *mutex, sigset_t *sigset );
+extern void server_enter_uninterrupted_section_recursive( WINE_MUTEX_RECURSIVE_TYPE *mutex, sigset_t *sigset );
+extern void server_leave_uninterrupted_section_recursive( WINE_MUTEX_RECURSIVE_TYPE *mutex, sigset_t *sigset );
 extern unsigned int server_select( const select_op_t *select_op, data_size_t size, UINT flags,
                                    timeout_t abs_timeout, context_t *context, user_apc_t *user_apc );
 extern unsigned int server_wait( const select_op_t *select_op, data_size_t size, UINT flags,
@@ -422,16 +425,6 @@ static inline BOOL is_ec_code( ULONG_PTR ptr )
     return (map[page / 64] >> (page & 63)) & 1;
 }
 
-static inline void mutex_lock( pthread_mutex_t *mutex )
-{
-    if (!process_exiting) pthread_mutex_lock( mutex );
-}
-
-static inline void mutex_unlock( pthread_mutex_t *mutex )
-{
-    if (!process_exiting) pthread_mutex_unlock( mutex );
-}
-
 static inline async_data_t server_async( HANDLE handle, struct async_fileio *user, HANDLE event,
                                          PIO_APC_ROUTINE apc, void *apc_context, client_ptr_t iosb )
 {
@@ -569,5 +562,10 @@ static inline NTSTATUS map_section( HANDLE mapping, void **ptr, SIZE_T *size, UL
     return NtMapViewOfSection( mapping, NtCurrentProcess(), ptr, user_space_wow_limit,
                                0, NULL, size, ViewShare, 0, protect );
 }
+
+#define WINENTDLL_MUTEX_LOCK(RESOURCE) { if (!process_exiting) WINE_MUTEX_LOCK(RESOURCE); }
+#define WINENTDLL_MUTEX_UNLOCK(RESOURCE) { if (!process_exiting) WINE_MUTEX_UNLOCK(RESOURCE); }
+#define WINENTDLL_MUTEX_RECURSIVE_LOCK(RESOURCE) { if (!process_exiting) WINE_MUTEX_RECURSIVE_LOCK(RESOURCE); }
+#define WINENTDLL_MUTEX_RECURSIVE_UNLOCK(RESOURCE) { if (!process_exiting) WINE_MUTEX_RECURSIVE_UNLOCK(RESOURCE); }
 
 #endif /* __NTDLL_UNIX_PRIVATE_H */

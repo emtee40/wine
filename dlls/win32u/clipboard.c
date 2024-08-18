@@ -33,12 +33,13 @@
 #include "win32u_private.h"
 #include "ntgdi_private.h"
 #include "ntuser_private.h"
+#include "wine/mutex.h"
 #include "wine/server.h"
 #include "wine/debug.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(clipboard);
 
-static pthread_mutex_t clipboard_mutex = PTHREAD_MUTEX_INITIALIZER;
+static WINE_MUTEX_TYPE clipboard_mutex = WINE_MUTEX_INIT;
 
 struct cached_format
 {
@@ -179,7 +180,7 @@ BOOL WINAPI NtUserOpenClipboard( HWND hwnd, ULONG unk )
 
     user_driver->pUpdateClipboard();
 
-    pthread_mutex_lock( &clipboard_mutex );
+    WINE_MUTEX_LOCK( &clipboard_mutex );
 
     SERVER_START_REQ( open_clipboard )
     {
@@ -191,7 +192,7 @@ BOOL WINAPI NtUserOpenClipboard( HWND hwnd, ULONG unk )
 
     if (ret && !is_current_process_window( owner )) invalidate_memory_formats( &free_list );
 
-    pthread_mutex_unlock( &clipboard_mutex );
+    WINE_MUTEX_UNLOCK( &clipboard_mutex );
     free_cached_formats( &free_list );
     return ret;
 }
@@ -235,7 +236,7 @@ BOOL WINAPI NtUserEmptyClipboard(void)
     if (owner)
         send_message_timeout( owner, WM_DESTROYCLIPBOARD, 0, 0, SMTO_ABORTIFHUNG, 5000, FALSE );
 
-    pthread_mutex_lock( &clipboard_mutex );
+    WINE_MUTEX_LOCK( &clipboard_mutex );
 
     SERVER_START_REQ( empty_clipboard )
     {
@@ -249,7 +250,7 @@ BOOL WINAPI NtUserEmptyClipboard(void)
         list_move_tail( &free_list, &cached_formats );
     }
 
-    pthread_mutex_unlock( &clipboard_mutex );
+    WINE_MUTEX_UNLOCK( &clipboard_mutex );
     free_cached_formats( &free_list );
     return ret;
 }
@@ -579,12 +580,12 @@ NTSTATUS WINAPI NtUserSetClipboardData( UINT format, HANDLE data, struct set_cli
 
     if (params->cache_only)
     {
-        pthread_mutex_lock( &clipboard_mutex );
+        WINE_MUTEX_LOCK( &clipboard_mutex );
         if ((cache = get_cached_format( format )) && cache->seqno == params->seqno)
             cache->handle = data;
         else
             status = STATUS_UNSUCCESSFUL;
-        pthread_mutex_unlock( &clipboard_mutex );
+        WINE_MUTEX_UNLOCK( &clipboard_mutex );
         return status;
     }
 
@@ -606,7 +607,7 @@ NTSTATUS WINAPI NtUserSetClipboardData( UINT format, HANDLE data, struct set_cli
     }
     NtQueryDefaultLocale( TRUE, &lcid );
 
-    pthread_mutex_lock( &clipboard_mutex );
+    WINE_MUTEX_LOCK( &clipboard_mutex );
 
     SERVER_START_REQ( set_clipboard_data )
     {
@@ -628,7 +629,7 @@ NTSTATUS WINAPI NtUserSetClipboardData( UINT format, HANDLE data, struct set_cli
     }
     else free( cache );
 
-    pthread_mutex_unlock( &clipboard_mutex );
+    WINE_MUTEX_UNLOCK( &clipboard_mutex );
     if (prev) free_cached_data( prev );
 
 done:
@@ -649,7 +650,7 @@ HANDLE WINAPI NtUserGetClipboardData( UINT format, struct get_clipboard_params *
 
     for (;;)
     {
-        pthread_mutex_lock( &clipboard_mutex );
+        WINE_MUTEX_LOCK( &clipboard_mutex );
 
         if (!params->data_only) cache = get_cached_format( format );
 
@@ -680,7 +681,7 @@ HANDLE WINAPI NtUserGetClipboardData( UINT format, struct get_clipboard_params *
                 if (cache->handle && data_seqno == cache->seqno)  /* we can reuse the cached data */
                 {
                     HANDLE ret = cache->handle;
-                    pthread_mutex_unlock( &clipboard_mutex );
+                    WINE_MUTEX_UNLOCK( &clipboard_mutex );
                     TRACE( "%s returning %p\n", debugstr_format( format ), ret );
                     return ret;
                 }
@@ -692,14 +693,14 @@ HANDLE WINAPI NtUserGetClipboardData( UINT format, struct get_clipboard_params *
 
             if (params->data_only)
             {
-                pthread_mutex_unlock( &clipboard_mutex );
+                WINE_MUTEX_UNLOCK( &clipboard_mutex );
                 return params->data;
             }
 
             /* allocate new cache entry */
             if (!(cache = malloc( sizeof(*cache) )))
             {
-                pthread_mutex_unlock( &clipboard_mutex );
+                WINE_MUTEX_UNLOCK( &clipboard_mutex );
                 return 0;
             }
 
@@ -708,12 +709,12 @@ HANDLE WINAPI NtUserGetClipboardData( UINT format, struct get_clipboard_params *
             cache->handle = NULL;
             params->seqno = cache->seqno;
             list_add_tail( &cached_formats, &cache->entry );
-            pthread_mutex_unlock( &clipboard_mutex );
+            WINE_MUTEX_UNLOCK( &clipboard_mutex );
             TRACE( "%s needs unmarshaling\n", debugstr_format( format ) );
             params->data_size = ~0;
             return 0;
         }
-        pthread_mutex_unlock( &clipboard_mutex );
+        WINE_MUTEX_UNLOCK( &clipboard_mutex );
 
         if (status == STATUS_BUFFER_OVERFLOW)
         {

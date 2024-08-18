@@ -25,6 +25,7 @@
 #include <time.h>
 
 #include "vulkan_private.h"
+#include "wine/mutex.h"
 #include "wine/vulkan_driver.h"
 #include "wine/rbtree.h"
 #include "ntgdi.h"
@@ -57,7 +58,7 @@ static int window_surface_compare(const void *key, const struct rb_entry *entry)
     return 0;
 }
 
-static pthread_mutex_t window_surfaces_lock = PTHREAD_MUTEX_INITIALIZER;
+static WINE_MUTEX_TYPE window_surfaces_lock = WINE_MUTEX_INIT;
 static struct rb_tree window_surfaces = {.compare = window_surface_compare};
 
 static void window_surfaces_insert(struct wine_surface *surface)
@@ -65,7 +66,7 @@ static void window_surfaces_insert(struct wine_surface *surface)
     struct wine_surface *previous;
     struct rb_entry *ptr;
 
-    pthread_mutex_lock(&window_surfaces_lock);
+    WINE_MUTEX_LOCK(&window_surfaces_lock);
 
     if (!(ptr = rb_get(&window_surfaces, surface->hwnd)))
         rb_put(&window_surfaces, surface->hwnd, &surface->window_entry);
@@ -76,14 +77,14 @@ static void window_surfaces_insert(struct wine_surface *surface)
         previous->hwnd = 0; /* make sure previous surface becomes invalid */
     }
 
-    pthread_mutex_unlock(&window_surfaces_lock);
+    WINE_MUTEX_UNLOCK(&window_surfaces_lock);
 }
 
 static void window_surfaces_remove(struct wine_surface *surface)
 {
-    pthread_mutex_lock(&window_surfaces_lock);
+    WINE_MUTEX_LOCK(&window_surfaces_lock);
     if (surface->hwnd) rb_remove(&window_surfaces, &surface->window_entry);
-    pthread_mutex_unlock(&window_surfaces_lock);
+    WINE_MUTEX_UNLOCK(&window_surfaces_lock);
 }
 
 static BOOL is_wow64(void)
