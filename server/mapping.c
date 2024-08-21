@@ -29,6 +29,14 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#ifdef HAVE_MEMFD_CREATE
+#include <linux/memfd.h>
+#endif
+#ifdef __linux__ /* For detecting hugepage support. */
+#include <dirent.h>
+#include <errno.h>
+#include <limits.h>
+#endif
 
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
@@ -347,12 +355,116 @@ static int check_current_dir_for_exec(void)
     return (ret != MAP_FAILED);
 }
 
+#ifdef HAVE_MEMFD_CREATE
+static void make_memfd_name( const char *prefix, ULONG sec_flags, char *dest )
+{
+    /* memfd names are restricted to 250 bytes including \0, but are only meant for debugging, with
+     * duplicate names not causing any side-effects. */
+
+    if (prefix != NULL)
+    {
+        snprintf( dest, 250, "map-%s-%x", prefix, (int)sec_flags );
+    }
+    else
+    {
+        snprintf( dest, 250, "map-%x", (int)sec_flags );
+    }
+}
+
+static int create_memfd( ULONG file_access, ULONG sec_flags, file_pos_t new_size, int *err )
+{
+    int fd;
+    off_t size = new_size;
+    char memfd_name[256];
+    unsigned int memfd_flags = MFD_ALLOW_SEALING;
+    unsigned int seal_flags = F_SEAL_SEAL | F_SEAL_WRITE;
+
+#ifdef HAVE_POSIX_FALLOCATE
+    if (sizeof(file_pos_t) > sizeof(off_t) && size != new_size)
+    {
+        *err = EINVAL;
+        return -1;
+    }
+#endif
+#ifdef MFD_EXEC
+    memfd_flags |= MFD_EXEC;
+#endif
+
+    make_memfd_name( NULL, sec_flags, memfd_name );
+
+    if (sec_flags & SEC_LARGE_PAGES)
+    {
+        memfd_flags |= MFD_HUGETLB;
+    }
+    fd = memfd_create( memfd_name, memfd_flags );
+    if (fd == -1)
+    {
+        if (errno == EINVAL && (sec_flags & SEC_LARGE_PAGES))
+        {
+            /* MFD_HUGETLB & MFD_ALLOW_SEALING is only available in Linux >= 4.16. Lets try creating
+             * one without HUGETLB */
+            fd = memfd_create( memfd_name, memfd_flags & ~MFD_HUGETLB );
+            if (fd == -1)
+            {
+                *err = errno;
+                return -1;
+            }
+        }
+        else
+        {
+            *err = errno;
+            return -1;
+        }
+    }
+#ifdef HAVE_POSIX_FALLOCATE
+    if (sec_flags & SEC_COMMIT)
+    {
+        *err = posix_fallocate( fd, 0, size );
+        if (*err != 0)
+        {
+            close( fd );
+            return -1;
+        }
+    }
+#endif
+    if (ftruncate( fd, size ) == -1)
+    {
+        *err = errno;
+        close( fd );
+        return -1;
+    }
+    if (file_access & FILE_WRITE_DATA)
+    {
+        seal_flags &= ~F_SEAL_WRITE;
+    }
+
+    if (fcntl( fd, F_ADD_SEALS, F_SEAL_SEAL, seal_flags ) == -1)
+    {
+        *err = errno;
+        close( fd );
+        return -1;
+    }
+    return fd;
+}
+#endif /* defined(HAVE_MEMFD_CREATE) */
+
 /* create a temp file for anonymous mappings */
-static int create_temp_file( file_pos_t size )
+static int create_temp_file( ULONG file_access, ULONG sec_flags, file_pos_t size )
 {
     static int temp_dir_fd = -1;
     char tmpfn[16];
     int fd;
+
+#ifdef HAVE_MEMFD_CREATE
+    int err = 0;
+
+    fd = create_memfd( file_access, sec_flags, size, &err);
+    if (fd != -1)
+    {
+        return fd;
+    }
+
+#endif
 
     if (temp_dir_fd == -1)
     {
@@ -638,7 +750,7 @@ static int build_shared_mapping( struct mapping *mapping, int fd,
 
     /* create a temp file for the mapping */
 
-    if ((shared_fd = create_temp_file( total_size )) == -1) return 0;
+    if ((shared_fd = create_temp_file( FILE_WRITE_DATA, 0, total_size )) == -1) return 0;
     if (!(file = create_file_for_fd( shared_fd, FILE_GENERIC_READ|FILE_GENERIC_WRITE, 0 ))) return 0;
 
     if (!(buffer = malloc( max_size ))) goto error;
@@ -970,7 +1082,12 @@ static struct ranges *create_ranges(void)
 
 static unsigned int get_mapping_flags( obj_handle_t handle, unsigned int flags )
 {
-    switch (flags & (SEC_IMAGE | SEC_RESERVE | SEC_COMMIT | SEC_FILE))
+    if (flags & SEC_LARGE_PAGES)
+    {
+        if (!(flags & SEC_COMMIT))
+            goto error;
+    }
+    switch (flags & (SEC_IMAGE | SEC_RESERVE | SEC_COMMIT | SEC_FILE ))
     {
     case SEC_IMAGE:
         if (flags & (SEC_WRITECOMBINE | SEC_LARGE_PAGES)) break;
@@ -985,6 +1102,7 @@ static unsigned int get_mapping_flags( obj_handle_t handle, unsigned int flags )
         if (handle) return SEC_FILE | (flags & (SEC_NOCACHE | SEC_WRITECOMBINE));
         return flags;
     }
+error:
     set_error( STATUS_INVALID_PARAMETER );
     return 0;
 }
@@ -1074,7 +1192,7 @@ static struct mapping *create_mapping( struct object *root, const struct unicode
         }
         if ((flags & SEC_RESERVE) && !(mapping->committed = create_ranges())) goto error;
         mapping->size = (mapping->size + page_mask) & ~((mem_size_t)page_mask);
-        if ((unix_fd = create_temp_file( mapping->size )) == -1) goto error;
+        if ((unix_fd = create_temp_file( file_access, flags, mapping->size )) == -1) goto error;
         if (!(mapping->fd = create_anonymous_fd( &mapping_fd_ops, unix_fd, &mapping->obj,
                                                  FILE_SYNCHRONOUS_IO_NONALERT ))) goto error;
         allow_fd_caching( mapping->fd );
@@ -1426,6 +1544,66 @@ obj_locator_t get_shared_object_locator( const volatile void *object_shm )
     return locator;
 }
 
+#ifdef __linux__
+static size_t linux_get_min_hugepage_size( void )
+{
+    DIR *sysfs_hugepages;
+    struct dirent *supported_size;
+    size_t min_size = 0;
+    size_t total_supported_sizes = 0;
+
+    errno = 0;
+    sysfs_hugepages = opendir("/sys/kernel/mm/hugepages");
+    if (sysfs_hugepages == NULL)
+    {
+        return -1;
+    }
+
+    while(1)
+    {
+        long hugepage_size;
+
+        supported_size = readdir( sysfs_hugepages );
+        if ( supported_size == NULL )
+        {
+            break;
+        }
+        if (strncmp( supported_size->d_name, "hugepages-", 10) != 0)
+        {
+            continue;
+        }
+        errno = 0;
+        hugepage_size = strtol( &supported_size->d_name[10], NULL, 10 );
+        if (hugepage_size == 0 || hugepage_size == LONG_MAX || hugepage_size == LONG_MIN)
+        {
+            if (errno != 0)
+            {
+                fprintf( stderr,
+                         "could not parse page size from directory entry '%s': %s\n",
+                         supported_size->d_name, strerror( errno ) );
+            }
+            continue;
+        }
+        hugepage_size *= 1024;
+        min_size = ( total_supported_sizes == 0 )
+                       ? hugepage_size
+                       : ( hugepage_size < min_size ? hugepage_size : min_size );
+        total_supported_sizes++;
+    }
+
+    closedir(sysfs_hugepages);
+    return min_size;
+}
+#endif /* __linux__ */
+
+static size_t get_min_large_page_size( void )
+{
+#ifdef __linux__
+    return linux_get_min_hugepage_size();
+#endif
+    return 0;
+}
+
 struct object *create_user_data_mapping( struct object *root, const struct unicode_str *name,
                                         unsigned int attr, const struct security_descriptor *sd )
 {
@@ -1437,8 +1615,15 @@ struct object *create_user_data_mapping( struct object *root, const struct unico
     ptr = mmap( NULL, mapping->size, PROT_WRITE, MAP_SHARED, get_unix_fd( mapping->fd ), 0 );
     if (ptr != MAP_FAILED)
     {
+        ULONG min_large_page_size;
+
         user_shared_data = ptr;
         user_shared_data->SystemCall = 1;
+        min_large_page_size = get_min_large_page_size();
+        if (min_large_page_size != 0)
+        {
+            user_shared_data->LargePageMinimum = min_large_page_size;
+        }
     }
     return &mapping->obj;
 }
@@ -1453,6 +1638,12 @@ DECL_HANDLER(create_mapping)
     const struct object_attributes *objattr = get_req_object_attributes( &sd, &name, &root );
 
     if (!objattr) return;
+
+    if ((req->flags & SEC_LARGE_PAGES) && !thread_single_check_privilege( current, SeLockMemoryPrivilege ))
+    {
+        set_error( STATUS_PRIVILEGE_NOT_HELD );
+        return;
+    }
 
     if ((mapping = create_mapping( root, &name, objattr->attributes, req->size, req->flags,
                                    req->file_handle, req->file_access, sd )))

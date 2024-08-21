@@ -2122,6 +2122,19 @@ NTSTATUS WINAPI NtCreateSection( HANDLE *handle, ACCESS_MASK access, const OBJEC
 
     *handle = 0;
 
+    if (sec_flags & SEC_LARGE_PAGES)
+    {
+        SIZE_T min_size = user_shared_data->LargePageMinimum;
+        if (file != NULL || size == NULL)
+        {
+            return STATUS_INVALID_PARAMETER;
+        }
+
+        if (min_size == 0 || size->QuadPart % min_size != 0)
+        {
+            return STATUS_INVALID_PARAMETER;
+        }
+    }
     switch (protect & 0xff)
     {
     case PAGE_READONLY:
@@ -2506,7 +2519,7 @@ static union tid_alert_entry *get_tid_alert_entry( HANDLE tid )
     if (!tid_alert_blocks[block_idx])
     {
         static const size_t size = TID_ALERT_BLOCK_SIZE * sizeof(union tid_alert_entry);
-        void *ptr = anon_mmap_alloc( size, PROT_READ | PROT_WRITE );
+        void *ptr = anon_mmap_alloc( size, PROT_READ | PROT_WRITE, LARGE_PAGES_NONE );
         if (ptr == MAP_FAILED) return NULL;
         if (InterlockedCompareExchangePointer( (void **)&tid_alert_blocks[block_idx], ptr, NULL ))
             munmap( ptr, size ); /* someone beat us to it */

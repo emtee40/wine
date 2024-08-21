@@ -38,6 +38,8 @@
 static HINSTANCE hkernel32, hkernelbase, hntdll;
 static SYSTEM_INFO si;
 static BOOL is_wow64;
+static SIZE_T(WINAPI *pGetLargePageMinimum)(void);
+static NTSTATUS (WINAPI *pRtlAdjustPrivilege)(ULONG,BOOLEAN,BOOLEAN,PBOOLEAN);
 static UINT   (WINAPI *pGetWriteWatch)(DWORD,LPVOID,SIZE_T,LPVOID*,ULONG_PTR*,ULONG*);
 static UINT   (WINAPI *pResetWriteWatch)(LPVOID,SIZE_T);
 static NTSTATUS (WINAPI *pNtAreMappedFilesTheSame)(PVOID,PVOID);
@@ -54,6 +56,7 @@ static NTSTATUS (WINAPI *pNtProtectVirtualMemory)(HANDLE, PVOID *, SIZE_T *, ULO
 static NTSTATUS (WINAPI *pNtReadVirtualMemory)(HANDLE,const void *,void *,SIZE_T, SIZE_T *);
 static NTSTATUS (WINAPI *pNtWriteVirtualMemory)(HANDLE, void *, const void *, SIZE_T, SIZE_T *);
 static BOOL  (WINAPI *pPrefetchVirtualMemory)(HANDLE, ULONG_PTR, PWIN32_MEMORY_RANGE_ENTRY, ULONG);
+static LPVOID(WINAPI *pVirtualAlloc2)(HANDLE, void *, SIZE_T, DWORD, DWORD, MEM_EXTENDED_PARAMETER *, ULONG);
 
 /* ############################### */
 
@@ -557,6 +560,126 @@ static void test_VirtualAlloc(void)
     ok(GetLastError() == ERROR_INVALID_PARAMETER, "got %ld, expected ERROR_INVALID_PARAMETER\n", GetLastError());
 
     ok(VirtualFree(addr1, 0, MEM_RELEASE), "VirtualFree failed\n");
+}
+
+static void test_with_large_pages( void (*test)(SIZE_T large_page_min) )
+{
+    SIZE_T size;
+    NTSTATUS status;
+    HANDLE process_token;
+    HANDLE token;
+    BOOLEAN enabled;
+
+    if (!pGetLargePageMinimum)
+    {
+        win_skip( "No GetLargePageMinimum support.\n" );
+        return;
+    }
+    if (!pRtlAdjustPrivilege)
+    {
+        win_skip( "No RtlAdjustPrivilege support.\n" );
+        return;
+    }
+
+    size = pGetLargePageMinimum();
+    if (size == 0)
+    {
+        trace( "No large pages support, skipping test.\n" );
+        return;
+    }
+    ok( OpenProcessToken( GetCurrentProcess(), TOKEN_DUPLICATE | TOKEN_QUERY, &process_token ),
+        "OpenProcessToken failed (%ld)\n", GetLastError() );
+    ok( DuplicateToken( process_token, SecurityImpersonation, &token ),
+       "DuplicateToken failed (%ld)\n", GetLastError() );
+    ok( ImpersonateLoggedOnUser( token ), "ImpersonateLoggedOnUser failed (%ld)\n",
+        GetLastError() );
+    status = pRtlAdjustPrivilege( SE_LOCK_MEMORY_PRIVILEGE, TRUE, TRUE, &enabled );
+    if (status != STATUS_SUCCESS)
+    {
+        trace( "Couldn't get SE_LOCK_MEMORY_PRIVILEGE (%ld), skipping test",
+               status );
+    }
+    else
+    {
+        test(size);
+    }
+    ok( RevertToSelf(), "RevertToSelf failed (%ld)\n", GetLastError() );
+}
+
+static void test_large_pages_VirtualAlloc(SIZE_T size)
+{
+    void *addr;
+
+    SetLastError( 0xdeadbeef );
+    addr = VirtualAlloc( NULL, 0, MEM_LARGE_PAGES | MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
+    ok( addr == NULL && GetLastError() == ERROR_INVALID_PARAMETER,
+        "VirtualAlloc should fail with %d (got %ld)\n", ERROR_INVALID_PARAMETER, GetLastError() );
+
+    SetLastError( 0xdeadbeef );
+    addr =
+        VirtualAlloc( NULL, size - 1, MEM_LARGE_PAGES | MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
+    ok( addr == NULL && GetLastError() == ERROR_INVALID_PARAMETER,
+        "VirtualAlloc should fail with %d (got %ld)\n", ERROR_INVALID_PARAMETER, GetLastError() );
+
+    SetLastError( 0xdeadbeef );
+    addr = VirtualAlloc( NULL, size, MEM_LARGE_PAGES, PAGE_READWRITE );
+    ok( addr == NULL && GetLastError() == ERROR_INVALID_PARAMETER,
+        "VirtualAlloc should fail with %d (got %ld)\n", ERROR_INVALID_PARAMETER, GetLastError() );
+
+    SetLastError( 0xdeadbeef );
+    addr = VirtualAlloc( NULL, size, MEM_LARGE_PAGES | MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
+    ok( addr != NULL || GetLastError() == ERROR_NOT_ENOUGH_MEMORY, "VirtualAlloc failed (%ld)\n",
+        GetLastError() );
+    if ( addr != NULL )
+    {
+        SetLastError( 0xdeadbeef );
+        ok( VirtualFree( addr, 0, MEM_RELEASE ), "VirtualFree failed (%ld)\n", GetLastError() );
+    }
+
+    SetLastError( 0xdeadbeef );
+    addr = VirtualAlloc( (void *)( (UINT_PTR)addr - 1 ), size,
+                         MEM_LARGE_PAGES | MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
+    ok( addr == NULL && GetLastError() == ERROR_INVALID_PARAMETER,
+        "VirtualAlloc should fail with %d (got %ld)\n", ERROR_INVALID_PARAMETER, GetLastError() );
+
+    SetLastError( 0xdeadbeef );
+    addr = VirtualAlloc( addr, size, MEM_LARGE_PAGES | MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
+    ok( addr != NULL || GetLastError() == ERROR_NOT_ENOUGH_MEMORY, "VirtualAlloc failed (%ld)\n",
+       GetLastError() );
+    if (addr != NULL)
+    {
+        SetLastError( 0xdeadbeef );
+        ok( VirtualFree( addr, 0, MEM_RELEASE ), "VirtualFree failed (%ld)\n", GetLastError() );
+    }
+}
+
+static void test_large_pages_VirtualAlloc2( SIZE_T size )
+{
+    void *addr;
+    MEM_EXTENDED_PARAMETER ex;
+
+    if (!pVirtualAlloc2)
+    {
+        win_skip( "No VirtualAlloc2 support.\n" );
+        return;
+    }
+    memset( &ex, 0, sizeof( ex ) );
+    ex.Type = MemExtendedParameterAttributeFlags;
+    ex.ULong64 = MEM_EXTENDED_PARAMETER_NONPAGED_LARGE;
+
+    addr = pVirtualAlloc2( NULL, NULL, size, MEM_LARGE_PAGES | MEM_RESERVE | MEM_COMMIT,
+                          PAGE_READWRITE, NULL, 0 );
+    ok( addr != NULL || GetLastError() == ERROR_NOT_ENOUGH_MEMORY, "VirtualAlloc2 failed (%ld)\n",
+        GetLastError() );
+    if ( addr )
+        ok( VirtualFree( addr, 0, MEM_RELEASE ), "VirtualFree failed (%ld)\n", GetLastError() );
+
+    addr = pVirtualAlloc2( NULL, NULL, size, MEM_LARGE_PAGES | MEM_RESERVE | MEM_COMMIT,
+                           PAGE_READWRITE, &ex, 1 );
+    ok( addr != NULL || GetLastError() == ERROR_NOT_ENOUGH_MEMORY, "VirtualAlloc2 failed (%ld)\n",
+        GetLastError() );
+    if ( addr )
+        ok( VirtualFree( addr, 0, MEM_RELEASE ), "VirtualFree failed (%ld)\n", GetLastError() );
 }
 
 static void test_MapViewOfFile(void)
@@ -1326,6 +1449,42 @@ static void test_MapViewOfFile(void)
 
     CloseHandle(file);
     DeleteFileA(testfile);
+}
+
+static void test_large_pages_file_mapping( SIZE_T size )
+{
+    HANDLE file;
+    DWORD err;
+
+    file = CreateFileMappingW( INVALID_HANDLE_VALUE, NULL,
+                               PAGE_READWRITE | SEC_LARGE_PAGES | SEC_COMMIT, 0, size - 1, NULL );
+    err = GetLastError();
+    ok( file == NULL && err == ERROR_INVALID_PARAMETER,
+        "CreateFileMappingW should fail with ERROR_INVALID_PARAMETER (got %ld instead)\n", err );
+    if (file != NULL) CloseHandle( file );
+
+    file = CreateFileMappingW( INVALID_HANDLE_VALUE, NULL,
+                               PAGE_READWRITE | SEC_LARGE_PAGES | SEC_COMMIT, 0, size * 2, NULL );
+    ok( file != NULL, "CreateFileMappingW failed (%ld)\n", GetLastError() );
+    if (file != NULL)
+    {
+        void *addr;
+        addr = MapViewOfFile( file, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, size * 2 );
+        ok( addr != NULL || GetLastError() == ERROR_NOT_ENOUGH_MEMORY, "MapViewOfFile failed (%ld)\n", GetLastError() );
+        UnmapViewOfFile( addr );
+        CloseHandle( file );
+    }
+
+    file = CreateFileMappingW( INVALID_HANDLE_VALUE, NULL,
+                               PAGE_READWRITE | SEC_LARGE_PAGES | SEC_RESERVE, 0, size, NULL );
+    err = GetLastError();
+    ok( file == NULL && err == ERROR_INVALID_PARAMETER,
+        "CreateFileMappingW should have failed with ERROR_INVALID_PARAMETER (got %ld "
+        "instead)\n",
+        err );
+    if (file != NULL) CloseHandle( file );
+
+    ok( RevertToSelf(), "RevertToSelf failed (%ld)\n", GetLastError() );
 }
 
 
@@ -4447,6 +4606,8 @@ START_TEST(virtual)
     hkernelbase = GetModuleHandleA("kernelbase.dll");
     hntdll    = GetModuleHandleA("ntdll.dll");
 
+    pGetLargePageMinimum = (void *)GetProcAddress(hkernel32, "GetLargePageMinimum");
+    pRtlAdjustPrivilege = (void *)GetProcAddress(hntdll, "RtlAdjustPrivilege");
     pGetWriteWatch = (void *) GetProcAddress(hkernel32, "GetWriteWatch");
     pResetWriteWatch = (void *) GetProcAddress(hkernel32, "ResetWriteWatch");
     pGetProcessDEPPolicy = (void *)GetProcAddress( hkernel32, "GetProcessDEPPolicy" );
@@ -4462,6 +4623,7 @@ START_TEST(virtual)
     pNtReadVirtualMemory = (void *)GetProcAddress( hntdll, "NtReadVirtualMemory" );
     pNtWriteVirtualMemory = (void *)GetProcAddress( hntdll, "NtWriteVirtualMemory" );
     pPrefetchVirtualMemory = (void *)GetProcAddress( hkernelbase, "PrefetchVirtualMemory" );
+    pVirtualAlloc2 = (void *)GetProcAddress(hkernelbase, "VirtualAlloc2");
 
     GetSystemInfo(&si);
     trace("system page size %#lx\n", si.dwPageSize);
@@ -4474,10 +4636,13 @@ START_TEST(virtual)
     test_shared_memory_ro(FALSE, FILE_MAP_COPY|FILE_MAP_WRITE);
     test_mappings();
     test_CreateFileMapping_protection();
+    test_with_large_pages(test_large_pages_file_mapping);
     test_VirtualAlloc_protection();
     test_VirtualProtect();
     test_VirtualAllocEx();
     test_VirtualAlloc();
+    test_with_large_pages(test_large_pages_VirtualAlloc);
+    test_with_large_pages(test_large_pages_VirtualAlloc2);
     test_MapViewOfFile();
     test_NtAreMappedFilesTheSame();
     test_CreateFileMapping();
