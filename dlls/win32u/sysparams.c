@@ -6613,7 +6613,7 @@ int get_system_metrics( int index )
     case SM_TABLETPC:
         return tabletpc_mode;
     case SM_MEDIACENTER:
-        return 0;
+        return 1;
     case SM_CMETRICS:
         return SM_CMETRICS;
     default:
