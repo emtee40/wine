@@ -33,25 +33,6 @@
 
 char *process_name = NULL;
 
-static const struct user_driver_funcs waylanddrv_funcs =
-{
-    .pClipCursor = WAYLAND_ClipCursor,
-    .pDesktopWindowProc = WAYLAND_DesktopWindowProc,
-    .pDestroyWindow = WAYLAND_DestroyWindow,
-    .pKbdLayerDescriptor = WAYLAND_KbdLayerDescriptor,
-    .pReleaseKbdTables = WAYLAND_ReleaseKbdTables,
-    .pSetCursor = WAYLAND_SetCursor,
-    .pSetWindowText = WAYLAND_SetWindowText,
-    .pSysCommand = WAYLAND_SysCommand,
-    .pUpdateDisplayDevices = WAYLAND_UpdateDisplayDevices,
-    .pWindowMessage = WAYLAND_WindowMessage,
-    .pWindowPosChanged = WAYLAND_WindowPosChanged,
-    .pWindowPosChanging = WAYLAND_WindowPosChanging,
-    .pCreateWindowSurface = WAYLAND_CreateWindowSurface,
-    .pVulkanInit = WAYLAND_VulkanInit,
-    .pwine_get_wgl_driver = WAYLAND_wine_get_wgl_driver,
-};
-
 static void wayland_init_process_name(void)
 {
     WCHAR *p, *appname;
@@ -82,19 +63,11 @@ static void wayland_init_process_name(void)
 
 static NTSTATUS waylanddrv_unix_init(void *arg)
 {
-    /* Set the user driver functions now so that they are available during
-     * our initialization. We clear them on error. */
-    __wine_set_user_driver(&waylanddrv_funcs, WINE_GDI_DRIVER_VERSION);
-
     wayland_init_process_name();
 
-    if (!wayland_process_init()) goto err;
+    if (!wayland_process_init()) return STATUS_UNSUCCESSFUL;
 
     return 0;
-
-err:
-    __wine_set_user_driver(NULL, WINE_GDI_DRIVER_VERSION);
-    return STATUS_UNSUCCESSFUL;
 }
 
 static NTSTATUS waylanddrv_unix_read_events(void *arg)
