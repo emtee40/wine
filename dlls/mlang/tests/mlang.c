@@ -654,20 +654,20 @@ static void test_multibyte_to_unicode_translations(IMultiLanguage2 *iML2)
     lenW = ARRAY_SIZE(bufW);
     ret = pConvertINetMultiByteToUnicode(NULL, 936, bad936A_end, (INT *)&lenA, bufW, (INT *)&lenW);
     ok(ret == S_OK, "ConvertINetMultiByteToUnicode failed: %08lx\n", ret);
-    todo_wine ok(lenA == lstrlenA(bad936A_end) - 2, "expected lenA %u, got %u\n", lstrlenA(bad936A_end) - 2, lenA);
+    ok(lenA == lstrlenA(bad936A_end) - 2, "expected lenA %u, got %u\n", lstrlenA(bad936A_end) - 2, lenA);
     expected_len = MultiByteToWideChar(936, 0, bad936A_end, lenA, NULL, 0);
     ok(lenW == expected_len, "expected lenW %u, got %u\n", expected_len, lenW);
-    todo_wine ok(!memcmp(bufW, bad936W_end, lenW * sizeof(WCHAR)), "bufW/stringW mismatch\n");
+    ok(!memcmp(bufW, bad936W_end, lenW * sizeof(WCHAR)), "bufW/stringW mismatch\n");
 
     memset(bufW, 'x', sizeof(bufW));
     lenA = lstrlenA(bad936A_mid);
     lenW = ARRAY_SIZE(bufW);
     ret = pConvertINetMultiByteToUnicode(NULL, 936, bad936A_mid, (INT *)&lenA, bufW, (INT *)&lenW);
     ok(ret == S_OK, "ConvertINetMultiByteToUnicode failed: %08lx\n", ret);
-    todo_wine ok(lenA == lstrlenA(bad936A_mid), "expected lenA %u, got %u\n", lstrlenA(bad936A_mid), lenA);
+    ok(lenA == lstrlenA(bad936A_mid), "expected lenA %u, got %u\n", lstrlenA(bad936A_mid), lenA);
     expected_len = MultiByteToWideChar(936, 0, bad936A_mid, lenA, NULL, 0);
     ok(lenW == expected_len, "expected lenW %u, got %u\n", expected_len, lenW);
-    todo_wine ok(!memcmp(bufW, bad936W_mid, lenW * sizeof(WCHAR)), "bufW/stringW mismatch\n");
+    ok(!memcmp(bufW, bad936W_mid, lenW * sizeof(WCHAR)), "bufW/stringW mismatch\n");
 
     /* IMultiLanguage2_ConvertStringFromUnicode tests */
 
