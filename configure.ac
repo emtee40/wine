@@ -603,7 +603,7 @@ case $host_os in
   cygwin*|mingw32*)
     LIBEXT="dll"
     DLLEXT=""
-    EXTRACFLAGS="-D__WINE_PE_BUILD"
+    EXTRACFLAGS="-D__WINE_PE_BUILD -D_GNU_SOURCE"
     dnl Disable stdcall fixups to catch prototype mismatches
     AS_VAR_IF([HOST_ARCH],[i386],
         [WINE_TRY_CFLAGS([-Wl,--disable-stdcall-fixup],
