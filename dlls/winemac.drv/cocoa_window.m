@@ -25,6 +25,9 @@
 #import <CoreVideo/CoreVideo.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/QuartzCore.h>
+#ifdef MAC_OS_VERSION_14_4
+#import <ScreenCaptureKit/ScreenCaptureKit.h>
+#endif
 
 #import "cocoa_window.h"
 
@@ -2334,6 +2337,126 @@ static CVReturn WineDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTi
         return (self.windowNumber > 0 && ![self isEmptyShaped]);
     }
 
+    /* Create an image of the given window using the CGWindowList API. The
+       returned image must be released by the caller. */
+    - (CGImageRef) windowListSnapshotForWindow:(WineWindow *)window
+    {
+        const void* windowID = (const void*)(uintptr_t)(CGWindowID)window.windowNumber;
+        CFArrayRef windowIDs = CFArrayCreate(NULL, &windowID, 1, NULL);
+        CGImageRef windowImage = CGWindowListCreateImageFromArray(CGRectNull, windowIDs, kCGWindowImageBoundsIgnoreFraming);
+        CFRelease(windowIDs);
+        return windowImage;
+    }
+
+#ifdef MAC_OS_VERSION_14_4
+    /* Create an image of the given window using the ScreenCaptureKit shareable
+       content APIs. The completion handler block is called on the main thread.
+       The image passed to the block must be released by the caller. In the case
+       of an error, the block is called with NULL. */
+    - (void) shareableContentSnapshotForWindow:(WineWindow *)window
+                         withCompletionHandler:(void (^)(CGImageRef image))completion
+    {
+        [SCShareableContent getCurrentProcessShareableContentWithCompletionHandler:^(SCShareableContent *shareableContent, NSError *error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                SCWindow *scWindow;
+                SCContentFilter *filter;
+                SCStreamConfiguration *streamConfig;
+
+                if (!shareableContent)
+                {
+                    completion(NULL);
+                    return;
+                }
+
+                for (SCWindow *scw in shareableContent.windows)
+                {
+                    if (scw.windowID == window.windowNumber)
+                    {
+                        scWindow = scw;
+                        break;
+                    }
+                }
+
+                if (!scWindow)
+                {
+                    completion(NULL);
+                    return;
+                }
+
+                filter = [[SCContentFilter alloc] initWithDesktopIndependentWindow:scWindow];
+
+                streamConfig = [[SCStreamConfiguration alloc] init];
+                streamConfig.width = NSWidth(window.frame);
+                streamConfig.height = NSHeight(window.frame);
+                streamConfig.scalesToFit = YES;
+                streamConfig.showsCursor = NO;
+                streamConfig.ignoreShadowsSingleWindow = YES;
+                streamConfig.ignoreGlobalClipSingleWindow = YES;
+                streamConfig.includeChildWindows = NO;
+
+                [SCScreenshotManager captureImageWithFilter:filter configuration:streamConfig completionHandler:^(CGImageRef sampleBuffer, NSError *error) {
+                    [filter release];
+                    [streamConfig release];
+
+                    /* We do *not* own the returned image. */
+                    if (sampleBuffer)
+                        CGImageRetain(sampleBuffer);
+
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        completion(sampleBuffer);
+                    });
+                }];
+            });
+        }];
+    }
+#endif
+
+    - (void) drawDockTileWithImage:(CGImageRef)windowImage
+    {
+        NSImage* appImage = [NSApp applicationIconImage];
+        if (!appImage)
+            appImage = [NSImage imageNamed:NSImageNameApplicationIcon];
+
+        NSImage* dockIcon = [[[NSImage alloc] initWithSize:NSMakeSize(256, 256)] autorelease];
+        [dockIcon lockFocus];
+
+        CGContextRef cgcontext = [[NSGraphicsContext currentContext] graphicsPort];
+
+        CGRect rect = CGRectMake(8, 8, 240, 240);
+        size_t width = CGImageGetWidth(windowImage);
+        size_t height = CGImageGetHeight(windowImage);
+        if (width > height)
+        {
+            rect.size.height *= height / (double)width;
+            rect.origin.y += (CGRectGetWidth(rect) - CGRectGetHeight(rect)) / 2;
+        }
+        else if (width != height)
+        {
+            rect.size.width *= width / (double)height;
+            rect.origin.x += (CGRectGetHeight(rect) - CGRectGetWidth(rect)) / 2;
+        }
+
+        CGContextDrawImage(cgcontext, rect, windowImage);
+        [appImage drawInRect:NSMakeRect(156, 4, 96, 96)
+                    fromRect:NSZeroRect
+                   operation:NSCompositingOperationSourceOver
+                    fraction:1
+              respectFlipped:YES
+                       hints:nil];
+
+        [dockIcon unlockFocus];
+
+        NSImageView* imageView = (NSImageView*)self.dockTile.contentView;
+        if (![imageView isKindOfClass:[NSImageView class]])
+        {
+            imageView = [[[NSImageView alloc] initWithFrame:NSMakeRect(0, 0, 256, 256)] autorelease];
+            imageView.imageScaling = NSImageScaleProportionallyUpOrDown;
+            self.dockTile.contentView = imageView;
+        }
+        imageView.image = dockIcon;
+        [self.dockTile display];
+    }
+
     - (void) grabDockIconSnapshotFromWindow:(WineWindow*)window force:(BOOL)force
     {
         if (![self isEmptyShaped])
@@ -2369,58 +2492,29 @@ static CVReturn WineDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTi
                 return;
         }
 
-        const void* windowID = (const void*)(uintptr_t)(CGWindowID)window.windowNumber;
-        CFArrayRef windowIDs = CFArrayCreate(NULL, &windowID, 1, NULL);
-        CGImageRef windowImage = CGWindowListCreateImageFromArray(CGRectNull, windowIDs, kCGWindowImageBoundsIgnoreFraming);
-        CFRelease(windowIDs);
-        if (!windowImage)
-            return;
-
-        NSImage* appImage = [NSApp applicationIconImage];
-        if (!appImage)
-            appImage = [NSImage imageNamed:NSImageNameApplicationIcon];
-
-        NSImage* dockIcon = [[[NSImage alloc] initWithSize:NSMakeSize(256, 256)] autorelease];
-        [dockIcon lockFocus];
-
-        CGContextRef cgcontext = [[NSGraphicsContext currentContext] graphicsPort];
-
-        CGRect rect = CGRectMake(8, 8, 240, 240);
-        size_t width = CGImageGetWidth(windowImage);
-        size_t height = CGImageGetHeight(windowImage);
-        if (width > height)
+#ifdef MAC_OS_VERSION_14_4
+        if ([SCShareableContent respondsToSelector:@selector(getCurrentProcessShareableContentWithCompletionHandler:)])
         {
-            rect.size.height *= height / (double)width;
-            rect.origin.y += (CGRectGetWidth(rect) - CGRectGetHeight(rect)) / 2;
+            [self shareableContentSnapshotForWindow:window withCompletionHandler:^(CGImageRef windowImage) {
+                if (windowImage)
+                {
+                    [self drawDockTileWithImage:windowImage];
+                    CGImageRelease(windowImage);
+                    lastDockIconSnapshot = now;
+                }
+            }];
         }
-        else if (width != height)
+        else
+#endif
         {
-            rect.size.width *= width / (double)height;
-            rect.origin.x += (CGRectGetHeight(rect) - CGRectGetWidth(rect)) / 2;
+            CGImageRef windowImage = [self windowListSnapshotForWindow:window];
+            if (windowImage)
+            {
+                [self drawDockTileWithImage:windowImage];
+                CGImageRelease(windowImage);
+                lastDockIconSnapshot = now;
+            }
         }
-
-        CGContextDrawImage(cgcontext, rect, windowImage);
-        [appImage drawInRect:NSMakeRect(156, 4, 96, 96)
-                    fromRect:NSZeroRect
-                   operation:NSCompositingOperationSourceOver
-                    fraction:1
-              respectFlipped:YES
-                       hints:nil];
-
-        [dockIcon unlockFocus];
-
-        CGImageRelease(windowImage);
-
-        NSImageView* imageView = (NSImageView*)self.dockTile.contentView;
-        if (![imageView isKindOfClass:[NSImageView class]])
-        {
-            imageView = [[[NSImageView alloc] initWithFrame:NSMakeRect(0, 0, 256, 256)] autorelease];
-            imageView.imageScaling = NSImageScaleProportionallyUpOrDown;
-            self.dockTile.contentView = imageView;
-        }
-        imageView.image = dockIcon;
-        [self.dockTile display];
-        lastDockIconSnapshot = now;
     }
 
     - (void) checkEmptyShaped

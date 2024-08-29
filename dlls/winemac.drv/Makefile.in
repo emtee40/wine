@@ -12,7 +12,8 @@ UNIX_LIBS    = \
 	-framework OpenGL \
 	-framework QuartzCore \
 	-framework Security \
-	$(METAL_LIBS)
+	$(METAL_LIBS) \
+	$(SCREENCAPTUREKIT_LIBS)
 
 SOURCES = \
 	clipboard.c \
