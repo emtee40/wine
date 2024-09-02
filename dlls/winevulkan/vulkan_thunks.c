@@ -8227,29 +8227,29 @@ static uint64_t wine_vk_unwrap_handle(uint32_t type, uint64_t handle)
     switch(type)
     {
     case VK_OBJECT_TYPE_COMMAND_BUFFER:
-        return (uint64_t) (uintptr_t) wine_cmd_buffer_from_handle(((VkCommandBuffer) (uintptr_t) handle))->host_command_buffer;
+        return (uint64_t) (uintptr_t) wine_cmd_buffer_from_handle(((VkCommandBuffer) (uintptr_t) handle))->obj.host.command_buffer;
     case VK_OBJECT_TYPE_COMMAND_POOL:
-        return (uint64_t) wine_cmd_pool_from_handle(handle)->host_command_pool;
+        return (uint64_t) wine_cmd_pool_from_handle(handle)->obj.host.command_pool;
     case VK_OBJECT_TYPE_DEBUG_REPORT_CALLBACK_EXT:
-        return (uint64_t) wine_debug_report_callback_from_handle(handle)->host_debug_callback;
+        return (uint64_t) wine_debug_report_callback_from_handle(handle)->obj.host.debug_report_callback;
     case VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT:
-        return (uint64_t) wine_debug_utils_messenger_from_handle(handle)->host_debug_messenger;
+        return (uint64_t) wine_debug_utils_messenger_from_handle(handle)->obj.host.debug_utils_messenger;
     case VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR:
-        return (uint64_t) wine_deferred_operation_from_handle(handle)->host_deferred_operation;
+        return (uint64_t) wine_deferred_operation_from_handle(handle)->obj.host.deferred_operation;
     case VK_OBJECT_TYPE_DEVICE:
-        return (uint64_t) (uintptr_t) wine_device_from_handle(((VkDevice) (uintptr_t) handle))->host_device;
+        return (uint64_t) (uintptr_t) wine_device_from_handle(((VkDevice) (uintptr_t) handle))->obj.host.device;
     case VK_OBJECT_TYPE_DEVICE_MEMORY:
-        return (uint64_t) wine_device_memory_from_handle(handle)->host_memory;
+        return (uint64_t) wine_device_memory_from_handle(handle)->obj.host.device_memory;
     case VK_OBJECT_TYPE_INSTANCE:
-        return (uint64_t) (uintptr_t) wine_instance_from_handle(((VkInstance) (uintptr_t) handle))->host_instance;
+        return (uint64_t) (uintptr_t) wine_instance_from_handle(((VkInstance) (uintptr_t) handle))->obj.host.instance;
     case VK_OBJECT_TYPE_PHYSICAL_DEVICE:
-        return (uint64_t) (uintptr_t) wine_phys_dev_from_handle(((VkPhysicalDevice) (uintptr_t) handle))->host_physical_device;
+        return (uint64_t) (uintptr_t) wine_phys_dev_from_handle(((VkPhysicalDevice) (uintptr_t) handle))->obj.host.physical_device;
     case VK_OBJECT_TYPE_QUEUE:
-        return (uint64_t) (uintptr_t) wine_queue_from_handle(((VkQueue) (uintptr_t) handle))->host_queue;
+        return (uint64_t) (uintptr_t) wine_queue_from_handle(((VkQueue) (uintptr_t) handle))->obj.host.queue;
     case VK_OBJECT_TYPE_SURFACE_KHR:
-        return (uint64_t) wine_surface_from_handle(handle)->host_surface;
+        return (uint64_t) wine_surface_from_handle(handle)->obj.host.surface;
     case VK_OBJECT_TYPE_SWAPCHAIN_KHR:
-        return (uint64_t) wine_swapchain_from_handle(handle)->host_swapchain;
+        return (uint64_t) wine_swapchain_from_handle(handle)->obj.host.swapchain;
     default:
        return handle;
     }
@@ -8677,7 +8677,7 @@ static inline void convert_VkBindAccelerationStructureMemoryInfoNV_win64_to_host
     out->sType = in->sType;
     out->pNext = in->pNext;
     out->accelerationStructure = in->accelerationStructure;
-    out->memory = wine_device_memory_from_handle(in->memory)->host_memory;
+    out->memory = wine_device_memory_from_handle(in->memory)->obj.host.device_memory;
     out->memoryOffset = in->memoryOffset;
     out->deviceIndexCount = in->deviceIndexCount;
     out->pDeviceIndices = in->pDeviceIndices;
@@ -8691,7 +8691,7 @@ static inline void convert_VkBindAccelerationStructureMemoryInfoNV_win32_to_host
     out->sType = in->sType;
     out->pNext = NULL;
     out->accelerationStructure = in->accelerationStructure;
-    out->memory = wine_device_memory_from_handle(in->memory)->host_memory;
+    out->memory = wine_device_memory_from_handle(in->memory)->obj.host.device_memory;
     out->memoryOffset = in->memoryOffset;
     out->deviceIndexCount = in->deviceIndexCount;
     out->pDeviceIndices = UlongToPtr(in->pDeviceIndices);
@@ -8741,7 +8741,7 @@ static inline void convert_VkBindBufferMemoryInfo_win64_to_host(const VkBindBuff
     out->sType = in->sType;
     out->pNext = in->pNext;
     out->buffer = in->buffer;
-    out->memory = wine_device_memory_from_handle(in->memory)->host_memory;
+    out->memory = wine_device_memory_from_handle(in->memory)->obj.host.device_memory;
     out->memoryOffset = in->memoryOffset;
 }
 #endif /* _WIN64 */
@@ -8756,7 +8756,7 @@ static inline void convert_VkBindBufferMemoryInfo_win32_to_host(struct conversio
     out->sType = in->sType;
     out->pNext = NULL;
     out->buffer = in->buffer;
-    out->memory = wine_device_memory_from_handle(in->memory)->host_memory;
+    out->memory = wine_device_memory_from_handle(in->memory)->obj.host.device_memory;
     out->memoryOffset = in->memoryOffset;
 
     for (in_header = UlongToPtr(in->pNext); in_header; in_header = UlongToPtr(in_header->pNext))
@@ -8838,7 +8838,7 @@ static inline void convert_VkBindImageMemoryInfo_win64_to_host(struct conversion
     out->sType = in->sType;
     out->pNext = NULL;
     out->image = in->image;
-    out->memory = wine_device_memory_from_handle(in->memory)->host_memory;
+    out->memory = wine_device_memory_from_handle(in->memory)->obj.host.device_memory;
     out->memoryOffset = in->memoryOffset;
 
     for (in_header = (void *)in->pNext; in_header; in_header = (void *)in_header->pNext)
@@ -8865,7 +8865,7 @@ static inline void convert_VkBindImageMemoryInfo_win64_to_host(struct conversion
             const VkBindImageMemorySwapchainInfoKHR *in_ext = (const VkBindImageMemorySwapchainInfoKHR *)in_header;
             out_ext->sType = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_SWAPCHAIN_INFO_KHR;
             out_ext->pNext = NULL;
-            out_ext->swapchain = wine_swapchain_from_handle(in_ext->swapchain)->host_swapchain;
+            out_ext->swapchain = wine_swapchain_from_handle(in_ext->swapchain)->obj.host.swapchain;
             out_ext->imageIndex = in_ext->imageIndex;
             out_header->pNext = (void *)out_ext;
             out_header = (void *)out_ext;
@@ -8911,7 +8911,7 @@ static inline void convert_VkBindImageMemoryInfo_win32_to_host(struct conversion
     out->sType = in->sType;
     out->pNext = NULL;
     out->image = in->image;
-    out->memory = wine_device_memory_from_handle(in->memory)->host_memory;
+    out->memory = wine_device_memory_from_handle(in->memory)->obj.host.device_memory;
     out->memoryOffset = in->memoryOffset;
 
     for (in_header = UlongToPtr(in->pNext); in_header; in_header = UlongToPtr(in_header->pNext))
@@ -8938,7 +8938,7 @@ static inline void convert_VkBindImageMemoryInfo_win32_to_host(struct conversion
             const VkBindImageMemorySwapchainInfoKHR32 *in_ext = (const VkBindImageMemorySwapchainInfoKHR32 *)in_header;
             out_ext->sType = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_SWAPCHAIN_INFO_KHR;
             out_ext->pNext = NULL;
-            out_ext->swapchain = wine_swapchain_from_handle(in_ext->swapchain)->host_swapchain;
+            out_ext->swapchain = wine_swapchain_from_handle(in_ext->swapchain)->obj.host.swapchain;
             out_ext->imageIndex = in_ext->imageIndex;
             out_header->pNext = (void *)out_ext;
             out_header = (void *)out_ext;
@@ -9015,7 +9015,7 @@ static inline void convert_VkBindVideoSessionMemoryInfoKHR_win64_to_host(const V
     out->sType = in->sType;
     out->pNext = in->pNext;
     out->memoryBindIndex = in->memoryBindIndex;
-    out->memory = wine_device_memory_from_handle(in->memory)->host_memory;
+    out->memory = wine_device_memory_from_handle(in->memory)->obj.host.device_memory;
     out->memoryOffset = in->memoryOffset;
     out->memorySize = in->memorySize;
 }
@@ -9028,7 +9028,7 @@ static inline void convert_VkBindVideoSessionMemoryInfoKHR_win32_to_host(const V
     out->sType = in->sType;
     out->pNext = NULL;
     out->memoryBindIndex = in->memoryBindIndex;
-    out->memory = wine_device_memory_from_handle(in->memory)->host_memory;
+    out->memory = wine_device_memory_from_handle(in->memory)->obj.host.device_memory;
     out->memoryOffset = in->memoryOffset;
     out->memorySize = in->memorySize;
     if (in->pNext)
@@ -11316,7 +11316,7 @@ static inline const VkCommandBuffer *convert_VkCommandBuffer_array_win64_to_host
     out = conversion_context_alloc(ctx, count * sizeof(*out));
     for (i = 0; i < count; i++)
     {
-        out[i] = wine_cmd_buffer_from_handle(in[i])->host_command_buffer;
+        out[i] = wine_cmd_buffer_from_handle(in[i])->obj.host.command_buffer;
     }
 
     return out;
@@ -11333,7 +11333,7 @@ static inline const VkCommandBuffer *convert_VkCommandBuffer_array_win32_to_host
     out = conversion_context_alloc(ctx, count * sizeof(*out));
     for (i = 0; i < count; i++)
     {
-        out[i] = wine_cmd_buffer_from_handle(UlongToPtr(in[i]))->host_command_buffer;
+        out[i] = wine_cmd_buffer_from_handle(UlongToPtr(in[i]))->obj.host.command_buffer;
     }
 
     return out;
@@ -13525,7 +13525,7 @@ static inline const VkPhysicalDevice *convert_VkPhysicalDevice_array_win64_to_ho
     out = conversion_context_alloc(ctx, count * sizeof(*out));
     for (i = 0; i < count; i++)
     {
-        out[i] = wine_phys_dev_from_handle(in[i])->host_physical_device;
+        out[i] = wine_phys_dev_from_handle(in[i])->obj.host.physical_device;
     }
 
     return out;
@@ -13542,7 +13542,7 @@ static inline const VkPhysicalDevice *convert_VkPhysicalDevice_array_win32_to_ho
     out = conversion_context_alloc(ctx, count * sizeof(*out));
     for (i = 0; i < count; i++)
     {
-        out[i] = wine_phys_dev_from_handle(UlongToPtr(in[i]))->host_physical_device;
+        out[i] = wine_phys_dev_from_handle(UlongToPtr(in[i]))->obj.host.physical_device;
     }
 
     return out;
@@ -19740,7 +19740,7 @@ static inline void convert_VkImageCreateInfo_win64_to_host(struct conversion_con
             const VkImageSwapchainCreateInfoKHR *in_ext = (const VkImageSwapchainCreateInfoKHR *)in_header;
             out_ext->sType = VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR;
             out_ext->pNext = NULL;
-            out_ext->swapchain = in_ext->swapchain ? wine_swapchain_from_handle(in_ext->swapchain)->host_swapchain : 0;
+            out_ext->swapchain = in_ext->swapchain ? wine_swapchain_from_handle(in_ext->swapchain)->obj.host.swapchain : 0;
             out_header->pNext = (void *)out_ext;
             out_header = (void *)out_ext;
             break;
@@ -19889,7 +19889,7 @@ static inline void convert_VkImageCreateInfo_win32_to_host(struct conversion_con
             const VkImageSwapchainCreateInfoKHR32 *in_ext = (const VkImageSwapchainCreateInfoKHR32 *)in_header;
             out_ext->sType = VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR;
             out_ext->pNext = NULL;
-            out_ext->swapchain = in_ext->swapchain ? wine_swapchain_from_handle(in_ext->swapchain)->host_swapchain : 0;
+            out_ext->swapchain = in_ext->swapchain ? wine_swapchain_from_handle(in_ext->swapchain)->obj.host.swapchain : 0;
             out_header->pNext = (void *)out_ext;
             out_header = (void *)out_ext;
             break;
@@ -22860,7 +22860,7 @@ static inline void convert_VkMappedMemoryRange_win64_to_host(const VkMappedMemor
 
     out->sType = in->sType;
     out->pNext = in->pNext;
-    out->memory = wine_device_memory_from_handle(in->memory)->host_memory;
+    out->memory = wine_device_memory_from_handle(in->memory)->obj.host.device_memory;
     out->offset = in->offset;
     out->size = in->size;
 }
@@ -22872,7 +22872,7 @@ static inline void convert_VkMappedMemoryRange_win32_to_host(const VkMappedMemor
 
     out->sType = in->sType;
     out->pNext = NULL;
-    out->memory = wine_device_memory_from_handle(in->memory)->host_memory;
+    out->memory = wine_device_memory_from_handle(in->memory)->obj.host.device_memory;
     out->offset = in->offset;
     out->size = in->size;
     if (in->pNext)
@@ -23732,7 +23732,7 @@ static inline void convert_VkDeviceMemoryOpaqueCaptureAddressInfo_win64_to_host(
 
     out->sType = in->sType;
     out->pNext = in->pNext;
-    out->memory = wine_device_memory_from_handle(in->memory)->host_memory;
+    out->memory = wine_device_memory_from_handle(in->memory)->obj.host.device_memory;
 }
 #endif /* _WIN64 */
 
@@ -23742,7 +23742,7 @@ static inline void convert_VkDeviceMemoryOpaqueCaptureAddressInfo_win32_to_host(
 
     out->sType = in->sType;
     out->pNext = NULL;
-    out->memory = wine_device_memory_from_handle(in->memory)->host_memory;
+    out->memory = wine_device_memory_from_handle(in->memory)->obj.host.device_memory;
     if (in->pNext)
         FIXME("Unexpected pNext\n");
 }
@@ -32724,7 +32724,7 @@ static inline void convert_VkSparseMemoryBind_win64_to_host(const VkSparseMemory
 
     out->resourceOffset = in->resourceOffset;
     out->size = in->size;
-    out->memory = in->memory ? wine_device_memory_from_handle(in->memory)->host_memory : 0;
+    out->memory = in->memory ? wine_device_memory_from_handle(in->memory)->obj.host.device_memory : 0;
     out->memoryOffset = in->memoryOffset;
     out->flags = in->flags;
 }
@@ -32736,7 +32736,7 @@ static inline void convert_VkSparseMemoryBind_win32_to_host(const VkSparseMemory
 
     out->resourceOffset = in->resourceOffset;
     out->size = in->size;
-    out->memory = in->memory ? wine_device_memory_from_handle(in->memory)->host_memory : 0;
+    out->memory = in->memory ? wine_device_memory_from_handle(in->memory)->obj.host.device_memory : 0;
     out->memoryOffset = in->memoryOffset;
     out->flags = in->flags;
 }
@@ -32891,7 +32891,7 @@ static inline void convert_VkSparseImageMemoryBind_win64_to_host(const VkSparseI
     out->subresource = in->subresource;
     out->offset = in->offset;
     out->extent = in->extent;
-    out->memory = in->memory ? wine_device_memory_from_handle(in->memory)->host_memory : 0;
+    out->memory = in->memory ? wine_device_memory_from_handle(in->memory)->obj.host.device_memory : 0;
     out->memoryOffset = in->memoryOffset;
     out->flags = in->flags;
 }
@@ -32904,7 +32904,7 @@ static inline void convert_VkSparseImageMemoryBind_win32_to_host(const VkSparseI
     out->subresource = in->subresource;
     out->offset = in->offset;
     out->extent = in->extent;
-    out->memory = in->memory ? wine_device_memory_from_handle(in->memory)->host_memory : 0;
+    out->memory = in->memory ? wine_device_memory_from_handle(in->memory)->obj.host.device_memory : 0;
     out->memoryOffset = in->memoryOffset;
     out->flags = in->flags;
 }
@@ -33467,7 +33467,7 @@ static inline void convert_VkCommandBufferSubmitInfo_win64_to_host(const VkComma
 
     out->sType = in->sType;
     out->pNext = in->pNext;
-    out->commandBuffer = wine_cmd_buffer_from_handle(in->commandBuffer)->host_command_buffer;
+    out->commandBuffer = wine_cmd_buffer_from_handle(in->commandBuffer)->obj.host.command_buffer;
     out->deviceMask = in->deviceMask;
 }
 #endif /* _WIN64 */
@@ -33481,7 +33481,7 @@ static inline void convert_VkCommandBufferSubmitInfo_win32_to_host(struct conver
 
     out->sType = in->sType;
     out->pNext = NULL;
-    out->commandBuffer = wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(in->commandBuffer))->host_command_buffer;
+    out->commandBuffer = wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(in->commandBuffer))->obj.host.command_buffer;
     out->deviceMask = in->deviceMask;
 
     for (in_header = UlongToPtr(in->pNext); in_header; in_header = UlongToPtr(in_header->pNext))
@@ -33668,7 +33668,7 @@ static inline void convert_VkReleaseSwapchainImagesInfoEXT_win64_to_host(const V
 
     out->sType = in->sType;
     out->pNext = in->pNext;
-    out->swapchain = wine_swapchain_from_handle(in->swapchain)->host_swapchain;
+    out->swapchain = wine_swapchain_from_handle(in->swapchain)->obj.host.swapchain;
     out->imageIndexCount = in->imageIndexCount;
     out->pImageIndices = in->pImageIndices;
 }
@@ -33680,7 +33680,7 @@ static inline void convert_VkReleaseSwapchainImagesInfoEXT_win32_to_host(const V
 
     out->sType = in->sType;
     out->pNext = NULL;
-    out->swapchain = wine_swapchain_from_handle(in->swapchain)->host_swapchain;
+    out->swapchain = wine_swapchain_from_handle(in->swapchain)->obj.host.swapchain;
     out->imageIndexCount = in->imageIndexCount;
     out->pImageIndices = UlongToPtr(in->pImageIndices);
     if (in->pNext)
@@ -33754,7 +33754,7 @@ static inline const VkSwapchainKHR *convert_VkSwapchainKHR_array_win64_to_host(s
     out = conversion_context_alloc(ctx, count * sizeof(*out));
     for (i = 0; i < count; i++)
     {
-        out[i] = wine_swapchain_from_handle(in[i])->host_swapchain;
+        out[i] = wine_swapchain_from_handle(in[i])->obj.host.swapchain;
     }
 
     return out;
@@ -33771,7 +33771,7 @@ static inline const VkSwapchainKHR *convert_VkSwapchainKHR_array_win32_to_host(s
     out = conversion_context_alloc(ctx, count * sizeof(*out));
     for (i = 0; i < count; i++)
     {
-        out[i] = wine_swapchain_from_handle(in[i])->host_swapchain;
+        out[i] = wine_swapchain_from_handle(in[i])->obj.host.swapchain;
     }
 
     return out;
@@ -34202,7 +34202,7 @@ static NTSTATUS thunk64_vkAcquirePerformanceConfigurationINTEL(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pAcquireInfo, params->pConfiguration);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkAcquirePerformanceConfigurationINTEL(wine_device_from_handle(params->device)->host_device, params->pAcquireInfo, params->pConfiguration);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkAcquirePerformanceConfigurationINTEL(wine_device_from_handle(params->device)->obj.host.device, params->pAcquireInfo, params->pConfiguration);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -34221,7 +34221,7 @@ static NTSTATUS thunk32_vkAcquirePerformanceConfigurationINTEL(void *args)
     TRACE("%#x, %#x, %#x\n", params->device, params->pAcquireInfo, params->pConfiguration);
 
     convert_VkPerformanceConfigurationAcquireInfoINTEL_win32_to_host((const VkPerformanceConfigurationAcquireInfoINTEL32 *)UlongToPtr(params->pAcquireInfo), &pAcquireInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkAcquirePerformanceConfigurationINTEL(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pAcquireInfo_host, (VkPerformanceConfigurationINTEL *)UlongToPtr(params->pConfiguration));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkAcquirePerformanceConfigurationINTEL(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pAcquireInfo_host, (VkPerformanceConfigurationINTEL *)UlongToPtr(params->pConfiguration));
     return STATUS_SUCCESS;
 }
 
@@ -34232,7 +34232,7 @@ static NTSTATUS thunk64_vkAcquireProfilingLockKHR(void *args)
 
     TRACE("%p, %p\n", params->device, params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkAcquireProfilingLockKHR(wine_device_from_handle(params->device)->host_device, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkAcquireProfilingLockKHR(wine_device_from_handle(params->device)->obj.host.device, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -34250,7 +34250,7 @@ static NTSTATUS thunk32_vkAcquireProfilingLockKHR(void *args)
     TRACE("%#x, %#x\n", params->device, params->pInfo);
 
     convert_VkAcquireProfilingLockInfoKHR_win32_to_host((const VkAcquireProfilingLockInfoKHR32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkAcquireProfilingLockKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkAcquireProfilingLockKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -34297,7 +34297,7 @@ static NTSTATUS thunk64_vkAllocateDescriptorSets(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pAllocateInfo, params->pDescriptorSets);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkAllocateDescriptorSets(wine_device_from_handle(params->device)->host_device, params->pAllocateInfo, params->pDescriptorSets);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkAllocateDescriptorSets(wine_device_from_handle(params->device)->obj.host.device, params->pAllocateInfo, params->pDescriptorSets);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -34319,7 +34319,7 @@ static NTSTATUS thunk32_vkAllocateDescriptorSets(void *args)
 
     init_conversion_context(ctx);
     convert_VkDescriptorSetAllocateInfo_win32_to_host(ctx, (const VkDescriptorSetAllocateInfo32 *)UlongToPtr(params->pAllocateInfo), &pAllocateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkAllocateDescriptorSets(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pAllocateInfo_host, (VkDescriptorSet *)UlongToPtr(params->pDescriptorSets));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkAllocateDescriptorSets(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pAllocateInfo_host, (VkDescriptorSet *)UlongToPtr(params->pDescriptorSets));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -34366,7 +34366,7 @@ static NTSTATUS thunk64_vkBeginCommandBuffer(void *args)
 
     TRACE("%p, %p\n", params->commandBuffer, params->pBeginInfo);
 
-    params->result = wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkBeginCommandBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pBeginInfo);
+    params->result = get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkBeginCommandBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pBeginInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -34387,7 +34387,7 @@ static NTSTATUS thunk32_vkBeginCommandBuffer(void *args)
 
     init_conversion_context(ctx);
     convert_VkCommandBufferBeginInfo_win32_to_host(ctx, (const VkCommandBufferBeginInfo32 *)UlongToPtr(params->pBeginInfo), &pBeginInfo_host);
-    params->result = wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkBeginCommandBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pBeginInfo_host);
+    params->result = get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkBeginCommandBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pBeginInfo_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -34404,7 +34404,7 @@ static NTSTATUS thunk64_vkBindAccelerationStructureMemoryNV(void *args)
 
     init_conversion_context(ctx);
     pBindInfos_host = convert_VkBindAccelerationStructureMemoryInfoNV_array_win64_to_host(ctx, params->pBindInfos, params->bindInfoCount);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkBindAccelerationStructureMemoryNV(wine_device_from_handle(params->device)->host_device, params->bindInfoCount, pBindInfos_host);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkBindAccelerationStructureMemoryNV(wine_device_from_handle(params->device)->obj.host.device, params->bindInfoCount, pBindInfos_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -34427,7 +34427,7 @@ static NTSTATUS thunk32_vkBindAccelerationStructureMemoryNV(void *args)
 
     init_conversion_context(ctx);
     pBindInfos_host = convert_VkBindAccelerationStructureMemoryInfoNV_array_win32_to_host(ctx, (const VkBindAccelerationStructureMemoryInfoNV32 *)UlongToPtr(params->pBindInfos), params->bindInfoCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkBindAccelerationStructureMemoryNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->bindInfoCount, pBindInfos_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkBindAccelerationStructureMemoryNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->bindInfoCount, pBindInfos_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -34439,7 +34439,7 @@ static NTSTATUS thunk64_vkBindBufferMemory(void *args)
 
     TRACE("%p, 0x%s, 0x%s, 0x%s\n", params->device, wine_dbgstr_longlong(params->buffer), wine_dbgstr_longlong(params->memory), wine_dbgstr_longlong(params->memoryOffset));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkBindBufferMemory(wine_device_from_handle(params->device)->host_device, params->buffer, wine_device_memory_from_handle(params->memory)->host_memory, params->memoryOffset);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkBindBufferMemory(wine_device_from_handle(params->device)->obj.host.device, params->buffer, wine_device_memory_from_handle(params->memory)->obj.host.device_memory, params->memoryOffset);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -34457,7 +34457,7 @@ static NTSTATUS thunk32_vkBindBufferMemory(void *args)
 
     TRACE("%#x, 0x%s, 0x%s, 0x%s\n", params->device, wine_dbgstr_longlong(params->buffer), wine_dbgstr_longlong(params->memory), wine_dbgstr_longlong(params->memoryOffset));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkBindBufferMemory(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->buffer, wine_device_memory_from_handle(params->memory)->host_memory, params->memoryOffset);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkBindBufferMemory(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->buffer, wine_device_memory_from_handle(params->memory)->obj.host.device_memory, params->memoryOffset);
     return STATUS_SUCCESS;
 }
 
@@ -34473,7 +34473,7 @@ static NTSTATUS thunk64_vkBindBufferMemory2(void *args)
 
     init_conversion_context(ctx);
     pBindInfos_host = convert_VkBindBufferMemoryInfo_array_win64_to_host(ctx, params->pBindInfos, params->bindInfoCount);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkBindBufferMemory2(wine_device_from_handle(params->device)->host_device, params->bindInfoCount, pBindInfos_host);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkBindBufferMemory2(wine_device_from_handle(params->device)->obj.host.device, params->bindInfoCount, pBindInfos_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -34496,7 +34496,7 @@ static NTSTATUS thunk32_vkBindBufferMemory2(void *args)
 
     init_conversion_context(ctx);
     pBindInfos_host = convert_VkBindBufferMemoryInfo_array_win32_to_host(ctx, (const VkBindBufferMemoryInfo32 *)UlongToPtr(params->pBindInfos), params->bindInfoCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkBindBufferMemory2(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->bindInfoCount, pBindInfos_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkBindBufferMemory2(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->bindInfoCount, pBindInfos_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -34513,7 +34513,7 @@ static NTSTATUS thunk64_vkBindBufferMemory2KHR(void *args)
 
     init_conversion_context(ctx);
     pBindInfos_host = convert_VkBindBufferMemoryInfo_array_win64_to_host(ctx, params->pBindInfos, params->bindInfoCount);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkBindBufferMemory2KHR(wine_device_from_handle(params->device)->host_device, params->bindInfoCount, pBindInfos_host);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkBindBufferMemory2KHR(wine_device_from_handle(params->device)->obj.host.device, params->bindInfoCount, pBindInfos_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -34536,7 +34536,7 @@ static NTSTATUS thunk32_vkBindBufferMemory2KHR(void *args)
 
     init_conversion_context(ctx);
     pBindInfos_host = convert_VkBindBufferMemoryInfo_array_win32_to_host(ctx, (const VkBindBufferMemoryInfo32 *)UlongToPtr(params->pBindInfos), params->bindInfoCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkBindBufferMemory2KHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->bindInfoCount, pBindInfos_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkBindBufferMemory2KHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->bindInfoCount, pBindInfos_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -34548,7 +34548,7 @@ static NTSTATUS thunk64_vkBindImageMemory(void *args)
 
     TRACE("%p, 0x%s, 0x%s, 0x%s\n", params->device, wine_dbgstr_longlong(params->image), wine_dbgstr_longlong(params->memory), wine_dbgstr_longlong(params->memoryOffset));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkBindImageMemory(wine_device_from_handle(params->device)->host_device, params->image, wine_device_memory_from_handle(params->memory)->host_memory, params->memoryOffset);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkBindImageMemory(wine_device_from_handle(params->device)->obj.host.device, params->image, wine_device_memory_from_handle(params->memory)->obj.host.device_memory, params->memoryOffset);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -34566,7 +34566,7 @@ static NTSTATUS thunk32_vkBindImageMemory(void *args)
 
     TRACE("%#x, 0x%s, 0x%s, 0x%s\n", params->device, wine_dbgstr_longlong(params->image), wine_dbgstr_longlong(params->memory), wine_dbgstr_longlong(params->memoryOffset));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkBindImageMemory(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->image, wine_device_memory_from_handle(params->memory)->host_memory, params->memoryOffset);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkBindImageMemory(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->image, wine_device_memory_from_handle(params->memory)->obj.host.device_memory, params->memoryOffset);
     return STATUS_SUCCESS;
 }
 
@@ -34582,7 +34582,7 @@ static NTSTATUS thunk64_vkBindImageMemory2(void *args)
 
     init_conversion_context(ctx);
     pBindInfos_host = convert_VkBindImageMemoryInfo_array_win64_to_host(ctx, params->pBindInfos, params->bindInfoCount);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkBindImageMemory2(wine_device_from_handle(params->device)->host_device, params->bindInfoCount, pBindInfos_host);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkBindImageMemory2(wine_device_from_handle(params->device)->obj.host.device, params->bindInfoCount, pBindInfos_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -34605,7 +34605,7 @@ static NTSTATUS thunk32_vkBindImageMemory2(void *args)
 
     init_conversion_context(ctx);
     pBindInfos_host = convert_VkBindImageMemoryInfo_array_win32_to_host(ctx, (const VkBindImageMemoryInfo32 *)UlongToPtr(params->pBindInfos), params->bindInfoCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkBindImageMemory2(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->bindInfoCount, pBindInfos_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkBindImageMemory2(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->bindInfoCount, pBindInfos_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -34622,7 +34622,7 @@ static NTSTATUS thunk64_vkBindImageMemory2KHR(void *args)
 
     init_conversion_context(ctx);
     pBindInfos_host = convert_VkBindImageMemoryInfo_array_win64_to_host(ctx, params->pBindInfos, params->bindInfoCount);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkBindImageMemory2KHR(wine_device_from_handle(params->device)->host_device, params->bindInfoCount, pBindInfos_host);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkBindImageMemory2KHR(wine_device_from_handle(params->device)->obj.host.device, params->bindInfoCount, pBindInfos_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -34645,7 +34645,7 @@ static NTSTATUS thunk32_vkBindImageMemory2KHR(void *args)
 
     init_conversion_context(ctx);
     pBindInfos_host = convert_VkBindImageMemoryInfo_array_win32_to_host(ctx, (const VkBindImageMemoryInfo32 *)UlongToPtr(params->pBindInfos), params->bindInfoCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkBindImageMemory2KHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->bindInfoCount, pBindInfos_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkBindImageMemory2KHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->bindInfoCount, pBindInfos_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -34657,7 +34657,7 @@ static NTSTATUS thunk64_vkBindOpticalFlowSessionImageNV(void *args)
 
     TRACE("%p, 0x%s, %#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->session), params->bindingPoint, wine_dbgstr_longlong(params->view), params->layout);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkBindOpticalFlowSessionImageNV(wine_device_from_handle(params->device)->host_device, params->session, params->bindingPoint, params->view, params->layout);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkBindOpticalFlowSessionImageNV(wine_device_from_handle(params->device)->obj.host.device, params->session, params->bindingPoint, params->view, params->layout);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -34676,7 +34676,7 @@ static NTSTATUS thunk32_vkBindOpticalFlowSessionImageNV(void *args)
 
     TRACE("%#x, 0x%s, %#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->session), params->bindingPoint, wine_dbgstr_longlong(params->view), params->layout);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkBindOpticalFlowSessionImageNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->session, params->bindingPoint, params->view, params->layout);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkBindOpticalFlowSessionImageNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->session, params->bindingPoint, params->view, params->layout);
     return STATUS_SUCCESS;
 }
 
@@ -34692,7 +34692,7 @@ static NTSTATUS thunk64_vkBindVideoSessionMemoryKHR(void *args)
 
     init_conversion_context(ctx);
     pBindSessionMemoryInfos_host = convert_VkBindVideoSessionMemoryInfoKHR_array_win64_to_host(ctx, params->pBindSessionMemoryInfos, params->bindSessionMemoryInfoCount);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkBindVideoSessionMemoryKHR(wine_device_from_handle(params->device)->host_device, params->videoSession, params->bindSessionMemoryInfoCount, pBindSessionMemoryInfos_host);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkBindVideoSessionMemoryKHR(wine_device_from_handle(params->device)->obj.host.device, params->videoSession, params->bindSessionMemoryInfoCount, pBindSessionMemoryInfos_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -34716,7 +34716,7 @@ static NTSTATUS thunk32_vkBindVideoSessionMemoryKHR(void *args)
 
     init_conversion_context(ctx);
     pBindSessionMemoryInfos_host = convert_VkBindVideoSessionMemoryInfoKHR_array_win32_to_host(ctx, (const VkBindVideoSessionMemoryInfoKHR32 *)UlongToPtr(params->pBindSessionMemoryInfos), params->bindSessionMemoryInfoCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkBindVideoSessionMemoryKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->videoSession, params->bindSessionMemoryInfoCount, pBindSessionMemoryInfos_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkBindVideoSessionMemoryKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->videoSession, params->bindSessionMemoryInfoCount, pBindSessionMemoryInfos_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -34728,7 +34728,7 @@ static NTSTATUS thunk64_vkBuildAccelerationStructuresKHR(void *args)
 
     TRACE("%p, 0x%s, %u, %p, %p\n", params->device, wine_dbgstr_longlong(params->deferredOperation), params->infoCount, params->pInfos, params->ppBuildRangeInfos);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkBuildAccelerationStructuresKHR(wine_device_from_handle(params->device)->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, params->infoCount, params->pInfos, params->ppBuildRangeInfos);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkBuildAccelerationStructuresKHR(wine_device_from_handle(params->device)->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, params->infoCount, params->pInfos, params->ppBuildRangeInfos);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -34757,7 +34757,7 @@ static NTSTATUS thunk32_vkBuildAccelerationStructuresKHR(void *args)
         ctx = &wine_deferred_operation_from_handle(params->deferredOperation)->ctx;
     pInfos_host = convert_VkAccelerationStructureBuildGeometryInfoKHR_array_win32_to_host(ctx, (const VkAccelerationStructureBuildGeometryInfoKHR32 *)UlongToPtr(params->pInfos), params->infoCount);
     ppBuildRangeInfos_host = convert_VkAccelerationStructureBuildRangeInfoKHR_array_win32_to_host(ctx, (const PTR32 *)UlongToPtr(params->ppBuildRangeInfos), params->infoCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkBuildAccelerationStructuresKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, params->infoCount, pInfos_host, ppBuildRangeInfos_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkBuildAccelerationStructuresKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, params->infoCount, pInfos_host, ppBuildRangeInfos_host);
     if (params->deferredOperation == VK_NULL_HANDLE)
         free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -34770,7 +34770,7 @@ static NTSTATUS thunk64_vkBuildMicromapsEXT(void *args)
 
     TRACE("%p, 0x%s, %u, %p\n", params->device, wine_dbgstr_longlong(params->deferredOperation), params->infoCount, params->pInfos);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkBuildMicromapsEXT(wine_device_from_handle(params->device)->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, params->infoCount, params->pInfos);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkBuildMicromapsEXT(wine_device_from_handle(params->device)->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, params->infoCount, params->pInfos);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -34796,7 +34796,7 @@ static NTSTATUS thunk32_vkBuildMicromapsEXT(void *args)
     else
         ctx = &wine_deferred_operation_from_handle(params->deferredOperation)->ctx;
     pInfos_host = convert_VkMicromapBuildInfoEXT_array_win32_to_host(ctx, (const VkMicromapBuildInfoEXT32 *)UlongToPtr(params->pInfos), params->infoCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkBuildMicromapsEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, params->infoCount, pInfos_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkBuildMicromapsEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, params->infoCount, pInfos_host);
     if (params->deferredOperation == VK_NULL_HANDLE)
         free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -34807,7 +34807,7 @@ static void thunk64_vkCmdBeginConditionalRenderingEXT(void *args)
 {
     struct vkCmdBeginConditionalRenderingEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBeginConditionalRenderingEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pConditionalRenderingBegin);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBeginConditionalRenderingEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pConditionalRenderingBegin);
 }
 #endif /* _WIN64 */
 
@@ -34821,7 +34821,7 @@ static void thunk32_vkCmdBeginConditionalRenderingEXT(void *args)
     VkConditionalRenderingBeginInfoEXT pConditionalRenderingBegin_host;
 
     convert_VkConditionalRenderingBeginInfoEXT_win32_to_host((const VkConditionalRenderingBeginInfoEXT32 *)UlongToPtr(params->pConditionalRenderingBegin), &pConditionalRenderingBegin_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBeginConditionalRenderingEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pConditionalRenderingBegin_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBeginConditionalRenderingEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pConditionalRenderingBegin_host);
 }
 
 #ifdef _WIN64
@@ -34829,7 +34829,7 @@ static void thunk64_vkCmdBeginDebugUtilsLabelEXT(void *args)
 {
     struct vkCmdBeginDebugUtilsLabelEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBeginDebugUtilsLabelEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pLabelInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBeginDebugUtilsLabelEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pLabelInfo);
 }
 #endif /* _WIN64 */
 
@@ -34843,7 +34843,7 @@ static void thunk32_vkCmdBeginDebugUtilsLabelEXT(void *args)
     VkDebugUtilsLabelEXT pLabelInfo_host;
 
     convert_VkDebugUtilsLabelEXT_win32_to_host((const VkDebugUtilsLabelEXT32 *)UlongToPtr(params->pLabelInfo), &pLabelInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBeginDebugUtilsLabelEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pLabelInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBeginDebugUtilsLabelEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pLabelInfo_host);
 }
 
 #ifdef _WIN64
@@ -34851,7 +34851,7 @@ static void thunk64_vkCmdBeginQuery(void *args)
 {
     struct vkCmdBeginQuery_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBeginQuery(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->queryPool, params->query, params->flags);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBeginQuery(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->queryPool, params->query, params->flags);
 }
 #endif /* _WIN64 */
 
@@ -34865,7 +34865,7 @@ static void thunk32_vkCmdBeginQuery(void *args)
         VkQueryControlFlags flags;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBeginQuery(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->queryPool, params->query, params->flags);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBeginQuery(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->queryPool, params->query, params->flags);
 }
 
 #ifdef _WIN64
@@ -34873,7 +34873,7 @@ static void thunk64_vkCmdBeginQueryIndexedEXT(void *args)
 {
     struct vkCmdBeginQueryIndexedEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBeginQueryIndexedEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->queryPool, params->query, params->flags, params->index);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBeginQueryIndexedEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->queryPool, params->query, params->flags, params->index);
 }
 #endif /* _WIN64 */
 
@@ -34888,7 +34888,7 @@ static void thunk32_vkCmdBeginQueryIndexedEXT(void *args)
         uint32_t index;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBeginQueryIndexedEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->queryPool, params->query, params->flags, params->index);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBeginQueryIndexedEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->queryPool, params->query, params->flags, params->index);
 }
 
 #ifdef _WIN64
@@ -34896,7 +34896,7 @@ static void thunk64_vkCmdBeginRenderPass(void *args)
 {
     struct vkCmdBeginRenderPass_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBeginRenderPass(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pRenderPassBegin, params->contents);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBeginRenderPass(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pRenderPassBegin, params->contents);
 }
 #endif /* _WIN64 */
 
@@ -34914,7 +34914,7 @@ static void thunk32_vkCmdBeginRenderPass(void *args)
 
     init_conversion_context(ctx);
     convert_VkRenderPassBeginInfo_win32_to_host(ctx, (const VkRenderPassBeginInfo32 *)UlongToPtr(params->pRenderPassBegin), &pRenderPassBegin_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBeginRenderPass(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pRenderPassBegin_host, params->contents);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBeginRenderPass(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pRenderPassBegin_host, params->contents);
     free_conversion_context(ctx);
 }
 
@@ -34923,7 +34923,7 @@ static void thunk64_vkCmdBeginRenderPass2(void *args)
 {
     struct vkCmdBeginRenderPass2_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBeginRenderPass2(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pRenderPassBegin, params->pSubpassBeginInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBeginRenderPass2(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pRenderPassBegin, params->pSubpassBeginInfo);
 }
 #endif /* _WIN64 */
 
@@ -34943,7 +34943,7 @@ static void thunk32_vkCmdBeginRenderPass2(void *args)
     init_conversion_context(ctx);
     convert_VkRenderPassBeginInfo_win32_to_host(ctx, (const VkRenderPassBeginInfo32 *)UlongToPtr(params->pRenderPassBegin), &pRenderPassBegin_host);
     convert_VkSubpassBeginInfo_win32_to_host((const VkSubpassBeginInfo32 *)UlongToPtr(params->pSubpassBeginInfo), &pSubpassBeginInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBeginRenderPass2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pRenderPassBegin_host, &pSubpassBeginInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBeginRenderPass2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pRenderPassBegin_host, &pSubpassBeginInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -34952,7 +34952,7 @@ static void thunk64_vkCmdBeginRenderPass2KHR(void *args)
 {
     struct vkCmdBeginRenderPass2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBeginRenderPass2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pRenderPassBegin, params->pSubpassBeginInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBeginRenderPass2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pRenderPassBegin, params->pSubpassBeginInfo);
 }
 #endif /* _WIN64 */
 
@@ -34972,7 +34972,7 @@ static void thunk32_vkCmdBeginRenderPass2KHR(void *args)
     init_conversion_context(ctx);
     convert_VkRenderPassBeginInfo_win32_to_host(ctx, (const VkRenderPassBeginInfo32 *)UlongToPtr(params->pRenderPassBegin), &pRenderPassBegin_host);
     convert_VkSubpassBeginInfo_win32_to_host((const VkSubpassBeginInfo32 *)UlongToPtr(params->pSubpassBeginInfo), &pSubpassBeginInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBeginRenderPass2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pRenderPassBegin_host, &pSubpassBeginInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBeginRenderPass2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pRenderPassBegin_host, &pSubpassBeginInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -34981,7 +34981,7 @@ static void thunk64_vkCmdBeginRendering(void *args)
 {
     struct vkCmdBeginRendering_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBeginRendering(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pRenderingInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBeginRendering(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pRenderingInfo);
 }
 #endif /* _WIN64 */
 
@@ -34998,7 +34998,7 @@ static void thunk32_vkCmdBeginRendering(void *args)
 
     init_conversion_context(ctx);
     convert_VkRenderingInfo_win32_to_host(ctx, (const VkRenderingInfo32 *)UlongToPtr(params->pRenderingInfo), &pRenderingInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBeginRendering(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pRenderingInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBeginRendering(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pRenderingInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -35007,7 +35007,7 @@ static void thunk64_vkCmdBeginRenderingKHR(void *args)
 {
     struct vkCmdBeginRenderingKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBeginRenderingKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pRenderingInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBeginRenderingKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pRenderingInfo);
 }
 #endif /* _WIN64 */
 
@@ -35024,7 +35024,7 @@ static void thunk32_vkCmdBeginRenderingKHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkRenderingInfo_win32_to_host(ctx, (const VkRenderingInfo32 *)UlongToPtr(params->pRenderingInfo), &pRenderingInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBeginRenderingKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pRenderingInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBeginRenderingKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pRenderingInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -35033,7 +35033,7 @@ static void thunk64_vkCmdBeginTransformFeedbackEXT(void *args)
 {
     struct vkCmdBeginTransformFeedbackEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBeginTransformFeedbackEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstCounterBuffer, params->counterBufferCount, params->pCounterBuffers, params->pCounterBufferOffsets);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBeginTransformFeedbackEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstCounterBuffer, params->counterBufferCount, params->pCounterBuffers, params->pCounterBufferOffsets);
 }
 #endif /* _WIN64 */
 
@@ -35048,7 +35048,7 @@ static void thunk32_vkCmdBeginTransformFeedbackEXT(void *args)
         PTR32 pCounterBufferOffsets;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBeginTransformFeedbackEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstCounterBuffer, params->counterBufferCount, (const VkBuffer *)UlongToPtr(params->pCounterBuffers), (const VkDeviceSize *)UlongToPtr(params->pCounterBufferOffsets));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBeginTransformFeedbackEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstCounterBuffer, params->counterBufferCount, (const VkBuffer *)UlongToPtr(params->pCounterBuffers), (const VkDeviceSize *)UlongToPtr(params->pCounterBufferOffsets));
 }
 
 #ifdef _WIN64
@@ -35056,7 +35056,7 @@ static void thunk64_vkCmdBeginVideoCodingKHR(void *args)
 {
     struct vkCmdBeginVideoCodingKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBeginVideoCodingKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pBeginInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBeginVideoCodingKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pBeginInfo);
 }
 #endif /* _WIN64 */
 
@@ -35073,7 +35073,7 @@ static void thunk32_vkCmdBeginVideoCodingKHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkVideoBeginCodingInfoKHR_win32_to_host(ctx, (const VkVideoBeginCodingInfoKHR32 *)UlongToPtr(params->pBeginInfo), &pBeginInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBeginVideoCodingKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pBeginInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBeginVideoCodingKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pBeginInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -35082,7 +35082,7 @@ static void thunk64_vkCmdBindDescriptorBufferEmbeddedSamplers2EXT(void *args)
 {
     struct vkCmdBindDescriptorBufferEmbeddedSamplers2EXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindDescriptorBufferEmbeddedSamplers2EXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pBindDescriptorBufferEmbeddedSamplersInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindDescriptorBufferEmbeddedSamplers2EXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pBindDescriptorBufferEmbeddedSamplersInfo);
 }
 #endif /* _WIN64 */
 
@@ -35099,7 +35099,7 @@ static void thunk32_vkCmdBindDescriptorBufferEmbeddedSamplers2EXT(void *args)
 
     init_conversion_context(ctx);
     convert_VkBindDescriptorBufferEmbeddedSamplersInfoEXT_win32_to_host(ctx, (const VkBindDescriptorBufferEmbeddedSamplersInfoEXT32 *)UlongToPtr(params->pBindDescriptorBufferEmbeddedSamplersInfo), &pBindDescriptorBufferEmbeddedSamplersInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindDescriptorBufferEmbeddedSamplers2EXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pBindDescriptorBufferEmbeddedSamplersInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindDescriptorBufferEmbeddedSamplers2EXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pBindDescriptorBufferEmbeddedSamplersInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -35108,7 +35108,7 @@ static void thunk64_vkCmdBindDescriptorBufferEmbeddedSamplersEXT(void *args)
 {
     struct vkCmdBindDescriptorBufferEmbeddedSamplersEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindDescriptorBufferEmbeddedSamplersEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pipelineBindPoint, params->layout, params->set);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindDescriptorBufferEmbeddedSamplersEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pipelineBindPoint, params->layout, params->set);
 }
 #endif /* _WIN64 */
 
@@ -35122,7 +35122,7 @@ static void thunk32_vkCmdBindDescriptorBufferEmbeddedSamplersEXT(void *args)
         uint32_t set;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindDescriptorBufferEmbeddedSamplersEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->pipelineBindPoint, params->layout, params->set);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindDescriptorBufferEmbeddedSamplersEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->pipelineBindPoint, params->layout, params->set);
 }
 
 #ifdef _WIN64
@@ -35130,7 +35130,7 @@ static void thunk64_vkCmdBindDescriptorBuffersEXT(void *args)
 {
     struct vkCmdBindDescriptorBuffersEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindDescriptorBuffersEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->bufferCount, params->pBindingInfos);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindDescriptorBuffersEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->bufferCount, params->pBindingInfos);
 }
 #endif /* _WIN64 */
 
@@ -35148,7 +35148,7 @@ static void thunk32_vkCmdBindDescriptorBuffersEXT(void *args)
 
     init_conversion_context(ctx);
     pBindingInfos_host = convert_VkDescriptorBufferBindingInfoEXT_array_win32_to_host(ctx, (const VkDescriptorBufferBindingInfoEXT32 *)UlongToPtr(params->pBindingInfos), params->bufferCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindDescriptorBuffersEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->bufferCount, pBindingInfos_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindDescriptorBuffersEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->bufferCount, pBindingInfos_host);
     free_conversion_context(ctx);
 }
 
@@ -35157,7 +35157,7 @@ static void thunk64_vkCmdBindDescriptorSets(void *args)
 {
     struct vkCmdBindDescriptorSets_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindDescriptorSets(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pipelineBindPoint, params->layout, params->firstSet, params->descriptorSetCount, params->pDescriptorSets, params->dynamicOffsetCount, params->pDynamicOffsets);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindDescriptorSets(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pipelineBindPoint, params->layout, params->firstSet, params->descriptorSetCount, params->pDescriptorSets, params->dynamicOffsetCount, params->pDynamicOffsets);
 }
 #endif /* _WIN64 */
 
@@ -35175,7 +35175,7 @@ static void thunk32_vkCmdBindDescriptorSets(void *args)
         PTR32 pDynamicOffsets;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindDescriptorSets(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->pipelineBindPoint, params->layout, params->firstSet, params->descriptorSetCount, (const VkDescriptorSet *)UlongToPtr(params->pDescriptorSets), params->dynamicOffsetCount, (const uint32_t *)UlongToPtr(params->pDynamicOffsets));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindDescriptorSets(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->pipelineBindPoint, params->layout, params->firstSet, params->descriptorSetCount, (const VkDescriptorSet *)UlongToPtr(params->pDescriptorSets), params->dynamicOffsetCount, (const uint32_t *)UlongToPtr(params->pDynamicOffsets));
 }
 
 #ifdef _WIN64
@@ -35183,7 +35183,7 @@ static void thunk64_vkCmdBindDescriptorSets2KHR(void *args)
 {
     struct vkCmdBindDescriptorSets2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindDescriptorSets2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pBindDescriptorSetsInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindDescriptorSets2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pBindDescriptorSetsInfo);
 }
 #endif /* _WIN64 */
 
@@ -35200,7 +35200,7 @@ static void thunk32_vkCmdBindDescriptorSets2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkBindDescriptorSetsInfoKHR_win32_to_host(ctx, (const VkBindDescriptorSetsInfoKHR32 *)UlongToPtr(params->pBindDescriptorSetsInfo), &pBindDescriptorSetsInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindDescriptorSets2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pBindDescriptorSetsInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindDescriptorSets2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pBindDescriptorSetsInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -35209,7 +35209,7 @@ static void thunk64_vkCmdBindIndexBuffer(void *args)
 {
     struct vkCmdBindIndexBuffer_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindIndexBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset, params->indexType);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindIndexBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset, params->indexType);
 }
 #endif /* _WIN64 */
 
@@ -35223,7 +35223,7 @@ static void thunk32_vkCmdBindIndexBuffer(void *args)
         VkIndexType indexType;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindIndexBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset, params->indexType);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindIndexBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset, params->indexType);
 }
 
 #ifdef _WIN64
@@ -35231,7 +35231,7 @@ static void thunk64_vkCmdBindIndexBuffer2KHR(void *args)
 {
     struct vkCmdBindIndexBuffer2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindIndexBuffer2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset, params->size, params->indexType);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindIndexBuffer2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset, params->size, params->indexType);
 }
 #endif /* _WIN64 */
 
@@ -35246,7 +35246,7 @@ static void thunk32_vkCmdBindIndexBuffer2KHR(void *args)
         VkIndexType indexType;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindIndexBuffer2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset, params->size, params->indexType);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindIndexBuffer2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset, params->size, params->indexType);
 }
 
 #ifdef _WIN64
@@ -35254,7 +35254,7 @@ static void thunk64_vkCmdBindInvocationMaskHUAWEI(void *args)
 {
     struct vkCmdBindInvocationMaskHUAWEI_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindInvocationMaskHUAWEI(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->imageView, params->imageLayout);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindInvocationMaskHUAWEI(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->imageView, params->imageLayout);
 }
 #endif /* _WIN64 */
 
@@ -35267,7 +35267,7 @@ static void thunk32_vkCmdBindInvocationMaskHUAWEI(void *args)
         VkImageLayout imageLayout;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindInvocationMaskHUAWEI(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->imageView, params->imageLayout);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindInvocationMaskHUAWEI(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->imageView, params->imageLayout);
 }
 
 #ifdef _WIN64
@@ -35275,7 +35275,7 @@ static void thunk64_vkCmdBindPipeline(void *args)
 {
     struct vkCmdBindPipeline_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindPipeline(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pipelineBindPoint, params->pipeline);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindPipeline(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pipelineBindPoint, params->pipeline);
 }
 #endif /* _WIN64 */
 
@@ -35288,7 +35288,7 @@ static void thunk32_vkCmdBindPipeline(void *args)
         VkPipeline DECLSPEC_ALIGN(8) pipeline;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindPipeline(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->pipelineBindPoint, params->pipeline);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindPipeline(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->pipelineBindPoint, params->pipeline);
 }
 
 #ifdef _WIN64
@@ -35296,7 +35296,7 @@ static void thunk64_vkCmdBindPipelineShaderGroupNV(void *args)
 {
     struct vkCmdBindPipelineShaderGroupNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindPipelineShaderGroupNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pipelineBindPoint, params->pipeline, params->groupIndex);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindPipelineShaderGroupNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pipelineBindPoint, params->pipeline, params->groupIndex);
 }
 #endif /* _WIN64 */
 
@@ -35310,7 +35310,7 @@ static void thunk32_vkCmdBindPipelineShaderGroupNV(void *args)
         uint32_t groupIndex;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindPipelineShaderGroupNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->pipelineBindPoint, params->pipeline, params->groupIndex);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindPipelineShaderGroupNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->pipelineBindPoint, params->pipeline, params->groupIndex);
 }
 
 #ifdef _WIN64
@@ -35318,7 +35318,7 @@ static void thunk64_vkCmdBindShadersEXT(void *args)
 {
     struct vkCmdBindShadersEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindShadersEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->stageCount, params->pStages, params->pShaders);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindShadersEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->stageCount, params->pStages, params->pShaders);
 }
 #endif /* _WIN64 */
 
@@ -35332,7 +35332,7 @@ static void thunk32_vkCmdBindShadersEXT(void *args)
         PTR32 pShaders;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindShadersEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->stageCount, (const VkShaderStageFlagBits *)UlongToPtr(params->pStages), (const VkShaderEXT *)UlongToPtr(params->pShaders));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindShadersEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->stageCount, (const VkShaderStageFlagBits *)UlongToPtr(params->pStages), (const VkShaderEXT *)UlongToPtr(params->pShaders));
 }
 
 #ifdef _WIN64
@@ -35340,7 +35340,7 @@ static void thunk64_vkCmdBindShadingRateImageNV(void *args)
 {
     struct vkCmdBindShadingRateImageNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindShadingRateImageNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->imageView, params->imageLayout);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindShadingRateImageNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->imageView, params->imageLayout);
 }
 #endif /* _WIN64 */
 
@@ -35353,7 +35353,7 @@ static void thunk32_vkCmdBindShadingRateImageNV(void *args)
         VkImageLayout imageLayout;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindShadingRateImageNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->imageView, params->imageLayout);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindShadingRateImageNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->imageView, params->imageLayout);
 }
 
 #ifdef _WIN64
@@ -35361,7 +35361,7 @@ static void thunk64_vkCmdBindTransformFeedbackBuffersEXT(void *args)
 {
     struct vkCmdBindTransformFeedbackBuffersEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindTransformFeedbackBuffersEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstBinding, params->bindingCount, params->pBuffers, params->pOffsets, params->pSizes);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindTransformFeedbackBuffersEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstBinding, params->bindingCount, params->pBuffers, params->pOffsets, params->pSizes);
 }
 #endif /* _WIN64 */
 
@@ -35377,7 +35377,7 @@ static void thunk32_vkCmdBindTransformFeedbackBuffersEXT(void *args)
         PTR32 pSizes;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindTransformFeedbackBuffersEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstBinding, params->bindingCount, (const VkBuffer *)UlongToPtr(params->pBuffers), (const VkDeviceSize *)UlongToPtr(params->pOffsets), (const VkDeviceSize *)UlongToPtr(params->pSizes));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindTransformFeedbackBuffersEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstBinding, params->bindingCount, (const VkBuffer *)UlongToPtr(params->pBuffers), (const VkDeviceSize *)UlongToPtr(params->pOffsets), (const VkDeviceSize *)UlongToPtr(params->pSizes));
 }
 
 #ifdef _WIN64
@@ -35385,7 +35385,7 @@ static void thunk64_vkCmdBindVertexBuffers(void *args)
 {
     struct vkCmdBindVertexBuffers_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindVertexBuffers(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstBinding, params->bindingCount, params->pBuffers, params->pOffsets);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindVertexBuffers(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstBinding, params->bindingCount, params->pBuffers, params->pOffsets);
 }
 #endif /* _WIN64 */
 
@@ -35400,7 +35400,7 @@ static void thunk32_vkCmdBindVertexBuffers(void *args)
         PTR32 pOffsets;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindVertexBuffers(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstBinding, params->bindingCount, (const VkBuffer *)UlongToPtr(params->pBuffers), (const VkDeviceSize *)UlongToPtr(params->pOffsets));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindVertexBuffers(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstBinding, params->bindingCount, (const VkBuffer *)UlongToPtr(params->pBuffers), (const VkDeviceSize *)UlongToPtr(params->pOffsets));
 }
 
 #ifdef _WIN64
@@ -35408,7 +35408,7 @@ static void thunk64_vkCmdBindVertexBuffers2(void *args)
 {
     struct vkCmdBindVertexBuffers2_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindVertexBuffers2(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstBinding, params->bindingCount, params->pBuffers, params->pOffsets, params->pSizes, params->pStrides);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindVertexBuffers2(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstBinding, params->bindingCount, params->pBuffers, params->pOffsets, params->pSizes, params->pStrides);
 }
 #endif /* _WIN64 */
 
@@ -35425,7 +35425,7 @@ static void thunk32_vkCmdBindVertexBuffers2(void *args)
         PTR32 pStrides;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindVertexBuffers2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstBinding, params->bindingCount, (const VkBuffer *)UlongToPtr(params->pBuffers), (const VkDeviceSize *)UlongToPtr(params->pOffsets), (const VkDeviceSize *)UlongToPtr(params->pSizes), (const VkDeviceSize *)UlongToPtr(params->pStrides));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindVertexBuffers2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstBinding, params->bindingCount, (const VkBuffer *)UlongToPtr(params->pBuffers), (const VkDeviceSize *)UlongToPtr(params->pOffsets), (const VkDeviceSize *)UlongToPtr(params->pSizes), (const VkDeviceSize *)UlongToPtr(params->pStrides));
 }
 
 #ifdef _WIN64
@@ -35433,7 +35433,7 @@ static void thunk64_vkCmdBindVertexBuffers2EXT(void *args)
 {
     struct vkCmdBindVertexBuffers2EXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBindVertexBuffers2EXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstBinding, params->bindingCount, params->pBuffers, params->pOffsets, params->pSizes, params->pStrides);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBindVertexBuffers2EXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstBinding, params->bindingCount, params->pBuffers, params->pOffsets, params->pSizes, params->pStrides);
 }
 #endif /* _WIN64 */
 
@@ -35450,7 +35450,7 @@ static void thunk32_vkCmdBindVertexBuffers2EXT(void *args)
         PTR32 pStrides;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBindVertexBuffers2EXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstBinding, params->bindingCount, (const VkBuffer *)UlongToPtr(params->pBuffers), (const VkDeviceSize *)UlongToPtr(params->pOffsets), (const VkDeviceSize *)UlongToPtr(params->pSizes), (const VkDeviceSize *)UlongToPtr(params->pStrides));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBindVertexBuffers2EXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstBinding, params->bindingCount, (const VkBuffer *)UlongToPtr(params->pBuffers), (const VkDeviceSize *)UlongToPtr(params->pOffsets), (const VkDeviceSize *)UlongToPtr(params->pSizes), (const VkDeviceSize *)UlongToPtr(params->pStrides));
 }
 
 #ifdef _WIN64
@@ -35458,7 +35458,7 @@ static void thunk64_vkCmdBlitImage(void *args)
 {
     struct vkCmdBlitImage_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBlitImage(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->srcImage, params->srcImageLayout, params->dstImage, params->dstImageLayout, params->regionCount, params->pRegions, params->filter);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBlitImage(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->srcImage, params->srcImageLayout, params->dstImage, params->dstImageLayout, params->regionCount, params->pRegions, params->filter);
 }
 #endif /* _WIN64 */
 
@@ -35476,7 +35476,7 @@ static void thunk32_vkCmdBlitImage(void *args)
         VkFilter filter;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBlitImage(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->srcImage, params->srcImageLayout, params->dstImage, params->dstImageLayout, params->regionCount, (const VkImageBlit *)UlongToPtr(params->pRegions), params->filter);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBlitImage(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->srcImage, params->srcImageLayout, params->dstImage, params->dstImageLayout, params->regionCount, (const VkImageBlit *)UlongToPtr(params->pRegions), params->filter);
 }
 
 #ifdef _WIN64
@@ -35484,7 +35484,7 @@ static void thunk64_vkCmdBlitImage2(void *args)
 {
     struct vkCmdBlitImage2_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBlitImage2(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pBlitImageInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBlitImage2(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pBlitImageInfo);
 }
 #endif /* _WIN64 */
 
@@ -35501,7 +35501,7 @@ static void thunk32_vkCmdBlitImage2(void *args)
 
     init_conversion_context(ctx);
     convert_VkBlitImageInfo2_win32_to_host(ctx, (const VkBlitImageInfo232 *)UlongToPtr(params->pBlitImageInfo), &pBlitImageInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBlitImage2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pBlitImageInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBlitImage2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pBlitImageInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -35510,7 +35510,7 @@ static void thunk64_vkCmdBlitImage2KHR(void *args)
 {
     struct vkCmdBlitImage2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBlitImage2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pBlitImageInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBlitImage2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pBlitImageInfo);
 }
 #endif /* _WIN64 */
 
@@ -35527,7 +35527,7 @@ static void thunk32_vkCmdBlitImage2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkBlitImageInfo2_win32_to_host(ctx, (const VkBlitImageInfo232 *)UlongToPtr(params->pBlitImageInfo), &pBlitImageInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBlitImage2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pBlitImageInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBlitImage2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pBlitImageInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -35536,7 +35536,7 @@ static void thunk64_vkCmdBuildAccelerationStructureNV(void *args)
 {
     struct vkCmdBuildAccelerationStructureNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBuildAccelerationStructureNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pInfo, params->instanceData, params->instanceOffset, params->update, params->dst, params->src, params->scratch, params->scratchOffset);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBuildAccelerationStructureNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pInfo, params->instanceData, params->instanceOffset, params->update, params->dst, params->src, params->scratch, params->scratchOffset);
 }
 #endif /* _WIN64 */
 
@@ -35560,7 +35560,7 @@ static void thunk32_vkCmdBuildAccelerationStructureNV(void *args)
 
     init_conversion_context(ctx);
     convert_VkAccelerationStructureInfoNV_win32_to_host(ctx, (const VkAccelerationStructureInfoNV32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBuildAccelerationStructureNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pInfo_host, params->instanceData, params->instanceOffset, params->update, params->dst, params->src, params->scratch, params->scratchOffset);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBuildAccelerationStructureNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pInfo_host, params->instanceData, params->instanceOffset, params->update, params->dst, params->src, params->scratch, params->scratchOffset);
     free_conversion_context(ctx);
 }
 
@@ -35569,7 +35569,7 @@ static void thunk64_vkCmdBuildAccelerationStructuresIndirectKHR(void *args)
 {
     struct vkCmdBuildAccelerationStructuresIndirectKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBuildAccelerationStructuresIndirectKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->infoCount, params->pInfos, params->pIndirectDeviceAddresses, params->pIndirectStrides, params->ppMaxPrimitiveCounts);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBuildAccelerationStructuresIndirectKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->infoCount, params->pInfos, params->pIndirectDeviceAddresses, params->pIndirectStrides, params->ppMaxPrimitiveCounts);
 }
 #endif /* _WIN64 */
 
@@ -35592,7 +35592,7 @@ static void thunk32_vkCmdBuildAccelerationStructuresIndirectKHR(void *args)
     init_conversion_context(ctx);
     pInfos_host = convert_VkAccelerationStructureBuildGeometryInfoKHR_array_win32_to_host(ctx, (const VkAccelerationStructureBuildGeometryInfoKHR32 *)UlongToPtr(params->pInfos), params->infoCount);
     ppMaxPrimitiveCounts_host = convert_uint32_t_array_win32_to_host(ctx, (const PTR32 *)UlongToPtr(params->ppMaxPrimitiveCounts), params->infoCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBuildAccelerationStructuresIndirectKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->infoCount, pInfos_host, (const VkDeviceAddress *)UlongToPtr(params->pIndirectDeviceAddresses), (const uint32_t *)UlongToPtr(params->pIndirectStrides), ppMaxPrimitiveCounts_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBuildAccelerationStructuresIndirectKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->infoCount, pInfos_host, (const VkDeviceAddress *)UlongToPtr(params->pIndirectDeviceAddresses), (const uint32_t *)UlongToPtr(params->pIndirectStrides), ppMaxPrimitiveCounts_host);
     convert_uint32_t_array_host_to_win32(ppMaxPrimitiveCounts_host, (PTR32 *)UlongToPtr(params->ppMaxPrimitiveCounts), params->infoCount);
     free_conversion_context(ctx);
 }
@@ -35602,7 +35602,7 @@ static void thunk64_vkCmdBuildAccelerationStructuresKHR(void *args)
 {
     struct vkCmdBuildAccelerationStructuresKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBuildAccelerationStructuresKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->infoCount, params->pInfos, params->ppBuildRangeInfos);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBuildAccelerationStructuresKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->infoCount, params->pInfos, params->ppBuildRangeInfos);
 }
 #endif /* _WIN64 */
 
@@ -35623,7 +35623,7 @@ static void thunk32_vkCmdBuildAccelerationStructuresKHR(void *args)
     init_conversion_context(ctx);
     pInfos_host = convert_VkAccelerationStructureBuildGeometryInfoKHR_array_win32_to_host(ctx, (const VkAccelerationStructureBuildGeometryInfoKHR32 *)UlongToPtr(params->pInfos), params->infoCount);
     ppBuildRangeInfos_host = convert_VkAccelerationStructureBuildRangeInfoKHR_array_win32_to_host(ctx, (const PTR32 *)UlongToPtr(params->ppBuildRangeInfos), params->infoCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBuildAccelerationStructuresKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->infoCount, pInfos_host, ppBuildRangeInfos_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBuildAccelerationStructuresKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->infoCount, pInfos_host, ppBuildRangeInfos_host);
     free_conversion_context(ctx);
 }
 
@@ -35632,7 +35632,7 @@ static void thunk64_vkCmdBuildMicromapsEXT(void *args)
 {
     struct vkCmdBuildMicromapsEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdBuildMicromapsEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->infoCount, params->pInfos);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdBuildMicromapsEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->infoCount, params->pInfos);
 }
 #endif /* _WIN64 */
 
@@ -35650,7 +35650,7 @@ static void thunk32_vkCmdBuildMicromapsEXT(void *args)
 
     init_conversion_context(ctx);
     pInfos_host = convert_VkMicromapBuildInfoEXT_array_win32_to_host(ctx, (const VkMicromapBuildInfoEXT32 *)UlongToPtr(params->pInfos), params->infoCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdBuildMicromapsEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->infoCount, pInfos_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdBuildMicromapsEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->infoCount, pInfos_host);
     free_conversion_context(ctx);
 }
 
@@ -35659,7 +35659,7 @@ static void thunk64_vkCmdClearAttachments(void *args)
 {
     struct vkCmdClearAttachments_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdClearAttachments(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->attachmentCount, params->pAttachments, params->rectCount, params->pRects);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdClearAttachments(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->attachmentCount, params->pAttachments, params->rectCount, params->pRects);
 }
 #endif /* _WIN64 */
 
@@ -35674,7 +35674,7 @@ static void thunk32_vkCmdClearAttachments(void *args)
         PTR32 pRects;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdClearAttachments(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->attachmentCount, (const VkClearAttachment *)UlongToPtr(params->pAttachments), params->rectCount, (const VkClearRect *)UlongToPtr(params->pRects));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdClearAttachments(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->attachmentCount, (const VkClearAttachment *)UlongToPtr(params->pAttachments), params->rectCount, (const VkClearRect *)UlongToPtr(params->pRects));
 }
 
 #ifdef _WIN64
@@ -35682,7 +35682,7 @@ static void thunk64_vkCmdClearColorImage(void *args)
 {
     struct vkCmdClearColorImage_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdClearColorImage(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->image, params->imageLayout, params->pColor, params->rangeCount, params->pRanges);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdClearColorImage(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->image, params->imageLayout, params->pColor, params->rangeCount, params->pRanges);
 }
 #endif /* _WIN64 */
 
@@ -35698,7 +35698,7 @@ static void thunk32_vkCmdClearColorImage(void *args)
         PTR32 pRanges;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdClearColorImage(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->image, params->imageLayout, (const VkClearColorValue *)UlongToPtr(params->pColor), params->rangeCount, (const VkImageSubresourceRange *)UlongToPtr(params->pRanges));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdClearColorImage(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->image, params->imageLayout, (const VkClearColorValue *)UlongToPtr(params->pColor), params->rangeCount, (const VkImageSubresourceRange *)UlongToPtr(params->pRanges));
 }
 
 #ifdef _WIN64
@@ -35706,7 +35706,7 @@ static void thunk64_vkCmdClearDepthStencilImage(void *args)
 {
     struct vkCmdClearDepthStencilImage_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdClearDepthStencilImage(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->image, params->imageLayout, params->pDepthStencil, params->rangeCount, params->pRanges);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdClearDepthStencilImage(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->image, params->imageLayout, params->pDepthStencil, params->rangeCount, params->pRanges);
 }
 #endif /* _WIN64 */
 
@@ -35722,7 +35722,7 @@ static void thunk32_vkCmdClearDepthStencilImage(void *args)
         PTR32 pRanges;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdClearDepthStencilImage(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->image, params->imageLayout, (const VkClearDepthStencilValue *)UlongToPtr(params->pDepthStencil), params->rangeCount, (const VkImageSubresourceRange *)UlongToPtr(params->pRanges));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdClearDepthStencilImage(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->image, params->imageLayout, (const VkClearDepthStencilValue *)UlongToPtr(params->pDepthStencil), params->rangeCount, (const VkImageSubresourceRange *)UlongToPtr(params->pRanges));
 }
 
 #ifdef _WIN64
@@ -35730,7 +35730,7 @@ static void thunk64_vkCmdControlVideoCodingKHR(void *args)
 {
     struct vkCmdControlVideoCodingKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdControlVideoCodingKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pCodingControlInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdControlVideoCodingKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pCodingControlInfo);
 }
 #endif /* _WIN64 */
 
@@ -35747,7 +35747,7 @@ static void thunk32_vkCmdControlVideoCodingKHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkVideoCodingControlInfoKHR_win32_to_host(ctx, (const VkVideoCodingControlInfoKHR32 *)UlongToPtr(params->pCodingControlInfo), &pCodingControlInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdControlVideoCodingKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pCodingControlInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdControlVideoCodingKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pCodingControlInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -35756,7 +35756,7 @@ static void thunk64_vkCmdCopyAccelerationStructureKHR(void *args)
 {
     struct vkCmdCopyAccelerationStructureKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyAccelerationStructureKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyAccelerationStructureKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pInfo);
 }
 #endif /* _WIN64 */
 
@@ -35770,7 +35770,7 @@ static void thunk32_vkCmdCopyAccelerationStructureKHR(void *args)
     VkCopyAccelerationStructureInfoKHR pInfo_host;
 
     convert_VkCopyAccelerationStructureInfoKHR_win32_to_host((const VkCopyAccelerationStructureInfoKHR32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyAccelerationStructureKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyAccelerationStructureKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pInfo_host);
 }
 
 #ifdef _WIN64
@@ -35778,7 +35778,7 @@ static void thunk64_vkCmdCopyAccelerationStructureNV(void *args)
 {
     struct vkCmdCopyAccelerationStructureNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyAccelerationStructureNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->dst, params->src, params->mode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyAccelerationStructureNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->dst, params->src, params->mode);
 }
 #endif /* _WIN64 */
 
@@ -35792,7 +35792,7 @@ static void thunk32_vkCmdCopyAccelerationStructureNV(void *args)
         VkCopyAccelerationStructureModeKHR mode;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyAccelerationStructureNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->dst, params->src, params->mode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyAccelerationStructureNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->dst, params->src, params->mode);
 }
 
 #ifdef _WIN64
@@ -35800,7 +35800,7 @@ static void thunk64_vkCmdCopyAccelerationStructureToMemoryKHR(void *args)
 {
     struct vkCmdCopyAccelerationStructureToMemoryKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyAccelerationStructureToMemoryKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyAccelerationStructureToMemoryKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pInfo);
 }
 #endif /* _WIN64 */
 
@@ -35814,7 +35814,7 @@ static void thunk32_vkCmdCopyAccelerationStructureToMemoryKHR(void *args)
     VkCopyAccelerationStructureToMemoryInfoKHR pInfo_host;
 
     convert_VkCopyAccelerationStructureToMemoryInfoKHR_win32_to_host((const VkCopyAccelerationStructureToMemoryInfoKHR32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyAccelerationStructureToMemoryKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyAccelerationStructureToMemoryKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pInfo_host);
 }
 
 #ifdef _WIN64
@@ -35822,7 +35822,7 @@ static void thunk64_vkCmdCopyBuffer(void *args)
 {
     struct vkCmdCopyBuffer_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->srcBuffer, params->dstBuffer, params->regionCount, params->pRegions);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->srcBuffer, params->dstBuffer, params->regionCount, params->pRegions);
 }
 #endif /* _WIN64 */
 
@@ -35842,7 +35842,7 @@ static void thunk32_vkCmdCopyBuffer(void *args)
 
     init_conversion_context(ctx);
     pRegions_host = convert_VkBufferCopy_array_win32_to_host(ctx, (const VkBufferCopy32 *)UlongToPtr(params->pRegions), params->regionCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->srcBuffer, params->dstBuffer, params->regionCount, pRegions_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->srcBuffer, params->dstBuffer, params->regionCount, pRegions_host);
     free_conversion_context(ctx);
 }
 
@@ -35851,7 +35851,7 @@ static void thunk64_vkCmdCopyBuffer2(void *args)
 {
     struct vkCmdCopyBuffer2_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyBuffer2(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pCopyBufferInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyBuffer2(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pCopyBufferInfo);
 }
 #endif /* _WIN64 */
 
@@ -35868,7 +35868,7 @@ static void thunk32_vkCmdCopyBuffer2(void *args)
 
     init_conversion_context(ctx);
     convert_VkCopyBufferInfo2_win32_to_host(ctx, (const VkCopyBufferInfo232 *)UlongToPtr(params->pCopyBufferInfo), &pCopyBufferInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyBuffer2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pCopyBufferInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyBuffer2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pCopyBufferInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -35877,7 +35877,7 @@ static void thunk64_vkCmdCopyBuffer2KHR(void *args)
 {
     struct vkCmdCopyBuffer2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyBuffer2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pCopyBufferInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyBuffer2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pCopyBufferInfo);
 }
 #endif /* _WIN64 */
 
@@ -35894,7 +35894,7 @@ static void thunk32_vkCmdCopyBuffer2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkCopyBufferInfo2_win32_to_host(ctx, (const VkCopyBufferInfo232 *)UlongToPtr(params->pCopyBufferInfo), &pCopyBufferInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyBuffer2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pCopyBufferInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyBuffer2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pCopyBufferInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -35903,7 +35903,7 @@ static void thunk64_vkCmdCopyBufferToImage(void *args)
 {
     struct vkCmdCopyBufferToImage_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyBufferToImage(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->srcBuffer, params->dstImage, params->dstImageLayout, params->regionCount, params->pRegions);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyBufferToImage(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->srcBuffer, params->dstImage, params->dstImageLayout, params->regionCount, params->pRegions);
 }
 #endif /* _WIN64 */
 
@@ -35924,7 +35924,7 @@ static void thunk32_vkCmdCopyBufferToImage(void *args)
 
     init_conversion_context(ctx);
     pRegions_host = convert_VkBufferImageCopy_array_win32_to_host(ctx, (const VkBufferImageCopy32 *)UlongToPtr(params->pRegions), params->regionCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyBufferToImage(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->srcBuffer, params->dstImage, params->dstImageLayout, params->regionCount, pRegions_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyBufferToImage(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->srcBuffer, params->dstImage, params->dstImageLayout, params->regionCount, pRegions_host);
     free_conversion_context(ctx);
 }
 
@@ -35933,7 +35933,7 @@ static void thunk64_vkCmdCopyBufferToImage2(void *args)
 {
     struct vkCmdCopyBufferToImage2_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyBufferToImage2(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pCopyBufferToImageInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyBufferToImage2(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pCopyBufferToImageInfo);
 }
 #endif /* _WIN64 */
 
@@ -35950,7 +35950,7 @@ static void thunk32_vkCmdCopyBufferToImage2(void *args)
 
     init_conversion_context(ctx);
     convert_VkCopyBufferToImageInfo2_win32_to_host(ctx, (const VkCopyBufferToImageInfo232 *)UlongToPtr(params->pCopyBufferToImageInfo), &pCopyBufferToImageInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyBufferToImage2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pCopyBufferToImageInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyBufferToImage2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pCopyBufferToImageInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -35959,7 +35959,7 @@ static void thunk64_vkCmdCopyBufferToImage2KHR(void *args)
 {
     struct vkCmdCopyBufferToImage2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyBufferToImage2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pCopyBufferToImageInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyBufferToImage2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pCopyBufferToImageInfo);
 }
 #endif /* _WIN64 */
 
@@ -35976,7 +35976,7 @@ static void thunk32_vkCmdCopyBufferToImage2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkCopyBufferToImageInfo2_win32_to_host(ctx, (const VkCopyBufferToImageInfo232 *)UlongToPtr(params->pCopyBufferToImageInfo), &pCopyBufferToImageInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyBufferToImage2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pCopyBufferToImageInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyBufferToImage2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pCopyBufferToImageInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -35985,7 +35985,7 @@ static void thunk64_vkCmdCopyImage(void *args)
 {
     struct vkCmdCopyImage_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyImage(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->srcImage, params->srcImageLayout, params->dstImage, params->dstImageLayout, params->regionCount, params->pRegions);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyImage(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->srcImage, params->srcImageLayout, params->dstImage, params->dstImageLayout, params->regionCount, params->pRegions);
 }
 #endif /* _WIN64 */
 
@@ -36002,7 +36002,7 @@ static void thunk32_vkCmdCopyImage(void *args)
         PTR32 pRegions;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyImage(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->srcImage, params->srcImageLayout, params->dstImage, params->dstImageLayout, params->regionCount, (const VkImageCopy *)UlongToPtr(params->pRegions));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyImage(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->srcImage, params->srcImageLayout, params->dstImage, params->dstImageLayout, params->regionCount, (const VkImageCopy *)UlongToPtr(params->pRegions));
 }
 
 #ifdef _WIN64
@@ -36010,7 +36010,7 @@ static void thunk64_vkCmdCopyImage2(void *args)
 {
     struct vkCmdCopyImage2_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyImage2(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pCopyImageInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyImage2(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pCopyImageInfo);
 }
 #endif /* _WIN64 */
 
@@ -36027,7 +36027,7 @@ static void thunk32_vkCmdCopyImage2(void *args)
 
     init_conversion_context(ctx);
     convert_VkCopyImageInfo2_win32_to_host(ctx, (const VkCopyImageInfo232 *)UlongToPtr(params->pCopyImageInfo), &pCopyImageInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyImage2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pCopyImageInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyImage2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pCopyImageInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -36036,7 +36036,7 @@ static void thunk64_vkCmdCopyImage2KHR(void *args)
 {
     struct vkCmdCopyImage2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyImage2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pCopyImageInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyImage2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pCopyImageInfo);
 }
 #endif /* _WIN64 */
 
@@ -36053,7 +36053,7 @@ static void thunk32_vkCmdCopyImage2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkCopyImageInfo2_win32_to_host(ctx, (const VkCopyImageInfo232 *)UlongToPtr(params->pCopyImageInfo), &pCopyImageInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyImage2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pCopyImageInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyImage2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pCopyImageInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -36062,7 +36062,7 @@ static void thunk64_vkCmdCopyImageToBuffer(void *args)
 {
     struct vkCmdCopyImageToBuffer_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyImageToBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->srcImage, params->srcImageLayout, params->dstBuffer, params->regionCount, params->pRegions);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyImageToBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->srcImage, params->srcImageLayout, params->dstBuffer, params->regionCount, params->pRegions);
 }
 #endif /* _WIN64 */
 
@@ -36083,7 +36083,7 @@ static void thunk32_vkCmdCopyImageToBuffer(void *args)
 
     init_conversion_context(ctx);
     pRegions_host = convert_VkBufferImageCopy_array_win32_to_host(ctx, (const VkBufferImageCopy32 *)UlongToPtr(params->pRegions), params->regionCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyImageToBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->srcImage, params->srcImageLayout, params->dstBuffer, params->regionCount, pRegions_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyImageToBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->srcImage, params->srcImageLayout, params->dstBuffer, params->regionCount, pRegions_host);
     free_conversion_context(ctx);
 }
 
@@ -36092,7 +36092,7 @@ static void thunk64_vkCmdCopyImageToBuffer2(void *args)
 {
     struct vkCmdCopyImageToBuffer2_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyImageToBuffer2(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pCopyImageToBufferInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyImageToBuffer2(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pCopyImageToBufferInfo);
 }
 #endif /* _WIN64 */
 
@@ -36109,7 +36109,7 @@ static void thunk32_vkCmdCopyImageToBuffer2(void *args)
 
     init_conversion_context(ctx);
     convert_VkCopyImageToBufferInfo2_win32_to_host(ctx, (const VkCopyImageToBufferInfo232 *)UlongToPtr(params->pCopyImageToBufferInfo), &pCopyImageToBufferInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyImageToBuffer2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pCopyImageToBufferInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyImageToBuffer2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pCopyImageToBufferInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -36118,7 +36118,7 @@ static void thunk64_vkCmdCopyImageToBuffer2KHR(void *args)
 {
     struct vkCmdCopyImageToBuffer2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyImageToBuffer2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pCopyImageToBufferInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyImageToBuffer2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pCopyImageToBufferInfo);
 }
 #endif /* _WIN64 */
 
@@ -36135,7 +36135,7 @@ static void thunk32_vkCmdCopyImageToBuffer2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkCopyImageToBufferInfo2_win32_to_host(ctx, (const VkCopyImageToBufferInfo232 *)UlongToPtr(params->pCopyImageToBufferInfo), &pCopyImageToBufferInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyImageToBuffer2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pCopyImageToBufferInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyImageToBuffer2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pCopyImageToBufferInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -36144,7 +36144,7 @@ static void thunk64_vkCmdCopyMemoryIndirectNV(void *args)
 {
     struct vkCmdCopyMemoryIndirectNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyMemoryIndirectNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->copyBufferAddress, params->copyCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyMemoryIndirectNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->copyBufferAddress, params->copyCount, params->stride);
 }
 #endif /* _WIN64 */
 
@@ -36158,7 +36158,7 @@ static void thunk32_vkCmdCopyMemoryIndirectNV(void *args)
         uint32_t stride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyMemoryIndirectNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->copyBufferAddress, params->copyCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyMemoryIndirectNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->copyBufferAddress, params->copyCount, params->stride);
 }
 
 #ifdef _WIN64
@@ -36166,7 +36166,7 @@ static void thunk64_vkCmdCopyMemoryToAccelerationStructureKHR(void *args)
 {
     struct vkCmdCopyMemoryToAccelerationStructureKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyMemoryToAccelerationStructureKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyMemoryToAccelerationStructureKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pInfo);
 }
 #endif /* _WIN64 */
 
@@ -36180,7 +36180,7 @@ static void thunk32_vkCmdCopyMemoryToAccelerationStructureKHR(void *args)
     VkCopyMemoryToAccelerationStructureInfoKHR pInfo_host;
 
     convert_VkCopyMemoryToAccelerationStructureInfoKHR_win32_to_host((const VkCopyMemoryToAccelerationStructureInfoKHR32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyMemoryToAccelerationStructureKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyMemoryToAccelerationStructureKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pInfo_host);
 }
 
 #ifdef _WIN64
@@ -36188,7 +36188,7 @@ static void thunk64_vkCmdCopyMemoryToImageIndirectNV(void *args)
 {
     struct vkCmdCopyMemoryToImageIndirectNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyMemoryToImageIndirectNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->copyBufferAddress, params->copyCount, params->stride, params->dstImage, params->dstImageLayout, params->pImageSubresources);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyMemoryToImageIndirectNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->copyBufferAddress, params->copyCount, params->stride, params->dstImage, params->dstImageLayout, params->pImageSubresources);
 }
 #endif /* _WIN64 */
 
@@ -36205,7 +36205,7 @@ static void thunk32_vkCmdCopyMemoryToImageIndirectNV(void *args)
         PTR32 pImageSubresources;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyMemoryToImageIndirectNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->copyBufferAddress, params->copyCount, params->stride, params->dstImage, params->dstImageLayout, (const VkImageSubresourceLayers *)UlongToPtr(params->pImageSubresources));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyMemoryToImageIndirectNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->copyBufferAddress, params->copyCount, params->stride, params->dstImage, params->dstImageLayout, (const VkImageSubresourceLayers *)UlongToPtr(params->pImageSubresources));
 }
 
 #ifdef _WIN64
@@ -36213,7 +36213,7 @@ static void thunk64_vkCmdCopyMemoryToMicromapEXT(void *args)
 {
     struct vkCmdCopyMemoryToMicromapEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyMemoryToMicromapEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyMemoryToMicromapEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pInfo);
 }
 #endif /* _WIN64 */
 
@@ -36227,7 +36227,7 @@ static void thunk32_vkCmdCopyMemoryToMicromapEXT(void *args)
     VkCopyMemoryToMicromapInfoEXT pInfo_host;
 
     convert_VkCopyMemoryToMicromapInfoEXT_win32_to_host((const VkCopyMemoryToMicromapInfoEXT32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyMemoryToMicromapEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyMemoryToMicromapEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pInfo_host);
 }
 
 #ifdef _WIN64
@@ -36235,7 +36235,7 @@ static void thunk64_vkCmdCopyMicromapEXT(void *args)
 {
     struct vkCmdCopyMicromapEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyMicromapEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyMicromapEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pInfo);
 }
 #endif /* _WIN64 */
 
@@ -36249,7 +36249,7 @@ static void thunk32_vkCmdCopyMicromapEXT(void *args)
     VkCopyMicromapInfoEXT pInfo_host;
 
     convert_VkCopyMicromapInfoEXT_win32_to_host((const VkCopyMicromapInfoEXT32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyMicromapEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyMicromapEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pInfo_host);
 }
 
 #ifdef _WIN64
@@ -36257,7 +36257,7 @@ static void thunk64_vkCmdCopyMicromapToMemoryEXT(void *args)
 {
     struct vkCmdCopyMicromapToMemoryEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyMicromapToMemoryEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyMicromapToMemoryEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pInfo);
 }
 #endif /* _WIN64 */
 
@@ -36271,7 +36271,7 @@ static void thunk32_vkCmdCopyMicromapToMemoryEXT(void *args)
     VkCopyMicromapToMemoryInfoEXT pInfo_host;
 
     convert_VkCopyMicromapToMemoryInfoEXT_win32_to_host((const VkCopyMicromapToMemoryInfoEXT32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyMicromapToMemoryEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyMicromapToMemoryEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pInfo_host);
 }
 
 #ifdef _WIN64
@@ -36279,7 +36279,7 @@ static void thunk64_vkCmdCopyQueryPoolResults(void *args)
 {
     struct vkCmdCopyQueryPoolResults_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCopyQueryPoolResults(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->queryPool, params->firstQuery, params->queryCount, params->dstBuffer, params->dstOffset, params->stride, params->flags);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCopyQueryPoolResults(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->queryPool, params->firstQuery, params->queryCount, params->dstBuffer, params->dstOffset, params->stride, params->flags);
 }
 #endif /* _WIN64 */
 
@@ -36297,7 +36297,7 @@ static void thunk32_vkCmdCopyQueryPoolResults(void *args)
         VkQueryResultFlags flags;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCopyQueryPoolResults(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->queryPool, params->firstQuery, params->queryCount, params->dstBuffer, params->dstOffset, params->stride, params->flags);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCopyQueryPoolResults(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->queryPool, params->firstQuery, params->queryCount, params->dstBuffer, params->dstOffset, params->stride, params->flags);
 }
 
 #ifdef _WIN64
@@ -36305,7 +36305,7 @@ static void thunk64_vkCmdCuLaunchKernelNVX(void *args)
 {
     struct vkCmdCuLaunchKernelNVX_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCuLaunchKernelNVX(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pLaunchInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCuLaunchKernelNVX(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pLaunchInfo);
 }
 #endif /* _WIN64 */
 
@@ -36319,7 +36319,7 @@ static void thunk32_vkCmdCuLaunchKernelNVX(void *args)
     VkCuLaunchInfoNVX pLaunchInfo_host;
 
     convert_VkCuLaunchInfoNVX_win32_to_host((const VkCuLaunchInfoNVX32 *)UlongToPtr(params->pLaunchInfo), &pLaunchInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCuLaunchKernelNVX(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pLaunchInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCuLaunchKernelNVX(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pLaunchInfo_host);
 }
 
 #ifdef _WIN64
@@ -36327,7 +36327,7 @@ static void thunk64_vkCmdCudaLaunchKernelNV(void *args)
 {
     struct vkCmdCudaLaunchKernelNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdCudaLaunchKernelNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pLaunchInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdCudaLaunchKernelNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pLaunchInfo);
 }
 #endif /* _WIN64 */
 
@@ -36341,7 +36341,7 @@ static void thunk32_vkCmdCudaLaunchKernelNV(void *args)
     VkCudaLaunchInfoNV pLaunchInfo_host;
 
     convert_VkCudaLaunchInfoNV_win32_to_host((const VkCudaLaunchInfoNV32 *)UlongToPtr(params->pLaunchInfo), &pLaunchInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdCudaLaunchKernelNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pLaunchInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdCudaLaunchKernelNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pLaunchInfo_host);
 }
 
 #ifdef _WIN64
@@ -36349,7 +36349,7 @@ static void thunk64_vkCmdDebugMarkerBeginEXT(void *args)
 {
     struct vkCmdDebugMarkerBeginEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDebugMarkerBeginEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pMarkerInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDebugMarkerBeginEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pMarkerInfo);
 }
 #endif /* _WIN64 */
 
@@ -36363,7 +36363,7 @@ static void thunk32_vkCmdDebugMarkerBeginEXT(void *args)
     VkDebugMarkerMarkerInfoEXT pMarkerInfo_host;
 
     convert_VkDebugMarkerMarkerInfoEXT_win32_to_host((const VkDebugMarkerMarkerInfoEXT32 *)UlongToPtr(params->pMarkerInfo), &pMarkerInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDebugMarkerBeginEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pMarkerInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDebugMarkerBeginEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pMarkerInfo_host);
 }
 
 #ifdef _WIN64
@@ -36371,7 +36371,7 @@ static void thunk64_vkCmdDebugMarkerEndEXT(void *args)
 {
     struct vkCmdDebugMarkerEndEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDebugMarkerEndEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDebugMarkerEndEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer);
 }
 #endif /* _WIN64 */
 
@@ -36382,7 +36382,7 @@ static void thunk32_vkCmdDebugMarkerEndEXT(void *args)
         PTR32 commandBuffer;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDebugMarkerEndEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDebugMarkerEndEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer);
 }
 
 #ifdef _WIN64
@@ -36390,7 +36390,7 @@ static void thunk64_vkCmdDebugMarkerInsertEXT(void *args)
 {
     struct vkCmdDebugMarkerInsertEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDebugMarkerInsertEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pMarkerInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDebugMarkerInsertEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pMarkerInfo);
 }
 #endif /* _WIN64 */
 
@@ -36404,7 +36404,7 @@ static void thunk32_vkCmdDebugMarkerInsertEXT(void *args)
     VkDebugMarkerMarkerInfoEXT pMarkerInfo_host;
 
     convert_VkDebugMarkerMarkerInfoEXT_win32_to_host((const VkDebugMarkerMarkerInfoEXT32 *)UlongToPtr(params->pMarkerInfo), &pMarkerInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDebugMarkerInsertEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pMarkerInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDebugMarkerInsertEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pMarkerInfo_host);
 }
 
 #ifdef _WIN64
@@ -36412,7 +36412,7 @@ static void thunk64_vkCmdDecodeVideoKHR(void *args)
 {
     struct vkCmdDecodeVideoKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDecodeVideoKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pDecodeInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDecodeVideoKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pDecodeInfo);
 }
 #endif /* _WIN64 */
 
@@ -36429,7 +36429,7 @@ static void thunk32_vkCmdDecodeVideoKHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkVideoDecodeInfoKHR_win32_to_host(ctx, (const VkVideoDecodeInfoKHR32 *)UlongToPtr(params->pDecodeInfo), &pDecodeInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDecodeVideoKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pDecodeInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDecodeVideoKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pDecodeInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -36438,7 +36438,7 @@ static void thunk64_vkCmdDecompressMemoryIndirectCountNV(void *args)
 {
     struct vkCmdDecompressMemoryIndirectCountNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDecompressMemoryIndirectCountNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->indirectCommandsAddress, params->indirectCommandsCountAddress, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDecompressMemoryIndirectCountNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->indirectCommandsAddress, params->indirectCommandsCountAddress, params->stride);
 }
 #endif /* _WIN64 */
 
@@ -36452,7 +36452,7 @@ static void thunk32_vkCmdDecompressMemoryIndirectCountNV(void *args)
         uint32_t stride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDecompressMemoryIndirectCountNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->indirectCommandsAddress, params->indirectCommandsCountAddress, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDecompressMemoryIndirectCountNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->indirectCommandsAddress, params->indirectCommandsCountAddress, params->stride);
 }
 
 #ifdef _WIN64
@@ -36460,7 +36460,7 @@ static void thunk64_vkCmdDecompressMemoryNV(void *args)
 {
     struct vkCmdDecompressMemoryNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDecompressMemoryNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->decompressRegionCount, params->pDecompressMemoryRegions);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDecompressMemoryNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->decompressRegionCount, params->pDecompressMemoryRegions);
 }
 #endif /* _WIN64 */
 
@@ -36478,7 +36478,7 @@ static void thunk32_vkCmdDecompressMemoryNV(void *args)
 
     init_conversion_context(ctx);
     pDecompressMemoryRegions_host = convert_VkDecompressMemoryRegionNV_array_win32_to_host(ctx, (const VkDecompressMemoryRegionNV32 *)UlongToPtr(params->pDecompressMemoryRegions), params->decompressRegionCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDecompressMemoryNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->decompressRegionCount, pDecompressMemoryRegions_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDecompressMemoryNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->decompressRegionCount, pDecompressMemoryRegions_host);
     free_conversion_context(ctx);
 }
 
@@ -36487,7 +36487,7 @@ static void thunk64_vkCmdDispatch(void *args)
 {
     struct vkCmdDispatch_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDispatch(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->groupCountX, params->groupCountY, params->groupCountZ);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDispatch(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->groupCountX, params->groupCountY, params->groupCountZ);
 }
 #endif /* _WIN64 */
 
@@ -36501,7 +36501,7 @@ static void thunk32_vkCmdDispatch(void *args)
         uint32_t groupCountZ;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDispatch(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->groupCountX, params->groupCountY, params->groupCountZ);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDispatch(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->groupCountX, params->groupCountY, params->groupCountZ);
 }
 
 #ifdef _WIN64
@@ -36509,7 +36509,7 @@ static void thunk64_vkCmdDispatchBase(void *args)
 {
     struct vkCmdDispatchBase_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDispatchBase(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->baseGroupX, params->baseGroupY, params->baseGroupZ, params->groupCountX, params->groupCountY, params->groupCountZ);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDispatchBase(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->baseGroupX, params->baseGroupY, params->baseGroupZ, params->groupCountX, params->groupCountY, params->groupCountZ);
 }
 #endif /* _WIN64 */
 
@@ -36526,7 +36526,7 @@ static void thunk32_vkCmdDispatchBase(void *args)
         uint32_t groupCountZ;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDispatchBase(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->baseGroupX, params->baseGroupY, params->baseGroupZ, params->groupCountX, params->groupCountY, params->groupCountZ);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDispatchBase(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->baseGroupX, params->baseGroupY, params->baseGroupZ, params->groupCountX, params->groupCountY, params->groupCountZ);
 }
 
 #ifdef _WIN64
@@ -36534,7 +36534,7 @@ static void thunk64_vkCmdDispatchBaseKHR(void *args)
 {
     struct vkCmdDispatchBaseKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDispatchBaseKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->baseGroupX, params->baseGroupY, params->baseGroupZ, params->groupCountX, params->groupCountY, params->groupCountZ);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDispatchBaseKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->baseGroupX, params->baseGroupY, params->baseGroupZ, params->groupCountX, params->groupCountY, params->groupCountZ);
 }
 #endif /* _WIN64 */
 
@@ -36551,7 +36551,7 @@ static void thunk32_vkCmdDispatchBaseKHR(void *args)
         uint32_t groupCountZ;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDispatchBaseKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->baseGroupX, params->baseGroupY, params->baseGroupZ, params->groupCountX, params->groupCountY, params->groupCountZ);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDispatchBaseKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->baseGroupX, params->baseGroupY, params->baseGroupZ, params->groupCountX, params->groupCountY, params->groupCountZ);
 }
 
 #ifdef _WIN64
@@ -36559,7 +36559,7 @@ static void thunk64_vkCmdDispatchIndirect(void *args)
 {
     struct vkCmdDispatchIndirect_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDispatchIndirect(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDispatchIndirect(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset);
 }
 #endif /* _WIN64 */
 
@@ -36572,7 +36572,7 @@ static void thunk32_vkCmdDispatchIndirect(void *args)
         VkDeviceSize DECLSPEC_ALIGN(8) offset;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDispatchIndirect(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDispatchIndirect(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset);
 }
 
 #ifdef _WIN64
@@ -36580,7 +36580,7 @@ static void thunk64_vkCmdDraw(void *args)
 {
     struct vkCmdDraw_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDraw(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->vertexCount, params->instanceCount, params->firstVertex, params->firstInstance);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDraw(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->vertexCount, params->instanceCount, params->firstVertex, params->firstInstance);
 }
 #endif /* _WIN64 */
 
@@ -36595,7 +36595,7 @@ static void thunk32_vkCmdDraw(void *args)
         uint32_t firstInstance;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDraw(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->vertexCount, params->instanceCount, params->firstVertex, params->firstInstance);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDraw(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->vertexCount, params->instanceCount, params->firstVertex, params->firstInstance);
 }
 
 #ifdef _WIN64
@@ -36603,7 +36603,7 @@ static void thunk64_vkCmdDrawClusterHUAWEI(void *args)
 {
     struct vkCmdDrawClusterHUAWEI_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawClusterHUAWEI(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->groupCountX, params->groupCountY, params->groupCountZ);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawClusterHUAWEI(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->groupCountX, params->groupCountY, params->groupCountZ);
 }
 #endif /* _WIN64 */
 
@@ -36617,7 +36617,7 @@ static void thunk32_vkCmdDrawClusterHUAWEI(void *args)
         uint32_t groupCountZ;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawClusterHUAWEI(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->groupCountX, params->groupCountY, params->groupCountZ);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawClusterHUAWEI(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->groupCountX, params->groupCountY, params->groupCountZ);
 }
 
 #ifdef _WIN64
@@ -36625,7 +36625,7 @@ static void thunk64_vkCmdDrawClusterIndirectHUAWEI(void *args)
 {
     struct vkCmdDrawClusterIndirectHUAWEI_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawClusterIndirectHUAWEI(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawClusterIndirectHUAWEI(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset);
 }
 #endif /* _WIN64 */
 
@@ -36638,7 +36638,7 @@ static void thunk32_vkCmdDrawClusterIndirectHUAWEI(void *args)
         VkDeviceSize DECLSPEC_ALIGN(8) offset;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawClusterIndirectHUAWEI(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawClusterIndirectHUAWEI(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset);
 }
 
 #ifdef _WIN64
@@ -36646,7 +36646,7 @@ static void thunk64_vkCmdDrawIndexed(void *args)
 {
     struct vkCmdDrawIndexed_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawIndexed(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->indexCount, params->instanceCount, params->firstIndex, params->vertexOffset, params->firstInstance);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawIndexed(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->indexCount, params->instanceCount, params->firstIndex, params->vertexOffset, params->firstInstance);
 }
 #endif /* _WIN64 */
 
@@ -36662,7 +36662,7 @@ static void thunk32_vkCmdDrawIndexed(void *args)
         uint32_t firstInstance;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawIndexed(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->indexCount, params->instanceCount, params->firstIndex, params->vertexOffset, params->firstInstance);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawIndexed(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->indexCount, params->instanceCount, params->firstIndex, params->vertexOffset, params->firstInstance);
 }
 
 #ifdef _WIN64
@@ -36670,7 +36670,7 @@ static void thunk64_vkCmdDrawIndexedIndirect(void *args)
 {
     struct vkCmdDrawIndexedIndirect_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawIndexedIndirect(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawIndexedIndirect(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
 }
 #endif /* _WIN64 */
 
@@ -36685,7 +36685,7 @@ static void thunk32_vkCmdDrawIndexedIndirect(void *args)
         uint32_t stride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawIndexedIndirect(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawIndexedIndirect(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
 }
 
 #ifdef _WIN64
@@ -36693,7 +36693,7 @@ static void thunk64_vkCmdDrawIndexedIndirectCount(void *args)
 {
     struct vkCmdDrawIndexedIndirectCount_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawIndexedIndirectCount(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawIndexedIndirectCount(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 #endif /* _WIN64 */
 
@@ -36710,7 +36710,7 @@ static void thunk32_vkCmdDrawIndexedIndirectCount(void *args)
         uint32_t stride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawIndexedIndirectCount(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawIndexedIndirectCount(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 
 #ifdef _WIN64
@@ -36718,7 +36718,7 @@ static void thunk64_vkCmdDrawIndexedIndirectCountAMD(void *args)
 {
     struct vkCmdDrawIndexedIndirectCountAMD_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawIndexedIndirectCountAMD(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawIndexedIndirectCountAMD(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 #endif /* _WIN64 */
 
@@ -36735,7 +36735,7 @@ static void thunk32_vkCmdDrawIndexedIndirectCountAMD(void *args)
         uint32_t stride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawIndexedIndirectCountAMD(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawIndexedIndirectCountAMD(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 
 #ifdef _WIN64
@@ -36743,7 +36743,7 @@ static void thunk64_vkCmdDrawIndexedIndirectCountKHR(void *args)
 {
     struct vkCmdDrawIndexedIndirectCountKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawIndexedIndirectCountKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawIndexedIndirectCountKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 #endif /* _WIN64 */
 
@@ -36760,7 +36760,7 @@ static void thunk32_vkCmdDrawIndexedIndirectCountKHR(void *args)
         uint32_t stride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawIndexedIndirectCountKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawIndexedIndirectCountKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 
 #ifdef _WIN64
@@ -36768,7 +36768,7 @@ static void thunk64_vkCmdDrawIndirect(void *args)
 {
     struct vkCmdDrawIndirect_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawIndirect(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawIndirect(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
 }
 #endif /* _WIN64 */
 
@@ -36783,7 +36783,7 @@ static void thunk32_vkCmdDrawIndirect(void *args)
         uint32_t stride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawIndirect(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawIndirect(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
 }
 
 #ifdef _WIN64
@@ -36791,7 +36791,7 @@ static void thunk64_vkCmdDrawIndirectByteCountEXT(void *args)
 {
     struct vkCmdDrawIndirectByteCountEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawIndirectByteCountEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->instanceCount, params->firstInstance, params->counterBuffer, params->counterBufferOffset, params->counterOffset, params->vertexStride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawIndirectByteCountEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->instanceCount, params->firstInstance, params->counterBuffer, params->counterBufferOffset, params->counterOffset, params->vertexStride);
 }
 #endif /* _WIN64 */
 
@@ -36808,7 +36808,7 @@ static void thunk32_vkCmdDrawIndirectByteCountEXT(void *args)
         uint32_t vertexStride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawIndirectByteCountEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->instanceCount, params->firstInstance, params->counterBuffer, params->counterBufferOffset, params->counterOffset, params->vertexStride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawIndirectByteCountEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->instanceCount, params->firstInstance, params->counterBuffer, params->counterBufferOffset, params->counterOffset, params->vertexStride);
 }
 
 #ifdef _WIN64
@@ -36816,7 +36816,7 @@ static void thunk64_vkCmdDrawIndirectCount(void *args)
 {
     struct vkCmdDrawIndirectCount_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawIndirectCount(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawIndirectCount(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 #endif /* _WIN64 */
 
@@ -36833,7 +36833,7 @@ static void thunk32_vkCmdDrawIndirectCount(void *args)
         uint32_t stride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawIndirectCount(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawIndirectCount(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 
 #ifdef _WIN64
@@ -36841,7 +36841,7 @@ static void thunk64_vkCmdDrawIndirectCountAMD(void *args)
 {
     struct vkCmdDrawIndirectCountAMD_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawIndirectCountAMD(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawIndirectCountAMD(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 #endif /* _WIN64 */
 
@@ -36858,7 +36858,7 @@ static void thunk32_vkCmdDrawIndirectCountAMD(void *args)
         uint32_t stride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawIndirectCountAMD(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawIndirectCountAMD(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 
 #ifdef _WIN64
@@ -36866,7 +36866,7 @@ static void thunk64_vkCmdDrawIndirectCountKHR(void *args)
 {
     struct vkCmdDrawIndirectCountKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawIndirectCountKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawIndirectCountKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 #endif /* _WIN64 */
 
@@ -36883,7 +36883,7 @@ static void thunk32_vkCmdDrawIndirectCountKHR(void *args)
         uint32_t stride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawIndirectCountKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawIndirectCountKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 
 #ifdef _WIN64
@@ -36891,7 +36891,7 @@ static void thunk64_vkCmdDrawMeshTasksEXT(void *args)
 {
     struct vkCmdDrawMeshTasksEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawMeshTasksEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->groupCountX, params->groupCountY, params->groupCountZ);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawMeshTasksEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->groupCountX, params->groupCountY, params->groupCountZ);
 }
 #endif /* _WIN64 */
 
@@ -36905,7 +36905,7 @@ static void thunk32_vkCmdDrawMeshTasksEXT(void *args)
         uint32_t groupCountZ;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawMeshTasksEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->groupCountX, params->groupCountY, params->groupCountZ);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawMeshTasksEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->groupCountX, params->groupCountY, params->groupCountZ);
 }
 
 #ifdef _WIN64
@@ -36913,7 +36913,7 @@ static void thunk64_vkCmdDrawMeshTasksIndirectCountEXT(void *args)
 {
     struct vkCmdDrawMeshTasksIndirectCountEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawMeshTasksIndirectCountEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawMeshTasksIndirectCountEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 #endif /* _WIN64 */
 
@@ -36930,7 +36930,7 @@ static void thunk32_vkCmdDrawMeshTasksIndirectCountEXT(void *args)
         uint32_t stride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawMeshTasksIndirectCountEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawMeshTasksIndirectCountEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 
 #ifdef _WIN64
@@ -36938,7 +36938,7 @@ static void thunk64_vkCmdDrawMeshTasksIndirectCountNV(void *args)
 {
     struct vkCmdDrawMeshTasksIndirectCountNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawMeshTasksIndirectCountNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawMeshTasksIndirectCountNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 #endif /* _WIN64 */
 
@@ -36955,7 +36955,7 @@ static void thunk32_vkCmdDrawMeshTasksIndirectCountNV(void *args)
         uint32_t stride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawMeshTasksIndirectCountNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawMeshTasksIndirectCountNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset, params->countBuffer, params->countBufferOffset, params->maxDrawCount, params->stride);
 }
 
 #ifdef _WIN64
@@ -36963,7 +36963,7 @@ static void thunk64_vkCmdDrawMeshTasksIndirectEXT(void *args)
 {
     struct vkCmdDrawMeshTasksIndirectEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawMeshTasksIndirectEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawMeshTasksIndirectEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
 }
 #endif /* _WIN64 */
 
@@ -36978,7 +36978,7 @@ static void thunk32_vkCmdDrawMeshTasksIndirectEXT(void *args)
         uint32_t stride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawMeshTasksIndirectEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawMeshTasksIndirectEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
 }
 
 #ifdef _WIN64
@@ -36986,7 +36986,7 @@ static void thunk64_vkCmdDrawMeshTasksIndirectNV(void *args)
 {
     struct vkCmdDrawMeshTasksIndirectNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawMeshTasksIndirectNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawMeshTasksIndirectNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
 }
 #endif /* _WIN64 */
 
@@ -37001,7 +37001,7 @@ static void thunk32_vkCmdDrawMeshTasksIndirectNV(void *args)
         uint32_t stride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawMeshTasksIndirectNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawMeshTasksIndirectNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->buffer, params->offset, params->drawCount, params->stride);
 }
 
 #ifdef _WIN64
@@ -37009,7 +37009,7 @@ static void thunk64_vkCmdDrawMeshTasksNV(void *args)
 {
     struct vkCmdDrawMeshTasksNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawMeshTasksNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->taskCount, params->firstTask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawMeshTasksNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->taskCount, params->firstTask);
 }
 #endif /* _WIN64 */
 
@@ -37022,7 +37022,7 @@ static void thunk32_vkCmdDrawMeshTasksNV(void *args)
         uint32_t firstTask;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawMeshTasksNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->taskCount, params->firstTask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawMeshTasksNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->taskCount, params->firstTask);
 }
 
 #ifdef _WIN64
@@ -37030,7 +37030,7 @@ static void thunk64_vkCmdDrawMultiEXT(void *args)
 {
     struct vkCmdDrawMultiEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawMultiEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->drawCount, params->pVertexInfo, params->instanceCount, params->firstInstance, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawMultiEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->drawCount, params->pVertexInfo, params->instanceCount, params->firstInstance, params->stride);
 }
 #endif /* _WIN64 */
 
@@ -37046,7 +37046,7 @@ static void thunk32_vkCmdDrawMultiEXT(void *args)
         uint32_t stride;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawMultiEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->drawCount, (const VkMultiDrawInfoEXT *)UlongToPtr(params->pVertexInfo), params->instanceCount, params->firstInstance, params->stride);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawMultiEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->drawCount, (const VkMultiDrawInfoEXT *)UlongToPtr(params->pVertexInfo), params->instanceCount, params->firstInstance, params->stride);
 }
 
 #ifdef _WIN64
@@ -37054,7 +37054,7 @@ static void thunk64_vkCmdDrawMultiIndexedEXT(void *args)
 {
     struct vkCmdDrawMultiIndexedEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdDrawMultiIndexedEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->drawCount, params->pIndexInfo, params->instanceCount, params->firstInstance, params->stride, params->pVertexOffset);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdDrawMultiIndexedEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->drawCount, params->pIndexInfo, params->instanceCount, params->firstInstance, params->stride, params->pVertexOffset);
 }
 #endif /* _WIN64 */
 
@@ -37071,7 +37071,7 @@ static void thunk32_vkCmdDrawMultiIndexedEXT(void *args)
         PTR32 pVertexOffset;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdDrawMultiIndexedEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->drawCount, (const VkMultiDrawIndexedInfoEXT *)UlongToPtr(params->pIndexInfo), params->instanceCount, params->firstInstance, params->stride, (const int32_t *)UlongToPtr(params->pVertexOffset));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdDrawMultiIndexedEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->drawCount, (const VkMultiDrawIndexedInfoEXT *)UlongToPtr(params->pIndexInfo), params->instanceCount, params->firstInstance, params->stride, (const int32_t *)UlongToPtr(params->pVertexOffset));
 }
 
 #ifdef _WIN64
@@ -37079,7 +37079,7 @@ static void thunk64_vkCmdEncodeVideoKHR(void *args)
 {
     struct vkCmdEncodeVideoKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdEncodeVideoKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pEncodeInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdEncodeVideoKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pEncodeInfo);
 }
 #endif /* _WIN64 */
 
@@ -37096,7 +37096,7 @@ static void thunk32_vkCmdEncodeVideoKHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkVideoEncodeInfoKHR_win32_to_host(ctx, (const VkVideoEncodeInfoKHR32 *)UlongToPtr(params->pEncodeInfo), &pEncodeInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdEncodeVideoKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pEncodeInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdEncodeVideoKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pEncodeInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -37105,7 +37105,7 @@ static void thunk64_vkCmdEndConditionalRenderingEXT(void *args)
 {
     struct vkCmdEndConditionalRenderingEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdEndConditionalRenderingEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdEndConditionalRenderingEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer);
 }
 #endif /* _WIN64 */
 
@@ -37116,7 +37116,7 @@ static void thunk32_vkCmdEndConditionalRenderingEXT(void *args)
         PTR32 commandBuffer;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdEndConditionalRenderingEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdEndConditionalRenderingEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer);
 }
 
 #ifdef _WIN64
@@ -37124,7 +37124,7 @@ static void thunk64_vkCmdEndDebugUtilsLabelEXT(void *args)
 {
     struct vkCmdEndDebugUtilsLabelEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdEndDebugUtilsLabelEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdEndDebugUtilsLabelEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer);
 }
 #endif /* _WIN64 */
 
@@ -37135,7 +37135,7 @@ static void thunk32_vkCmdEndDebugUtilsLabelEXT(void *args)
         PTR32 commandBuffer;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdEndDebugUtilsLabelEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdEndDebugUtilsLabelEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer);
 }
 
 #ifdef _WIN64
@@ -37143,7 +37143,7 @@ static void thunk64_vkCmdEndQuery(void *args)
 {
     struct vkCmdEndQuery_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdEndQuery(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->queryPool, params->query);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdEndQuery(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->queryPool, params->query);
 }
 #endif /* _WIN64 */
 
@@ -37156,7 +37156,7 @@ static void thunk32_vkCmdEndQuery(void *args)
         uint32_t query;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdEndQuery(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->queryPool, params->query);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdEndQuery(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->queryPool, params->query);
 }
 
 #ifdef _WIN64
@@ -37164,7 +37164,7 @@ static void thunk64_vkCmdEndQueryIndexedEXT(void *args)
 {
     struct vkCmdEndQueryIndexedEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdEndQueryIndexedEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->queryPool, params->query, params->index);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdEndQueryIndexedEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->queryPool, params->query, params->index);
 }
 #endif /* _WIN64 */
 
@@ -37178,7 +37178,7 @@ static void thunk32_vkCmdEndQueryIndexedEXT(void *args)
         uint32_t index;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdEndQueryIndexedEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->queryPool, params->query, params->index);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdEndQueryIndexedEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->queryPool, params->query, params->index);
 }
 
 #ifdef _WIN64
@@ -37186,7 +37186,7 @@ static void thunk64_vkCmdEndRenderPass(void *args)
 {
     struct vkCmdEndRenderPass_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdEndRenderPass(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdEndRenderPass(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer);
 }
 #endif /* _WIN64 */
 
@@ -37197,7 +37197,7 @@ static void thunk32_vkCmdEndRenderPass(void *args)
         PTR32 commandBuffer;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdEndRenderPass(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdEndRenderPass(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer);
 }
 
 #ifdef _WIN64
@@ -37205,7 +37205,7 @@ static void thunk64_vkCmdEndRenderPass2(void *args)
 {
     struct vkCmdEndRenderPass2_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdEndRenderPass2(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pSubpassEndInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdEndRenderPass2(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pSubpassEndInfo);
 }
 #endif /* _WIN64 */
 
@@ -37222,7 +37222,7 @@ static void thunk32_vkCmdEndRenderPass2(void *args)
 
     init_conversion_context(ctx);
     convert_VkSubpassEndInfo_win32_to_host(ctx, (const VkSubpassEndInfo32 *)UlongToPtr(params->pSubpassEndInfo), &pSubpassEndInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdEndRenderPass2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pSubpassEndInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdEndRenderPass2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pSubpassEndInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -37231,7 +37231,7 @@ static void thunk64_vkCmdEndRenderPass2KHR(void *args)
 {
     struct vkCmdEndRenderPass2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdEndRenderPass2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pSubpassEndInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdEndRenderPass2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pSubpassEndInfo);
 }
 #endif /* _WIN64 */
 
@@ -37248,7 +37248,7 @@ static void thunk32_vkCmdEndRenderPass2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkSubpassEndInfo_win32_to_host(ctx, (const VkSubpassEndInfo32 *)UlongToPtr(params->pSubpassEndInfo), &pSubpassEndInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdEndRenderPass2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pSubpassEndInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdEndRenderPass2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pSubpassEndInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -37257,7 +37257,7 @@ static void thunk64_vkCmdEndRendering(void *args)
 {
     struct vkCmdEndRendering_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdEndRendering(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdEndRendering(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer);
 }
 #endif /* _WIN64 */
 
@@ -37268,7 +37268,7 @@ static void thunk32_vkCmdEndRendering(void *args)
         PTR32 commandBuffer;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdEndRendering(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdEndRendering(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer);
 }
 
 #ifdef _WIN64
@@ -37276,7 +37276,7 @@ static void thunk64_vkCmdEndRenderingKHR(void *args)
 {
     struct vkCmdEndRenderingKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdEndRenderingKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdEndRenderingKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer);
 }
 #endif /* _WIN64 */
 
@@ -37287,7 +37287,7 @@ static void thunk32_vkCmdEndRenderingKHR(void *args)
         PTR32 commandBuffer;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdEndRenderingKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdEndRenderingKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer);
 }
 
 #ifdef _WIN64
@@ -37295,7 +37295,7 @@ static void thunk64_vkCmdEndTransformFeedbackEXT(void *args)
 {
     struct vkCmdEndTransformFeedbackEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdEndTransformFeedbackEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstCounterBuffer, params->counterBufferCount, params->pCounterBuffers, params->pCounterBufferOffsets);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdEndTransformFeedbackEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstCounterBuffer, params->counterBufferCount, params->pCounterBuffers, params->pCounterBufferOffsets);
 }
 #endif /* _WIN64 */
 
@@ -37310,7 +37310,7 @@ static void thunk32_vkCmdEndTransformFeedbackEXT(void *args)
         PTR32 pCounterBufferOffsets;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdEndTransformFeedbackEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstCounterBuffer, params->counterBufferCount, (const VkBuffer *)UlongToPtr(params->pCounterBuffers), (const VkDeviceSize *)UlongToPtr(params->pCounterBufferOffsets));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdEndTransformFeedbackEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstCounterBuffer, params->counterBufferCount, (const VkBuffer *)UlongToPtr(params->pCounterBuffers), (const VkDeviceSize *)UlongToPtr(params->pCounterBufferOffsets));
 }
 
 #ifdef _WIN64
@@ -37318,7 +37318,7 @@ static void thunk64_vkCmdEndVideoCodingKHR(void *args)
 {
     struct vkCmdEndVideoCodingKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdEndVideoCodingKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pEndCodingInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdEndVideoCodingKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pEndCodingInfo);
 }
 #endif /* _WIN64 */
 
@@ -37332,7 +37332,7 @@ static void thunk32_vkCmdEndVideoCodingKHR(void *args)
     VkVideoEndCodingInfoKHR pEndCodingInfo_host;
 
     convert_VkVideoEndCodingInfoKHR_win32_to_host((const VkVideoEndCodingInfoKHR32 *)UlongToPtr(params->pEndCodingInfo), &pEndCodingInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdEndVideoCodingKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pEndCodingInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdEndVideoCodingKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pEndCodingInfo_host);
 }
 
 #ifdef _WIN64
@@ -37345,7 +37345,7 @@ static void thunk64_vkCmdExecuteCommands(void *args)
 
     init_conversion_context(ctx);
     pCommandBuffers_host = convert_VkCommandBuffer_array_win64_to_host(ctx, params->pCommandBuffers, params->commandBufferCount);
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdExecuteCommands(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->commandBufferCount, pCommandBuffers_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdExecuteCommands(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->commandBufferCount, pCommandBuffers_host);
     free_conversion_context(ctx);
 }
 #endif /* _WIN64 */
@@ -37364,7 +37364,7 @@ static void thunk32_vkCmdExecuteCommands(void *args)
 
     init_conversion_context(ctx);
     pCommandBuffers_host = convert_VkCommandBuffer_array_win32_to_host(ctx, (const PTR32 *)UlongToPtr(params->pCommandBuffers), params->commandBufferCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdExecuteCommands(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->commandBufferCount, pCommandBuffers_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdExecuteCommands(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->commandBufferCount, pCommandBuffers_host);
     free_conversion_context(ctx);
 }
 
@@ -37373,7 +37373,7 @@ static void thunk64_vkCmdExecuteGeneratedCommandsNV(void *args)
 {
     struct vkCmdExecuteGeneratedCommandsNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdExecuteGeneratedCommandsNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->isPreprocessed, params->pGeneratedCommandsInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdExecuteGeneratedCommandsNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->isPreprocessed, params->pGeneratedCommandsInfo);
 }
 #endif /* _WIN64 */
 
@@ -37391,7 +37391,7 @@ static void thunk32_vkCmdExecuteGeneratedCommandsNV(void *args)
 
     init_conversion_context(ctx);
     convert_VkGeneratedCommandsInfoNV_win32_to_host(ctx, (const VkGeneratedCommandsInfoNV32 *)UlongToPtr(params->pGeneratedCommandsInfo), &pGeneratedCommandsInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdExecuteGeneratedCommandsNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->isPreprocessed, &pGeneratedCommandsInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdExecuteGeneratedCommandsNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->isPreprocessed, &pGeneratedCommandsInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -37400,7 +37400,7 @@ static void thunk64_vkCmdFillBuffer(void *args)
 {
     struct vkCmdFillBuffer_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdFillBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->dstBuffer, params->dstOffset, params->size, params->data);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdFillBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->dstBuffer, params->dstOffset, params->size, params->data);
 }
 #endif /* _WIN64 */
 
@@ -37415,7 +37415,7 @@ static void thunk32_vkCmdFillBuffer(void *args)
         uint32_t data;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdFillBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->dstBuffer, params->dstOffset, params->size, params->data);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdFillBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->dstBuffer, params->dstOffset, params->size, params->data);
 }
 
 #ifdef _WIN64
@@ -37423,7 +37423,7 @@ static void thunk64_vkCmdInsertDebugUtilsLabelEXT(void *args)
 {
     struct vkCmdInsertDebugUtilsLabelEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdInsertDebugUtilsLabelEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pLabelInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdInsertDebugUtilsLabelEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pLabelInfo);
 }
 #endif /* _WIN64 */
 
@@ -37437,7 +37437,7 @@ static void thunk32_vkCmdInsertDebugUtilsLabelEXT(void *args)
     VkDebugUtilsLabelEXT pLabelInfo_host;
 
     convert_VkDebugUtilsLabelEXT_win32_to_host((const VkDebugUtilsLabelEXT32 *)UlongToPtr(params->pLabelInfo), &pLabelInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdInsertDebugUtilsLabelEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pLabelInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdInsertDebugUtilsLabelEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pLabelInfo_host);
 }
 
 #ifdef _WIN64
@@ -37445,7 +37445,7 @@ static void thunk64_vkCmdNextSubpass(void *args)
 {
     struct vkCmdNextSubpass_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdNextSubpass(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->contents);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdNextSubpass(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->contents);
 }
 #endif /* _WIN64 */
 
@@ -37457,7 +37457,7 @@ static void thunk32_vkCmdNextSubpass(void *args)
         VkSubpassContents contents;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdNextSubpass(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->contents);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdNextSubpass(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->contents);
 }
 
 #ifdef _WIN64
@@ -37465,7 +37465,7 @@ static void thunk64_vkCmdNextSubpass2(void *args)
 {
     struct vkCmdNextSubpass2_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdNextSubpass2(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pSubpassBeginInfo, params->pSubpassEndInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdNextSubpass2(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pSubpassBeginInfo, params->pSubpassEndInfo);
 }
 #endif /* _WIN64 */
 
@@ -37485,7 +37485,7 @@ static void thunk32_vkCmdNextSubpass2(void *args)
     init_conversion_context(ctx);
     convert_VkSubpassBeginInfo_win32_to_host((const VkSubpassBeginInfo32 *)UlongToPtr(params->pSubpassBeginInfo), &pSubpassBeginInfo_host);
     convert_VkSubpassEndInfo_win32_to_host(ctx, (const VkSubpassEndInfo32 *)UlongToPtr(params->pSubpassEndInfo), &pSubpassEndInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdNextSubpass2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pSubpassBeginInfo_host, &pSubpassEndInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdNextSubpass2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pSubpassBeginInfo_host, &pSubpassEndInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -37494,7 +37494,7 @@ static void thunk64_vkCmdNextSubpass2KHR(void *args)
 {
     struct vkCmdNextSubpass2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdNextSubpass2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pSubpassBeginInfo, params->pSubpassEndInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdNextSubpass2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pSubpassBeginInfo, params->pSubpassEndInfo);
 }
 #endif /* _WIN64 */
 
@@ -37514,7 +37514,7 @@ static void thunk32_vkCmdNextSubpass2KHR(void *args)
     init_conversion_context(ctx);
     convert_VkSubpassBeginInfo_win32_to_host((const VkSubpassBeginInfo32 *)UlongToPtr(params->pSubpassBeginInfo), &pSubpassBeginInfo_host);
     convert_VkSubpassEndInfo_win32_to_host(ctx, (const VkSubpassEndInfo32 *)UlongToPtr(params->pSubpassEndInfo), &pSubpassEndInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdNextSubpass2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pSubpassBeginInfo_host, &pSubpassEndInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdNextSubpass2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pSubpassBeginInfo_host, &pSubpassEndInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -37523,7 +37523,7 @@ static void thunk64_vkCmdOpticalFlowExecuteNV(void *args)
 {
     struct vkCmdOpticalFlowExecuteNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdOpticalFlowExecuteNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->session, params->pExecuteInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdOpticalFlowExecuteNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->session, params->pExecuteInfo);
 }
 #endif /* _WIN64 */
 
@@ -37538,7 +37538,7 @@ static void thunk32_vkCmdOpticalFlowExecuteNV(void *args)
     VkOpticalFlowExecuteInfoNV pExecuteInfo_host;
 
     convert_VkOpticalFlowExecuteInfoNV_win32_to_host((const VkOpticalFlowExecuteInfoNV32 *)UlongToPtr(params->pExecuteInfo), &pExecuteInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdOpticalFlowExecuteNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->session, &pExecuteInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdOpticalFlowExecuteNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->session, &pExecuteInfo_host);
 }
 
 #ifdef _WIN64
@@ -37546,7 +37546,7 @@ static void thunk64_vkCmdPipelineBarrier(void *args)
 {
     struct vkCmdPipelineBarrier_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdPipelineBarrier(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->srcStageMask, params->dstStageMask, params->dependencyFlags, params->memoryBarrierCount, params->pMemoryBarriers, params->bufferMemoryBarrierCount, params->pBufferMemoryBarriers, params->imageMemoryBarrierCount, params->pImageMemoryBarriers);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdPipelineBarrier(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->srcStageMask, params->dstStageMask, params->dependencyFlags, params->memoryBarrierCount, params->pMemoryBarriers, params->bufferMemoryBarrierCount, params->pBufferMemoryBarriers, params->imageMemoryBarrierCount, params->pImageMemoryBarriers);
 }
 #endif /* _WIN64 */
 
@@ -37575,7 +37575,7 @@ static void thunk32_vkCmdPipelineBarrier(void *args)
     pMemoryBarriers_host = convert_VkMemoryBarrier_array_win32_to_host(ctx, (const VkMemoryBarrier32 *)UlongToPtr(params->pMemoryBarriers), params->memoryBarrierCount);
     pBufferMemoryBarriers_host = convert_VkBufferMemoryBarrier_array_win32_to_host(ctx, (const VkBufferMemoryBarrier32 *)UlongToPtr(params->pBufferMemoryBarriers), params->bufferMemoryBarrierCount);
     pImageMemoryBarriers_host = convert_VkImageMemoryBarrier_array_win32_to_host(ctx, (const VkImageMemoryBarrier32 *)UlongToPtr(params->pImageMemoryBarriers), params->imageMemoryBarrierCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdPipelineBarrier(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->srcStageMask, params->dstStageMask, params->dependencyFlags, params->memoryBarrierCount, pMemoryBarriers_host, params->bufferMemoryBarrierCount, pBufferMemoryBarriers_host, params->imageMemoryBarrierCount, pImageMemoryBarriers_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdPipelineBarrier(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->srcStageMask, params->dstStageMask, params->dependencyFlags, params->memoryBarrierCount, pMemoryBarriers_host, params->bufferMemoryBarrierCount, pBufferMemoryBarriers_host, params->imageMemoryBarrierCount, pImageMemoryBarriers_host);
     free_conversion_context(ctx);
 }
 
@@ -37584,7 +37584,7 @@ static void thunk64_vkCmdPipelineBarrier2(void *args)
 {
     struct vkCmdPipelineBarrier2_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdPipelineBarrier2(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pDependencyInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdPipelineBarrier2(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pDependencyInfo);
 }
 #endif /* _WIN64 */
 
@@ -37601,7 +37601,7 @@ static void thunk32_vkCmdPipelineBarrier2(void *args)
 
     init_conversion_context(ctx);
     convert_VkDependencyInfo_win32_to_host(ctx, (const VkDependencyInfo32 *)UlongToPtr(params->pDependencyInfo), &pDependencyInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdPipelineBarrier2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pDependencyInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdPipelineBarrier2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pDependencyInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -37610,7 +37610,7 @@ static void thunk64_vkCmdPipelineBarrier2KHR(void *args)
 {
     struct vkCmdPipelineBarrier2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdPipelineBarrier2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pDependencyInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdPipelineBarrier2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pDependencyInfo);
 }
 #endif /* _WIN64 */
 
@@ -37627,7 +37627,7 @@ static void thunk32_vkCmdPipelineBarrier2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkDependencyInfo_win32_to_host(ctx, (const VkDependencyInfo32 *)UlongToPtr(params->pDependencyInfo), &pDependencyInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdPipelineBarrier2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pDependencyInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdPipelineBarrier2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pDependencyInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -37636,7 +37636,7 @@ static void thunk64_vkCmdPreprocessGeneratedCommandsNV(void *args)
 {
     struct vkCmdPreprocessGeneratedCommandsNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdPreprocessGeneratedCommandsNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pGeneratedCommandsInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdPreprocessGeneratedCommandsNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pGeneratedCommandsInfo);
 }
 #endif /* _WIN64 */
 
@@ -37653,7 +37653,7 @@ static void thunk32_vkCmdPreprocessGeneratedCommandsNV(void *args)
 
     init_conversion_context(ctx);
     convert_VkGeneratedCommandsInfoNV_win32_to_host(ctx, (const VkGeneratedCommandsInfoNV32 *)UlongToPtr(params->pGeneratedCommandsInfo), &pGeneratedCommandsInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdPreprocessGeneratedCommandsNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pGeneratedCommandsInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdPreprocessGeneratedCommandsNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pGeneratedCommandsInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -37662,7 +37662,7 @@ static void thunk64_vkCmdPushConstants(void *args)
 {
     struct vkCmdPushConstants_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdPushConstants(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->layout, params->stageFlags, params->offset, params->size, params->pValues);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdPushConstants(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->layout, params->stageFlags, params->offset, params->size, params->pValues);
 }
 #endif /* _WIN64 */
 
@@ -37678,7 +37678,7 @@ static void thunk32_vkCmdPushConstants(void *args)
         PTR32 pValues;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdPushConstants(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->layout, params->stageFlags, params->offset, params->size, (const void *)UlongToPtr(params->pValues));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdPushConstants(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->layout, params->stageFlags, params->offset, params->size, (const void *)UlongToPtr(params->pValues));
 }
 
 #ifdef _WIN64
@@ -37686,7 +37686,7 @@ static void thunk64_vkCmdPushConstants2KHR(void *args)
 {
     struct vkCmdPushConstants2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdPushConstants2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pPushConstantsInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdPushConstants2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pPushConstantsInfo);
 }
 #endif /* _WIN64 */
 
@@ -37703,7 +37703,7 @@ static void thunk32_vkCmdPushConstants2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkPushConstantsInfoKHR_win32_to_host(ctx, (const VkPushConstantsInfoKHR32 *)UlongToPtr(params->pPushConstantsInfo), &pPushConstantsInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdPushConstants2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pPushConstantsInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdPushConstants2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pPushConstantsInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -37712,7 +37712,7 @@ static void thunk64_vkCmdPushDescriptorSet2KHR(void *args)
 {
     struct vkCmdPushDescriptorSet2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdPushDescriptorSet2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pPushDescriptorSetInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdPushDescriptorSet2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pPushDescriptorSetInfo);
 }
 #endif /* _WIN64 */
 
@@ -37729,7 +37729,7 @@ static void thunk32_vkCmdPushDescriptorSet2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkPushDescriptorSetInfoKHR_win32_to_host(ctx, (const VkPushDescriptorSetInfoKHR32 *)UlongToPtr(params->pPushDescriptorSetInfo), &pPushDescriptorSetInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdPushDescriptorSet2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pPushDescriptorSetInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdPushDescriptorSet2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pPushDescriptorSetInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -37738,7 +37738,7 @@ static void thunk64_vkCmdPushDescriptorSetKHR(void *args)
 {
     struct vkCmdPushDescriptorSetKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdPushDescriptorSetKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pipelineBindPoint, params->layout, params->set, params->descriptorWriteCount, params->pDescriptorWrites);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdPushDescriptorSetKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pipelineBindPoint, params->layout, params->set, params->descriptorWriteCount, params->pDescriptorWrites);
 }
 #endif /* _WIN64 */
 
@@ -37759,7 +37759,7 @@ static void thunk32_vkCmdPushDescriptorSetKHR(void *args)
 
     init_conversion_context(ctx);
     pDescriptorWrites_host = convert_VkWriteDescriptorSet_array_win32_to_host(ctx, (const VkWriteDescriptorSet32 *)UlongToPtr(params->pDescriptorWrites), params->descriptorWriteCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdPushDescriptorSetKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->pipelineBindPoint, params->layout, params->set, params->descriptorWriteCount, pDescriptorWrites_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdPushDescriptorSetKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->pipelineBindPoint, params->layout, params->set, params->descriptorWriteCount, pDescriptorWrites_host);
     free_conversion_context(ctx);
 }
 
@@ -37768,7 +37768,7 @@ static void thunk64_vkCmdPushDescriptorSetWithTemplate2KHR(void *args)
 {
     struct vkCmdPushDescriptorSetWithTemplate2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdPushDescriptorSetWithTemplate2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pPushDescriptorSetWithTemplateInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdPushDescriptorSetWithTemplate2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pPushDescriptorSetWithTemplateInfo);
 }
 #endif /* _WIN64 */
 
@@ -37785,7 +37785,7 @@ static void thunk32_vkCmdPushDescriptorSetWithTemplate2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkPushDescriptorSetWithTemplateInfoKHR_win32_to_host(ctx, (const VkPushDescriptorSetWithTemplateInfoKHR32 *)UlongToPtr(params->pPushDescriptorSetWithTemplateInfo), &pPushDescriptorSetWithTemplateInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdPushDescriptorSetWithTemplate2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pPushDescriptorSetWithTemplateInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdPushDescriptorSetWithTemplate2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pPushDescriptorSetWithTemplateInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -37794,7 +37794,7 @@ static void thunk64_vkCmdPushDescriptorSetWithTemplateKHR(void *args)
 {
     struct vkCmdPushDescriptorSetWithTemplateKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdPushDescriptorSetWithTemplateKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->descriptorUpdateTemplate, params->layout, params->set, params->pData);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdPushDescriptorSetWithTemplateKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->descriptorUpdateTemplate, params->layout, params->set, params->pData);
 }
 #endif /* _WIN64 */
 
@@ -37809,7 +37809,7 @@ static void thunk32_vkCmdPushDescriptorSetWithTemplateKHR(void *args)
         PTR32 pData;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdPushDescriptorSetWithTemplateKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->descriptorUpdateTemplate, params->layout, params->set, (const void *)UlongToPtr(params->pData));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdPushDescriptorSetWithTemplateKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->descriptorUpdateTemplate, params->layout, params->set, (const void *)UlongToPtr(params->pData));
 }
 
 #ifdef _WIN64
@@ -37817,7 +37817,7 @@ static void thunk64_vkCmdResetEvent(void *args)
 {
     struct vkCmdResetEvent_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdResetEvent(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->event, params->stageMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdResetEvent(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->event, params->stageMask);
 }
 #endif /* _WIN64 */
 
@@ -37830,7 +37830,7 @@ static void thunk32_vkCmdResetEvent(void *args)
         VkPipelineStageFlags stageMask;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdResetEvent(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->event, params->stageMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdResetEvent(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->event, params->stageMask);
 }
 
 #ifdef _WIN64
@@ -37838,7 +37838,7 @@ static void thunk64_vkCmdResetEvent2(void *args)
 {
     struct vkCmdResetEvent2_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdResetEvent2(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->event, params->stageMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdResetEvent2(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->event, params->stageMask);
 }
 #endif /* _WIN64 */
 
@@ -37851,7 +37851,7 @@ static void thunk32_vkCmdResetEvent2(void *args)
         VkPipelineStageFlags2 DECLSPEC_ALIGN(8) stageMask;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdResetEvent2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->event, params->stageMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdResetEvent2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->event, params->stageMask);
 }
 
 #ifdef _WIN64
@@ -37859,7 +37859,7 @@ static void thunk64_vkCmdResetEvent2KHR(void *args)
 {
     struct vkCmdResetEvent2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdResetEvent2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->event, params->stageMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdResetEvent2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->event, params->stageMask);
 }
 #endif /* _WIN64 */
 
@@ -37872,7 +37872,7 @@ static void thunk32_vkCmdResetEvent2KHR(void *args)
         VkPipelineStageFlags2 DECLSPEC_ALIGN(8) stageMask;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdResetEvent2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->event, params->stageMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdResetEvent2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->event, params->stageMask);
 }
 
 #ifdef _WIN64
@@ -37880,7 +37880,7 @@ static void thunk64_vkCmdResetQueryPool(void *args)
 {
     struct vkCmdResetQueryPool_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdResetQueryPool(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->queryPool, params->firstQuery, params->queryCount);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdResetQueryPool(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->queryPool, params->firstQuery, params->queryCount);
 }
 #endif /* _WIN64 */
 
@@ -37894,7 +37894,7 @@ static void thunk32_vkCmdResetQueryPool(void *args)
         uint32_t queryCount;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdResetQueryPool(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->queryPool, params->firstQuery, params->queryCount);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdResetQueryPool(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->queryPool, params->firstQuery, params->queryCount);
 }
 
 #ifdef _WIN64
@@ -37902,7 +37902,7 @@ static void thunk64_vkCmdResolveImage(void *args)
 {
     struct vkCmdResolveImage_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdResolveImage(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->srcImage, params->srcImageLayout, params->dstImage, params->dstImageLayout, params->regionCount, params->pRegions);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdResolveImage(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->srcImage, params->srcImageLayout, params->dstImage, params->dstImageLayout, params->regionCount, params->pRegions);
 }
 #endif /* _WIN64 */
 
@@ -37919,7 +37919,7 @@ static void thunk32_vkCmdResolveImage(void *args)
         PTR32 pRegions;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdResolveImage(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->srcImage, params->srcImageLayout, params->dstImage, params->dstImageLayout, params->regionCount, (const VkImageResolve *)UlongToPtr(params->pRegions));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdResolveImage(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->srcImage, params->srcImageLayout, params->dstImage, params->dstImageLayout, params->regionCount, (const VkImageResolve *)UlongToPtr(params->pRegions));
 }
 
 #ifdef _WIN64
@@ -37927,7 +37927,7 @@ static void thunk64_vkCmdResolveImage2(void *args)
 {
     struct vkCmdResolveImage2_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdResolveImage2(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pResolveImageInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdResolveImage2(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pResolveImageInfo);
 }
 #endif /* _WIN64 */
 
@@ -37944,7 +37944,7 @@ static void thunk32_vkCmdResolveImage2(void *args)
 
     init_conversion_context(ctx);
     convert_VkResolveImageInfo2_win32_to_host(ctx, (const VkResolveImageInfo232 *)UlongToPtr(params->pResolveImageInfo), &pResolveImageInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdResolveImage2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pResolveImageInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdResolveImage2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pResolveImageInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -37953,7 +37953,7 @@ static void thunk64_vkCmdResolveImage2KHR(void *args)
 {
     struct vkCmdResolveImage2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdResolveImage2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pResolveImageInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdResolveImage2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pResolveImageInfo);
 }
 #endif /* _WIN64 */
 
@@ -37970,7 +37970,7 @@ static void thunk32_vkCmdResolveImage2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkResolveImageInfo2_win32_to_host(ctx, (const VkResolveImageInfo232 *)UlongToPtr(params->pResolveImageInfo), &pResolveImageInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdResolveImage2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pResolveImageInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdResolveImage2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pResolveImageInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -37979,7 +37979,7 @@ static void thunk64_vkCmdSetAlphaToCoverageEnableEXT(void *args)
 {
     struct vkCmdSetAlphaToCoverageEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetAlphaToCoverageEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->alphaToCoverageEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetAlphaToCoverageEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->alphaToCoverageEnable);
 }
 #endif /* _WIN64 */
 
@@ -37991,7 +37991,7 @@ static void thunk32_vkCmdSetAlphaToCoverageEnableEXT(void *args)
         VkBool32 alphaToCoverageEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetAlphaToCoverageEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->alphaToCoverageEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetAlphaToCoverageEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->alphaToCoverageEnable);
 }
 
 #ifdef _WIN64
@@ -37999,7 +37999,7 @@ static void thunk64_vkCmdSetAlphaToOneEnableEXT(void *args)
 {
     struct vkCmdSetAlphaToOneEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetAlphaToOneEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->alphaToOneEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetAlphaToOneEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->alphaToOneEnable);
 }
 #endif /* _WIN64 */
 
@@ -38011,7 +38011,7 @@ static void thunk32_vkCmdSetAlphaToOneEnableEXT(void *args)
         VkBool32 alphaToOneEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetAlphaToOneEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->alphaToOneEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetAlphaToOneEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->alphaToOneEnable);
 }
 
 #ifdef _WIN64
@@ -38019,7 +38019,7 @@ static void thunk64_vkCmdSetAttachmentFeedbackLoopEnableEXT(void *args)
 {
     struct vkCmdSetAttachmentFeedbackLoopEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetAttachmentFeedbackLoopEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->aspectMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetAttachmentFeedbackLoopEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->aspectMask);
 }
 #endif /* _WIN64 */
 
@@ -38031,7 +38031,7 @@ static void thunk32_vkCmdSetAttachmentFeedbackLoopEnableEXT(void *args)
         VkImageAspectFlags aspectMask;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetAttachmentFeedbackLoopEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->aspectMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetAttachmentFeedbackLoopEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->aspectMask);
 }
 
 #ifdef _WIN64
@@ -38039,7 +38039,7 @@ static void thunk64_vkCmdSetBlendConstants(void *args)
 {
     struct vkCmdSetBlendConstants_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetBlendConstants(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->blendConstants);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetBlendConstants(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->blendConstants);
 }
 #endif /* _WIN64 */
 
@@ -38051,7 +38051,7 @@ static void thunk32_vkCmdSetBlendConstants(void *args)
         PTR32 blendConstants;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetBlendConstants(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, (const float *)UlongToPtr(params->blendConstants));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetBlendConstants(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, (const float *)UlongToPtr(params->blendConstants));
 }
 
 #ifdef _WIN64
@@ -38059,7 +38059,7 @@ static void thunk64_vkCmdSetCheckpointNV(void *args)
 {
     struct vkCmdSetCheckpointNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetCheckpointNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pCheckpointMarker);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetCheckpointNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pCheckpointMarker);
 }
 #endif /* _WIN64 */
 
@@ -38071,7 +38071,7 @@ static void thunk32_vkCmdSetCheckpointNV(void *args)
         PTR32 pCheckpointMarker;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetCheckpointNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, (const void *)UlongToPtr(params->pCheckpointMarker));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetCheckpointNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, (const void *)UlongToPtr(params->pCheckpointMarker));
 }
 
 #ifdef _WIN64
@@ -38079,7 +38079,7 @@ static void thunk64_vkCmdSetCoarseSampleOrderNV(void *args)
 {
     struct vkCmdSetCoarseSampleOrderNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetCoarseSampleOrderNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->sampleOrderType, params->customSampleOrderCount, params->pCustomSampleOrders);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetCoarseSampleOrderNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->sampleOrderType, params->customSampleOrderCount, params->pCustomSampleOrders);
 }
 #endif /* _WIN64 */
 
@@ -38098,7 +38098,7 @@ static void thunk32_vkCmdSetCoarseSampleOrderNV(void *args)
 
     init_conversion_context(ctx);
     pCustomSampleOrders_host = convert_VkCoarseSampleOrderCustomNV_array_win32_to_host(ctx, (const VkCoarseSampleOrderCustomNV32 *)UlongToPtr(params->pCustomSampleOrders), params->customSampleOrderCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetCoarseSampleOrderNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->sampleOrderType, params->customSampleOrderCount, pCustomSampleOrders_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetCoarseSampleOrderNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->sampleOrderType, params->customSampleOrderCount, pCustomSampleOrders_host);
     free_conversion_context(ctx);
 }
 
@@ -38107,7 +38107,7 @@ static void thunk64_vkCmdSetColorBlendAdvancedEXT(void *args)
 {
     struct vkCmdSetColorBlendAdvancedEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetColorBlendAdvancedEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstAttachment, params->attachmentCount, params->pColorBlendAdvanced);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetColorBlendAdvancedEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstAttachment, params->attachmentCount, params->pColorBlendAdvanced);
 }
 #endif /* _WIN64 */
 
@@ -38121,7 +38121,7 @@ static void thunk32_vkCmdSetColorBlendAdvancedEXT(void *args)
         PTR32 pColorBlendAdvanced;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetColorBlendAdvancedEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstAttachment, params->attachmentCount, (const VkColorBlendAdvancedEXT *)UlongToPtr(params->pColorBlendAdvanced));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetColorBlendAdvancedEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstAttachment, params->attachmentCount, (const VkColorBlendAdvancedEXT *)UlongToPtr(params->pColorBlendAdvanced));
 }
 
 #ifdef _WIN64
@@ -38129,7 +38129,7 @@ static void thunk64_vkCmdSetColorBlendEnableEXT(void *args)
 {
     struct vkCmdSetColorBlendEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetColorBlendEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstAttachment, params->attachmentCount, params->pColorBlendEnables);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetColorBlendEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstAttachment, params->attachmentCount, params->pColorBlendEnables);
 }
 #endif /* _WIN64 */
 
@@ -38143,7 +38143,7 @@ static void thunk32_vkCmdSetColorBlendEnableEXT(void *args)
         PTR32 pColorBlendEnables;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetColorBlendEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstAttachment, params->attachmentCount, (const VkBool32 *)UlongToPtr(params->pColorBlendEnables));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetColorBlendEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstAttachment, params->attachmentCount, (const VkBool32 *)UlongToPtr(params->pColorBlendEnables));
 }
 
 #ifdef _WIN64
@@ -38151,7 +38151,7 @@ static void thunk64_vkCmdSetColorBlendEquationEXT(void *args)
 {
     struct vkCmdSetColorBlendEquationEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetColorBlendEquationEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstAttachment, params->attachmentCount, params->pColorBlendEquations);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetColorBlendEquationEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstAttachment, params->attachmentCount, params->pColorBlendEquations);
 }
 #endif /* _WIN64 */
 
@@ -38165,7 +38165,7 @@ static void thunk32_vkCmdSetColorBlendEquationEXT(void *args)
         PTR32 pColorBlendEquations;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetColorBlendEquationEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstAttachment, params->attachmentCount, (const VkColorBlendEquationEXT *)UlongToPtr(params->pColorBlendEquations));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetColorBlendEquationEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstAttachment, params->attachmentCount, (const VkColorBlendEquationEXT *)UlongToPtr(params->pColorBlendEquations));
 }
 
 #ifdef _WIN64
@@ -38173,7 +38173,7 @@ static void thunk64_vkCmdSetColorWriteEnableEXT(void *args)
 {
     struct vkCmdSetColorWriteEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetColorWriteEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->attachmentCount, params->pColorWriteEnables);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetColorWriteEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->attachmentCount, params->pColorWriteEnables);
 }
 #endif /* _WIN64 */
 
@@ -38186,7 +38186,7 @@ static void thunk32_vkCmdSetColorWriteEnableEXT(void *args)
         PTR32 pColorWriteEnables;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetColorWriteEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->attachmentCount, (const VkBool32 *)UlongToPtr(params->pColorWriteEnables));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetColorWriteEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->attachmentCount, (const VkBool32 *)UlongToPtr(params->pColorWriteEnables));
 }
 
 #ifdef _WIN64
@@ -38194,7 +38194,7 @@ static void thunk64_vkCmdSetColorWriteMaskEXT(void *args)
 {
     struct vkCmdSetColorWriteMaskEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetColorWriteMaskEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstAttachment, params->attachmentCount, params->pColorWriteMasks);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetColorWriteMaskEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstAttachment, params->attachmentCount, params->pColorWriteMasks);
 }
 #endif /* _WIN64 */
 
@@ -38208,7 +38208,7 @@ static void thunk32_vkCmdSetColorWriteMaskEXT(void *args)
         PTR32 pColorWriteMasks;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetColorWriteMaskEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstAttachment, params->attachmentCount, (const VkColorComponentFlags *)UlongToPtr(params->pColorWriteMasks));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetColorWriteMaskEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstAttachment, params->attachmentCount, (const VkColorComponentFlags *)UlongToPtr(params->pColorWriteMasks));
 }
 
 #ifdef _WIN64
@@ -38216,7 +38216,7 @@ static void thunk64_vkCmdSetConservativeRasterizationModeEXT(void *args)
 {
     struct vkCmdSetConservativeRasterizationModeEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetConservativeRasterizationModeEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->conservativeRasterizationMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetConservativeRasterizationModeEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->conservativeRasterizationMode);
 }
 #endif /* _WIN64 */
 
@@ -38228,7 +38228,7 @@ static void thunk32_vkCmdSetConservativeRasterizationModeEXT(void *args)
         VkConservativeRasterizationModeEXT conservativeRasterizationMode;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetConservativeRasterizationModeEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->conservativeRasterizationMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetConservativeRasterizationModeEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->conservativeRasterizationMode);
 }
 
 #ifdef _WIN64
@@ -38236,7 +38236,7 @@ static void thunk64_vkCmdSetCoverageModulationModeNV(void *args)
 {
     struct vkCmdSetCoverageModulationModeNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetCoverageModulationModeNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->coverageModulationMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetCoverageModulationModeNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->coverageModulationMode);
 }
 #endif /* _WIN64 */
 
@@ -38248,7 +38248,7 @@ static void thunk32_vkCmdSetCoverageModulationModeNV(void *args)
         VkCoverageModulationModeNV coverageModulationMode;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetCoverageModulationModeNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->coverageModulationMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetCoverageModulationModeNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->coverageModulationMode);
 }
 
 #ifdef _WIN64
@@ -38256,7 +38256,7 @@ static void thunk64_vkCmdSetCoverageModulationTableEnableNV(void *args)
 {
     struct vkCmdSetCoverageModulationTableEnableNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetCoverageModulationTableEnableNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->coverageModulationTableEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetCoverageModulationTableEnableNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->coverageModulationTableEnable);
 }
 #endif /* _WIN64 */
 
@@ -38268,7 +38268,7 @@ static void thunk32_vkCmdSetCoverageModulationTableEnableNV(void *args)
         VkBool32 coverageModulationTableEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetCoverageModulationTableEnableNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->coverageModulationTableEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetCoverageModulationTableEnableNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->coverageModulationTableEnable);
 }
 
 #ifdef _WIN64
@@ -38276,7 +38276,7 @@ static void thunk64_vkCmdSetCoverageModulationTableNV(void *args)
 {
     struct vkCmdSetCoverageModulationTableNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetCoverageModulationTableNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->coverageModulationTableCount, params->pCoverageModulationTable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetCoverageModulationTableNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->coverageModulationTableCount, params->pCoverageModulationTable);
 }
 #endif /* _WIN64 */
 
@@ -38289,7 +38289,7 @@ static void thunk32_vkCmdSetCoverageModulationTableNV(void *args)
         PTR32 pCoverageModulationTable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetCoverageModulationTableNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->coverageModulationTableCount, (const float *)UlongToPtr(params->pCoverageModulationTable));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetCoverageModulationTableNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->coverageModulationTableCount, (const float *)UlongToPtr(params->pCoverageModulationTable));
 }
 
 #ifdef _WIN64
@@ -38297,7 +38297,7 @@ static void thunk64_vkCmdSetCoverageReductionModeNV(void *args)
 {
     struct vkCmdSetCoverageReductionModeNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetCoverageReductionModeNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->coverageReductionMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetCoverageReductionModeNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->coverageReductionMode);
 }
 #endif /* _WIN64 */
 
@@ -38309,7 +38309,7 @@ static void thunk32_vkCmdSetCoverageReductionModeNV(void *args)
         VkCoverageReductionModeNV coverageReductionMode;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetCoverageReductionModeNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->coverageReductionMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetCoverageReductionModeNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->coverageReductionMode);
 }
 
 #ifdef _WIN64
@@ -38317,7 +38317,7 @@ static void thunk64_vkCmdSetCoverageToColorEnableNV(void *args)
 {
     struct vkCmdSetCoverageToColorEnableNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetCoverageToColorEnableNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->coverageToColorEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetCoverageToColorEnableNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->coverageToColorEnable);
 }
 #endif /* _WIN64 */
 
@@ -38329,7 +38329,7 @@ static void thunk32_vkCmdSetCoverageToColorEnableNV(void *args)
         VkBool32 coverageToColorEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetCoverageToColorEnableNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->coverageToColorEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetCoverageToColorEnableNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->coverageToColorEnable);
 }
 
 #ifdef _WIN64
@@ -38337,7 +38337,7 @@ static void thunk64_vkCmdSetCoverageToColorLocationNV(void *args)
 {
     struct vkCmdSetCoverageToColorLocationNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetCoverageToColorLocationNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->coverageToColorLocation);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetCoverageToColorLocationNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->coverageToColorLocation);
 }
 #endif /* _WIN64 */
 
@@ -38349,7 +38349,7 @@ static void thunk32_vkCmdSetCoverageToColorLocationNV(void *args)
         uint32_t coverageToColorLocation;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetCoverageToColorLocationNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->coverageToColorLocation);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetCoverageToColorLocationNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->coverageToColorLocation);
 }
 
 #ifdef _WIN64
@@ -38357,7 +38357,7 @@ static void thunk64_vkCmdSetCullMode(void *args)
 {
     struct vkCmdSetCullMode_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetCullMode(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->cullMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetCullMode(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->cullMode);
 }
 #endif /* _WIN64 */
 
@@ -38369,7 +38369,7 @@ static void thunk32_vkCmdSetCullMode(void *args)
         VkCullModeFlags cullMode;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetCullMode(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->cullMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetCullMode(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->cullMode);
 }
 
 #ifdef _WIN64
@@ -38377,7 +38377,7 @@ static void thunk64_vkCmdSetCullModeEXT(void *args)
 {
     struct vkCmdSetCullModeEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetCullModeEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->cullMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetCullModeEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->cullMode);
 }
 #endif /* _WIN64 */
 
@@ -38389,7 +38389,7 @@ static void thunk32_vkCmdSetCullModeEXT(void *args)
         VkCullModeFlags cullMode;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetCullModeEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->cullMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetCullModeEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->cullMode);
 }
 
 #ifdef _WIN64
@@ -38397,7 +38397,7 @@ static void thunk64_vkCmdSetDepthBias(void *args)
 {
     struct vkCmdSetDepthBias_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthBias(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->depthBiasConstantFactor, params->depthBiasClamp, params->depthBiasSlopeFactor);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthBias(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->depthBiasConstantFactor, params->depthBiasClamp, params->depthBiasSlopeFactor);
 }
 #endif /* _WIN64 */
 
@@ -38411,7 +38411,7 @@ static void thunk32_vkCmdSetDepthBias(void *args)
         float depthBiasSlopeFactor;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthBias(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->depthBiasConstantFactor, params->depthBiasClamp, params->depthBiasSlopeFactor);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthBias(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->depthBiasConstantFactor, params->depthBiasClamp, params->depthBiasSlopeFactor);
 }
 
 #ifdef _WIN64
@@ -38419,7 +38419,7 @@ static void thunk64_vkCmdSetDepthBias2EXT(void *args)
 {
     struct vkCmdSetDepthBias2EXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthBias2EXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pDepthBiasInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthBias2EXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pDepthBiasInfo);
 }
 #endif /* _WIN64 */
 
@@ -38436,7 +38436,7 @@ static void thunk32_vkCmdSetDepthBias2EXT(void *args)
 
     init_conversion_context(ctx);
     convert_VkDepthBiasInfoEXT_win32_to_host(ctx, (const VkDepthBiasInfoEXT32 *)UlongToPtr(params->pDepthBiasInfo), &pDepthBiasInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthBias2EXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pDepthBiasInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthBias2EXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pDepthBiasInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -38445,7 +38445,7 @@ static void thunk64_vkCmdSetDepthBiasEnable(void *args)
 {
     struct vkCmdSetDepthBiasEnable_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthBiasEnable(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->depthBiasEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthBiasEnable(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->depthBiasEnable);
 }
 #endif /* _WIN64 */
 
@@ -38457,7 +38457,7 @@ static void thunk32_vkCmdSetDepthBiasEnable(void *args)
         VkBool32 depthBiasEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthBiasEnable(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->depthBiasEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthBiasEnable(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->depthBiasEnable);
 }
 
 #ifdef _WIN64
@@ -38465,7 +38465,7 @@ static void thunk64_vkCmdSetDepthBiasEnableEXT(void *args)
 {
     struct vkCmdSetDepthBiasEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthBiasEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->depthBiasEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthBiasEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->depthBiasEnable);
 }
 #endif /* _WIN64 */
 
@@ -38477,7 +38477,7 @@ static void thunk32_vkCmdSetDepthBiasEnableEXT(void *args)
         VkBool32 depthBiasEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthBiasEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->depthBiasEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthBiasEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->depthBiasEnable);
 }
 
 #ifdef _WIN64
@@ -38485,7 +38485,7 @@ static void thunk64_vkCmdSetDepthBounds(void *args)
 {
     struct vkCmdSetDepthBounds_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthBounds(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->minDepthBounds, params->maxDepthBounds);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthBounds(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->minDepthBounds, params->maxDepthBounds);
 }
 #endif /* _WIN64 */
 
@@ -38498,7 +38498,7 @@ static void thunk32_vkCmdSetDepthBounds(void *args)
         float maxDepthBounds;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthBounds(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->minDepthBounds, params->maxDepthBounds);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthBounds(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->minDepthBounds, params->maxDepthBounds);
 }
 
 #ifdef _WIN64
@@ -38506,7 +38506,7 @@ static void thunk64_vkCmdSetDepthBoundsTestEnable(void *args)
 {
     struct vkCmdSetDepthBoundsTestEnable_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthBoundsTestEnable(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->depthBoundsTestEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthBoundsTestEnable(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->depthBoundsTestEnable);
 }
 #endif /* _WIN64 */
 
@@ -38518,7 +38518,7 @@ static void thunk32_vkCmdSetDepthBoundsTestEnable(void *args)
         VkBool32 depthBoundsTestEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthBoundsTestEnable(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->depthBoundsTestEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthBoundsTestEnable(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->depthBoundsTestEnable);
 }
 
 #ifdef _WIN64
@@ -38526,7 +38526,7 @@ static void thunk64_vkCmdSetDepthBoundsTestEnableEXT(void *args)
 {
     struct vkCmdSetDepthBoundsTestEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthBoundsTestEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->depthBoundsTestEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthBoundsTestEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->depthBoundsTestEnable);
 }
 #endif /* _WIN64 */
 
@@ -38538,7 +38538,7 @@ static void thunk32_vkCmdSetDepthBoundsTestEnableEXT(void *args)
         VkBool32 depthBoundsTestEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthBoundsTestEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->depthBoundsTestEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthBoundsTestEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->depthBoundsTestEnable);
 }
 
 #ifdef _WIN64
@@ -38546,7 +38546,7 @@ static void thunk64_vkCmdSetDepthClampEnableEXT(void *args)
 {
     struct vkCmdSetDepthClampEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthClampEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->depthClampEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthClampEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->depthClampEnable);
 }
 #endif /* _WIN64 */
 
@@ -38558,7 +38558,7 @@ static void thunk32_vkCmdSetDepthClampEnableEXT(void *args)
         VkBool32 depthClampEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthClampEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->depthClampEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthClampEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->depthClampEnable);
 }
 
 #ifdef _WIN64
@@ -38566,7 +38566,7 @@ static void thunk64_vkCmdSetDepthClipEnableEXT(void *args)
 {
     struct vkCmdSetDepthClipEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthClipEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->depthClipEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthClipEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->depthClipEnable);
 }
 #endif /* _WIN64 */
 
@@ -38578,7 +38578,7 @@ static void thunk32_vkCmdSetDepthClipEnableEXT(void *args)
         VkBool32 depthClipEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthClipEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->depthClipEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthClipEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->depthClipEnable);
 }
 
 #ifdef _WIN64
@@ -38586,7 +38586,7 @@ static void thunk64_vkCmdSetDepthClipNegativeOneToOneEXT(void *args)
 {
     struct vkCmdSetDepthClipNegativeOneToOneEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthClipNegativeOneToOneEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->negativeOneToOne);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthClipNegativeOneToOneEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->negativeOneToOne);
 }
 #endif /* _WIN64 */
 
@@ -38598,7 +38598,7 @@ static void thunk32_vkCmdSetDepthClipNegativeOneToOneEXT(void *args)
         VkBool32 negativeOneToOne;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthClipNegativeOneToOneEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->negativeOneToOne);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthClipNegativeOneToOneEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->negativeOneToOne);
 }
 
 #ifdef _WIN64
@@ -38606,7 +38606,7 @@ static void thunk64_vkCmdSetDepthCompareOp(void *args)
 {
     struct vkCmdSetDepthCompareOp_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthCompareOp(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->depthCompareOp);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthCompareOp(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->depthCompareOp);
 }
 #endif /* _WIN64 */
 
@@ -38618,7 +38618,7 @@ static void thunk32_vkCmdSetDepthCompareOp(void *args)
         VkCompareOp depthCompareOp;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthCompareOp(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->depthCompareOp);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthCompareOp(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->depthCompareOp);
 }
 
 #ifdef _WIN64
@@ -38626,7 +38626,7 @@ static void thunk64_vkCmdSetDepthCompareOpEXT(void *args)
 {
     struct vkCmdSetDepthCompareOpEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthCompareOpEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->depthCompareOp);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthCompareOpEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->depthCompareOp);
 }
 #endif /* _WIN64 */
 
@@ -38638,7 +38638,7 @@ static void thunk32_vkCmdSetDepthCompareOpEXT(void *args)
         VkCompareOp depthCompareOp;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthCompareOpEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->depthCompareOp);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthCompareOpEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->depthCompareOp);
 }
 
 #ifdef _WIN64
@@ -38646,7 +38646,7 @@ static void thunk64_vkCmdSetDepthTestEnable(void *args)
 {
     struct vkCmdSetDepthTestEnable_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthTestEnable(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->depthTestEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthTestEnable(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->depthTestEnable);
 }
 #endif /* _WIN64 */
 
@@ -38658,7 +38658,7 @@ static void thunk32_vkCmdSetDepthTestEnable(void *args)
         VkBool32 depthTestEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthTestEnable(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->depthTestEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthTestEnable(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->depthTestEnable);
 }
 
 #ifdef _WIN64
@@ -38666,7 +38666,7 @@ static void thunk64_vkCmdSetDepthTestEnableEXT(void *args)
 {
     struct vkCmdSetDepthTestEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthTestEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->depthTestEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthTestEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->depthTestEnable);
 }
 #endif /* _WIN64 */
 
@@ -38678,7 +38678,7 @@ static void thunk32_vkCmdSetDepthTestEnableEXT(void *args)
         VkBool32 depthTestEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthTestEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->depthTestEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthTestEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->depthTestEnable);
 }
 
 #ifdef _WIN64
@@ -38686,7 +38686,7 @@ static void thunk64_vkCmdSetDepthWriteEnable(void *args)
 {
     struct vkCmdSetDepthWriteEnable_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthWriteEnable(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->depthWriteEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthWriteEnable(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->depthWriteEnable);
 }
 #endif /* _WIN64 */
 
@@ -38698,7 +38698,7 @@ static void thunk32_vkCmdSetDepthWriteEnable(void *args)
         VkBool32 depthWriteEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthWriteEnable(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->depthWriteEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthWriteEnable(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->depthWriteEnable);
 }
 
 #ifdef _WIN64
@@ -38706,7 +38706,7 @@ static void thunk64_vkCmdSetDepthWriteEnableEXT(void *args)
 {
     struct vkCmdSetDepthWriteEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDepthWriteEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->depthWriteEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDepthWriteEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->depthWriteEnable);
 }
 #endif /* _WIN64 */
 
@@ -38718,7 +38718,7 @@ static void thunk32_vkCmdSetDepthWriteEnableEXT(void *args)
         VkBool32 depthWriteEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDepthWriteEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->depthWriteEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDepthWriteEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->depthWriteEnable);
 }
 
 #ifdef _WIN64
@@ -38726,7 +38726,7 @@ static void thunk64_vkCmdSetDescriptorBufferOffsets2EXT(void *args)
 {
     struct vkCmdSetDescriptorBufferOffsets2EXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDescriptorBufferOffsets2EXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pSetDescriptorBufferOffsetsInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDescriptorBufferOffsets2EXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pSetDescriptorBufferOffsetsInfo);
 }
 #endif /* _WIN64 */
 
@@ -38743,7 +38743,7 @@ static void thunk32_vkCmdSetDescriptorBufferOffsets2EXT(void *args)
 
     init_conversion_context(ctx);
     convert_VkSetDescriptorBufferOffsetsInfoEXT_win32_to_host(ctx, (const VkSetDescriptorBufferOffsetsInfoEXT32 *)UlongToPtr(params->pSetDescriptorBufferOffsetsInfo), &pSetDescriptorBufferOffsetsInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDescriptorBufferOffsets2EXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pSetDescriptorBufferOffsetsInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDescriptorBufferOffsets2EXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pSetDescriptorBufferOffsetsInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -38752,7 +38752,7 @@ static void thunk64_vkCmdSetDescriptorBufferOffsetsEXT(void *args)
 {
     struct vkCmdSetDescriptorBufferOffsetsEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDescriptorBufferOffsetsEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pipelineBindPoint, params->layout, params->firstSet, params->setCount, params->pBufferIndices, params->pOffsets);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDescriptorBufferOffsetsEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pipelineBindPoint, params->layout, params->firstSet, params->setCount, params->pBufferIndices, params->pOffsets);
 }
 #endif /* _WIN64 */
 
@@ -38769,7 +38769,7 @@ static void thunk32_vkCmdSetDescriptorBufferOffsetsEXT(void *args)
         PTR32 pOffsets;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDescriptorBufferOffsetsEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->pipelineBindPoint, params->layout, params->firstSet, params->setCount, (const uint32_t *)UlongToPtr(params->pBufferIndices), (const VkDeviceSize *)UlongToPtr(params->pOffsets));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDescriptorBufferOffsetsEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->pipelineBindPoint, params->layout, params->firstSet, params->setCount, (const uint32_t *)UlongToPtr(params->pBufferIndices), (const VkDeviceSize *)UlongToPtr(params->pOffsets));
 }
 
 #ifdef _WIN64
@@ -38777,7 +38777,7 @@ static void thunk64_vkCmdSetDeviceMask(void *args)
 {
     struct vkCmdSetDeviceMask_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDeviceMask(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->deviceMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDeviceMask(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->deviceMask);
 }
 #endif /* _WIN64 */
 
@@ -38789,7 +38789,7 @@ static void thunk32_vkCmdSetDeviceMask(void *args)
         uint32_t deviceMask;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDeviceMask(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->deviceMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDeviceMask(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->deviceMask);
 }
 
 #ifdef _WIN64
@@ -38797,7 +38797,7 @@ static void thunk64_vkCmdSetDeviceMaskKHR(void *args)
 {
     struct vkCmdSetDeviceMaskKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDeviceMaskKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->deviceMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDeviceMaskKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->deviceMask);
 }
 #endif /* _WIN64 */
 
@@ -38809,7 +38809,7 @@ static void thunk32_vkCmdSetDeviceMaskKHR(void *args)
         uint32_t deviceMask;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDeviceMaskKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->deviceMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDeviceMaskKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->deviceMask);
 }
 
 #ifdef _WIN64
@@ -38817,7 +38817,7 @@ static void thunk64_vkCmdSetDiscardRectangleEXT(void *args)
 {
     struct vkCmdSetDiscardRectangleEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDiscardRectangleEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstDiscardRectangle, params->discardRectangleCount, params->pDiscardRectangles);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDiscardRectangleEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstDiscardRectangle, params->discardRectangleCount, params->pDiscardRectangles);
 }
 #endif /* _WIN64 */
 
@@ -38831,7 +38831,7 @@ static void thunk32_vkCmdSetDiscardRectangleEXT(void *args)
         PTR32 pDiscardRectangles;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDiscardRectangleEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstDiscardRectangle, params->discardRectangleCount, (const VkRect2D *)UlongToPtr(params->pDiscardRectangles));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDiscardRectangleEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstDiscardRectangle, params->discardRectangleCount, (const VkRect2D *)UlongToPtr(params->pDiscardRectangles));
 }
 
 #ifdef _WIN64
@@ -38839,7 +38839,7 @@ static void thunk64_vkCmdSetDiscardRectangleEnableEXT(void *args)
 {
     struct vkCmdSetDiscardRectangleEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDiscardRectangleEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->discardRectangleEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDiscardRectangleEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->discardRectangleEnable);
 }
 #endif /* _WIN64 */
 
@@ -38851,7 +38851,7 @@ static void thunk32_vkCmdSetDiscardRectangleEnableEXT(void *args)
         VkBool32 discardRectangleEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDiscardRectangleEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->discardRectangleEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDiscardRectangleEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->discardRectangleEnable);
 }
 
 #ifdef _WIN64
@@ -38859,7 +38859,7 @@ static void thunk64_vkCmdSetDiscardRectangleModeEXT(void *args)
 {
     struct vkCmdSetDiscardRectangleModeEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetDiscardRectangleModeEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->discardRectangleMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetDiscardRectangleModeEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->discardRectangleMode);
 }
 #endif /* _WIN64 */
 
@@ -38871,7 +38871,7 @@ static void thunk32_vkCmdSetDiscardRectangleModeEXT(void *args)
         VkDiscardRectangleModeEXT discardRectangleMode;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetDiscardRectangleModeEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->discardRectangleMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetDiscardRectangleModeEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->discardRectangleMode);
 }
 
 #ifdef _WIN64
@@ -38879,7 +38879,7 @@ static void thunk64_vkCmdSetEvent(void *args)
 {
     struct vkCmdSetEvent_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetEvent(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->event, params->stageMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetEvent(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->event, params->stageMask);
 }
 #endif /* _WIN64 */
 
@@ -38892,7 +38892,7 @@ static void thunk32_vkCmdSetEvent(void *args)
         VkPipelineStageFlags stageMask;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetEvent(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->event, params->stageMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetEvent(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->event, params->stageMask);
 }
 
 #ifdef _WIN64
@@ -38900,7 +38900,7 @@ static void thunk64_vkCmdSetEvent2(void *args)
 {
     struct vkCmdSetEvent2_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetEvent2(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->event, params->pDependencyInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetEvent2(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->event, params->pDependencyInfo);
 }
 #endif /* _WIN64 */
 
@@ -38918,7 +38918,7 @@ static void thunk32_vkCmdSetEvent2(void *args)
 
     init_conversion_context(ctx);
     convert_VkDependencyInfo_win32_to_host(ctx, (const VkDependencyInfo32 *)UlongToPtr(params->pDependencyInfo), &pDependencyInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetEvent2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->event, &pDependencyInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetEvent2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->event, &pDependencyInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -38927,7 +38927,7 @@ static void thunk64_vkCmdSetEvent2KHR(void *args)
 {
     struct vkCmdSetEvent2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetEvent2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->event, params->pDependencyInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetEvent2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->event, params->pDependencyInfo);
 }
 #endif /* _WIN64 */
 
@@ -38945,7 +38945,7 @@ static void thunk32_vkCmdSetEvent2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkDependencyInfo_win32_to_host(ctx, (const VkDependencyInfo32 *)UlongToPtr(params->pDependencyInfo), &pDependencyInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetEvent2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->event, &pDependencyInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetEvent2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->event, &pDependencyInfo_host);
     free_conversion_context(ctx);
 }
 
@@ -38954,7 +38954,7 @@ static void thunk64_vkCmdSetExclusiveScissorEnableNV(void *args)
 {
     struct vkCmdSetExclusiveScissorEnableNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetExclusiveScissorEnableNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstExclusiveScissor, params->exclusiveScissorCount, params->pExclusiveScissorEnables);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetExclusiveScissorEnableNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstExclusiveScissor, params->exclusiveScissorCount, params->pExclusiveScissorEnables);
 }
 #endif /* _WIN64 */
 
@@ -38968,7 +38968,7 @@ static void thunk32_vkCmdSetExclusiveScissorEnableNV(void *args)
         PTR32 pExclusiveScissorEnables;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetExclusiveScissorEnableNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstExclusiveScissor, params->exclusiveScissorCount, (const VkBool32 *)UlongToPtr(params->pExclusiveScissorEnables));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetExclusiveScissorEnableNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstExclusiveScissor, params->exclusiveScissorCount, (const VkBool32 *)UlongToPtr(params->pExclusiveScissorEnables));
 }
 
 #ifdef _WIN64
@@ -38976,7 +38976,7 @@ static void thunk64_vkCmdSetExclusiveScissorNV(void *args)
 {
     struct vkCmdSetExclusiveScissorNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetExclusiveScissorNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstExclusiveScissor, params->exclusiveScissorCount, params->pExclusiveScissors);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetExclusiveScissorNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstExclusiveScissor, params->exclusiveScissorCount, params->pExclusiveScissors);
 }
 #endif /* _WIN64 */
 
@@ -38990,7 +38990,7 @@ static void thunk32_vkCmdSetExclusiveScissorNV(void *args)
         PTR32 pExclusiveScissors;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetExclusiveScissorNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstExclusiveScissor, params->exclusiveScissorCount, (const VkRect2D *)UlongToPtr(params->pExclusiveScissors));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetExclusiveScissorNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstExclusiveScissor, params->exclusiveScissorCount, (const VkRect2D *)UlongToPtr(params->pExclusiveScissors));
 }
 
 #ifdef _WIN64
@@ -38998,7 +38998,7 @@ static void thunk64_vkCmdSetExtraPrimitiveOverestimationSizeEXT(void *args)
 {
     struct vkCmdSetExtraPrimitiveOverestimationSizeEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetExtraPrimitiveOverestimationSizeEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->extraPrimitiveOverestimationSize);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetExtraPrimitiveOverestimationSizeEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->extraPrimitiveOverestimationSize);
 }
 #endif /* _WIN64 */
 
@@ -39010,7 +39010,7 @@ static void thunk32_vkCmdSetExtraPrimitiveOverestimationSizeEXT(void *args)
         float extraPrimitiveOverestimationSize;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetExtraPrimitiveOverestimationSizeEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->extraPrimitiveOverestimationSize);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetExtraPrimitiveOverestimationSizeEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->extraPrimitiveOverestimationSize);
 }
 
 #ifdef _WIN64
@@ -39018,7 +39018,7 @@ static void thunk64_vkCmdSetFragmentShadingRateEnumNV(void *args)
 {
     struct vkCmdSetFragmentShadingRateEnumNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetFragmentShadingRateEnumNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->shadingRate, params->combinerOps);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetFragmentShadingRateEnumNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->shadingRate, params->combinerOps);
 }
 #endif /* _WIN64 */
 
@@ -39031,7 +39031,7 @@ static void thunk32_vkCmdSetFragmentShadingRateEnumNV(void *args)
         PTR32 combinerOps;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetFragmentShadingRateEnumNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->shadingRate, (const VkFragmentShadingRateCombinerOpKHR *)UlongToPtr(params->combinerOps));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetFragmentShadingRateEnumNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->shadingRate, (const VkFragmentShadingRateCombinerOpKHR *)UlongToPtr(params->combinerOps));
 }
 
 #ifdef _WIN64
@@ -39039,7 +39039,7 @@ static void thunk64_vkCmdSetFragmentShadingRateKHR(void *args)
 {
     struct vkCmdSetFragmentShadingRateKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetFragmentShadingRateKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pFragmentSize, params->combinerOps);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetFragmentShadingRateKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pFragmentSize, params->combinerOps);
 }
 #endif /* _WIN64 */
 
@@ -39052,7 +39052,7 @@ static void thunk32_vkCmdSetFragmentShadingRateKHR(void *args)
         PTR32 combinerOps;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetFragmentShadingRateKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, (const VkExtent2D *)UlongToPtr(params->pFragmentSize), (const VkFragmentShadingRateCombinerOpKHR *)UlongToPtr(params->combinerOps));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetFragmentShadingRateKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, (const VkExtent2D *)UlongToPtr(params->pFragmentSize), (const VkFragmentShadingRateCombinerOpKHR *)UlongToPtr(params->combinerOps));
 }
 
 #ifdef _WIN64
@@ -39060,7 +39060,7 @@ static void thunk64_vkCmdSetFrontFace(void *args)
 {
     struct vkCmdSetFrontFace_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetFrontFace(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->frontFace);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetFrontFace(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->frontFace);
 }
 #endif /* _WIN64 */
 
@@ -39072,7 +39072,7 @@ static void thunk32_vkCmdSetFrontFace(void *args)
         VkFrontFace frontFace;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetFrontFace(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->frontFace);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetFrontFace(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->frontFace);
 }
 
 #ifdef _WIN64
@@ -39080,7 +39080,7 @@ static void thunk64_vkCmdSetFrontFaceEXT(void *args)
 {
     struct vkCmdSetFrontFaceEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetFrontFaceEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->frontFace);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetFrontFaceEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->frontFace);
 }
 #endif /* _WIN64 */
 
@@ -39092,7 +39092,7 @@ static void thunk32_vkCmdSetFrontFaceEXT(void *args)
         VkFrontFace frontFace;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetFrontFaceEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->frontFace);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetFrontFaceEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->frontFace);
 }
 
 #ifdef _WIN64
@@ -39100,7 +39100,7 @@ static void thunk64_vkCmdSetLineRasterizationModeEXT(void *args)
 {
     struct vkCmdSetLineRasterizationModeEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetLineRasterizationModeEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->lineRasterizationMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetLineRasterizationModeEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->lineRasterizationMode);
 }
 #endif /* _WIN64 */
 
@@ -39112,7 +39112,7 @@ static void thunk32_vkCmdSetLineRasterizationModeEXT(void *args)
         VkLineRasterizationModeEXT lineRasterizationMode;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetLineRasterizationModeEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->lineRasterizationMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetLineRasterizationModeEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->lineRasterizationMode);
 }
 
 #ifdef _WIN64
@@ -39120,7 +39120,7 @@ static void thunk64_vkCmdSetLineStippleEXT(void *args)
 {
     struct vkCmdSetLineStippleEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetLineStippleEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->lineStippleFactor, params->lineStipplePattern);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetLineStippleEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->lineStippleFactor, params->lineStipplePattern);
 }
 #endif /* _WIN64 */
 
@@ -39133,7 +39133,7 @@ static void thunk32_vkCmdSetLineStippleEXT(void *args)
         uint16_t lineStipplePattern;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetLineStippleEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->lineStippleFactor, params->lineStipplePattern);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetLineStippleEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->lineStippleFactor, params->lineStipplePattern);
 }
 
 #ifdef _WIN64
@@ -39141,7 +39141,7 @@ static void thunk64_vkCmdSetLineStippleEnableEXT(void *args)
 {
     struct vkCmdSetLineStippleEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetLineStippleEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->stippledLineEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetLineStippleEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->stippledLineEnable);
 }
 #endif /* _WIN64 */
 
@@ -39153,7 +39153,7 @@ static void thunk32_vkCmdSetLineStippleEnableEXT(void *args)
         VkBool32 stippledLineEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetLineStippleEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->stippledLineEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetLineStippleEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->stippledLineEnable);
 }
 
 #ifdef _WIN64
@@ -39161,7 +39161,7 @@ static void thunk64_vkCmdSetLineStippleKHR(void *args)
 {
     struct vkCmdSetLineStippleKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetLineStippleKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->lineStippleFactor, params->lineStipplePattern);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetLineStippleKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->lineStippleFactor, params->lineStipplePattern);
 }
 #endif /* _WIN64 */
 
@@ -39174,7 +39174,7 @@ static void thunk32_vkCmdSetLineStippleKHR(void *args)
         uint16_t lineStipplePattern;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetLineStippleKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->lineStippleFactor, params->lineStipplePattern);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetLineStippleKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->lineStippleFactor, params->lineStipplePattern);
 }
 
 #ifdef _WIN64
@@ -39182,7 +39182,7 @@ static void thunk64_vkCmdSetLineWidth(void *args)
 {
     struct vkCmdSetLineWidth_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetLineWidth(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->lineWidth);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetLineWidth(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->lineWidth);
 }
 #endif /* _WIN64 */
 
@@ -39194,7 +39194,7 @@ static void thunk32_vkCmdSetLineWidth(void *args)
         float lineWidth;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetLineWidth(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->lineWidth);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetLineWidth(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->lineWidth);
 }
 
 #ifdef _WIN64
@@ -39202,7 +39202,7 @@ static void thunk64_vkCmdSetLogicOpEXT(void *args)
 {
     struct vkCmdSetLogicOpEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetLogicOpEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->logicOp);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetLogicOpEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->logicOp);
 }
 #endif /* _WIN64 */
 
@@ -39214,7 +39214,7 @@ static void thunk32_vkCmdSetLogicOpEXT(void *args)
         VkLogicOp logicOp;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetLogicOpEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->logicOp);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetLogicOpEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->logicOp);
 }
 
 #ifdef _WIN64
@@ -39222,7 +39222,7 @@ static void thunk64_vkCmdSetLogicOpEnableEXT(void *args)
 {
     struct vkCmdSetLogicOpEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetLogicOpEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->logicOpEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetLogicOpEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->logicOpEnable);
 }
 #endif /* _WIN64 */
 
@@ -39234,7 +39234,7 @@ static void thunk32_vkCmdSetLogicOpEnableEXT(void *args)
         VkBool32 logicOpEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetLogicOpEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->logicOpEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetLogicOpEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->logicOpEnable);
 }
 
 #ifdef _WIN64
@@ -39242,7 +39242,7 @@ static void thunk64_vkCmdSetPatchControlPointsEXT(void *args)
 {
     struct vkCmdSetPatchControlPointsEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetPatchControlPointsEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->patchControlPoints);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetPatchControlPointsEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->patchControlPoints);
 }
 #endif /* _WIN64 */
 
@@ -39254,7 +39254,7 @@ static void thunk32_vkCmdSetPatchControlPointsEXT(void *args)
         uint32_t patchControlPoints;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetPatchControlPointsEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->patchControlPoints);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetPatchControlPointsEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->patchControlPoints);
 }
 
 #ifdef _WIN64
@@ -39264,7 +39264,7 @@ static NTSTATUS thunk64_vkCmdSetPerformanceMarkerINTEL(void *args)
 
     TRACE("%p, %p\n", params->commandBuffer, params->pMarkerInfo);
 
-    params->result = wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetPerformanceMarkerINTEL(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pMarkerInfo);
+    params->result = get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetPerformanceMarkerINTEL(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pMarkerInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -39282,7 +39282,7 @@ static NTSTATUS thunk32_vkCmdSetPerformanceMarkerINTEL(void *args)
     TRACE("%#x, %#x\n", params->commandBuffer, params->pMarkerInfo);
 
     convert_VkPerformanceMarkerInfoINTEL_win32_to_host((const VkPerformanceMarkerInfoINTEL32 *)UlongToPtr(params->pMarkerInfo), &pMarkerInfo_host);
-    params->result = wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetPerformanceMarkerINTEL(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pMarkerInfo_host);
+    params->result = get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetPerformanceMarkerINTEL(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pMarkerInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -39293,7 +39293,7 @@ static NTSTATUS thunk64_vkCmdSetPerformanceOverrideINTEL(void *args)
 
     TRACE("%p, %p\n", params->commandBuffer, params->pOverrideInfo);
 
-    params->result = wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetPerformanceOverrideINTEL(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pOverrideInfo);
+    params->result = get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetPerformanceOverrideINTEL(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pOverrideInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -39311,7 +39311,7 @@ static NTSTATUS thunk32_vkCmdSetPerformanceOverrideINTEL(void *args)
     TRACE("%#x, %#x\n", params->commandBuffer, params->pOverrideInfo);
 
     convert_VkPerformanceOverrideInfoINTEL_win32_to_host((const VkPerformanceOverrideInfoINTEL32 *)UlongToPtr(params->pOverrideInfo), &pOverrideInfo_host);
-    params->result = wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetPerformanceOverrideINTEL(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pOverrideInfo_host);
+    params->result = get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetPerformanceOverrideINTEL(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pOverrideInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -39322,7 +39322,7 @@ static NTSTATUS thunk64_vkCmdSetPerformanceStreamMarkerINTEL(void *args)
 
     TRACE("%p, %p\n", params->commandBuffer, params->pMarkerInfo);
 
-    params->result = wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetPerformanceStreamMarkerINTEL(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pMarkerInfo);
+    params->result = get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetPerformanceStreamMarkerINTEL(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pMarkerInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -39340,7 +39340,7 @@ static NTSTATUS thunk32_vkCmdSetPerformanceStreamMarkerINTEL(void *args)
     TRACE("%#x, %#x\n", params->commandBuffer, params->pMarkerInfo);
 
     convert_VkPerformanceStreamMarkerInfoINTEL_win32_to_host((const VkPerformanceStreamMarkerInfoINTEL32 *)UlongToPtr(params->pMarkerInfo), &pMarkerInfo_host);
-    params->result = wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetPerformanceStreamMarkerINTEL(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pMarkerInfo_host);
+    params->result = get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetPerformanceStreamMarkerINTEL(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pMarkerInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -39349,7 +39349,7 @@ static void thunk64_vkCmdSetPolygonModeEXT(void *args)
 {
     struct vkCmdSetPolygonModeEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetPolygonModeEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->polygonMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetPolygonModeEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->polygonMode);
 }
 #endif /* _WIN64 */
 
@@ -39361,7 +39361,7 @@ static void thunk32_vkCmdSetPolygonModeEXT(void *args)
         VkPolygonMode polygonMode;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetPolygonModeEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->polygonMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetPolygonModeEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->polygonMode);
 }
 
 #ifdef _WIN64
@@ -39369,7 +39369,7 @@ static void thunk64_vkCmdSetPrimitiveRestartEnable(void *args)
 {
     struct vkCmdSetPrimitiveRestartEnable_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetPrimitiveRestartEnable(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->primitiveRestartEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetPrimitiveRestartEnable(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->primitiveRestartEnable);
 }
 #endif /* _WIN64 */
 
@@ -39381,7 +39381,7 @@ static void thunk32_vkCmdSetPrimitiveRestartEnable(void *args)
         VkBool32 primitiveRestartEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetPrimitiveRestartEnable(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->primitiveRestartEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetPrimitiveRestartEnable(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->primitiveRestartEnable);
 }
 
 #ifdef _WIN64
@@ -39389,7 +39389,7 @@ static void thunk64_vkCmdSetPrimitiveRestartEnableEXT(void *args)
 {
     struct vkCmdSetPrimitiveRestartEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetPrimitiveRestartEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->primitiveRestartEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetPrimitiveRestartEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->primitiveRestartEnable);
 }
 #endif /* _WIN64 */
 
@@ -39401,7 +39401,7 @@ static void thunk32_vkCmdSetPrimitiveRestartEnableEXT(void *args)
         VkBool32 primitiveRestartEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetPrimitiveRestartEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->primitiveRestartEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetPrimitiveRestartEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->primitiveRestartEnable);
 }
 
 #ifdef _WIN64
@@ -39409,7 +39409,7 @@ static void thunk64_vkCmdSetPrimitiveTopology(void *args)
 {
     struct vkCmdSetPrimitiveTopology_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetPrimitiveTopology(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->primitiveTopology);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetPrimitiveTopology(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->primitiveTopology);
 }
 #endif /* _WIN64 */
 
@@ -39421,7 +39421,7 @@ static void thunk32_vkCmdSetPrimitiveTopology(void *args)
         VkPrimitiveTopology primitiveTopology;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetPrimitiveTopology(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->primitiveTopology);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetPrimitiveTopology(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->primitiveTopology);
 }
 
 #ifdef _WIN64
@@ -39429,7 +39429,7 @@ static void thunk64_vkCmdSetPrimitiveTopologyEXT(void *args)
 {
     struct vkCmdSetPrimitiveTopologyEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetPrimitiveTopologyEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->primitiveTopology);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetPrimitiveTopologyEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->primitiveTopology);
 }
 #endif /* _WIN64 */
 
@@ -39441,7 +39441,7 @@ static void thunk32_vkCmdSetPrimitiveTopologyEXT(void *args)
         VkPrimitiveTopology primitiveTopology;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetPrimitiveTopologyEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->primitiveTopology);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetPrimitiveTopologyEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->primitiveTopology);
 }
 
 #ifdef _WIN64
@@ -39449,7 +39449,7 @@ static void thunk64_vkCmdSetProvokingVertexModeEXT(void *args)
 {
     struct vkCmdSetProvokingVertexModeEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetProvokingVertexModeEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->provokingVertexMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetProvokingVertexModeEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->provokingVertexMode);
 }
 #endif /* _WIN64 */
 
@@ -39461,7 +39461,7 @@ static void thunk32_vkCmdSetProvokingVertexModeEXT(void *args)
         VkProvokingVertexModeEXT provokingVertexMode;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetProvokingVertexModeEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->provokingVertexMode);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetProvokingVertexModeEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->provokingVertexMode);
 }
 
 #ifdef _WIN64
@@ -39469,7 +39469,7 @@ static void thunk64_vkCmdSetRasterizationSamplesEXT(void *args)
 {
     struct vkCmdSetRasterizationSamplesEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetRasterizationSamplesEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->rasterizationSamples);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetRasterizationSamplesEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->rasterizationSamples);
 }
 #endif /* _WIN64 */
 
@@ -39481,7 +39481,7 @@ static void thunk32_vkCmdSetRasterizationSamplesEXT(void *args)
         VkSampleCountFlagBits rasterizationSamples;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetRasterizationSamplesEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->rasterizationSamples);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetRasterizationSamplesEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->rasterizationSamples);
 }
 
 #ifdef _WIN64
@@ -39489,7 +39489,7 @@ static void thunk64_vkCmdSetRasterizationStreamEXT(void *args)
 {
     struct vkCmdSetRasterizationStreamEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetRasterizationStreamEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->rasterizationStream);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetRasterizationStreamEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->rasterizationStream);
 }
 #endif /* _WIN64 */
 
@@ -39501,7 +39501,7 @@ static void thunk32_vkCmdSetRasterizationStreamEXT(void *args)
         uint32_t rasterizationStream;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetRasterizationStreamEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->rasterizationStream);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetRasterizationStreamEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->rasterizationStream);
 }
 
 #ifdef _WIN64
@@ -39509,7 +39509,7 @@ static void thunk64_vkCmdSetRasterizerDiscardEnable(void *args)
 {
     struct vkCmdSetRasterizerDiscardEnable_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetRasterizerDiscardEnable(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->rasterizerDiscardEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetRasterizerDiscardEnable(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->rasterizerDiscardEnable);
 }
 #endif /* _WIN64 */
 
@@ -39521,7 +39521,7 @@ static void thunk32_vkCmdSetRasterizerDiscardEnable(void *args)
         VkBool32 rasterizerDiscardEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetRasterizerDiscardEnable(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->rasterizerDiscardEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetRasterizerDiscardEnable(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->rasterizerDiscardEnable);
 }
 
 #ifdef _WIN64
@@ -39529,7 +39529,7 @@ static void thunk64_vkCmdSetRasterizerDiscardEnableEXT(void *args)
 {
     struct vkCmdSetRasterizerDiscardEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetRasterizerDiscardEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->rasterizerDiscardEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetRasterizerDiscardEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->rasterizerDiscardEnable);
 }
 #endif /* _WIN64 */
 
@@ -39541,7 +39541,7 @@ static void thunk32_vkCmdSetRasterizerDiscardEnableEXT(void *args)
         VkBool32 rasterizerDiscardEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetRasterizerDiscardEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->rasterizerDiscardEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetRasterizerDiscardEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->rasterizerDiscardEnable);
 }
 
 #ifdef _WIN64
@@ -39549,7 +39549,7 @@ static void thunk64_vkCmdSetRayTracingPipelineStackSizeKHR(void *args)
 {
     struct vkCmdSetRayTracingPipelineStackSizeKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetRayTracingPipelineStackSizeKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pipelineStackSize);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetRayTracingPipelineStackSizeKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pipelineStackSize);
 }
 #endif /* _WIN64 */
 
@@ -39561,7 +39561,7 @@ static void thunk32_vkCmdSetRayTracingPipelineStackSizeKHR(void *args)
         uint32_t pipelineStackSize;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetRayTracingPipelineStackSizeKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->pipelineStackSize);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetRayTracingPipelineStackSizeKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->pipelineStackSize);
 }
 
 #ifdef _WIN64
@@ -39569,7 +39569,7 @@ static void thunk64_vkCmdSetRenderingAttachmentLocationsKHR(void *args)
 {
     struct vkCmdSetRenderingAttachmentLocationsKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetRenderingAttachmentLocationsKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pLocationInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetRenderingAttachmentLocationsKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pLocationInfo);
 }
 #endif /* _WIN64 */
 
@@ -39583,7 +39583,7 @@ static void thunk32_vkCmdSetRenderingAttachmentLocationsKHR(void *args)
     VkRenderingAttachmentLocationInfoKHR pLocationInfo_host;
 
     convert_VkRenderingAttachmentLocationInfoKHR_win32_to_host((const VkRenderingAttachmentLocationInfoKHR32 *)UlongToPtr(params->pLocationInfo), &pLocationInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetRenderingAttachmentLocationsKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pLocationInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetRenderingAttachmentLocationsKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pLocationInfo_host);
 }
 
 #ifdef _WIN64
@@ -39591,7 +39591,7 @@ static void thunk64_vkCmdSetRenderingInputAttachmentIndicesKHR(void *args)
 {
     struct vkCmdSetRenderingInputAttachmentIndicesKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetRenderingInputAttachmentIndicesKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pLocationInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetRenderingInputAttachmentIndicesKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pLocationInfo);
 }
 #endif /* _WIN64 */
 
@@ -39605,7 +39605,7 @@ static void thunk32_vkCmdSetRenderingInputAttachmentIndicesKHR(void *args)
     VkRenderingInputAttachmentIndexInfoKHR pLocationInfo_host;
 
     convert_VkRenderingInputAttachmentIndexInfoKHR_win32_to_host((const VkRenderingInputAttachmentIndexInfoKHR32 *)UlongToPtr(params->pLocationInfo), &pLocationInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetRenderingInputAttachmentIndicesKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pLocationInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetRenderingInputAttachmentIndicesKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pLocationInfo_host);
 }
 
 #ifdef _WIN64
@@ -39613,7 +39613,7 @@ static void thunk64_vkCmdSetRepresentativeFragmentTestEnableNV(void *args)
 {
     struct vkCmdSetRepresentativeFragmentTestEnableNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetRepresentativeFragmentTestEnableNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->representativeFragmentTestEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetRepresentativeFragmentTestEnableNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->representativeFragmentTestEnable);
 }
 #endif /* _WIN64 */
 
@@ -39625,7 +39625,7 @@ static void thunk32_vkCmdSetRepresentativeFragmentTestEnableNV(void *args)
         VkBool32 representativeFragmentTestEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetRepresentativeFragmentTestEnableNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->representativeFragmentTestEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetRepresentativeFragmentTestEnableNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->representativeFragmentTestEnable);
 }
 
 #ifdef _WIN64
@@ -39633,7 +39633,7 @@ static void thunk64_vkCmdSetSampleLocationsEXT(void *args)
 {
     struct vkCmdSetSampleLocationsEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetSampleLocationsEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pSampleLocationsInfo);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetSampleLocationsEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pSampleLocationsInfo);
 }
 #endif /* _WIN64 */
 
@@ -39647,7 +39647,7 @@ static void thunk32_vkCmdSetSampleLocationsEXT(void *args)
     VkSampleLocationsInfoEXT pSampleLocationsInfo_host;
 
     convert_VkSampleLocationsInfoEXT_win32_to_host((const VkSampleLocationsInfoEXT32 *)UlongToPtr(params->pSampleLocationsInfo), &pSampleLocationsInfo_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetSampleLocationsEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pSampleLocationsInfo_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetSampleLocationsEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pSampleLocationsInfo_host);
 }
 
 #ifdef _WIN64
@@ -39655,7 +39655,7 @@ static void thunk64_vkCmdSetSampleLocationsEnableEXT(void *args)
 {
     struct vkCmdSetSampleLocationsEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetSampleLocationsEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->sampleLocationsEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetSampleLocationsEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->sampleLocationsEnable);
 }
 #endif /* _WIN64 */
 
@@ -39667,7 +39667,7 @@ static void thunk32_vkCmdSetSampleLocationsEnableEXT(void *args)
         VkBool32 sampleLocationsEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetSampleLocationsEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->sampleLocationsEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetSampleLocationsEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->sampleLocationsEnable);
 }
 
 #ifdef _WIN64
@@ -39675,7 +39675,7 @@ static void thunk64_vkCmdSetSampleMaskEXT(void *args)
 {
     struct vkCmdSetSampleMaskEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetSampleMaskEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->samples, params->pSampleMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetSampleMaskEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->samples, params->pSampleMask);
 }
 #endif /* _WIN64 */
 
@@ -39688,7 +39688,7 @@ static void thunk32_vkCmdSetSampleMaskEXT(void *args)
         PTR32 pSampleMask;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetSampleMaskEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->samples, (const VkSampleMask *)UlongToPtr(params->pSampleMask));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetSampleMaskEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->samples, (const VkSampleMask *)UlongToPtr(params->pSampleMask));
 }
 
 #ifdef _WIN64
@@ -39696,7 +39696,7 @@ static void thunk64_vkCmdSetScissor(void *args)
 {
     struct vkCmdSetScissor_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetScissor(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstScissor, params->scissorCount, params->pScissors);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetScissor(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstScissor, params->scissorCount, params->pScissors);
 }
 #endif /* _WIN64 */
 
@@ -39710,7 +39710,7 @@ static void thunk32_vkCmdSetScissor(void *args)
         PTR32 pScissors;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetScissor(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstScissor, params->scissorCount, (const VkRect2D *)UlongToPtr(params->pScissors));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetScissor(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstScissor, params->scissorCount, (const VkRect2D *)UlongToPtr(params->pScissors));
 }
 
 #ifdef _WIN64
@@ -39718,7 +39718,7 @@ static void thunk64_vkCmdSetScissorWithCount(void *args)
 {
     struct vkCmdSetScissorWithCount_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetScissorWithCount(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->scissorCount, params->pScissors);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetScissorWithCount(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->scissorCount, params->pScissors);
 }
 #endif /* _WIN64 */
 
@@ -39731,7 +39731,7 @@ static void thunk32_vkCmdSetScissorWithCount(void *args)
         PTR32 pScissors;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetScissorWithCount(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->scissorCount, (const VkRect2D *)UlongToPtr(params->pScissors));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetScissorWithCount(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->scissorCount, (const VkRect2D *)UlongToPtr(params->pScissors));
 }
 
 #ifdef _WIN64
@@ -39739,7 +39739,7 @@ static void thunk64_vkCmdSetScissorWithCountEXT(void *args)
 {
     struct vkCmdSetScissorWithCountEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetScissorWithCountEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->scissorCount, params->pScissors);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetScissorWithCountEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->scissorCount, params->pScissors);
 }
 #endif /* _WIN64 */
 
@@ -39752,7 +39752,7 @@ static void thunk32_vkCmdSetScissorWithCountEXT(void *args)
         PTR32 pScissors;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetScissorWithCountEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->scissorCount, (const VkRect2D *)UlongToPtr(params->pScissors));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetScissorWithCountEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->scissorCount, (const VkRect2D *)UlongToPtr(params->pScissors));
 }
 
 #ifdef _WIN64
@@ -39760,7 +39760,7 @@ static void thunk64_vkCmdSetShadingRateImageEnableNV(void *args)
 {
     struct vkCmdSetShadingRateImageEnableNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetShadingRateImageEnableNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->shadingRateImageEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetShadingRateImageEnableNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->shadingRateImageEnable);
 }
 #endif /* _WIN64 */
 
@@ -39772,7 +39772,7 @@ static void thunk32_vkCmdSetShadingRateImageEnableNV(void *args)
         VkBool32 shadingRateImageEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetShadingRateImageEnableNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->shadingRateImageEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetShadingRateImageEnableNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->shadingRateImageEnable);
 }
 
 #ifdef _WIN64
@@ -39780,7 +39780,7 @@ static void thunk64_vkCmdSetStencilCompareMask(void *args)
 {
     struct vkCmdSetStencilCompareMask_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetStencilCompareMask(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->faceMask, params->compareMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetStencilCompareMask(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->faceMask, params->compareMask);
 }
 #endif /* _WIN64 */
 
@@ -39793,7 +39793,7 @@ static void thunk32_vkCmdSetStencilCompareMask(void *args)
         uint32_t compareMask;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetStencilCompareMask(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->faceMask, params->compareMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetStencilCompareMask(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->faceMask, params->compareMask);
 }
 
 #ifdef _WIN64
@@ -39801,7 +39801,7 @@ static void thunk64_vkCmdSetStencilOp(void *args)
 {
     struct vkCmdSetStencilOp_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetStencilOp(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->faceMask, params->failOp, params->passOp, params->depthFailOp, params->compareOp);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetStencilOp(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->faceMask, params->failOp, params->passOp, params->depthFailOp, params->compareOp);
 }
 #endif /* _WIN64 */
 
@@ -39817,7 +39817,7 @@ static void thunk32_vkCmdSetStencilOp(void *args)
         VkCompareOp compareOp;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetStencilOp(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->faceMask, params->failOp, params->passOp, params->depthFailOp, params->compareOp);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetStencilOp(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->faceMask, params->failOp, params->passOp, params->depthFailOp, params->compareOp);
 }
 
 #ifdef _WIN64
@@ -39825,7 +39825,7 @@ static void thunk64_vkCmdSetStencilOpEXT(void *args)
 {
     struct vkCmdSetStencilOpEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetStencilOpEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->faceMask, params->failOp, params->passOp, params->depthFailOp, params->compareOp);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetStencilOpEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->faceMask, params->failOp, params->passOp, params->depthFailOp, params->compareOp);
 }
 #endif /* _WIN64 */
 
@@ -39841,7 +39841,7 @@ static void thunk32_vkCmdSetStencilOpEXT(void *args)
         VkCompareOp compareOp;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetStencilOpEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->faceMask, params->failOp, params->passOp, params->depthFailOp, params->compareOp);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetStencilOpEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->faceMask, params->failOp, params->passOp, params->depthFailOp, params->compareOp);
 }
 
 #ifdef _WIN64
@@ -39849,7 +39849,7 @@ static void thunk64_vkCmdSetStencilReference(void *args)
 {
     struct vkCmdSetStencilReference_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetStencilReference(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->faceMask, params->reference);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetStencilReference(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->faceMask, params->reference);
 }
 #endif /* _WIN64 */
 
@@ -39862,7 +39862,7 @@ static void thunk32_vkCmdSetStencilReference(void *args)
         uint32_t reference;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetStencilReference(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->faceMask, params->reference);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetStencilReference(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->faceMask, params->reference);
 }
 
 #ifdef _WIN64
@@ -39870,7 +39870,7 @@ static void thunk64_vkCmdSetStencilTestEnable(void *args)
 {
     struct vkCmdSetStencilTestEnable_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetStencilTestEnable(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->stencilTestEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetStencilTestEnable(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->stencilTestEnable);
 }
 #endif /* _WIN64 */
 
@@ -39882,7 +39882,7 @@ static void thunk32_vkCmdSetStencilTestEnable(void *args)
         VkBool32 stencilTestEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetStencilTestEnable(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->stencilTestEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetStencilTestEnable(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->stencilTestEnable);
 }
 
 #ifdef _WIN64
@@ -39890,7 +39890,7 @@ static void thunk64_vkCmdSetStencilTestEnableEXT(void *args)
 {
     struct vkCmdSetStencilTestEnableEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetStencilTestEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->stencilTestEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetStencilTestEnableEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->stencilTestEnable);
 }
 #endif /* _WIN64 */
 
@@ -39902,7 +39902,7 @@ static void thunk32_vkCmdSetStencilTestEnableEXT(void *args)
         VkBool32 stencilTestEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetStencilTestEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->stencilTestEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetStencilTestEnableEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->stencilTestEnable);
 }
 
 #ifdef _WIN64
@@ -39910,7 +39910,7 @@ static void thunk64_vkCmdSetStencilWriteMask(void *args)
 {
     struct vkCmdSetStencilWriteMask_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetStencilWriteMask(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->faceMask, params->writeMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetStencilWriteMask(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->faceMask, params->writeMask);
 }
 #endif /* _WIN64 */
 
@@ -39923,7 +39923,7 @@ static void thunk32_vkCmdSetStencilWriteMask(void *args)
         uint32_t writeMask;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetStencilWriteMask(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->faceMask, params->writeMask);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetStencilWriteMask(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->faceMask, params->writeMask);
 }
 
 #ifdef _WIN64
@@ -39931,7 +39931,7 @@ static void thunk64_vkCmdSetTessellationDomainOriginEXT(void *args)
 {
     struct vkCmdSetTessellationDomainOriginEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetTessellationDomainOriginEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->domainOrigin);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetTessellationDomainOriginEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->domainOrigin);
 }
 #endif /* _WIN64 */
 
@@ -39943,7 +39943,7 @@ static void thunk32_vkCmdSetTessellationDomainOriginEXT(void *args)
         VkTessellationDomainOrigin domainOrigin;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetTessellationDomainOriginEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->domainOrigin);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetTessellationDomainOriginEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->domainOrigin);
 }
 
 #ifdef _WIN64
@@ -39951,7 +39951,7 @@ static void thunk64_vkCmdSetVertexInputEXT(void *args)
 {
     struct vkCmdSetVertexInputEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetVertexInputEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->vertexBindingDescriptionCount, params->pVertexBindingDescriptions, params->vertexAttributeDescriptionCount, params->pVertexAttributeDescriptions);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetVertexInputEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->vertexBindingDescriptionCount, params->pVertexBindingDescriptions, params->vertexAttributeDescriptionCount, params->pVertexAttributeDescriptions);
 }
 #endif /* _WIN64 */
 
@@ -39973,7 +39973,7 @@ static void thunk32_vkCmdSetVertexInputEXT(void *args)
     init_conversion_context(ctx);
     pVertexBindingDescriptions_host = convert_VkVertexInputBindingDescription2EXT_array_win32_to_host(ctx, (const VkVertexInputBindingDescription2EXT32 *)UlongToPtr(params->pVertexBindingDescriptions), params->vertexBindingDescriptionCount);
     pVertexAttributeDescriptions_host = convert_VkVertexInputAttributeDescription2EXT_array_win32_to_host(ctx, (const VkVertexInputAttributeDescription2EXT32 *)UlongToPtr(params->pVertexAttributeDescriptions), params->vertexAttributeDescriptionCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetVertexInputEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->vertexBindingDescriptionCount, pVertexBindingDescriptions_host, params->vertexAttributeDescriptionCount, pVertexAttributeDescriptions_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetVertexInputEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->vertexBindingDescriptionCount, pVertexBindingDescriptions_host, params->vertexAttributeDescriptionCount, pVertexAttributeDescriptions_host);
     free_conversion_context(ctx);
 }
 
@@ -39982,7 +39982,7 @@ static void thunk64_vkCmdSetViewport(void *args)
 {
     struct vkCmdSetViewport_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetViewport(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstViewport, params->viewportCount, params->pViewports);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetViewport(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstViewport, params->viewportCount, params->pViewports);
 }
 #endif /* _WIN64 */
 
@@ -39996,7 +39996,7 @@ static void thunk32_vkCmdSetViewport(void *args)
         PTR32 pViewports;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetViewport(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstViewport, params->viewportCount, (const VkViewport *)UlongToPtr(params->pViewports));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetViewport(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstViewport, params->viewportCount, (const VkViewport *)UlongToPtr(params->pViewports));
 }
 
 #ifdef _WIN64
@@ -40004,7 +40004,7 @@ static void thunk64_vkCmdSetViewportShadingRatePaletteNV(void *args)
 {
     struct vkCmdSetViewportShadingRatePaletteNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetViewportShadingRatePaletteNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstViewport, params->viewportCount, params->pShadingRatePalettes);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetViewportShadingRatePaletteNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstViewport, params->viewportCount, params->pShadingRatePalettes);
 }
 #endif /* _WIN64 */
 
@@ -40023,7 +40023,7 @@ static void thunk32_vkCmdSetViewportShadingRatePaletteNV(void *args)
 
     init_conversion_context(ctx);
     pShadingRatePalettes_host = convert_VkShadingRatePaletteNV_array_win32_to_host(ctx, (const VkShadingRatePaletteNV32 *)UlongToPtr(params->pShadingRatePalettes), params->viewportCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetViewportShadingRatePaletteNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstViewport, params->viewportCount, pShadingRatePalettes_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetViewportShadingRatePaletteNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstViewport, params->viewportCount, pShadingRatePalettes_host);
     free_conversion_context(ctx);
 }
 
@@ -40032,7 +40032,7 @@ static void thunk64_vkCmdSetViewportSwizzleNV(void *args)
 {
     struct vkCmdSetViewportSwizzleNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetViewportSwizzleNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstViewport, params->viewportCount, params->pViewportSwizzles);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetViewportSwizzleNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstViewport, params->viewportCount, params->pViewportSwizzles);
 }
 #endif /* _WIN64 */
 
@@ -40046,7 +40046,7 @@ static void thunk32_vkCmdSetViewportSwizzleNV(void *args)
         PTR32 pViewportSwizzles;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetViewportSwizzleNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstViewport, params->viewportCount, (const VkViewportSwizzleNV *)UlongToPtr(params->pViewportSwizzles));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetViewportSwizzleNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstViewport, params->viewportCount, (const VkViewportSwizzleNV *)UlongToPtr(params->pViewportSwizzles));
 }
 
 #ifdef _WIN64
@@ -40054,7 +40054,7 @@ static void thunk64_vkCmdSetViewportWScalingEnableNV(void *args)
 {
     struct vkCmdSetViewportWScalingEnableNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetViewportWScalingEnableNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->viewportWScalingEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetViewportWScalingEnableNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->viewportWScalingEnable);
 }
 #endif /* _WIN64 */
 
@@ -40066,7 +40066,7 @@ static void thunk32_vkCmdSetViewportWScalingEnableNV(void *args)
         VkBool32 viewportWScalingEnable;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetViewportWScalingEnableNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->viewportWScalingEnable);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetViewportWScalingEnableNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->viewportWScalingEnable);
 }
 
 #ifdef _WIN64
@@ -40074,7 +40074,7 @@ static void thunk64_vkCmdSetViewportWScalingNV(void *args)
 {
     struct vkCmdSetViewportWScalingNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetViewportWScalingNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->firstViewport, params->viewportCount, params->pViewportWScalings);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetViewportWScalingNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->firstViewport, params->viewportCount, params->pViewportWScalings);
 }
 #endif /* _WIN64 */
 
@@ -40088,7 +40088,7 @@ static void thunk32_vkCmdSetViewportWScalingNV(void *args)
         PTR32 pViewportWScalings;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetViewportWScalingNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->firstViewport, params->viewportCount, (const VkViewportWScalingNV *)UlongToPtr(params->pViewportWScalings));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetViewportWScalingNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->firstViewport, params->viewportCount, (const VkViewportWScalingNV *)UlongToPtr(params->pViewportWScalings));
 }
 
 #ifdef _WIN64
@@ -40096,7 +40096,7 @@ static void thunk64_vkCmdSetViewportWithCount(void *args)
 {
     struct vkCmdSetViewportWithCount_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetViewportWithCount(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->viewportCount, params->pViewports);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetViewportWithCount(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->viewportCount, params->pViewports);
 }
 #endif /* _WIN64 */
 
@@ -40109,7 +40109,7 @@ static void thunk32_vkCmdSetViewportWithCount(void *args)
         PTR32 pViewports;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetViewportWithCount(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->viewportCount, (const VkViewport *)UlongToPtr(params->pViewports));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetViewportWithCount(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->viewportCount, (const VkViewport *)UlongToPtr(params->pViewports));
 }
 
 #ifdef _WIN64
@@ -40117,7 +40117,7 @@ static void thunk64_vkCmdSetViewportWithCountEXT(void *args)
 {
     struct vkCmdSetViewportWithCountEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSetViewportWithCountEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->viewportCount, params->pViewports);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSetViewportWithCountEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->viewportCount, params->pViewports);
 }
 #endif /* _WIN64 */
 
@@ -40130,7 +40130,7 @@ static void thunk32_vkCmdSetViewportWithCountEXT(void *args)
         PTR32 pViewports;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSetViewportWithCountEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->viewportCount, (const VkViewport *)UlongToPtr(params->pViewports));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSetViewportWithCountEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->viewportCount, (const VkViewport *)UlongToPtr(params->pViewports));
 }
 
 #ifdef _WIN64
@@ -40138,7 +40138,7 @@ static void thunk64_vkCmdSubpassShadingHUAWEI(void *args)
 {
     struct vkCmdSubpassShadingHUAWEI_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdSubpassShadingHUAWEI(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdSubpassShadingHUAWEI(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer);
 }
 #endif /* _WIN64 */
 
@@ -40149,7 +40149,7 @@ static void thunk32_vkCmdSubpassShadingHUAWEI(void *args)
         PTR32 commandBuffer;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdSubpassShadingHUAWEI(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdSubpassShadingHUAWEI(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer);
 }
 
 #ifdef _WIN64
@@ -40157,7 +40157,7 @@ static void thunk64_vkCmdTraceRaysIndirect2KHR(void *args)
 {
     struct vkCmdTraceRaysIndirect2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdTraceRaysIndirect2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->indirectDeviceAddress);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdTraceRaysIndirect2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->indirectDeviceAddress);
 }
 #endif /* _WIN64 */
 
@@ -40169,7 +40169,7 @@ static void thunk32_vkCmdTraceRaysIndirect2KHR(void *args)
         VkDeviceAddress DECLSPEC_ALIGN(8) indirectDeviceAddress;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdTraceRaysIndirect2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->indirectDeviceAddress);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdTraceRaysIndirect2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->indirectDeviceAddress);
 }
 
 #ifdef _WIN64
@@ -40177,7 +40177,7 @@ static void thunk64_vkCmdTraceRaysIndirectKHR(void *args)
 {
     struct vkCmdTraceRaysIndirectKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdTraceRaysIndirectKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pRaygenShaderBindingTable, params->pMissShaderBindingTable, params->pHitShaderBindingTable, params->pCallableShaderBindingTable, params->indirectDeviceAddress);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdTraceRaysIndirectKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pRaygenShaderBindingTable, params->pMissShaderBindingTable, params->pHitShaderBindingTable, params->pCallableShaderBindingTable, params->indirectDeviceAddress);
 }
 #endif /* _WIN64 */
 
@@ -40201,7 +40201,7 @@ static void thunk32_vkCmdTraceRaysIndirectKHR(void *args)
     convert_VkStridedDeviceAddressRegionKHR_win32_to_host((const VkStridedDeviceAddressRegionKHR32 *)UlongToPtr(params->pMissShaderBindingTable), &pMissShaderBindingTable_host);
     convert_VkStridedDeviceAddressRegionKHR_win32_to_host((const VkStridedDeviceAddressRegionKHR32 *)UlongToPtr(params->pHitShaderBindingTable), &pHitShaderBindingTable_host);
     convert_VkStridedDeviceAddressRegionKHR_win32_to_host((const VkStridedDeviceAddressRegionKHR32 *)UlongToPtr(params->pCallableShaderBindingTable), &pCallableShaderBindingTable_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdTraceRaysIndirectKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pRaygenShaderBindingTable_host, &pMissShaderBindingTable_host, &pHitShaderBindingTable_host, &pCallableShaderBindingTable_host, params->indirectDeviceAddress);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdTraceRaysIndirectKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pRaygenShaderBindingTable_host, &pMissShaderBindingTable_host, &pHitShaderBindingTable_host, &pCallableShaderBindingTable_host, params->indirectDeviceAddress);
 }
 
 #ifdef _WIN64
@@ -40209,7 +40209,7 @@ static void thunk64_vkCmdTraceRaysKHR(void *args)
 {
     struct vkCmdTraceRaysKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdTraceRaysKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pRaygenShaderBindingTable, params->pMissShaderBindingTable, params->pHitShaderBindingTable, params->pCallableShaderBindingTable, params->width, params->height, params->depth);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdTraceRaysKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pRaygenShaderBindingTable, params->pMissShaderBindingTable, params->pHitShaderBindingTable, params->pCallableShaderBindingTable, params->width, params->height, params->depth);
 }
 #endif /* _WIN64 */
 
@@ -40235,7 +40235,7 @@ static void thunk32_vkCmdTraceRaysKHR(void *args)
     convert_VkStridedDeviceAddressRegionKHR_win32_to_host((const VkStridedDeviceAddressRegionKHR32 *)UlongToPtr(params->pMissShaderBindingTable), &pMissShaderBindingTable_host);
     convert_VkStridedDeviceAddressRegionKHR_win32_to_host((const VkStridedDeviceAddressRegionKHR32 *)UlongToPtr(params->pHitShaderBindingTable), &pHitShaderBindingTable_host);
     convert_VkStridedDeviceAddressRegionKHR_win32_to_host((const VkStridedDeviceAddressRegionKHR32 *)UlongToPtr(params->pCallableShaderBindingTable), &pCallableShaderBindingTable_host);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdTraceRaysKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, &pRaygenShaderBindingTable_host, &pMissShaderBindingTable_host, &pHitShaderBindingTable_host, &pCallableShaderBindingTable_host, params->width, params->height, params->depth);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdTraceRaysKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, &pRaygenShaderBindingTable_host, &pMissShaderBindingTable_host, &pHitShaderBindingTable_host, &pCallableShaderBindingTable_host, params->width, params->height, params->depth);
 }
 
 #ifdef _WIN64
@@ -40243,7 +40243,7 @@ static void thunk64_vkCmdTraceRaysNV(void *args)
 {
     struct vkCmdTraceRaysNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdTraceRaysNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->raygenShaderBindingTableBuffer, params->raygenShaderBindingOffset, params->missShaderBindingTableBuffer, params->missShaderBindingOffset, params->missShaderBindingStride, params->hitShaderBindingTableBuffer, params->hitShaderBindingOffset, params->hitShaderBindingStride, params->callableShaderBindingTableBuffer, params->callableShaderBindingOffset, params->callableShaderBindingStride, params->width, params->height, params->depth);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdTraceRaysNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->raygenShaderBindingTableBuffer, params->raygenShaderBindingOffset, params->missShaderBindingTableBuffer, params->missShaderBindingOffset, params->missShaderBindingStride, params->hitShaderBindingTableBuffer, params->hitShaderBindingOffset, params->hitShaderBindingStride, params->callableShaderBindingTableBuffer, params->callableShaderBindingOffset, params->callableShaderBindingStride, params->width, params->height, params->depth);
 }
 #endif /* _WIN64 */
 
@@ -40268,7 +40268,7 @@ static void thunk32_vkCmdTraceRaysNV(void *args)
         uint32_t depth;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdTraceRaysNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->raygenShaderBindingTableBuffer, params->raygenShaderBindingOffset, params->missShaderBindingTableBuffer, params->missShaderBindingOffset, params->missShaderBindingStride, params->hitShaderBindingTableBuffer, params->hitShaderBindingOffset, params->hitShaderBindingStride, params->callableShaderBindingTableBuffer, params->callableShaderBindingOffset, params->callableShaderBindingStride, params->width, params->height, params->depth);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdTraceRaysNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->raygenShaderBindingTableBuffer, params->raygenShaderBindingOffset, params->missShaderBindingTableBuffer, params->missShaderBindingOffset, params->missShaderBindingStride, params->hitShaderBindingTableBuffer, params->hitShaderBindingOffset, params->hitShaderBindingStride, params->callableShaderBindingTableBuffer, params->callableShaderBindingOffset, params->callableShaderBindingStride, params->width, params->height, params->depth);
 }
 
 #ifdef _WIN64
@@ -40276,7 +40276,7 @@ static void thunk64_vkCmdUpdateBuffer(void *args)
 {
     struct vkCmdUpdateBuffer_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdUpdateBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->dstBuffer, params->dstOffset, params->dataSize, params->pData);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdUpdateBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->dstBuffer, params->dstOffset, params->dataSize, params->pData);
 }
 #endif /* _WIN64 */
 
@@ -40291,7 +40291,7 @@ static void thunk32_vkCmdUpdateBuffer(void *args)
         PTR32 pData;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdUpdateBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->dstBuffer, params->dstOffset, params->dataSize, (const void *)UlongToPtr(params->pData));
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdUpdateBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->dstBuffer, params->dstOffset, params->dataSize, (const void *)UlongToPtr(params->pData));
 }
 
 #ifdef _WIN64
@@ -40299,7 +40299,7 @@ static void thunk64_vkCmdUpdatePipelineIndirectBufferNV(void *args)
 {
     struct vkCmdUpdatePipelineIndirectBufferNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdUpdatePipelineIndirectBufferNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pipelineBindPoint, params->pipeline);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdUpdatePipelineIndirectBufferNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pipelineBindPoint, params->pipeline);
 }
 #endif /* _WIN64 */
 
@@ -40312,7 +40312,7 @@ static void thunk32_vkCmdUpdatePipelineIndirectBufferNV(void *args)
         VkPipeline DECLSPEC_ALIGN(8) pipeline;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdUpdatePipelineIndirectBufferNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->pipelineBindPoint, params->pipeline);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdUpdatePipelineIndirectBufferNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->pipelineBindPoint, params->pipeline);
 }
 
 #ifdef _WIN64
@@ -40320,7 +40320,7 @@ static void thunk64_vkCmdWaitEvents(void *args)
 {
     struct vkCmdWaitEvents_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdWaitEvents(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->eventCount, params->pEvents, params->srcStageMask, params->dstStageMask, params->memoryBarrierCount, params->pMemoryBarriers, params->bufferMemoryBarrierCount, params->pBufferMemoryBarriers, params->imageMemoryBarrierCount, params->pImageMemoryBarriers);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdWaitEvents(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->eventCount, params->pEvents, params->srcStageMask, params->dstStageMask, params->memoryBarrierCount, params->pMemoryBarriers, params->bufferMemoryBarrierCount, params->pBufferMemoryBarriers, params->imageMemoryBarrierCount, params->pImageMemoryBarriers);
 }
 #endif /* _WIN64 */
 
@@ -40350,7 +40350,7 @@ static void thunk32_vkCmdWaitEvents(void *args)
     pMemoryBarriers_host = convert_VkMemoryBarrier_array_win32_to_host(ctx, (const VkMemoryBarrier32 *)UlongToPtr(params->pMemoryBarriers), params->memoryBarrierCount);
     pBufferMemoryBarriers_host = convert_VkBufferMemoryBarrier_array_win32_to_host(ctx, (const VkBufferMemoryBarrier32 *)UlongToPtr(params->pBufferMemoryBarriers), params->bufferMemoryBarrierCount);
     pImageMemoryBarriers_host = convert_VkImageMemoryBarrier_array_win32_to_host(ctx, (const VkImageMemoryBarrier32 *)UlongToPtr(params->pImageMemoryBarriers), params->imageMemoryBarrierCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdWaitEvents(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->eventCount, (const VkEvent *)UlongToPtr(params->pEvents), params->srcStageMask, params->dstStageMask, params->memoryBarrierCount, pMemoryBarriers_host, params->bufferMemoryBarrierCount, pBufferMemoryBarriers_host, params->imageMemoryBarrierCount, pImageMemoryBarriers_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdWaitEvents(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->eventCount, (const VkEvent *)UlongToPtr(params->pEvents), params->srcStageMask, params->dstStageMask, params->memoryBarrierCount, pMemoryBarriers_host, params->bufferMemoryBarrierCount, pBufferMemoryBarriers_host, params->imageMemoryBarrierCount, pImageMemoryBarriers_host);
     free_conversion_context(ctx);
 }
 
@@ -40359,7 +40359,7 @@ static void thunk64_vkCmdWaitEvents2(void *args)
 {
     struct vkCmdWaitEvents2_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdWaitEvents2(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->eventCount, params->pEvents, params->pDependencyInfos);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdWaitEvents2(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->eventCount, params->pEvents, params->pDependencyInfos);
 }
 #endif /* _WIN64 */
 
@@ -40378,7 +40378,7 @@ static void thunk32_vkCmdWaitEvents2(void *args)
 
     init_conversion_context(ctx);
     pDependencyInfos_host = convert_VkDependencyInfo_array_win32_to_host(ctx, (const VkDependencyInfo32 *)UlongToPtr(params->pDependencyInfos), params->eventCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdWaitEvents2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->eventCount, (const VkEvent *)UlongToPtr(params->pEvents), pDependencyInfos_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdWaitEvents2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->eventCount, (const VkEvent *)UlongToPtr(params->pEvents), pDependencyInfos_host);
     free_conversion_context(ctx);
 }
 
@@ -40387,7 +40387,7 @@ static void thunk64_vkCmdWaitEvents2KHR(void *args)
 {
     struct vkCmdWaitEvents2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdWaitEvents2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->eventCount, params->pEvents, params->pDependencyInfos);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdWaitEvents2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->eventCount, params->pEvents, params->pDependencyInfos);
 }
 #endif /* _WIN64 */
 
@@ -40406,7 +40406,7 @@ static void thunk32_vkCmdWaitEvents2KHR(void *args)
 
     init_conversion_context(ctx);
     pDependencyInfos_host = convert_VkDependencyInfo_array_win32_to_host(ctx, (const VkDependencyInfo32 *)UlongToPtr(params->pDependencyInfos), params->eventCount);
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdWaitEvents2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->eventCount, (const VkEvent *)UlongToPtr(params->pEvents), pDependencyInfos_host);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdWaitEvents2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->eventCount, (const VkEvent *)UlongToPtr(params->pEvents), pDependencyInfos_host);
     free_conversion_context(ctx);
 }
 
@@ -40415,7 +40415,7 @@ static void thunk64_vkCmdWriteAccelerationStructuresPropertiesKHR(void *args)
 {
     struct vkCmdWriteAccelerationStructuresPropertiesKHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdWriteAccelerationStructuresPropertiesKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->accelerationStructureCount, params->pAccelerationStructures, params->queryType, params->queryPool, params->firstQuery);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdWriteAccelerationStructuresPropertiesKHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->accelerationStructureCount, params->pAccelerationStructures, params->queryType, params->queryPool, params->firstQuery);
 }
 #endif /* _WIN64 */
 
@@ -40431,7 +40431,7 @@ static void thunk32_vkCmdWriteAccelerationStructuresPropertiesKHR(void *args)
         uint32_t firstQuery;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdWriteAccelerationStructuresPropertiesKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->accelerationStructureCount, (const VkAccelerationStructureKHR *)UlongToPtr(params->pAccelerationStructures), params->queryType, params->queryPool, params->firstQuery);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdWriteAccelerationStructuresPropertiesKHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->accelerationStructureCount, (const VkAccelerationStructureKHR *)UlongToPtr(params->pAccelerationStructures), params->queryType, params->queryPool, params->firstQuery);
 }
 
 #ifdef _WIN64
@@ -40439,7 +40439,7 @@ static void thunk64_vkCmdWriteAccelerationStructuresPropertiesNV(void *args)
 {
     struct vkCmdWriteAccelerationStructuresPropertiesNV_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdWriteAccelerationStructuresPropertiesNV(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->accelerationStructureCount, params->pAccelerationStructures, params->queryType, params->queryPool, params->firstQuery);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdWriteAccelerationStructuresPropertiesNV(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->accelerationStructureCount, params->pAccelerationStructures, params->queryType, params->queryPool, params->firstQuery);
 }
 #endif /* _WIN64 */
 
@@ -40455,7 +40455,7 @@ static void thunk32_vkCmdWriteAccelerationStructuresPropertiesNV(void *args)
         uint32_t firstQuery;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdWriteAccelerationStructuresPropertiesNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->accelerationStructureCount, (const VkAccelerationStructureNV *)UlongToPtr(params->pAccelerationStructures), params->queryType, params->queryPool, params->firstQuery);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdWriteAccelerationStructuresPropertiesNV(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->accelerationStructureCount, (const VkAccelerationStructureNV *)UlongToPtr(params->pAccelerationStructures), params->queryType, params->queryPool, params->firstQuery);
 }
 
 #ifdef _WIN64
@@ -40463,7 +40463,7 @@ static void thunk64_vkCmdWriteBufferMarker2AMD(void *args)
 {
     struct vkCmdWriteBufferMarker2AMD_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdWriteBufferMarker2AMD(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->stage, params->dstBuffer, params->dstOffset, params->marker);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdWriteBufferMarker2AMD(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->stage, params->dstBuffer, params->dstOffset, params->marker);
 }
 #endif /* _WIN64 */
 
@@ -40478,7 +40478,7 @@ static void thunk32_vkCmdWriteBufferMarker2AMD(void *args)
         uint32_t marker;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdWriteBufferMarker2AMD(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->stage, params->dstBuffer, params->dstOffset, params->marker);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdWriteBufferMarker2AMD(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->stage, params->dstBuffer, params->dstOffset, params->marker);
 }
 
 #ifdef _WIN64
@@ -40486,7 +40486,7 @@ static void thunk64_vkCmdWriteBufferMarkerAMD(void *args)
 {
     struct vkCmdWriteBufferMarkerAMD_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdWriteBufferMarkerAMD(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pipelineStage, params->dstBuffer, params->dstOffset, params->marker);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdWriteBufferMarkerAMD(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pipelineStage, params->dstBuffer, params->dstOffset, params->marker);
 }
 #endif /* _WIN64 */
 
@@ -40501,7 +40501,7 @@ static void thunk32_vkCmdWriteBufferMarkerAMD(void *args)
         uint32_t marker;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdWriteBufferMarkerAMD(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->pipelineStage, params->dstBuffer, params->dstOffset, params->marker);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdWriteBufferMarkerAMD(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->pipelineStage, params->dstBuffer, params->dstOffset, params->marker);
 }
 
 #ifdef _WIN64
@@ -40509,7 +40509,7 @@ static void thunk64_vkCmdWriteMicromapsPropertiesEXT(void *args)
 {
     struct vkCmdWriteMicromapsPropertiesEXT_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdWriteMicromapsPropertiesEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->micromapCount, params->pMicromaps, params->queryType, params->queryPool, params->firstQuery);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdWriteMicromapsPropertiesEXT(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->micromapCount, params->pMicromaps, params->queryType, params->queryPool, params->firstQuery);
 }
 #endif /* _WIN64 */
 
@@ -40525,7 +40525,7 @@ static void thunk32_vkCmdWriteMicromapsPropertiesEXT(void *args)
         uint32_t firstQuery;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdWriteMicromapsPropertiesEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->micromapCount, (const VkMicromapEXT *)UlongToPtr(params->pMicromaps), params->queryType, params->queryPool, params->firstQuery);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdWriteMicromapsPropertiesEXT(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->micromapCount, (const VkMicromapEXT *)UlongToPtr(params->pMicromaps), params->queryType, params->queryPool, params->firstQuery);
 }
 
 #ifdef _WIN64
@@ -40533,7 +40533,7 @@ static void thunk64_vkCmdWriteTimestamp(void *args)
 {
     struct vkCmdWriteTimestamp_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdWriteTimestamp(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->pipelineStage, params->queryPool, params->query);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdWriteTimestamp(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->pipelineStage, params->queryPool, params->query);
 }
 #endif /* _WIN64 */
 
@@ -40547,7 +40547,7 @@ static void thunk32_vkCmdWriteTimestamp(void *args)
         uint32_t query;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdWriteTimestamp(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->pipelineStage, params->queryPool, params->query);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdWriteTimestamp(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->pipelineStage, params->queryPool, params->query);
 }
 
 #ifdef _WIN64
@@ -40555,7 +40555,7 @@ static void thunk64_vkCmdWriteTimestamp2(void *args)
 {
     struct vkCmdWriteTimestamp2_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdWriteTimestamp2(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->stage, params->queryPool, params->query);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdWriteTimestamp2(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->stage, params->queryPool, params->query);
 }
 #endif /* _WIN64 */
 
@@ -40569,7 +40569,7 @@ static void thunk32_vkCmdWriteTimestamp2(void *args)
         uint32_t query;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdWriteTimestamp2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->stage, params->queryPool, params->query);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdWriteTimestamp2(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->stage, params->queryPool, params->query);
 }
 
 #ifdef _WIN64
@@ -40577,7 +40577,7 @@ static void thunk64_vkCmdWriteTimestamp2KHR(void *args)
 {
     struct vkCmdWriteTimestamp2KHR_params *params = args;
 
-    wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkCmdWriteTimestamp2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->stage, params->queryPool, params->query);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkCmdWriteTimestamp2KHR(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->stage, params->queryPool, params->query);
 }
 #endif /* _WIN64 */
 
@@ -40591,7 +40591,7 @@ static void thunk32_vkCmdWriteTimestamp2KHR(void *args)
         uint32_t query;
     } *params = args;
 
-    wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkCmdWriteTimestamp2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->stage, params->queryPool, params->query);
+    get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkCmdWriteTimestamp2KHR(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->stage, params->queryPool, params->query);
 }
 
 #ifdef _WIN64
@@ -40601,7 +40601,7 @@ static NTSTATUS thunk64_vkCompileDeferredNV(void *args)
 
     TRACE("%p, 0x%s, %u\n", params->device, wine_dbgstr_longlong(params->pipeline), params->shader);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCompileDeferredNV(wine_device_from_handle(params->device)->host_device, params->pipeline, params->shader);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCompileDeferredNV(wine_device_from_handle(params->device)->obj.host.device, params->pipeline, params->shader);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -40618,7 +40618,7 @@ static NTSTATUS thunk32_vkCompileDeferredNV(void *args)
 
     TRACE("%#x, 0x%s, %u\n", params->device, wine_dbgstr_longlong(params->pipeline), params->shader);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCompileDeferredNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->pipeline, params->shader);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCompileDeferredNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->pipeline, params->shader);
     return STATUS_SUCCESS;
 }
 
@@ -40629,7 +40629,7 @@ static NTSTATUS thunk64_vkCopyAccelerationStructureKHR(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->deferredOperation), params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCopyAccelerationStructureKHR(wine_device_from_handle(params->device)->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCopyAccelerationStructureKHR(wine_device_from_handle(params->device)->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -40648,7 +40648,7 @@ static NTSTATUS thunk32_vkCopyAccelerationStructureKHR(void *args)
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->deferredOperation), params->pInfo);
 
     convert_VkCopyAccelerationStructureInfoKHR_win32_to_host((const VkCopyAccelerationStructureInfoKHR32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCopyAccelerationStructureKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCopyAccelerationStructureKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -40659,7 +40659,7 @@ static NTSTATUS thunk64_vkCopyAccelerationStructureToMemoryKHR(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->deferredOperation), params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCopyAccelerationStructureToMemoryKHR(wine_device_from_handle(params->device)->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCopyAccelerationStructureToMemoryKHR(wine_device_from_handle(params->device)->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -40678,7 +40678,7 @@ static NTSTATUS thunk32_vkCopyAccelerationStructureToMemoryKHR(void *args)
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->deferredOperation), params->pInfo);
 
     convert_VkCopyAccelerationStructureToMemoryInfoKHR_win32_to_host((const VkCopyAccelerationStructureToMemoryInfoKHR32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCopyAccelerationStructureToMemoryKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCopyAccelerationStructureToMemoryKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -40689,7 +40689,7 @@ static NTSTATUS thunk64_vkCopyImageToImageEXT(void *args)
 
     TRACE("%p, %p\n", params->device, params->pCopyImageToImageInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCopyImageToImageEXT(wine_device_from_handle(params->device)->host_device, params->pCopyImageToImageInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCopyImageToImageEXT(wine_device_from_handle(params->device)->obj.host.device, params->pCopyImageToImageInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -40710,7 +40710,7 @@ static NTSTATUS thunk32_vkCopyImageToImageEXT(void *args)
 
     init_conversion_context(ctx);
     convert_VkCopyImageToImageInfoEXT_win32_to_host(ctx, (const VkCopyImageToImageInfoEXT32 *)UlongToPtr(params->pCopyImageToImageInfo), &pCopyImageToImageInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCopyImageToImageEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCopyImageToImageInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCopyImageToImageEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCopyImageToImageInfo_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -40722,7 +40722,7 @@ static NTSTATUS thunk64_vkCopyImageToMemoryEXT(void *args)
 
     TRACE("%p, %p\n", params->device, params->pCopyImageToMemoryInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCopyImageToMemoryEXT(wine_device_from_handle(params->device)->host_device, params->pCopyImageToMemoryInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCopyImageToMemoryEXT(wine_device_from_handle(params->device)->obj.host.device, params->pCopyImageToMemoryInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -40743,7 +40743,7 @@ static NTSTATUS thunk32_vkCopyImageToMemoryEXT(void *args)
 
     init_conversion_context(ctx);
     convert_VkCopyImageToMemoryInfoEXT_win32_to_host(ctx, (const VkCopyImageToMemoryInfoEXT32 *)UlongToPtr(params->pCopyImageToMemoryInfo), &pCopyImageToMemoryInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCopyImageToMemoryEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCopyImageToMemoryInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCopyImageToMemoryEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCopyImageToMemoryInfo_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -40755,7 +40755,7 @@ static NTSTATUS thunk64_vkCopyMemoryToAccelerationStructureKHR(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->deferredOperation), params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCopyMemoryToAccelerationStructureKHR(wine_device_from_handle(params->device)->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCopyMemoryToAccelerationStructureKHR(wine_device_from_handle(params->device)->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -40774,7 +40774,7 @@ static NTSTATUS thunk32_vkCopyMemoryToAccelerationStructureKHR(void *args)
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->deferredOperation), params->pInfo);
 
     convert_VkCopyMemoryToAccelerationStructureInfoKHR_win32_to_host((const VkCopyMemoryToAccelerationStructureInfoKHR32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCopyMemoryToAccelerationStructureKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCopyMemoryToAccelerationStructureKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -40785,7 +40785,7 @@ static NTSTATUS thunk64_vkCopyMemoryToImageEXT(void *args)
 
     TRACE("%p, %p\n", params->device, params->pCopyMemoryToImageInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCopyMemoryToImageEXT(wine_device_from_handle(params->device)->host_device, params->pCopyMemoryToImageInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCopyMemoryToImageEXT(wine_device_from_handle(params->device)->obj.host.device, params->pCopyMemoryToImageInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -40806,7 +40806,7 @@ static NTSTATUS thunk32_vkCopyMemoryToImageEXT(void *args)
 
     init_conversion_context(ctx);
     convert_VkCopyMemoryToImageInfoEXT_win32_to_host(ctx, (const VkCopyMemoryToImageInfoEXT32 *)UlongToPtr(params->pCopyMemoryToImageInfo), &pCopyMemoryToImageInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCopyMemoryToImageEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCopyMemoryToImageInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCopyMemoryToImageEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCopyMemoryToImageInfo_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -40818,7 +40818,7 @@ static NTSTATUS thunk64_vkCopyMemoryToMicromapEXT(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->deferredOperation), params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCopyMemoryToMicromapEXT(wine_device_from_handle(params->device)->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCopyMemoryToMicromapEXT(wine_device_from_handle(params->device)->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -40837,7 +40837,7 @@ static NTSTATUS thunk32_vkCopyMemoryToMicromapEXT(void *args)
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->deferredOperation), params->pInfo);
 
     convert_VkCopyMemoryToMicromapInfoEXT_win32_to_host((const VkCopyMemoryToMicromapInfoEXT32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCopyMemoryToMicromapEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCopyMemoryToMicromapEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -40848,7 +40848,7 @@ static NTSTATUS thunk64_vkCopyMicromapEXT(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->deferredOperation), params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCopyMicromapEXT(wine_device_from_handle(params->device)->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCopyMicromapEXT(wine_device_from_handle(params->device)->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -40867,7 +40867,7 @@ static NTSTATUS thunk32_vkCopyMicromapEXT(void *args)
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->deferredOperation), params->pInfo);
 
     convert_VkCopyMicromapInfoEXT_win32_to_host((const VkCopyMicromapInfoEXT32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCopyMicromapEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCopyMicromapEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -40878,7 +40878,7 @@ static NTSTATUS thunk64_vkCopyMicromapToMemoryEXT(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->deferredOperation), params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCopyMicromapToMemoryEXT(wine_device_from_handle(params->device)->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCopyMicromapToMemoryEXT(wine_device_from_handle(params->device)->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -40897,7 +40897,7 @@ static NTSTATUS thunk32_vkCopyMicromapToMemoryEXT(void *args)
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->deferredOperation), params->pInfo);
 
     convert_VkCopyMicromapToMemoryInfoEXT_win32_to_host((const VkCopyMicromapToMemoryInfoEXT32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCopyMicromapToMemoryEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCopyMicromapToMemoryEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -40908,7 +40908,7 @@ static NTSTATUS thunk64_vkCreateAccelerationStructureKHR(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pAccelerationStructure);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateAccelerationStructureKHR(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pAccelerationStructure);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateAccelerationStructureKHR(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pAccelerationStructure);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -40931,7 +40931,7 @@ static NTSTATUS thunk32_vkCreateAccelerationStructureKHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkAccelerationStructureCreateInfoKHR_win32_to_host(ctx, (const VkAccelerationStructureCreateInfoKHR32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateAccelerationStructureKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkAccelerationStructureKHR *)UlongToPtr(params->pAccelerationStructure));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateAccelerationStructureKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkAccelerationStructureKHR *)UlongToPtr(params->pAccelerationStructure));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -40943,7 +40943,7 @@ static NTSTATUS thunk64_vkCreateAccelerationStructureNV(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pAccelerationStructure);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateAccelerationStructureNV(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pAccelerationStructure);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateAccelerationStructureNV(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pAccelerationStructure);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -40966,7 +40966,7 @@ static NTSTATUS thunk32_vkCreateAccelerationStructureNV(void *args)
 
     init_conversion_context(ctx);
     convert_VkAccelerationStructureCreateInfoNV_win32_to_host(ctx, (const VkAccelerationStructureCreateInfoNV32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateAccelerationStructureNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkAccelerationStructureNV *)UlongToPtr(params->pAccelerationStructure));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateAccelerationStructureNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkAccelerationStructureNV *)UlongToPtr(params->pAccelerationStructure));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -41013,7 +41013,7 @@ static NTSTATUS thunk64_vkCreateBufferView(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pView);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateBufferView(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pView);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateBufferView(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pView);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41036,7 +41036,7 @@ static NTSTATUS thunk32_vkCreateBufferView(void *args)
 
     init_conversion_context(ctx);
     convert_VkBufferViewCreateInfo_win32_to_host(ctx, (const VkBufferViewCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateBufferView(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkBufferView *)UlongToPtr(params->pView));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateBufferView(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkBufferView *)UlongToPtr(params->pView));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -41085,7 +41085,7 @@ static NTSTATUS thunk64_vkCreateComputePipelines(void *args)
 
     init_conversion_context(ctx);
     pCreateInfos_host = convert_VkComputePipelineCreateInfo_array_win64_to_host(ctx, params->pCreateInfos, params->createInfoCount);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateComputePipelines(wine_device_from_handle(params->device)->host_device, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, params->pPipelines);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateComputePipelines(wine_device_from_handle(params->device)->obj.host.device, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, params->pPipelines);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -41111,7 +41111,7 @@ static NTSTATUS thunk32_vkCreateComputePipelines(void *args)
 
     init_conversion_context(ctx);
     pCreateInfos_host = convert_VkComputePipelineCreateInfo_array_win32_to_host(ctx, (const VkComputePipelineCreateInfo32 *)UlongToPtr(params->pCreateInfos), params->createInfoCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateComputePipelines(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, (VkPipeline *)UlongToPtr(params->pPipelines));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateComputePipelines(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, (VkPipeline *)UlongToPtr(params->pPipelines));
     convert_VkComputePipelineCreateInfo_array_host_to_win32(pCreateInfos_host, (VkComputePipelineCreateInfo32 *)UlongToPtr(params->pCreateInfos), params->createInfoCount);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -41124,7 +41124,7 @@ static NTSTATUS thunk64_vkCreateCuFunctionNVX(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pFunction);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateCuFunctionNVX(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pFunction);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateCuFunctionNVX(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pFunction);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41144,7 +41144,7 @@ static NTSTATUS thunk32_vkCreateCuFunctionNVX(void *args)
     TRACE("%#x, %#x, %#x, %#x\n", params->device, params->pCreateInfo, params->pAllocator, params->pFunction);
 
     convert_VkCuFunctionCreateInfoNVX_win32_to_host((const VkCuFunctionCreateInfoNVX32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateCuFunctionNVX(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkCuFunctionNVX *)UlongToPtr(params->pFunction));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateCuFunctionNVX(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkCuFunctionNVX *)UlongToPtr(params->pFunction));
     return STATUS_SUCCESS;
 }
 
@@ -41155,7 +41155,7 @@ static NTSTATUS thunk64_vkCreateCuModuleNVX(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pModule);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateCuModuleNVX(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pModule);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateCuModuleNVX(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pModule);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41175,7 +41175,7 @@ static NTSTATUS thunk32_vkCreateCuModuleNVX(void *args)
     TRACE("%#x, %#x, %#x, %#x\n", params->device, params->pCreateInfo, params->pAllocator, params->pModule);
 
     convert_VkCuModuleCreateInfoNVX_win32_to_host((const VkCuModuleCreateInfoNVX32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateCuModuleNVX(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkCuModuleNVX *)UlongToPtr(params->pModule));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateCuModuleNVX(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkCuModuleNVX *)UlongToPtr(params->pModule));
     return STATUS_SUCCESS;
 }
 
@@ -41186,7 +41186,7 @@ static NTSTATUS thunk64_vkCreateCudaFunctionNV(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pFunction);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateCudaFunctionNV(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pFunction);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateCudaFunctionNV(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pFunction);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41206,7 +41206,7 @@ static NTSTATUS thunk32_vkCreateCudaFunctionNV(void *args)
     TRACE("%#x, %#x, %#x, %#x\n", params->device, params->pCreateInfo, params->pAllocator, params->pFunction);
 
     convert_VkCudaFunctionCreateInfoNV_win32_to_host((const VkCudaFunctionCreateInfoNV32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateCudaFunctionNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkCudaFunctionNV *)UlongToPtr(params->pFunction));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateCudaFunctionNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkCudaFunctionNV *)UlongToPtr(params->pFunction));
     return STATUS_SUCCESS;
 }
 
@@ -41217,7 +41217,7 @@ static NTSTATUS thunk64_vkCreateCudaModuleNV(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pModule);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateCudaModuleNV(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pModule);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateCudaModuleNV(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pModule);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41237,7 +41237,7 @@ static NTSTATUS thunk32_vkCreateCudaModuleNV(void *args)
     TRACE("%#x, %#x, %#x, %#x\n", params->device, params->pCreateInfo, params->pAllocator, params->pModule);
 
     convert_VkCudaModuleCreateInfoNV_win32_to_host((const VkCudaModuleCreateInfoNV32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateCudaModuleNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkCudaModuleNV *)UlongToPtr(params->pModule));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateCudaModuleNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkCudaModuleNV *)UlongToPtr(params->pModule));
     return STATUS_SUCCESS;
 }
 
@@ -41338,7 +41338,7 @@ static NTSTATUS thunk64_vkCreateDescriptorPool(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pDescriptorPool);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateDescriptorPool(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pDescriptorPool);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateDescriptorPool(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pDescriptorPool);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41361,7 +41361,7 @@ static NTSTATUS thunk32_vkCreateDescriptorPool(void *args)
 
     init_conversion_context(ctx);
     convert_VkDescriptorPoolCreateInfo_win32_to_host(ctx, (const VkDescriptorPoolCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateDescriptorPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkDescriptorPool *)UlongToPtr(params->pDescriptorPool));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateDescriptorPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkDescriptorPool *)UlongToPtr(params->pDescriptorPool));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -41373,7 +41373,7 @@ static NTSTATUS thunk64_vkCreateDescriptorSetLayout(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pSetLayout);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateDescriptorSetLayout(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pSetLayout);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateDescriptorSetLayout(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pSetLayout);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41396,7 +41396,7 @@ static NTSTATUS thunk32_vkCreateDescriptorSetLayout(void *args)
 
     init_conversion_context(ctx);
     convert_VkDescriptorSetLayoutCreateInfo_win32_to_host(ctx, (const VkDescriptorSetLayoutCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateDescriptorSetLayout(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkDescriptorSetLayout *)UlongToPtr(params->pSetLayout));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateDescriptorSetLayout(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkDescriptorSetLayout *)UlongToPtr(params->pSetLayout));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -41408,7 +41408,7 @@ static NTSTATUS thunk64_vkCreateDescriptorUpdateTemplate(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pDescriptorUpdateTemplate);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateDescriptorUpdateTemplate(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pDescriptorUpdateTemplate);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateDescriptorUpdateTemplate(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pDescriptorUpdateTemplate);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41431,7 +41431,7 @@ static NTSTATUS thunk32_vkCreateDescriptorUpdateTemplate(void *args)
 
     init_conversion_context(ctx);
     convert_VkDescriptorUpdateTemplateCreateInfo_win32_to_host(ctx, (const VkDescriptorUpdateTemplateCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateDescriptorUpdateTemplate(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkDescriptorUpdateTemplate *)UlongToPtr(params->pDescriptorUpdateTemplate));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateDescriptorUpdateTemplate(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkDescriptorUpdateTemplate *)UlongToPtr(params->pDescriptorUpdateTemplate));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -41443,7 +41443,7 @@ static NTSTATUS thunk64_vkCreateDescriptorUpdateTemplateKHR(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pDescriptorUpdateTemplate);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateDescriptorUpdateTemplateKHR(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pDescriptorUpdateTemplate);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateDescriptorUpdateTemplateKHR(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pDescriptorUpdateTemplate);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41466,7 +41466,7 @@ static NTSTATUS thunk32_vkCreateDescriptorUpdateTemplateKHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkDescriptorUpdateTemplateCreateInfo_win32_to_host(ctx, (const VkDescriptorUpdateTemplateCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateDescriptorUpdateTemplateKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkDescriptorUpdateTemplate *)UlongToPtr(params->pDescriptorUpdateTemplate));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateDescriptorUpdateTemplateKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkDescriptorUpdateTemplate *)UlongToPtr(params->pDescriptorUpdateTemplate));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -41523,7 +41523,7 @@ static NTSTATUS thunk64_vkCreateEvent(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pEvent);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateEvent(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pEvent);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateEvent(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pEvent);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41543,7 +41543,7 @@ static NTSTATUS thunk32_vkCreateEvent(void *args)
     TRACE("%#x, %#x, %#x, %#x\n", params->device, params->pCreateInfo, params->pAllocator, params->pEvent);
 
     convert_VkEventCreateInfo_win32_to_host((const VkEventCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateEvent(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkEvent *)UlongToPtr(params->pEvent));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateEvent(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkEvent *)UlongToPtr(params->pEvent));
     return STATUS_SUCCESS;
 }
 
@@ -41554,7 +41554,7 @@ static NTSTATUS thunk64_vkCreateFence(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pFence);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateFence(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pFence);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateFence(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pFence);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41577,7 +41577,7 @@ static NTSTATUS thunk32_vkCreateFence(void *args)
 
     init_conversion_context(ctx);
     convert_VkFenceCreateInfo_win32_to_host(ctx, (const VkFenceCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateFence(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkFence *)UlongToPtr(params->pFence));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateFence(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkFence *)UlongToPtr(params->pFence));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -41589,7 +41589,7 @@ static NTSTATUS thunk64_vkCreateFramebuffer(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pFramebuffer);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateFramebuffer(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pFramebuffer);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateFramebuffer(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pFramebuffer);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41612,7 +41612,7 @@ static NTSTATUS thunk32_vkCreateFramebuffer(void *args)
 
     init_conversion_context(ctx);
     convert_VkFramebufferCreateInfo_win32_to_host(ctx, (const VkFramebufferCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateFramebuffer(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkFramebuffer *)UlongToPtr(params->pFramebuffer));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateFramebuffer(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkFramebuffer *)UlongToPtr(params->pFramebuffer));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -41629,7 +41629,7 @@ static NTSTATUS thunk64_vkCreateGraphicsPipelines(void *args)
 
     init_conversion_context(ctx);
     pCreateInfos_host = convert_VkGraphicsPipelineCreateInfo_array_win64_to_host(ctx, params->pCreateInfos, params->createInfoCount);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateGraphicsPipelines(wine_device_from_handle(params->device)->host_device, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, params->pPipelines);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateGraphicsPipelines(wine_device_from_handle(params->device)->obj.host.device, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, params->pPipelines);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -41655,7 +41655,7 @@ static NTSTATUS thunk32_vkCreateGraphicsPipelines(void *args)
 
     init_conversion_context(ctx);
     pCreateInfos_host = convert_VkGraphicsPipelineCreateInfo_array_win32_to_host(ctx, (const VkGraphicsPipelineCreateInfo32 *)UlongToPtr(params->pCreateInfos), params->createInfoCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateGraphicsPipelines(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, (VkPipeline *)UlongToPtr(params->pPipelines));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateGraphicsPipelines(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, (VkPipeline *)UlongToPtr(params->pPipelines));
     convert_VkGraphicsPipelineCreateInfo_array_host_to_win32(pCreateInfos_host, (VkGraphicsPipelineCreateInfo32 *)UlongToPtr(params->pCreateInfos), params->createInfoCount);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -41709,7 +41709,7 @@ static NTSTATUS thunk64_vkCreateImageView(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pView);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateImageView(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pView);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateImageView(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pView);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41732,7 +41732,7 @@ static NTSTATUS thunk32_vkCreateImageView(void *args)
 
     init_conversion_context(ctx);
     convert_VkImageViewCreateInfo_win32_to_host(ctx, (const VkImageViewCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateImageView(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkImageView *)UlongToPtr(params->pView));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateImageView(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkImageView *)UlongToPtr(params->pView));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -41744,7 +41744,7 @@ static NTSTATUS thunk64_vkCreateIndirectCommandsLayoutNV(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pIndirectCommandsLayout);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateIndirectCommandsLayoutNV(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pIndirectCommandsLayout);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateIndirectCommandsLayoutNV(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pIndirectCommandsLayout);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41767,7 +41767,7 @@ static NTSTATUS thunk32_vkCreateIndirectCommandsLayoutNV(void *args)
 
     init_conversion_context(ctx);
     convert_VkIndirectCommandsLayoutCreateInfoNV_win32_to_host(ctx, (const VkIndirectCommandsLayoutCreateInfoNV32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateIndirectCommandsLayoutNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkIndirectCommandsLayoutNV *)UlongToPtr(params->pIndirectCommandsLayout));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateIndirectCommandsLayoutNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkIndirectCommandsLayoutNV *)UlongToPtr(params->pIndirectCommandsLayout));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -41823,7 +41823,7 @@ static NTSTATUS thunk64_vkCreateMicromapEXT(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pMicromap);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateMicromapEXT(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pMicromap);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateMicromapEXT(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pMicromap);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41843,7 +41843,7 @@ static NTSTATUS thunk32_vkCreateMicromapEXT(void *args)
     TRACE("%#x, %#x, %#x, %#x\n", params->device, params->pCreateInfo, params->pAllocator, params->pMicromap);
 
     convert_VkMicromapCreateInfoEXT_win32_to_host((const VkMicromapCreateInfoEXT32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateMicromapEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkMicromapEXT *)UlongToPtr(params->pMicromap));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateMicromapEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkMicromapEXT *)UlongToPtr(params->pMicromap));
     return STATUS_SUCCESS;
 }
 
@@ -41854,7 +41854,7 @@ static NTSTATUS thunk64_vkCreateOpticalFlowSessionNV(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pSession);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateOpticalFlowSessionNV(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pSession);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateOpticalFlowSessionNV(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pSession);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41877,7 +41877,7 @@ static NTSTATUS thunk32_vkCreateOpticalFlowSessionNV(void *args)
 
     init_conversion_context(ctx);
     convert_VkOpticalFlowSessionCreateInfoNV_win32_to_host(ctx, (const VkOpticalFlowSessionCreateInfoNV32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateOpticalFlowSessionNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkOpticalFlowSessionNV *)UlongToPtr(params->pSession));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateOpticalFlowSessionNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkOpticalFlowSessionNV *)UlongToPtr(params->pSession));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -41889,7 +41889,7 @@ static NTSTATUS thunk64_vkCreatePipelineCache(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pPipelineCache);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreatePipelineCache(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pPipelineCache);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreatePipelineCache(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pPipelineCache);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41909,7 +41909,7 @@ static NTSTATUS thunk32_vkCreatePipelineCache(void *args)
     TRACE("%#x, %#x, %#x, %#x\n", params->device, params->pCreateInfo, params->pAllocator, params->pPipelineCache);
 
     convert_VkPipelineCacheCreateInfo_win32_to_host((const VkPipelineCacheCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreatePipelineCache(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkPipelineCache *)UlongToPtr(params->pPipelineCache));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreatePipelineCache(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkPipelineCache *)UlongToPtr(params->pPipelineCache));
     return STATUS_SUCCESS;
 }
 
@@ -41920,7 +41920,7 @@ static NTSTATUS thunk64_vkCreatePipelineLayout(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pPipelineLayout);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreatePipelineLayout(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pPipelineLayout);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreatePipelineLayout(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pPipelineLayout);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41940,7 +41940,7 @@ static NTSTATUS thunk32_vkCreatePipelineLayout(void *args)
     TRACE("%#x, %#x, %#x, %#x\n", params->device, params->pCreateInfo, params->pAllocator, params->pPipelineLayout);
 
     convert_VkPipelineLayoutCreateInfo_win32_to_host((const VkPipelineLayoutCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreatePipelineLayout(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkPipelineLayout *)UlongToPtr(params->pPipelineLayout));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreatePipelineLayout(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkPipelineLayout *)UlongToPtr(params->pPipelineLayout));
     return STATUS_SUCCESS;
 }
 
@@ -41951,7 +41951,7 @@ static NTSTATUS thunk64_vkCreatePrivateDataSlot(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pPrivateDataSlot);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreatePrivateDataSlot(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pPrivateDataSlot);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreatePrivateDataSlot(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pPrivateDataSlot);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -41971,7 +41971,7 @@ static NTSTATUS thunk32_vkCreatePrivateDataSlot(void *args)
     TRACE("%#x, %#x, %#x, %#x\n", params->device, params->pCreateInfo, params->pAllocator, params->pPrivateDataSlot);
 
     convert_VkPrivateDataSlotCreateInfo_win32_to_host((const VkPrivateDataSlotCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreatePrivateDataSlot(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkPrivateDataSlot *)UlongToPtr(params->pPrivateDataSlot));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreatePrivateDataSlot(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkPrivateDataSlot *)UlongToPtr(params->pPrivateDataSlot));
     return STATUS_SUCCESS;
 }
 
@@ -41982,7 +41982,7 @@ static NTSTATUS thunk64_vkCreatePrivateDataSlotEXT(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pPrivateDataSlot);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreatePrivateDataSlotEXT(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pPrivateDataSlot);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreatePrivateDataSlotEXT(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pPrivateDataSlot);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42002,7 +42002,7 @@ static NTSTATUS thunk32_vkCreatePrivateDataSlotEXT(void *args)
     TRACE("%#x, %#x, %#x, %#x\n", params->device, params->pCreateInfo, params->pAllocator, params->pPrivateDataSlot);
 
     convert_VkPrivateDataSlotCreateInfo_win32_to_host((const VkPrivateDataSlotCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreatePrivateDataSlotEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkPrivateDataSlot *)UlongToPtr(params->pPrivateDataSlot));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreatePrivateDataSlotEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkPrivateDataSlot *)UlongToPtr(params->pPrivateDataSlot));
     return STATUS_SUCCESS;
 }
 
@@ -42013,7 +42013,7 @@ static NTSTATUS thunk64_vkCreateQueryPool(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pQueryPool);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateQueryPool(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pQueryPool);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateQueryPool(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pQueryPool);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42036,7 +42036,7 @@ static NTSTATUS thunk32_vkCreateQueryPool(void *args)
 
     init_conversion_context(ctx);
     convert_VkQueryPoolCreateInfo_win32_to_host(ctx, (const VkQueryPoolCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateQueryPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkQueryPool *)UlongToPtr(params->pQueryPool));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateQueryPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkQueryPool *)UlongToPtr(params->pQueryPool));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -42056,7 +42056,7 @@ static NTSTATUS thunk64_vkCreateRayTracingPipelinesKHR(void *args)
     else
         ctx = &wine_deferred_operation_from_handle(params->deferredOperation)->ctx;
     pCreateInfos_host = convert_VkRayTracingPipelineCreateInfoKHR_array_win64_to_host(ctx, params->pCreateInfos, params->createInfoCount);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateRayTracingPipelinesKHR(wine_device_from_handle(params->device)->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, params->pPipelines);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateRayTracingPipelinesKHR(wine_device_from_handle(params->device)->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, params->pPipelines);
     if (params->deferredOperation == VK_NULL_HANDLE)
         free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -42087,7 +42087,7 @@ static NTSTATUS thunk32_vkCreateRayTracingPipelinesKHR(void *args)
     else
         ctx = &wine_deferred_operation_from_handle(params->deferredOperation)->ctx;
     pCreateInfos_host = convert_VkRayTracingPipelineCreateInfoKHR_array_win32_to_host(ctx, (const VkRayTracingPipelineCreateInfoKHR32 *)UlongToPtr(params->pCreateInfos), params->createInfoCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateRayTracingPipelinesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->host_deferred_operation : 0, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, (VkPipeline *)UlongToPtr(params->pPipelines));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateRayTracingPipelinesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->deferredOperation ? wine_deferred_operation_from_handle(params->deferredOperation)->obj.host.deferred_operation : 0, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, (VkPipeline *)UlongToPtr(params->pPipelines));
     convert_VkRayTracingPipelineCreateInfoKHR_array_host_to_win32(pCreateInfos_host, (VkRayTracingPipelineCreateInfoKHR32 *)UlongToPtr(params->pCreateInfos), params->createInfoCount);
     if (params->deferredOperation == VK_NULL_HANDLE)
         free_conversion_context(ctx);
@@ -42106,7 +42106,7 @@ static NTSTATUS thunk64_vkCreateRayTracingPipelinesNV(void *args)
 
     init_conversion_context(ctx);
     pCreateInfos_host = convert_VkRayTracingPipelineCreateInfoNV_array_win64_to_host(ctx, params->pCreateInfos, params->createInfoCount);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateRayTracingPipelinesNV(wine_device_from_handle(params->device)->host_device, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, params->pPipelines);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateRayTracingPipelinesNV(wine_device_from_handle(params->device)->obj.host.device, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, params->pPipelines);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -42132,7 +42132,7 @@ static NTSTATUS thunk32_vkCreateRayTracingPipelinesNV(void *args)
 
     init_conversion_context(ctx);
     pCreateInfos_host = convert_VkRayTracingPipelineCreateInfoNV_array_win32_to_host(ctx, (const VkRayTracingPipelineCreateInfoNV32 *)UlongToPtr(params->pCreateInfos), params->createInfoCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateRayTracingPipelinesNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, (VkPipeline *)UlongToPtr(params->pPipelines));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateRayTracingPipelinesNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->pipelineCache, params->createInfoCount, pCreateInfos_host, NULL, (VkPipeline *)UlongToPtr(params->pPipelines));
     convert_VkRayTracingPipelineCreateInfoNV_array_host_to_win32(pCreateInfos_host, (VkRayTracingPipelineCreateInfoNV32 *)UlongToPtr(params->pCreateInfos), params->createInfoCount);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -42145,7 +42145,7 @@ static NTSTATUS thunk64_vkCreateRenderPass(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pRenderPass);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateRenderPass(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pRenderPass);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateRenderPass(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pRenderPass);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42168,7 +42168,7 @@ static NTSTATUS thunk32_vkCreateRenderPass(void *args)
 
     init_conversion_context(ctx);
     convert_VkRenderPassCreateInfo_win32_to_host(ctx, (const VkRenderPassCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateRenderPass(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkRenderPass *)UlongToPtr(params->pRenderPass));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateRenderPass(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkRenderPass *)UlongToPtr(params->pRenderPass));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -42180,7 +42180,7 @@ static NTSTATUS thunk64_vkCreateRenderPass2(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pRenderPass);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateRenderPass2(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pRenderPass);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateRenderPass2(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pRenderPass);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42203,7 +42203,7 @@ static NTSTATUS thunk32_vkCreateRenderPass2(void *args)
 
     init_conversion_context(ctx);
     convert_VkRenderPassCreateInfo2_win32_to_host(ctx, (const VkRenderPassCreateInfo232 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateRenderPass2(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkRenderPass *)UlongToPtr(params->pRenderPass));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateRenderPass2(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkRenderPass *)UlongToPtr(params->pRenderPass));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -42215,7 +42215,7 @@ static NTSTATUS thunk64_vkCreateRenderPass2KHR(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pRenderPass);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateRenderPass2KHR(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pRenderPass);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateRenderPass2KHR(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pRenderPass);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42238,7 +42238,7 @@ static NTSTATUS thunk32_vkCreateRenderPass2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkRenderPassCreateInfo2_win32_to_host(ctx, (const VkRenderPassCreateInfo232 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateRenderPass2KHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkRenderPass *)UlongToPtr(params->pRenderPass));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateRenderPass2KHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkRenderPass *)UlongToPtr(params->pRenderPass));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -42250,7 +42250,7 @@ static NTSTATUS thunk64_vkCreateSampler(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pSampler);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateSampler(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pSampler);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateSampler(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pSampler);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42273,7 +42273,7 @@ static NTSTATUS thunk32_vkCreateSampler(void *args)
 
     init_conversion_context(ctx);
     convert_VkSamplerCreateInfo_win32_to_host(ctx, (const VkSamplerCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateSampler(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkSampler *)UlongToPtr(params->pSampler));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateSampler(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkSampler *)UlongToPtr(params->pSampler));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -42285,7 +42285,7 @@ static NTSTATUS thunk64_vkCreateSamplerYcbcrConversion(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pYcbcrConversion);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateSamplerYcbcrConversion(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pYcbcrConversion);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateSamplerYcbcrConversion(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pYcbcrConversion);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42308,7 +42308,7 @@ static NTSTATUS thunk32_vkCreateSamplerYcbcrConversion(void *args)
 
     init_conversion_context(ctx);
     convert_VkSamplerYcbcrConversionCreateInfo_win32_to_host(ctx, (const VkSamplerYcbcrConversionCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateSamplerYcbcrConversion(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkSamplerYcbcrConversion *)UlongToPtr(params->pYcbcrConversion));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateSamplerYcbcrConversion(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkSamplerYcbcrConversion *)UlongToPtr(params->pYcbcrConversion));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -42320,7 +42320,7 @@ static NTSTATUS thunk64_vkCreateSamplerYcbcrConversionKHR(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pYcbcrConversion);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateSamplerYcbcrConversionKHR(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pYcbcrConversion);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateSamplerYcbcrConversionKHR(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pYcbcrConversion);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42343,7 +42343,7 @@ static NTSTATUS thunk32_vkCreateSamplerYcbcrConversionKHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkSamplerYcbcrConversionCreateInfo_win32_to_host(ctx, (const VkSamplerYcbcrConversionCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateSamplerYcbcrConversionKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkSamplerYcbcrConversion *)UlongToPtr(params->pYcbcrConversion));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateSamplerYcbcrConversionKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkSamplerYcbcrConversion *)UlongToPtr(params->pYcbcrConversion));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -42355,7 +42355,7 @@ static NTSTATUS thunk64_vkCreateSemaphore(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pSemaphore);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateSemaphore(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pSemaphore);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateSemaphore(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pSemaphore);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42378,7 +42378,7 @@ static NTSTATUS thunk32_vkCreateSemaphore(void *args)
 
     init_conversion_context(ctx);
     convert_VkSemaphoreCreateInfo_win32_to_host(ctx, (const VkSemaphoreCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateSemaphore(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkSemaphore *)UlongToPtr(params->pSemaphore));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateSemaphore(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkSemaphore *)UlongToPtr(params->pSemaphore));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -42390,7 +42390,7 @@ static NTSTATUS thunk64_vkCreateShaderModule(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pShaderModule);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateShaderModule(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pShaderModule);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateShaderModule(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pShaderModule);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42413,7 +42413,7 @@ static NTSTATUS thunk32_vkCreateShaderModule(void *args)
 
     init_conversion_context(ctx);
     convert_VkShaderModuleCreateInfo_win32_to_host(ctx, (const VkShaderModuleCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateShaderModule(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkShaderModule *)UlongToPtr(params->pShaderModule));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateShaderModule(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkShaderModule *)UlongToPtr(params->pShaderModule));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -42425,7 +42425,7 @@ static NTSTATUS thunk64_vkCreateShadersEXT(void *args)
 
     TRACE("%p, %u, %p, %p, %p\n", params->device, params->createInfoCount, params->pCreateInfos, params->pAllocator, params->pShaders);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateShadersEXT(wine_device_from_handle(params->device)->host_device, params->createInfoCount, params->pCreateInfos, NULL, params->pShaders);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateShadersEXT(wine_device_from_handle(params->device)->obj.host.device, params->createInfoCount, params->pCreateInfos, NULL, params->pShaders);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42449,7 +42449,7 @@ static NTSTATUS thunk32_vkCreateShadersEXT(void *args)
 
     init_conversion_context(ctx);
     pCreateInfos_host = convert_VkShaderCreateInfoEXT_array_win32_to_host(ctx, (const VkShaderCreateInfoEXT32 *)UlongToPtr(params->pCreateInfos), params->createInfoCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateShadersEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->createInfoCount, pCreateInfos_host, NULL, (VkShaderEXT *)UlongToPtr(params->pShaders));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateShadersEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->createInfoCount, pCreateInfos_host, NULL, (VkShaderEXT *)UlongToPtr(params->pShaders));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -42496,7 +42496,7 @@ static NTSTATUS thunk64_vkCreateValidationCacheEXT(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pValidationCache);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateValidationCacheEXT(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pValidationCache);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateValidationCacheEXT(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pValidationCache);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42516,7 +42516,7 @@ static NTSTATUS thunk32_vkCreateValidationCacheEXT(void *args)
     TRACE("%#x, %#x, %#x, %#x\n", params->device, params->pCreateInfo, params->pAllocator, params->pValidationCache);
 
     convert_VkValidationCacheCreateInfoEXT_win32_to_host((const VkValidationCacheCreateInfoEXT32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateValidationCacheEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkValidationCacheEXT *)UlongToPtr(params->pValidationCache));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateValidationCacheEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkValidationCacheEXT *)UlongToPtr(params->pValidationCache));
     return STATUS_SUCCESS;
 }
 
@@ -42527,7 +42527,7 @@ static NTSTATUS thunk64_vkCreateVideoSessionKHR(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pVideoSession);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateVideoSessionKHR(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pVideoSession);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateVideoSessionKHR(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pVideoSession);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42550,7 +42550,7 @@ static NTSTATUS thunk32_vkCreateVideoSessionKHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkVideoSessionCreateInfoKHR_win32_to_host(ctx, (const VkVideoSessionCreateInfoKHR32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateVideoSessionKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkVideoSessionKHR *)UlongToPtr(params->pVideoSession));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateVideoSessionKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkVideoSessionKHR *)UlongToPtr(params->pVideoSession));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -42562,7 +42562,7 @@ static NTSTATUS thunk64_vkCreateVideoSessionParametersKHR(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pCreateInfo, params->pAllocator, params->pVideoSessionParameters);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkCreateVideoSessionParametersKHR(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, NULL, params->pVideoSessionParameters);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkCreateVideoSessionParametersKHR(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, NULL, params->pVideoSessionParameters);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42585,7 +42585,7 @@ static NTSTATUS thunk32_vkCreateVideoSessionParametersKHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkVideoSessionParametersCreateInfoKHR_win32_to_host(ctx, (const VkVideoSessionParametersCreateInfoKHR32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkCreateVideoSessionParametersKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, NULL, (VkVideoSessionParametersKHR *)UlongToPtr(params->pVideoSessionParameters));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkCreateVideoSessionParametersKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, NULL, (VkVideoSessionParametersKHR *)UlongToPtr(params->pVideoSessionParameters));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -42630,7 +42630,7 @@ static NTSTATUS thunk64_vkDebugMarkerSetObjectNameEXT(void *args)
     TRACE("%p, %p\n", params->device, params->pNameInfo);
 
     convert_VkDebugMarkerObjectNameInfoEXT_win64_to_host(params->pNameInfo, &pNameInfo_host);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkDebugMarkerSetObjectNameEXT(wine_device_from_handle(params->device)->host_device, &pNameInfo_host);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkDebugMarkerSetObjectNameEXT(wine_device_from_handle(params->device)->obj.host.device, &pNameInfo_host);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42648,7 +42648,7 @@ static NTSTATUS thunk32_vkDebugMarkerSetObjectNameEXT(void *args)
     TRACE("%#x, %#x\n", params->device, params->pNameInfo);
 
     convert_VkDebugMarkerObjectNameInfoEXT_win32_to_host((const VkDebugMarkerObjectNameInfoEXT32 *)UlongToPtr(params->pNameInfo), &pNameInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDebugMarkerSetObjectNameEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pNameInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDebugMarkerSetObjectNameEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pNameInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -42661,7 +42661,7 @@ static NTSTATUS thunk64_vkDebugMarkerSetObjectTagEXT(void *args)
     TRACE("%p, %p\n", params->device, params->pTagInfo);
 
     convert_VkDebugMarkerObjectTagInfoEXT_win64_to_host(params->pTagInfo, &pTagInfo_host);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkDebugMarkerSetObjectTagEXT(wine_device_from_handle(params->device)->host_device, &pTagInfo_host);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkDebugMarkerSetObjectTagEXT(wine_device_from_handle(params->device)->obj.host.device, &pTagInfo_host);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42679,7 +42679,7 @@ static NTSTATUS thunk32_vkDebugMarkerSetObjectTagEXT(void *args)
     TRACE("%#x, %#x\n", params->device, params->pTagInfo);
 
     convert_VkDebugMarkerObjectTagInfoEXT_win32_to_host((const VkDebugMarkerObjectTagInfoEXT32 *)UlongToPtr(params->pTagInfo), &pTagInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDebugMarkerSetObjectTagEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pTagInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDebugMarkerSetObjectTagEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pTagInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -42690,7 +42690,7 @@ static NTSTATUS thunk64_vkDebugReportMessageEXT(void *args)
 
     TRACE("%p, %#x, %#x, 0x%s, 0x%s, %d, %p, %p\n", params->instance, params->flags, params->objectType, wine_dbgstr_longlong(params->object), wine_dbgstr_longlong(params->location), params->messageCode, params->pLayerPrefix, params->pMessage);
 
-    wine_instance_from_handle(params->instance)->funcs.p_vkDebugReportMessageEXT(wine_instance_from_handle(params->instance)->host_instance, params->flags, params->objectType, wine_vk_unwrap_handle(params->objectType, params->object), params->location, params->messageCode, params->pLayerPrefix, params->pMessage);
+    get_vulkan_instance_funcs(params->instance)->p_vkDebugReportMessageEXT(wine_instance_from_handle(params->instance)->obj.host.instance, params->flags, params->objectType, wine_vk_unwrap_handle(params->objectType, params->object), params->location, params->messageCode, params->pLayerPrefix, params->pMessage);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42711,7 +42711,7 @@ static NTSTATUS thunk32_vkDebugReportMessageEXT(void *args)
 
     TRACE("%#x, %#x, %#x, 0x%s, 0x%s, %d, %#x, %#x\n", params->instance, params->flags, params->objectType, wine_dbgstr_longlong(params->object), wine_dbgstr_longlong(params->location), params->messageCode, params->pLayerPrefix, params->pMessage);
 
-    wine_instance_from_handle((VkInstance)UlongToPtr(params->instance))->funcs.p_vkDebugReportMessageEXT(wine_instance_from_handle((VkInstance)UlongToPtr(params->instance))->host_instance, params->flags, params->objectType, wine_vk_unwrap_handle(params->objectType, params->object), params->location, params->messageCode, (const char *)UlongToPtr(params->pLayerPrefix), (const char *)UlongToPtr(params->pMessage));
+    get_vulkan_instance_funcs((VkInstance)UlongToPtr(params->instance))->p_vkDebugReportMessageEXT(wine_instance_from_handle((VkInstance)UlongToPtr(params->instance))->obj.host.instance, params->flags, params->objectType, wine_vk_unwrap_handle(params->objectType, params->object), params->location, params->messageCode, (const char *)UlongToPtr(params->pLayerPrefix), (const char *)UlongToPtr(params->pMessage));
     return STATUS_SUCCESS;
 }
 
@@ -42722,7 +42722,7 @@ static NTSTATUS thunk64_vkDeferredOperationJoinKHR(void *args)
 
     TRACE("%p, 0x%s\n", params->device, wine_dbgstr_longlong(params->operation));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkDeferredOperationJoinKHR(wine_device_from_handle(params->device)->host_device, wine_deferred_operation_from_handle(params->operation)->host_deferred_operation);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkDeferredOperationJoinKHR(wine_device_from_handle(params->device)->obj.host.device, wine_deferred_operation_from_handle(params->operation)->obj.host.deferred_operation);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42738,7 +42738,7 @@ static NTSTATUS thunk32_vkDeferredOperationJoinKHR(void *args)
 
     TRACE("%#x, 0x%s\n", params->device, wine_dbgstr_longlong(params->operation));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDeferredOperationJoinKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, wine_deferred_operation_from_handle(params->operation)->host_deferred_operation);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDeferredOperationJoinKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, wine_deferred_operation_from_handle(params->operation)->obj.host.deferred_operation);
     return STATUS_SUCCESS;
 }
 
@@ -42749,7 +42749,7 @@ static NTSTATUS thunk64_vkDestroyAccelerationStructureKHR(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->accelerationStructure), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyAccelerationStructureKHR(wine_device_from_handle(params->device)->host_device, params->accelerationStructure, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyAccelerationStructureKHR(wine_device_from_handle(params->device)->obj.host.device, params->accelerationStructure, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42765,7 +42765,7 @@ static NTSTATUS thunk32_vkDestroyAccelerationStructureKHR(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->accelerationStructure), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyAccelerationStructureKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->accelerationStructure, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyAccelerationStructureKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->accelerationStructure, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -42776,7 +42776,7 @@ static NTSTATUS thunk64_vkDestroyAccelerationStructureNV(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->accelerationStructure), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyAccelerationStructureNV(wine_device_from_handle(params->device)->host_device, params->accelerationStructure, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyAccelerationStructureNV(wine_device_from_handle(params->device)->obj.host.device, params->accelerationStructure, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42792,7 +42792,7 @@ static NTSTATUS thunk32_vkDestroyAccelerationStructureNV(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->accelerationStructure), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyAccelerationStructureNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->accelerationStructure, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyAccelerationStructureNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->accelerationStructure, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -42803,7 +42803,7 @@ static NTSTATUS thunk64_vkDestroyBuffer(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->buffer), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyBuffer(wine_device_from_handle(params->device)->host_device, params->buffer, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyBuffer(wine_device_from_handle(params->device)->obj.host.device, params->buffer, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42819,7 +42819,7 @@ static NTSTATUS thunk32_vkDestroyBuffer(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->buffer), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyBuffer(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->buffer, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyBuffer(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->buffer, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -42830,7 +42830,7 @@ static NTSTATUS thunk64_vkDestroyBufferView(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->bufferView), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyBufferView(wine_device_from_handle(params->device)->host_device, params->bufferView, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyBufferView(wine_device_from_handle(params->device)->obj.host.device, params->bufferView, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42846,7 +42846,7 @@ static NTSTATUS thunk32_vkDestroyBufferView(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->bufferView), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyBufferView(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->bufferView, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyBufferView(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->bufferView, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -42884,7 +42884,7 @@ static NTSTATUS thunk64_vkDestroyCuFunctionNVX(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->function), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyCuFunctionNVX(wine_device_from_handle(params->device)->host_device, params->function, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyCuFunctionNVX(wine_device_from_handle(params->device)->obj.host.device, params->function, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42900,7 +42900,7 @@ static NTSTATUS thunk32_vkDestroyCuFunctionNVX(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->function), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyCuFunctionNVX(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->function, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyCuFunctionNVX(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->function, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -42911,7 +42911,7 @@ static NTSTATUS thunk64_vkDestroyCuModuleNVX(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->module), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyCuModuleNVX(wine_device_from_handle(params->device)->host_device, params->module, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyCuModuleNVX(wine_device_from_handle(params->device)->obj.host.device, params->module, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42927,7 +42927,7 @@ static NTSTATUS thunk32_vkDestroyCuModuleNVX(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->module), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyCuModuleNVX(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->module, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyCuModuleNVX(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->module, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -42938,7 +42938,7 @@ static NTSTATUS thunk64_vkDestroyCudaFunctionNV(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->function), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyCudaFunctionNV(wine_device_from_handle(params->device)->host_device, params->function, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyCudaFunctionNV(wine_device_from_handle(params->device)->obj.host.device, params->function, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42954,7 +42954,7 @@ static NTSTATUS thunk32_vkDestroyCudaFunctionNV(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->function), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyCudaFunctionNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->function, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyCudaFunctionNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->function, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -42965,7 +42965,7 @@ static NTSTATUS thunk64_vkDestroyCudaModuleNV(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->module), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyCudaModuleNV(wine_device_from_handle(params->device)->host_device, params->module, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyCudaModuleNV(wine_device_from_handle(params->device)->obj.host.device, params->module, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -42981,7 +42981,7 @@ static NTSTATUS thunk32_vkDestroyCudaModuleNV(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->module), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyCudaModuleNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->module, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyCudaModuleNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->module, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43073,7 +43073,7 @@ static NTSTATUS thunk64_vkDestroyDescriptorPool(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->descriptorPool), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyDescriptorPool(wine_device_from_handle(params->device)->host_device, params->descriptorPool, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyDescriptorPool(wine_device_from_handle(params->device)->obj.host.device, params->descriptorPool, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43089,7 +43089,7 @@ static NTSTATUS thunk32_vkDestroyDescriptorPool(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->descriptorPool), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyDescriptorPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->descriptorPool, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyDescriptorPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->descriptorPool, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43100,7 +43100,7 @@ static NTSTATUS thunk64_vkDestroyDescriptorSetLayout(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->descriptorSetLayout), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyDescriptorSetLayout(wine_device_from_handle(params->device)->host_device, params->descriptorSetLayout, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyDescriptorSetLayout(wine_device_from_handle(params->device)->obj.host.device, params->descriptorSetLayout, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43116,7 +43116,7 @@ static NTSTATUS thunk32_vkDestroyDescriptorSetLayout(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->descriptorSetLayout), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyDescriptorSetLayout(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->descriptorSetLayout, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyDescriptorSetLayout(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->descriptorSetLayout, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43127,7 +43127,7 @@ static NTSTATUS thunk64_vkDestroyDescriptorUpdateTemplate(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->descriptorUpdateTemplate), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyDescriptorUpdateTemplate(wine_device_from_handle(params->device)->host_device, params->descriptorUpdateTemplate, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyDescriptorUpdateTemplate(wine_device_from_handle(params->device)->obj.host.device, params->descriptorUpdateTemplate, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43143,7 +43143,7 @@ static NTSTATUS thunk32_vkDestroyDescriptorUpdateTemplate(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->descriptorUpdateTemplate), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyDescriptorUpdateTemplate(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->descriptorUpdateTemplate, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyDescriptorUpdateTemplate(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->descriptorUpdateTemplate, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43154,7 +43154,7 @@ static NTSTATUS thunk64_vkDestroyDescriptorUpdateTemplateKHR(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->descriptorUpdateTemplate), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyDescriptorUpdateTemplateKHR(wine_device_from_handle(params->device)->host_device, params->descriptorUpdateTemplate, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyDescriptorUpdateTemplateKHR(wine_device_from_handle(params->device)->obj.host.device, params->descriptorUpdateTemplate, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43170,7 +43170,7 @@ static NTSTATUS thunk32_vkDestroyDescriptorUpdateTemplateKHR(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->descriptorUpdateTemplate), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyDescriptorUpdateTemplateKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->descriptorUpdateTemplate, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyDescriptorUpdateTemplateKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->descriptorUpdateTemplate, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43213,7 +43213,7 @@ static NTSTATUS thunk64_vkDestroyEvent(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->event), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyEvent(wine_device_from_handle(params->device)->host_device, params->event, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyEvent(wine_device_from_handle(params->device)->obj.host.device, params->event, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43229,7 +43229,7 @@ static NTSTATUS thunk32_vkDestroyEvent(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->event), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyEvent(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->event, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyEvent(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->event, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43240,7 +43240,7 @@ static NTSTATUS thunk64_vkDestroyFence(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->fence), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyFence(wine_device_from_handle(params->device)->host_device, params->fence, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyFence(wine_device_from_handle(params->device)->obj.host.device, params->fence, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43256,7 +43256,7 @@ static NTSTATUS thunk32_vkDestroyFence(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->fence), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyFence(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->fence, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyFence(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->fence, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43267,7 +43267,7 @@ static NTSTATUS thunk64_vkDestroyFramebuffer(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->framebuffer), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyFramebuffer(wine_device_from_handle(params->device)->host_device, params->framebuffer, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyFramebuffer(wine_device_from_handle(params->device)->obj.host.device, params->framebuffer, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43283,7 +43283,7 @@ static NTSTATUS thunk32_vkDestroyFramebuffer(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->framebuffer), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyFramebuffer(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->framebuffer, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyFramebuffer(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->framebuffer, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43294,7 +43294,7 @@ static NTSTATUS thunk64_vkDestroyImage(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->image), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyImage(wine_device_from_handle(params->device)->host_device, params->image, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyImage(wine_device_from_handle(params->device)->obj.host.device, params->image, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43310,7 +43310,7 @@ static NTSTATUS thunk32_vkDestroyImage(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->image), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyImage(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->image, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyImage(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->image, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43321,7 +43321,7 @@ static NTSTATUS thunk64_vkDestroyImageView(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->imageView), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyImageView(wine_device_from_handle(params->device)->host_device, params->imageView, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyImageView(wine_device_from_handle(params->device)->obj.host.device, params->imageView, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43337,7 +43337,7 @@ static NTSTATUS thunk32_vkDestroyImageView(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->imageView), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyImageView(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->imageView, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyImageView(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->imageView, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43348,7 +43348,7 @@ static NTSTATUS thunk64_vkDestroyIndirectCommandsLayoutNV(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->indirectCommandsLayout), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyIndirectCommandsLayoutNV(wine_device_from_handle(params->device)->host_device, params->indirectCommandsLayout, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyIndirectCommandsLayoutNV(wine_device_from_handle(params->device)->obj.host.device, params->indirectCommandsLayout, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43364,7 +43364,7 @@ static NTSTATUS thunk32_vkDestroyIndirectCommandsLayoutNV(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->indirectCommandsLayout), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyIndirectCommandsLayoutNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->indirectCommandsLayout, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyIndirectCommandsLayoutNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->indirectCommandsLayout, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43407,7 +43407,7 @@ static NTSTATUS thunk64_vkDestroyMicromapEXT(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->micromap), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyMicromapEXT(wine_device_from_handle(params->device)->host_device, params->micromap, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyMicromapEXT(wine_device_from_handle(params->device)->obj.host.device, params->micromap, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43423,7 +43423,7 @@ static NTSTATUS thunk32_vkDestroyMicromapEXT(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->micromap), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyMicromapEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->micromap, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyMicromapEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->micromap, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43434,7 +43434,7 @@ static NTSTATUS thunk64_vkDestroyOpticalFlowSessionNV(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->session), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyOpticalFlowSessionNV(wine_device_from_handle(params->device)->host_device, params->session, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyOpticalFlowSessionNV(wine_device_from_handle(params->device)->obj.host.device, params->session, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43450,7 +43450,7 @@ static NTSTATUS thunk32_vkDestroyOpticalFlowSessionNV(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->session), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyOpticalFlowSessionNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->session, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyOpticalFlowSessionNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->session, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43461,7 +43461,7 @@ static NTSTATUS thunk64_vkDestroyPipeline(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->pipeline), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyPipeline(wine_device_from_handle(params->device)->host_device, params->pipeline, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyPipeline(wine_device_from_handle(params->device)->obj.host.device, params->pipeline, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43477,7 +43477,7 @@ static NTSTATUS thunk32_vkDestroyPipeline(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->pipeline), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyPipeline(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->pipeline, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyPipeline(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->pipeline, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43488,7 +43488,7 @@ static NTSTATUS thunk64_vkDestroyPipelineCache(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->pipelineCache), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyPipelineCache(wine_device_from_handle(params->device)->host_device, params->pipelineCache, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyPipelineCache(wine_device_from_handle(params->device)->obj.host.device, params->pipelineCache, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43504,7 +43504,7 @@ static NTSTATUS thunk32_vkDestroyPipelineCache(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->pipelineCache), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyPipelineCache(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->pipelineCache, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyPipelineCache(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->pipelineCache, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43515,7 +43515,7 @@ static NTSTATUS thunk64_vkDestroyPipelineLayout(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->pipelineLayout), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyPipelineLayout(wine_device_from_handle(params->device)->host_device, params->pipelineLayout, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyPipelineLayout(wine_device_from_handle(params->device)->obj.host.device, params->pipelineLayout, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43531,7 +43531,7 @@ static NTSTATUS thunk32_vkDestroyPipelineLayout(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->pipelineLayout), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyPipelineLayout(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->pipelineLayout, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyPipelineLayout(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->pipelineLayout, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43542,7 +43542,7 @@ static NTSTATUS thunk64_vkDestroyPrivateDataSlot(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->privateDataSlot), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyPrivateDataSlot(wine_device_from_handle(params->device)->host_device, params->privateDataSlot, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyPrivateDataSlot(wine_device_from_handle(params->device)->obj.host.device, params->privateDataSlot, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43558,7 +43558,7 @@ static NTSTATUS thunk32_vkDestroyPrivateDataSlot(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->privateDataSlot), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyPrivateDataSlot(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->privateDataSlot, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyPrivateDataSlot(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->privateDataSlot, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43569,7 +43569,7 @@ static NTSTATUS thunk64_vkDestroyPrivateDataSlotEXT(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->privateDataSlot), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyPrivateDataSlotEXT(wine_device_from_handle(params->device)->host_device, params->privateDataSlot, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyPrivateDataSlotEXT(wine_device_from_handle(params->device)->obj.host.device, params->privateDataSlot, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43585,7 +43585,7 @@ static NTSTATUS thunk32_vkDestroyPrivateDataSlotEXT(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->privateDataSlot), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyPrivateDataSlotEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->privateDataSlot, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyPrivateDataSlotEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->privateDataSlot, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43596,7 +43596,7 @@ static NTSTATUS thunk64_vkDestroyQueryPool(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->queryPool), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyQueryPool(wine_device_from_handle(params->device)->host_device, params->queryPool, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyQueryPool(wine_device_from_handle(params->device)->obj.host.device, params->queryPool, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43612,7 +43612,7 @@ static NTSTATUS thunk32_vkDestroyQueryPool(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->queryPool), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyQueryPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->queryPool, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyQueryPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->queryPool, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43623,7 +43623,7 @@ static NTSTATUS thunk64_vkDestroyRenderPass(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->renderPass), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyRenderPass(wine_device_from_handle(params->device)->host_device, params->renderPass, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyRenderPass(wine_device_from_handle(params->device)->obj.host.device, params->renderPass, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43639,7 +43639,7 @@ static NTSTATUS thunk32_vkDestroyRenderPass(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->renderPass), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyRenderPass(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->renderPass, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyRenderPass(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->renderPass, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43650,7 +43650,7 @@ static NTSTATUS thunk64_vkDestroySampler(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->sampler), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroySampler(wine_device_from_handle(params->device)->host_device, params->sampler, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroySampler(wine_device_from_handle(params->device)->obj.host.device, params->sampler, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43666,7 +43666,7 @@ static NTSTATUS thunk32_vkDestroySampler(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->sampler), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroySampler(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->sampler, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroySampler(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->sampler, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43677,7 +43677,7 @@ static NTSTATUS thunk64_vkDestroySamplerYcbcrConversion(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->ycbcrConversion), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroySamplerYcbcrConversion(wine_device_from_handle(params->device)->host_device, params->ycbcrConversion, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroySamplerYcbcrConversion(wine_device_from_handle(params->device)->obj.host.device, params->ycbcrConversion, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43693,7 +43693,7 @@ static NTSTATUS thunk32_vkDestroySamplerYcbcrConversion(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->ycbcrConversion), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroySamplerYcbcrConversion(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->ycbcrConversion, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroySamplerYcbcrConversion(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->ycbcrConversion, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43704,7 +43704,7 @@ static NTSTATUS thunk64_vkDestroySamplerYcbcrConversionKHR(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->ycbcrConversion), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroySamplerYcbcrConversionKHR(wine_device_from_handle(params->device)->host_device, params->ycbcrConversion, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroySamplerYcbcrConversionKHR(wine_device_from_handle(params->device)->obj.host.device, params->ycbcrConversion, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43720,7 +43720,7 @@ static NTSTATUS thunk32_vkDestroySamplerYcbcrConversionKHR(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->ycbcrConversion), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroySamplerYcbcrConversionKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->ycbcrConversion, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroySamplerYcbcrConversionKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->ycbcrConversion, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43731,7 +43731,7 @@ static NTSTATUS thunk64_vkDestroySemaphore(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->semaphore), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroySemaphore(wine_device_from_handle(params->device)->host_device, params->semaphore, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroySemaphore(wine_device_from_handle(params->device)->obj.host.device, params->semaphore, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43747,7 +43747,7 @@ static NTSTATUS thunk32_vkDestroySemaphore(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->semaphore), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroySemaphore(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->semaphore, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroySemaphore(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->semaphore, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43758,7 +43758,7 @@ static NTSTATUS thunk64_vkDestroyShaderEXT(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->shader), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyShaderEXT(wine_device_from_handle(params->device)->host_device, params->shader, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyShaderEXT(wine_device_from_handle(params->device)->obj.host.device, params->shader, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43774,7 +43774,7 @@ static NTSTATUS thunk32_vkDestroyShaderEXT(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->shader), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyShaderEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->shader, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyShaderEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->shader, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43785,7 +43785,7 @@ static NTSTATUS thunk64_vkDestroyShaderModule(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->shaderModule), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyShaderModule(wine_device_from_handle(params->device)->host_device, params->shaderModule, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyShaderModule(wine_device_from_handle(params->device)->obj.host.device, params->shaderModule, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43801,7 +43801,7 @@ static NTSTATUS thunk32_vkDestroyShaderModule(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->shaderModule), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyShaderModule(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->shaderModule, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyShaderModule(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->shaderModule, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43866,7 +43866,7 @@ static NTSTATUS thunk64_vkDestroyValidationCacheEXT(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->validationCache), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyValidationCacheEXT(wine_device_from_handle(params->device)->host_device, params->validationCache, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyValidationCacheEXT(wine_device_from_handle(params->device)->obj.host.device, params->validationCache, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43882,7 +43882,7 @@ static NTSTATUS thunk32_vkDestroyValidationCacheEXT(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->validationCache), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyValidationCacheEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->validationCache, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyValidationCacheEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->validationCache, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43893,7 +43893,7 @@ static NTSTATUS thunk64_vkDestroyVideoSessionKHR(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->videoSession), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyVideoSessionKHR(wine_device_from_handle(params->device)->host_device, params->videoSession, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyVideoSessionKHR(wine_device_from_handle(params->device)->obj.host.device, params->videoSession, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43909,7 +43909,7 @@ static NTSTATUS thunk32_vkDestroyVideoSessionKHR(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->videoSession), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyVideoSessionKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->videoSession, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyVideoSessionKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->videoSession, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43920,7 +43920,7 @@ static NTSTATUS thunk64_vkDestroyVideoSessionParametersKHR(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->videoSessionParameters), params->pAllocator);
 
-    wine_device_from_handle(params->device)->funcs.p_vkDestroyVideoSessionParametersKHR(wine_device_from_handle(params->device)->host_device, params->videoSessionParameters, NULL);
+    get_vulkan_device_funcs(params->device)->p_vkDestroyVideoSessionParametersKHR(wine_device_from_handle(params->device)->obj.host.device, params->videoSessionParameters, NULL);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43936,7 +43936,7 @@ static NTSTATUS thunk32_vkDestroyVideoSessionParametersKHR(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->videoSessionParameters), params->pAllocator);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDestroyVideoSessionParametersKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->videoSessionParameters, NULL);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDestroyVideoSessionParametersKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->videoSessionParameters, NULL);
     return STATUS_SUCCESS;
 }
 
@@ -43947,7 +43947,7 @@ static NTSTATUS thunk64_vkDeviceWaitIdle(void *args)
 
     TRACE("%p\n", params->device);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkDeviceWaitIdle(wine_device_from_handle(params->device)->host_device);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkDeviceWaitIdle(wine_device_from_handle(params->device)->obj.host.device);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43962,7 +43962,7 @@ static NTSTATUS thunk32_vkDeviceWaitIdle(void *args)
 
     TRACE("%#x\n", params->device);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkDeviceWaitIdle(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkDeviceWaitIdle(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device);
     return STATUS_SUCCESS;
 }
 
@@ -43973,7 +43973,7 @@ static NTSTATUS thunk64_vkEndCommandBuffer(void *args)
 
     TRACE("%p\n", params->commandBuffer);
 
-    params->result = wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkEndCommandBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer);
+    params->result = get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkEndCommandBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -43988,7 +43988,7 @@ static NTSTATUS thunk32_vkEndCommandBuffer(void *args)
 
     TRACE("%#x\n", params->commandBuffer);
 
-    params->result = wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkEndCommandBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer);
+    params->result = get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkEndCommandBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer);
     return STATUS_SUCCESS;
 }
 
@@ -44180,7 +44180,7 @@ static NTSTATUS thunk64_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCoun
 
     TRACE("%p, %u, %p, %p, %p\n", params->physicalDevice, params->queueFamilyIndex, params->pCounterCount, params->pCounters, params->pCounterDescriptions);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->queueFamilyIndex, params->pCounterCount, params->pCounters, params->pCounterDescriptions);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->queueFamilyIndex, params->pCounterCount, params->pCounters, params->pCounterDescriptions);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44206,7 +44206,7 @@ static NTSTATUS thunk32_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCoun
     init_conversion_context(ctx);
     pCounters_host = convert_VkPerformanceCounterKHR_array_win32_to_host(ctx, (VkPerformanceCounterKHR32 *)UlongToPtr(params->pCounters), *(uint32_t *)UlongToPtr(params->pCounterCount));
     pCounterDescriptions_host = convert_VkPerformanceCounterDescriptionKHR_array_win32_to_host(ctx, (VkPerformanceCounterDescriptionKHR32 *)UlongToPtr(params->pCounterDescriptions), *(uint32_t *)UlongToPtr(params->pCounterCount));
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, params->queueFamilyIndex, (uint32_t *)UlongToPtr(params->pCounterCount), pCounters_host, pCounterDescriptions_host);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, params->queueFamilyIndex, (uint32_t *)UlongToPtr(params->pCounterCount), pCounters_host, pCounterDescriptions_host);
     convert_VkPerformanceCounterKHR_array_host_to_win32(pCounters_host, (VkPerformanceCounterKHR32 *)UlongToPtr(params->pCounters), *(uint32_t *)UlongToPtr(params->pCounterCount));
     convert_VkPerformanceCounterDescriptionKHR_array_host_to_win32(pCounterDescriptions_host, (VkPerformanceCounterDescriptionKHR32 *)UlongToPtr(params->pCounterDescriptions), *(uint32_t *)UlongToPtr(params->pCounterCount));
     free_conversion_context(ctx);
@@ -44260,7 +44260,7 @@ static NTSTATUS thunk64_vkFlushMappedMemoryRanges(void *args)
 
     init_conversion_context(ctx);
     pMemoryRanges_host = convert_VkMappedMemoryRange_array_win64_to_host(ctx, params->pMemoryRanges, params->memoryRangeCount);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkFlushMappedMemoryRanges(wine_device_from_handle(params->device)->host_device, params->memoryRangeCount, pMemoryRanges_host);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkFlushMappedMemoryRanges(wine_device_from_handle(params->device)->obj.host.device, params->memoryRangeCount, pMemoryRanges_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -44283,7 +44283,7 @@ static NTSTATUS thunk32_vkFlushMappedMemoryRanges(void *args)
 
     init_conversion_context(ctx);
     pMemoryRanges_host = convert_VkMappedMemoryRange_array_win32_to_host(ctx, (const VkMappedMemoryRange32 *)UlongToPtr(params->pMemoryRanges), params->memoryRangeCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkFlushMappedMemoryRanges(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->memoryRangeCount, pMemoryRanges_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkFlushMappedMemoryRanges(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->memoryRangeCount, pMemoryRanges_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -44329,7 +44329,7 @@ static NTSTATUS thunk64_vkFreeDescriptorSets(void *args)
 
     TRACE("%p, 0x%s, %u, %p\n", params->device, wine_dbgstr_longlong(params->descriptorPool), params->descriptorSetCount, params->pDescriptorSets);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkFreeDescriptorSets(wine_device_from_handle(params->device)->host_device, params->descriptorPool, params->descriptorSetCount, params->pDescriptorSets);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkFreeDescriptorSets(wine_device_from_handle(params->device)->obj.host.device, params->descriptorPool, params->descriptorSetCount, params->pDescriptorSets);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44347,7 +44347,7 @@ static NTSTATUS thunk32_vkFreeDescriptorSets(void *args)
 
     TRACE("%#x, 0x%s, %u, %#x\n", params->device, wine_dbgstr_longlong(params->descriptorPool), params->descriptorSetCount, params->pDescriptorSets);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkFreeDescriptorSets(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->descriptorPool, params->descriptorSetCount, (const VkDescriptorSet *)UlongToPtr(params->pDescriptorSets));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkFreeDescriptorSets(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->descriptorPool, params->descriptorSetCount, (const VkDescriptorSet *)UlongToPtr(params->pDescriptorSets));
     return STATUS_SUCCESS;
 }
 
@@ -44385,7 +44385,7 @@ static NTSTATUS thunk64_vkGetAccelerationStructureBuildSizesKHR(void *args)
 
     TRACE("%p, %#x, %p, %p, %p\n", params->device, params->buildType, params->pBuildInfo, params->pMaxPrimitiveCounts, params->pSizeInfo);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetAccelerationStructureBuildSizesKHR(wine_device_from_handle(params->device)->host_device, params->buildType, params->pBuildInfo, params->pMaxPrimitiveCounts, params->pSizeInfo);
+    get_vulkan_device_funcs(params->device)->p_vkGetAccelerationStructureBuildSizesKHR(wine_device_from_handle(params->device)->obj.host.device, params->buildType, params->pBuildInfo, params->pMaxPrimitiveCounts, params->pSizeInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44410,7 +44410,7 @@ static NTSTATUS thunk32_vkGetAccelerationStructureBuildSizesKHR(void *args)
     init_conversion_context(ctx);
     convert_VkAccelerationStructureBuildGeometryInfoKHR_win32_to_host(ctx, (const VkAccelerationStructureBuildGeometryInfoKHR32 *)UlongToPtr(params->pBuildInfo), &pBuildInfo_host);
     convert_VkAccelerationStructureBuildSizesInfoKHR_win32_to_host((VkAccelerationStructureBuildSizesInfoKHR32 *)UlongToPtr(params->pSizeInfo), &pSizeInfo_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetAccelerationStructureBuildSizesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->buildType, &pBuildInfo_host, (const uint32_t *)UlongToPtr(params->pMaxPrimitiveCounts), &pSizeInfo_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetAccelerationStructureBuildSizesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->buildType, &pBuildInfo_host, (const uint32_t *)UlongToPtr(params->pMaxPrimitiveCounts), &pSizeInfo_host);
     convert_VkAccelerationStructureBuildSizesInfoKHR_host_to_win32(&pSizeInfo_host, (VkAccelerationStructureBuildSizesInfoKHR32 *)UlongToPtr(params->pSizeInfo));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -44423,7 +44423,7 @@ static NTSTATUS thunk64_vkGetAccelerationStructureDeviceAddressKHR(void *args)
 
     TRACE("%p, %p\n", params->device, params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetAccelerationStructureDeviceAddressKHR(wine_device_from_handle(params->device)->host_device, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetAccelerationStructureDeviceAddressKHR(wine_device_from_handle(params->device)->obj.host.device, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44441,7 +44441,7 @@ static NTSTATUS thunk32_vkGetAccelerationStructureDeviceAddressKHR(void *args)
     TRACE("%#x, %#x\n", params->device, params->pInfo);
 
     convert_VkAccelerationStructureDeviceAddressInfoKHR_win32_to_host((const VkAccelerationStructureDeviceAddressInfoKHR32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetAccelerationStructureDeviceAddressKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetAccelerationStructureDeviceAddressKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -44452,7 +44452,7 @@ static NTSTATUS thunk64_vkGetAccelerationStructureHandleNV(void *args)
 
     TRACE("%p, 0x%s, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->accelerationStructure), wine_dbgstr_longlong(params->dataSize), params->pData);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetAccelerationStructureHandleNV(wine_device_from_handle(params->device)->host_device, params->accelerationStructure, params->dataSize, params->pData);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetAccelerationStructureHandleNV(wine_device_from_handle(params->device)->obj.host.device, params->accelerationStructure, params->dataSize, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44470,7 +44470,7 @@ static NTSTATUS thunk32_vkGetAccelerationStructureHandleNV(void *args)
 
     TRACE("%#x, 0x%s, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->accelerationStructure), wine_dbgstr_longlong(params->dataSize), params->pData);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetAccelerationStructureHandleNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->accelerationStructure, params->dataSize, (void *)UlongToPtr(params->pData));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetAccelerationStructureHandleNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->accelerationStructure, params->dataSize, (void *)UlongToPtr(params->pData));
     return STATUS_SUCCESS;
 }
 
@@ -44481,7 +44481,7 @@ static NTSTATUS thunk64_vkGetAccelerationStructureMemoryRequirementsNV(void *arg
 
     TRACE("%p, %p, %p\n", params->device, params->pInfo, params->pMemoryRequirements);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetAccelerationStructureMemoryRequirementsNV(wine_device_from_handle(params->device)->host_device, params->pInfo, params->pMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetAccelerationStructureMemoryRequirementsNV(wine_device_from_handle(params->device)->obj.host.device, params->pInfo, params->pMemoryRequirements);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44501,7 +44501,7 @@ static NTSTATUS thunk32_vkGetAccelerationStructureMemoryRequirementsNV(void *arg
 
     convert_VkAccelerationStructureMemoryRequirementsInfoNV_win32_to_host((const VkAccelerationStructureMemoryRequirementsInfoNV32 *)UlongToPtr(params->pInfo), &pInfo_host);
     convert_VkMemoryRequirements2KHR_win32_to_host((VkMemoryRequirements2KHR32 *)UlongToPtr(params->pMemoryRequirements), &pMemoryRequirements_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetAccelerationStructureMemoryRequirementsNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, &pMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetAccelerationStructureMemoryRequirementsNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, &pMemoryRequirements_host);
     convert_VkMemoryRequirements2KHR_host_to_win32(&pMemoryRequirements_host, (VkMemoryRequirements2KHR32 *)UlongToPtr(params->pMemoryRequirements));
     return STATUS_SUCCESS;
 }
@@ -44513,7 +44513,7 @@ static NTSTATUS thunk64_vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT
 
     TRACE("%p, %p, %p\n", params->device, params->pInfo, params->pData);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT(wine_device_from_handle(params->device)->host_device, params->pInfo, params->pData);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT(wine_device_from_handle(params->device)->obj.host.device, params->pInfo, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44532,7 +44532,7 @@ static NTSTATUS thunk32_vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT
     TRACE("%#x, %#x, %#x\n", params->device, params->pInfo, params->pData);
 
     convert_VkAccelerationStructureCaptureDescriptorDataInfoEXT_win32_to_host((const VkAccelerationStructureCaptureDescriptorDataInfoEXT32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, (void *)UlongToPtr(params->pData));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, (void *)UlongToPtr(params->pData));
     return STATUS_SUCCESS;
 }
 
@@ -44543,7 +44543,7 @@ static NTSTATUS thunk64_vkGetBufferDeviceAddress(void *args)
 
     TRACE("%p, %p\n", params->device, params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetBufferDeviceAddress(wine_device_from_handle(params->device)->host_device, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetBufferDeviceAddress(wine_device_from_handle(params->device)->obj.host.device, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44561,7 +44561,7 @@ static NTSTATUS thunk32_vkGetBufferDeviceAddress(void *args)
     TRACE("%#x, %#x\n", params->device, params->pInfo);
 
     convert_VkBufferDeviceAddressInfo_win32_to_host((const VkBufferDeviceAddressInfo32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetBufferDeviceAddress(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetBufferDeviceAddress(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -44572,7 +44572,7 @@ static NTSTATUS thunk64_vkGetBufferDeviceAddressEXT(void *args)
 
     TRACE("%p, %p\n", params->device, params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetBufferDeviceAddressEXT(wine_device_from_handle(params->device)->host_device, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetBufferDeviceAddressEXT(wine_device_from_handle(params->device)->obj.host.device, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44590,7 +44590,7 @@ static NTSTATUS thunk32_vkGetBufferDeviceAddressEXT(void *args)
     TRACE("%#x, %#x\n", params->device, params->pInfo);
 
     convert_VkBufferDeviceAddressInfo_win32_to_host((const VkBufferDeviceAddressInfo32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetBufferDeviceAddressEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetBufferDeviceAddressEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -44601,7 +44601,7 @@ static NTSTATUS thunk64_vkGetBufferDeviceAddressKHR(void *args)
 
     TRACE("%p, %p\n", params->device, params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetBufferDeviceAddressKHR(wine_device_from_handle(params->device)->host_device, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetBufferDeviceAddressKHR(wine_device_from_handle(params->device)->obj.host.device, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44619,7 +44619,7 @@ static NTSTATUS thunk32_vkGetBufferDeviceAddressKHR(void *args)
     TRACE("%#x, %#x\n", params->device, params->pInfo);
 
     convert_VkBufferDeviceAddressInfo_win32_to_host((const VkBufferDeviceAddressInfo32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetBufferDeviceAddressKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetBufferDeviceAddressKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -44630,7 +44630,7 @@ static NTSTATUS thunk64_vkGetBufferMemoryRequirements(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->buffer), params->pMemoryRequirements);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetBufferMemoryRequirements(wine_device_from_handle(params->device)->host_device, params->buffer, params->pMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetBufferMemoryRequirements(wine_device_from_handle(params->device)->obj.host.device, params->buffer, params->pMemoryRequirements);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44647,7 +44647,7 @@ static NTSTATUS thunk32_vkGetBufferMemoryRequirements(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->buffer), params->pMemoryRequirements);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetBufferMemoryRequirements(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->buffer, &pMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetBufferMemoryRequirements(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->buffer, &pMemoryRequirements_host);
     convert_VkMemoryRequirements_host_to_win32(&pMemoryRequirements_host, (VkMemoryRequirements32 *)UlongToPtr(params->pMemoryRequirements));
     return STATUS_SUCCESS;
 }
@@ -44659,7 +44659,7 @@ static NTSTATUS thunk64_vkGetBufferMemoryRequirements2(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pInfo, params->pMemoryRequirements);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetBufferMemoryRequirements2(wine_device_from_handle(params->device)->host_device, params->pInfo, params->pMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetBufferMemoryRequirements2(wine_device_from_handle(params->device)->obj.host.device, params->pInfo, params->pMemoryRequirements);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44682,7 +44682,7 @@ static NTSTATUS thunk32_vkGetBufferMemoryRequirements2(void *args)
     init_conversion_context(ctx);
     convert_VkBufferMemoryRequirementsInfo2_win32_to_host((const VkBufferMemoryRequirementsInfo232 *)UlongToPtr(params->pInfo), &pInfo_host);
     convert_VkMemoryRequirements2_win32_to_host(ctx, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements), &pMemoryRequirements_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetBufferMemoryRequirements2(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, &pMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetBufferMemoryRequirements2(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, &pMemoryRequirements_host);
     convert_VkMemoryRequirements2_host_to_win32(&pMemoryRequirements_host, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -44695,7 +44695,7 @@ static NTSTATUS thunk64_vkGetBufferMemoryRequirements2KHR(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pInfo, params->pMemoryRequirements);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetBufferMemoryRequirements2KHR(wine_device_from_handle(params->device)->host_device, params->pInfo, params->pMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetBufferMemoryRequirements2KHR(wine_device_from_handle(params->device)->obj.host.device, params->pInfo, params->pMemoryRequirements);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44718,7 +44718,7 @@ static NTSTATUS thunk32_vkGetBufferMemoryRequirements2KHR(void *args)
     init_conversion_context(ctx);
     convert_VkBufferMemoryRequirementsInfo2_win32_to_host((const VkBufferMemoryRequirementsInfo232 *)UlongToPtr(params->pInfo), &pInfo_host);
     convert_VkMemoryRequirements2_win32_to_host(ctx, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements), &pMemoryRequirements_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetBufferMemoryRequirements2KHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, &pMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetBufferMemoryRequirements2KHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, &pMemoryRequirements_host);
     convert_VkMemoryRequirements2_host_to_win32(&pMemoryRequirements_host, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -44731,7 +44731,7 @@ static NTSTATUS thunk64_vkGetBufferOpaqueCaptureAddress(void *args)
 
     TRACE("%p, %p\n", params->device, params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetBufferOpaqueCaptureAddress(wine_device_from_handle(params->device)->host_device, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetBufferOpaqueCaptureAddress(wine_device_from_handle(params->device)->obj.host.device, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44749,7 +44749,7 @@ static NTSTATUS thunk32_vkGetBufferOpaqueCaptureAddress(void *args)
     TRACE("%#x, %#x\n", params->device, params->pInfo);
 
     convert_VkBufferDeviceAddressInfo_win32_to_host((const VkBufferDeviceAddressInfo32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetBufferOpaqueCaptureAddress(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetBufferOpaqueCaptureAddress(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -44760,7 +44760,7 @@ static NTSTATUS thunk64_vkGetBufferOpaqueCaptureAddressKHR(void *args)
 
     TRACE("%p, %p\n", params->device, params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetBufferOpaqueCaptureAddressKHR(wine_device_from_handle(params->device)->host_device, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetBufferOpaqueCaptureAddressKHR(wine_device_from_handle(params->device)->obj.host.device, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44778,7 +44778,7 @@ static NTSTATUS thunk32_vkGetBufferOpaqueCaptureAddressKHR(void *args)
     TRACE("%#x, %#x\n", params->device, params->pInfo);
 
     convert_VkBufferDeviceAddressInfo_win32_to_host((const VkBufferDeviceAddressInfo32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetBufferOpaqueCaptureAddressKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetBufferOpaqueCaptureAddressKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -44789,7 +44789,7 @@ static NTSTATUS thunk64_vkGetBufferOpaqueCaptureDescriptorDataEXT(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pInfo, params->pData);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetBufferOpaqueCaptureDescriptorDataEXT(wine_device_from_handle(params->device)->host_device, params->pInfo, params->pData);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetBufferOpaqueCaptureDescriptorDataEXT(wine_device_from_handle(params->device)->obj.host.device, params->pInfo, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44808,7 +44808,7 @@ static NTSTATUS thunk32_vkGetBufferOpaqueCaptureDescriptorDataEXT(void *args)
     TRACE("%#x, %#x, %#x\n", params->device, params->pInfo, params->pData);
 
     convert_VkBufferCaptureDescriptorDataInfoEXT_win32_to_host((const VkBufferCaptureDescriptorDataInfoEXT32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetBufferOpaqueCaptureDescriptorDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, (void *)UlongToPtr(params->pData));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetBufferOpaqueCaptureDescriptorDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, (void *)UlongToPtr(params->pData));
     return STATUS_SUCCESS;
 }
 
@@ -44891,7 +44891,7 @@ static NTSTATUS thunk64_vkGetCudaModuleCacheNV(void *args)
 
     TRACE("%p, 0x%s, %p, %p\n", params->device, wine_dbgstr_longlong(params->module), params->pCacheSize, params->pCacheData);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetCudaModuleCacheNV(wine_device_from_handle(params->device)->host_device, params->module, params->pCacheSize, params->pCacheData);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetCudaModuleCacheNV(wine_device_from_handle(params->device)->obj.host.device, params->module, params->pCacheSize, params->pCacheData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44911,7 +44911,7 @@ static NTSTATUS thunk32_vkGetCudaModuleCacheNV(void *args)
     TRACE("%#x, 0x%s, %#x, %#x\n", params->device, wine_dbgstr_longlong(params->module), params->pCacheSize, params->pCacheData);
 
     pCacheSize_host = *(PTR32 *)UlongToPtr(params->pCacheSize);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetCudaModuleCacheNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->module, &pCacheSize_host, (void *)UlongToPtr(params->pCacheData));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetCudaModuleCacheNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->module, &pCacheSize_host, (void *)UlongToPtr(params->pCacheData));
     *(PTR32 *)UlongToPtr(params->pCacheSize) = pCacheSize_host;
     return STATUS_SUCCESS;
 }
@@ -44923,7 +44923,7 @@ static NTSTATUS thunk64_vkGetDeferredOperationMaxConcurrencyKHR(void *args)
 
     TRACE("%p, 0x%s\n", params->device, wine_dbgstr_longlong(params->operation));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetDeferredOperationMaxConcurrencyKHR(wine_device_from_handle(params->device)->host_device, wine_deferred_operation_from_handle(params->operation)->host_deferred_operation);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetDeferredOperationMaxConcurrencyKHR(wine_device_from_handle(params->device)->obj.host.device, wine_deferred_operation_from_handle(params->operation)->obj.host.deferred_operation);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44939,7 +44939,7 @@ static NTSTATUS thunk32_vkGetDeferredOperationMaxConcurrencyKHR(void *args)
 
     TRACE("%#x, 0x%s\n", params->device, wine_dbgstr_longlong(params->operation));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeferredOperationMaxConcurrencyKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, wine_deferred_operation_from_handle(params->operation)->host_deferred_operation);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeferredOperationMaxConcurrencyKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, wine_deferred_operation_from_handle(params->operation)->obj.host.deferred_operation);
     return STATUS_SUCCESS;
 }
 
@@ -44950,7 +44950,7 @@ static NTSTATUS thunk64_vkGetDeferredOperationResultKHR(void *args)
 
     TRACE("%p, 0x%s\n", params->device, wine_dbgstr_longlong(params->operation));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetDeferredOperationResultKHR(wine_device_from_handle(params->device)->host_device, wine_deferred_operation_from_handle(params->operation)->host_deferred_operation);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetDeferredOperationResultKHR(wine_device_from_handle(params->device)->obj.host.device, wine_deferred_operation_from_handle(params->operation)->obj.host.deferred_operation);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -44966,7 +44966,7 @@ static NTSTATUS thunk32_vkGetDeferredOperationResultKHR(void *args)
 
     TRACE("%#x, 0x%s\n", params->device, wine_dbgstr_longlong(params->operation));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeferredOperationResultKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, wine_deferred_operation_from_handle(params->operation)->host_deferred_operation);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeferredOperationResultKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, wine_deferred_operation_from_handle(params->operation)->obj.host.deferred_operation);
     return STATUS_SUCCESS;
 }
 
@@ -44975,7 +44975,7 @@ static void thunk64_vkGetDescriptorEXT(void *args)
 {
     struct vkGetDescriptorEXT_params *params = args;
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetDescriptorEXT(wine_device_from_handle(params->device)->host_device, params->pDescriptorInfo, params->dataSize, params->pDescriptor);
+    get_vulkan_device_funcs(params->device)->p_vkGetDescriptorEXT(wine_device_from_handle(params->device)->obj.host.device, params->pDescriptorInfo, params->dataSize, params->pDescriptor);
 }
 #endif /* _WIN64 */
 
@@ -44994,7 +44994,7 @@ static void thunk32_vkGetDescriptorEXT(void *args)
 
     init_conversion_context(ctx);
     convert_VkDescriptorGetInfoEXT_win32_to_host(ctx, (const VkDescriptorGetInfoEXT32 *)UlongToPtr(params->pDescriptorInfo), &pDescriptorInfo_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDescriptorEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pDescriptorInfo_host, params->dataSize, (void *)UlongToPtr(params->pDescriptor));
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDescriptorEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pDescriptorInfo_host, params->dataSize, (void *)UlongToPtr(params->pDescriptor));
     free_conversion_context(ctx);
 }
 
@@ -45005,7 +45005,7 @@ static NTSTATUS thunk64_vkGetDescriptorSetHostMappingVALVE(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->descriptorSet), params->ppData);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetDescriptorSetHostMappingVALVE(wine_device_from_handle(params->device)->host_device, params->descriptorSet, params->ppData);
+    get_vulkan_device_funcs(params->device)->p_vkGetDescriptorSetHostMappingVALVE(wine_device_from_handle(params->device)->obj.host.device, params->descriptorSet, params->ppData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45023,7 +45023,7 @@ static NTSTATUS thunk32_vkGetDescriptorSetHostMappingVALVE(void *args)
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->descriptorSet), params->ppData);
 
     ppData_host = UlongToPtr(*(PTR32 *)UlongToPtr(params->ppData));
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDescriptorSetHostMappingVALVE(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->descriptorSet, &ppData_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDescriptorSetHostMappingVALVE(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->descriptorSet, &ppData_host);
     *(PTR32 *)UlongToPtr(params->ppData) = PtrToUlong(ppData_host);
     return STATUS_SUCCESS;
 }
@@ -45035,7 +45035,7 @@ static NTSTATUS thunk64_vkGetDescriptorSetLayoutBindingOffsetEXT(void *args)
 
     TRACE("%p, 0x%s, %u, %p\n", params->device, wine_dbgstr_longlong(params->layout), params->binding, params->pOffset);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetDescriptorSetLayoutBindingOffsetEXT(wine_device_from_handle(params->device)->host_device, params->layout, params->binding, params->pOffset);
+    get_vulkan_device_funcs(params->device)->p_vkGetDescriptorSetLayoutBindingOffsetEXT(wine_device_from_handle(params->device)->obj.host.device, params->layout, params->binding, params->pOffset);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45052,7 +45052,7 @@ static NTSTATUS thunk32_vkGetDescriptorSetLayoutBindingOffsetEXT(void *args)
 
     TRACE("%#x, 0x%s, %u, %#x\n", params->device, wine_dbgstr_longlong(params->layout), params->binding, params->pOffset);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDescriptorSetLayoutBindingOffsetEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->layout, params->binding, (VkDeviceSize *)UlongToPtr(params->pOffset));
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDescriptorSetLayoutBindingOffsetEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->layout, params->binding, (VkDeviceSize *)UlongToPtr(params->pOffset));
     return STATUS_SUCCESS;
 }
 
@@ -45063,7 +45063,7 @@ static NTSTATUS thunk64_vkGetDescriptorSetLayoutHostMappingInfoVALVE(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pBindingReference, params->pHostMapping);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetDescriptorSetLayoutHostMappingInfoVALVE(wine_device_from_handle(params->device)->host_device, params->pBindingReference, params->pHostMapping);
+    get_vulkan_device_funcs(params->device)->p_vkGetDescriptorSetLayoutHostMappingInfoVALVE(wine_device_from_handle(params->device)->obj.host.device, params->pBindingReference, params->pHostMapping);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45083,7 +45083,7 @@ static NTSTATUS thunk32_vkGetDescriptorSetLayoutHostMappingInfoVALVE(void *args)
 
     convert_VkDescriptorSetBindingReferenceVALVE_win32_to_host((const VkDescriptorSetBindingReferenceVALVE32 *)UlongToPtr(params->pBindingReference), &pBindingReference_host);
     convert_VkDescriptorSetLayoutHostMappingInfoVALVE_win32_to_host((VkDescriptorSetLayoutHostMappingInfoVALVE32 *)UlongToPtr(params->pHostMapping), &pHostMapping_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDescriptorSetLayoutHostMappingInfoVALVE(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pBindingReference_host, &pHostMapping_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDescriptorSetLayoutHostMappingInfoVALVE(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pBindingReference_host, &pHostMapping_host);
     convert_VkDescriptorSetLayoutHostMappingInfoVALVE_host_to_win32(&pHostMapping_host, (VkDescriptorSetLayoutHostMappingInfoVALVE32 *)UlongToPtr(params->pHostMapping));
     return STATUS_SUCCESS;
 }
@@ -45095,7 +45095,7 @@ static NTSTATUS thunk64_vkGetDescriptorSetLayoutSizeEXT(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->layout), params->pLayoutSizeInBytes);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetDescriptorSetLayoutSizeEXT(wine_device_from_handle(params->device)->host_device, params->layout, params->pLayoutSizeInBytes);
+    get_vulkan_device_funcs(params->device)->p_vkGetDescriptorSetLayoutSizeEXT(wine_device_from_handle(params->device)->obj.host.device, params->layout, params->pLayoutSizeInBytes);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45111,7 +45111,7 @@ static NTSTATUS thunk32_vkGetDescriptorSetLayoutSizeEXT(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->layout), params->pLayoutSizeInBytes);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDescriptorSetLayoutSizeEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->layout, (VkDeviceSize *)UlongToPtr(params->pLayoutSizeInBytes));
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDescriptorSetLayoutSizeEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->layout, (VkDeviceSize *)UlongToPtr(params->pLayoutSizeInBytes));
     return STATUS_SUCCESS;
 }
 
@@ -45122,7 +45122,7 @@ static NTSTATUS thunk64_vkGetDescriptorSetLayoutSupport(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pCreateInfo, params->pSupport);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetDescriptorSetLayoutSupport(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, params->pSupport);
+    get_vulkan_device_funcs(params->device)->p_vkGetDescriptorSetLayoutSupport(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, params->pSupport);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45145,7 +45145,7 @@ static NTSTATUS thunk32_vkGetDescriptorSetLayoutSupport(void *args)
     init_conversion_context(ctx);
     convert_VkDescriptorSetLayoutCreateInfo_win32_to_host(ctx, (const VkDescriptorSetLayoutCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
     convert_VkDescriptorSetLayoutSupport_win32_to_host(ctx, (VkDescriptorSetLayoutSupport32 *)UlongToPtr(params->pSupport), &pSupport_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDescriptorSetLayoutSupport(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, &pSupport_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDescriptorSetLayoutSupport(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, &pSupport_host);
     convert_VkDescriptorSetLayoutSupport_host_to_win32(&pSupport_host, (VkDescriptorSetLayoutSupport32 *)UlongToPtr(params->pSupport));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -45158,7 +45158,7 @@ static NTSTATUS thunk64_vkGetDescriptorSetLayoutSupportKHR(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pCreateInfo, params->pSupport);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetDescriptorSetLayoutSupportKHR(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, params->pSupport);
+    get_vulkan_device_funcs(params->device)->p_vkGetDescriptorSetLayoutSupportKHR(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, params->pSupport);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45181,7 +45181,7 @@ static NTSTATUS thunk32_vkGetDescriptorSetLayoutSupportKHR(void *args)
     init_conversion_context(ctx);
     convert_VkDescriptorSetLayoutCreateInfo_win32_to_host(ctx, (const VkDescriptorSetLayoutCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
     convert_VkDescriptorSetLayoutSupport_win32_to_host(ctx, (VkDescriptorSetLayoutSupport32 *)UlongToPtr(params->pSupport), &pSupport_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDescriptorSetLayoutSupportKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, &pSupport_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDescriptorSetLayoutSupportKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, &pSupport_host);
     convert_VkDescriptorSetLayoutSupport_host_to_win32(&pSupport_host, (VkDescriptorSetLayoutSupport32 *)UlongToPtr(params->pSupport));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -45194,7 +45194,7 @@ static NTSTATUS thunk64_vkGetDeviceAccelerationStructureCompatibilityKHR(void *a
 
     TRACE("%p, %p, %p\n", params->device, params->pVersionInfo, params->pCompatibility);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetDeviceAccelerationStructureCompatibilityKHR(wine_device_from_handle(params->device)->host_device, params->pVersionInfo, params->pCompatibility);
+    get_vulkan_device_funcs(params->device)->p_vkGetDeviceAccelerationStructureCompatibilityKHR(wine_device_from_handle(params->device)->obj.host.device, params->pVersionInfo, params->pCompatibility);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45212,7 +45212,7 @@ static NTSTATUS thunk32_vkGetDeviceAccelerationStructureCompatibilityKHR(void *a
     TRACE("%#x, %#x, %#x\n", params->device, params->pVersionInfo, params->pCompatibility);
 
     convert_VkAccelerationStructureVersionInfoKHR_win32_to_host((const VkAccelerationStructureVersionInfoKHR32 *)UlongToPtr(params->pVersionInfo), &pVersionInfo_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceAccelerationStructureCompatibilityKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pVersionInfo_host, (VkAccelerationStructureCompatibilityKHR *)UlongToPtr(params->pCompatibility));
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceAccelerationStructureCompatibilityKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pVersionInfo_host, (VkAccelerationStructureCompatibilityKHR *)UlongToPtr(params->pCompatibility));
     return STATUS_SUCCESS;
 }
 
@@ -45223,7 +45223,7 @@ static NTSTATUS thunk64_vkGetDeviceBufferMemoryRequirements(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pInfo, params->pMemoryRequirements);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetDeviceBufferMemoryRequirements(wine_device_from_handle(params->device)->host_device, params->pInfo, params->pMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetDeviceBufferMemoryRequirements(wine_device_from_handle(params->device)->obj.host.device, params->pInfo, params->pMemoryRequirements);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45246,7 +45246,7 @@ static NTSTATUS thunk32_vkGetDeviceBufferMemoryRequirements(void *args)
     init_conversion_context(ctx);
     convert_VkDeviceBufferMemoryRequirements_win32_to_host(ctx, (const VkDeviceBufferMemoryRequirements32 *)UlongToPtr(params->pInfo), &pInfo_host);
     convert_VkMemoryRequirements2_win32_to_host(ctx, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements), &pMemoryRequirements_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceBufferMemoryRequirements(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, &pMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceBufferMemoryRequirements(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, &pMemoryRequirements_host);
     convert_VkMemoryRequirements2_host_to_win32(&pMemoryRequirements_host, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -45259,7 +45259,7 @@ static NTSTATUS thunk64_vkGetDeviceBufferMemoryRequirementsKHR(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pInfo, params->pMemoryRequirements);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetDeviceBufferMemoryRequirementsKHR(wine_device_from_handle(params->device)->host_device, params->pInfo, params->pMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetDeviceBufferMemoryRequirementsKHR(wine_device_from_handle(params->device)->obj.host.device, params->pInfo, params->pMemoryRequirements);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45282,7 +45282,7 @@ static NTSTATUS thunk32_vkGetDeviceBufferMemoryRequirementsKHR(void *args)
     init_conversion_context(ctx);
     convert_VkDeviceBufferMemoryRequirements_win32_to_host(ctx, (const VkDeviceBufferMemoryRequirements32 *)UlongToPtr(params->pInfo), &pInfo_host);
     convert_VkMemoryRequirements2_win32_to_host(ctx, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements), &pMemoryRequirements_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceBufferMemoryRequirementsKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, &pMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceBufferMemoryRequirementsKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, &pMemoryRequirements_host);
     convert_VkMemoryRequirements2_host_to_win32(&pMemoryRequirements_host, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -45295,7 +45295,7 @@ static NTSTATUS thunk64_vkGetDeviceFaultInfoEXT(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pFaultCounts, params->pFaultInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetDeviceFaultInfoEXT(wine_device_from_handle(params->device)->host_device, params->pFaultCounts, params->pFaultInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetDeviceFaultInfoEXT(wine_device_from_handle(params->device)->obj.host.device, params->pFaultCounts, params->pFaultInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45323,7 +45323,7 @@ static NTSTATUS thunk32_vkGetDeviceFaultInfoEXT(void *args)
         pFaultInfo_host = conversion_context_alloc(ctx, sizeof(*pFaultInfo_host));
         convert_VkDeviceFaultInfoEXT_win32_to_host(ctx, (VkDeviceFaultInfoEXT32 *)UlongToPtr(params->pFaultInfo), pFaultInfo_host);
     }
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceFaultInfoEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pFaultCounts_host, pFaultInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceFaultInfoEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pFaultCounts_host, pFaultInfo_host);
     convert_VkDeviceFaultCountsEXT_host_to_win32(&pFaultCounts_host, (VkDeviceFaultCountsEXT32 *)UlongToPtr(params->pFaultCounts));
     convert_VkDeviceFaultInfoEXT_host_to_win32(pFaultInfo_host, (VkDeviceFaultInfoEXT32 *)UlongToPtr(params->pFaultInfo));
     free_conversion_context(ctx);
@@ -45337,7 +45337,7 @@ static NTSTATUS thunk64_vkGetDeviceGroupPeerMemoryFeatures(void *args)
 
     TRACE("%p, %u, %u, %u, %p\n", params->device, params->heapIndex, params->localDeviceIndex, params->remoteDeviceIndex, params->pPeerMemoryFeatures);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetDeviceGroupPeerMemoryFeatures(wine_device_from_handle(params->device)->host_device, params->heapIndex, params->localDeviceIndex, params->remoteDeviceIndex, params->pPeerMemoryFeatures);
+    get_vulkan_device_funcs(params->device)->p_vkGetDeviceGroupPeerMemoryFeatures(wine_device_from_handle(params->device)->obj.host.device, params->heapIndex, params->localDeviceIndex, params->remoteDeviceIndex, params->pPeerMemoryFeatures);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45355,7 +45355,7 @@ static NTSTATUS thunk32_vkGetDeviceGroupPeerMemoryFeatures(void *args)
 
     TRACE("%#x, %u, %u, %u, %#x\n", params->device, params->heapIndex, params->localDeviceIndex, params->remoteDeviceIndex, params->pPeerMemoryFeatures);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceGroupPeerMemoryFeatures(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->heapIndex, params->localDeviceIndex, params->remoteDeviceIndex, (VkPeerMemoryFeatureFlags *)UlongToPtr(params->pPeerMemoryFeatures));
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceGroupPeerMemoryFeatures(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->heapIndex, params->localDeviceIndex, params->remoteDeviceIndex, (VkPeerMemoryFeatureFlags *)UlongToPtr(params->pPeerMemoryFeatures));
     return STATUS_SUCCESS;
 }
 
@@ -45366,7 +45366,7 @@ static NTSTATUS thunk64_vkGetDeviceGroupPeerMemoryFeaturesKHR(void *args)
 
     TRACE("%p, %u, %u, %u, %p\n", params->device, params->heapIndex, params->localDeviceIndex, params->remoteDeviceIndex, params->pPeerMemoryFeatures);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetDeviceGroupPeerMemoryFeaturesKHR(wine_device_from_handle(params->device)->host_device, params->heapIndex, params->localDeviceIndex, params->remoteDeviceIndex, params->pPeerMemoryFeatures);
+    get_vulkan_device_funcs(params->device)->p_vkGetDeviceGroupPeerMemoryFeaturesKHR(wine_device_from_handle(params->device)->obj.host.device, params->heapIndex, params->localDeviceIndex, params->remoteDeviceIndex, params->pPeerMemoryFeatures);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45384,7 +45384,7 @@ static NTSTATUS thunk32_vkGetDeviceGroupPeerMemoryFeaturesKHR(void *args)
 
     TRACE("%#x, %u, %u, %u, %#x\n", params->device, params->heapIndex, params->localDeviceIndex, params->remoteDeviceIndex, params->pPeerMemoryFeatures);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceGroupPeerMemoryFeaturesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->heapIndex, params->localDeviceIndex, params->remoteDeviceIndex, (VkPeerMemoryFeatureFlags *)UlongToPtr(params->pPeerMemoryFeatures));
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceGroupPeerMemoryFeaturesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->heapIndex, params->localDeviceIndex, params->remoteDeviceIndex, (VkPeerMemoryFeatureFlags *)UlongToPtr(params->pPeerMemoryFeatures));
     return STATUS_SUCCESS;
 }
 
@@ -45395,7 +45395,7 @@ static NTSTATUS thunk64_vkGetDeviceGroupPresentCapabilitiesKHR(void *args)
 
     TRACE("%p, %p\n", params->device, params->pDeviceGroupPresentCapabilities);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetDeviceGroupPresentCapabilitiesKHR(wine_device_from_handle(params->device)->host_device, params->pDeviceGroupPresentCapabilities);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetDeviceGroupPresentCapabilitiesKHR(wine_device_from_handle(params->device)->obj.host.device, params->pDeviceGroupPresentCapabilities);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45413,7 +45413,7 @@ static NTSTATUS thunk32_vkGetDeviceGroupPresentCapabilitiesKHR(void *args)
     TRACE("%#x, %#x\n", params->device, params->pDeviceGroupPresentCapabilities);
 
     convert_VkDeviceGroupPresentCapabilitiesKHR_win32_to_host((VkDeviceGroupPresentCapabilitiesKHR32 *)UlongToPtr(params->pDeviceGroupPresentCapabilities), &pDeviceGroupPresentCapabilities_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceGroupPresentCapabilitiesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pDeviceGroupPresentCapabilities_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceGroupPresentCapabilitiesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pDeviceGroupPresentCapabilities_host);
     convert_VkDeviceGroupPresentCapabilitiesKHR_host_to_win32(&pDeviceGroupPresentCapabilities_host, (VkDeviceGroupPresentCapabilitiesKHR32 *)UlongToPtr(params->pDeviceGroupPresentCapabilities));
     return STATUS_SUCCESS;
 }
@@ -45425,7 +45425,7 @@ static NTSTATUS thunk64_vkGetDeviceGroupSurfacePresentModesKHR(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->surface), params->pModes);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetDeviceGroupSurfacePresentModesKHR(wine_device_from_handle(params->device)->host_device, wine_surface_from_handle(params->surface)->host_surface, params->pModes);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetDeviceGroupSurfacePresentModesKHR(wine_device_from_handle(params->device)->obj.host.device, wine_surface_from_handle(params->surface)->obj.host.surface, params->pModes);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45442,7 +45442,7 @@ static NTSTATUS thunk32_vkGetDeviceGroupSurfacePresentModesKHR(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->surface), params->pModes);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceGroupSurfacePresentModesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, wine_surface_from_handle(params->surface)->host_surface, (VkDeviceGroupPresentModeFlagsKHR *)UlongToPtr(params->pModes));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceGroupSurfacePresentModesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, wine_surface_from_handle(params->surface)->obj.host.surface, (VkDeviceGroupPresentModeFlagsKHR *)UlongToPtr(params->pModes));
     return STATUS_SUCCESS;
 }
 
@@ -45458,7 +45458,7 @@ static NTSTATUS thunk64_vkGetDeviceImageMemoryRequirements(void *args)
 
     init_conversion_context(ctx);
     convert_VkDeviceImageMemoryRequirements_win64_to_host(ctx, params->pInfo, &pInfo_host);
-    wine_device_from_handle(params->device)->funcs.p_vkGetDeviceImageMemoryRequirements(wine_device_from_handle(params->device)->host_device, &pInfo_host, params->pMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetDeviceImageMemoryRequirements(wine_device_from_handle(params->device)->obj.host.device, &pInfo_host, params->pMemoryRequirements);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -45482,7 +45482,7 @@ static NTSTATUS thunk32_vkGetDeviceImageMemoryRequirements(void *args)
     init_conversion_context(ctx);
     convert_VkDeviceImageMemoryRequirements_win32_to_host(ctx, (const VkDeviceImageMemoryRequirements32 *)UlongToPtr(params->pInfo), &pInfo_host);
     convert_VkMemoryRequirements2_win32_to_host(ctx, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements), &pMemoryRequirements_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceImageMemoryRequirements(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, &pMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceImageMemoryRequirements(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, &pMemoryRequirements_host);
     convert_VkMemoryRequirements2_host_to_win32(&pMemoryRequirements_host, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -45500,7 +45500,7 @@ static NTSTATUS thunk64_vkGetDeviceImageMemoryRequirementsKHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkDeviceImageMemoryRequirements_win64_to_host(ctx, params->pInfo, &pInfo_host);
-    wine_device_from_handle(params->device)->funcs.p_vkGetDeviceImageMemoryRequirementsKHR(wine_device_from_handle(params->device)->host_device, &pInfo_host, params->pMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetDeviceImageMemoryRequirementsKHR(wine_device_from_handle(params->device)->obj.host.device, &pInfo_host, params->pMemoryRequirements);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -45524,7 +45524,7 @@ static NTSTATUS thunk32_vkGetDeviceImageMemoryRequirementsKHR(void *args)
     init_conversion_context(ctx);
     convert_VkDeviceImageMemoryRequirements_win32_to_host(ctx, (const VkDeviceImageMemoryRequirements32 *)UlongToPtr(params->pInfo), &pInfo_host);
     convert_VkMemoryRequirements2_win32_to_host(ctx, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements), &pMemoryRequirements_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceImageMemoryRequirementsKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, &pMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceImageMemoryRequirementsKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, &pMemoryRequirements_host);
     convert_VkMemoryRequirements2_host_to_win32(&pMemoryRequirements_host, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -45542,7 +45542,7 @@ static NTSTATUS thunk64_vkGetDeviceImageSparseMemoryRequirements(void *args)
 
     init_conversion_context(ctx);
     convert_VkDeviceImageMemoryRequirements_win64_to_host(ctx, params->pInfo, &pInfo_host);
-    wine_device_from_handle(params->device)->funcs.p_vkGetDeviceImageSparseMemoryRequirements(wine_device_from_handle(params->device)->host_device, &pInfo_host, params->pSparseMemoryRequirementCount, params->pSparseMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetDeviceImageSparseMemoryRequirements(wine_device_from_handle(params->device)->obj.host.device, &pInfo_host, params->pSparseMemoryRequirementCount, params->pSparseMemoryRequirements);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -45567,7 +45567,7 @@ static NTSTATUS thunk32_vkGetDeviceImageSparseMemoryRequirements(void *args)
     init_conversion_context(ctx);
     convert_VkDeviceImageMemoryRequirements_win32_to_host(ctx, (const VkDeviceImageMemoryRequirements32 *)UlongToPtr(params->pInfo), &pInfo_host);
     pSparseMemoryRequirements_host = convert_VkSparseImageMemoryRequirements2_array_win32_to_host(ctx, (VkSparseImageMemoryRequirements232 *)UlongToPtr(params->pSparseMemoryRequirements), *(uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount));
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceImageSparseMemoryRequirements(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, (uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount), pSparseMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceImageSparseMemoryRequirements(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, (uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount), pSparseMemoryRequirements_host);
     convert_VkSparseImageMemoryRequirements2_array_host_to_win32(pSparseMemoryRequirements_host, (VkSparseImageMemoryRequirements232 *)UlongToPtr(params->pSparseMemoryRequirements), *(uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -45585,7 +45585,7 @@ static NTSTATUS thunk64_vkGetDeviceImageSparseMemoryRequirementsKHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkDeviceImageMemoryRequirements_win64_to_host(ctx, params->pInfo, &pInfo_host);
-    wine_device_from_handle(params->device)->funcs.p_vkGetDeviceImageSparseMemoryRequirementsKHR(wine_device_from_handle(params->device)->host_device, &pInfo_host, params->pSparseMemoryRequirementCount, params->pSparseMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetDeviceImageSparseMemoryRequirementsKHR(wine_device_from_handle(params->device)->obj.host.device, &pInfo_host, params->pSparseMemoryRequirementCount, params->pSparseMemoryRequirements);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -45610,7 +45610,7 @@ static NTSTATUS thunk32_vkGetDeviceImageSparseMemoryRequirementsKHR(void *args)
     init_conversion_context(ctx);
     convert_VkDeviceImageMemoryRequirements_win32_to_host(ctx, (const VkDeviceImageMemoryRequirements32 *)UlongToPtr(params->pInfo), &pInfo_host);
     pSparseMemoryRequirements_host = convert_VkSparseImageMemoryRequirements2_array_win32_to_host(ctx, (VkSparseImageMemoryRequirements232 *)UlongToPtr(params->pSparseMemoryRequirements), *(uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount));
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceImageSparseMemoryRequirementsKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, (uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount), pSparseMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceImageSparseMemoryRequirementsKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, (uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount), pSparseMemoryRequirements_host);
     convert_VkSparseImageMemoryRequirements2_array_host_to_win32(pSparseMemoryRequirements_host, (VkSparseImageMemoryRequirements232 *)UlongToPtr(params->pSparseMemoryRequirements), *(uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -45628,7 +45628,7 @@ static NTSTATUS thunk64_vkGetDeviceImageSubresourceLayoutKHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkDeviceImageSubresourceInfoKHR_win64_to_host(ctx, params->pInfo, &pInfo_host);
-    wine_device_from_handle(params->device)->funcs.p_vkGetDeviceImageSubresourceLayoutKHR(wine_device_from_handle(params->device)->host_device, &pInfo_host, params->pLayout);
+    get_vulkan_device_funcs(params->device)->p_vkGetDeviceImageSubresourceLayoutKHR(wine_device_from_handle(params->device)->obj.host.device, &pInfo_host, params->pLayout);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -45652,7 +45652,7 @@ static NTSTATUS thunk32_vkGetDeviceImageSubresourceLayoutKHR(void *args)
     init_conversion_context(ctx);
     convert_VkDeviceImageSubresourceInfoKHR_win32_to_host(ctx, (const VkDeviceImageSubresourceInfoKHR32 *)UlongToPtr(params->pInfo), &pInfo_host);
     convert_VkSubresourceLayout2KHR_win32_to_host(ctx, (VkSubresourceLayout2KHR32 *)UlongToPtr(params->pLayout), &pLayout_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceImageSubresourceLayoutKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, &pLayout_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceImageSubresourceLayoutKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, &pLayout_host);
     convert_VkSubresourceLayout2KHR_host_to_win32(&pLayout_host, (VkSubresourceLayout2KHR32 *)UlongToPtr(params->pLayout));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -45665,7 +45665,7 @@ static NTSTATUS thunk64_vkGetDeviceMemoryCommitment(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->memory), params->pCommittedMemoryInBytes);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetDeviceMemoryCommitment(wine_device_from_handle(params->device)->host_device, wine_device_memory_from_handle(params->memory)->host_memory, params->pCommittedMemoryInBytes);
+    get_vulkan_device_funcs(params->device)->p_vkGetDeviceMemoryCommitment(wine_device_from_handle(params->device)->obj.host.device, wine_device_memory_from_handle(params->memory)->obj.host.device_memory, params->pCommittedMemoryInBytes);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45681,7 +45681,7 @@ static NTSTATUS thunk32_vkGetDeviceMemoryCommitment(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->memory), params->pCommittedMemoryInBytes);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceMemoryCommitment(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, wine_device_memory_from_handle(params->memory)->host_memory, (VkDeviceSize *)UlongToPtr(params->pCommittedMemoryInBytes));
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceMemoryCommitment(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, wine_device_memory_from_handle(params->memory)->obj.host.device_memory, (VkDeviceSize *)UlongToPtr(params->pCommittedMemoryInBytes));
     return STATUS_SUCCESS;
 }
 
@@ -45694,7 +45694,7 @@ static NTSTATUS thunk64_vkGetDeviceMemoryOpaqueCaptureAddress(void *args)
     TRACE("%p, %p\n", params->device, params->pInfo);
 
     convert_VkDeviceMemoryOpaqueCaptureAddressInfo_win64_to_host(params->pInfo, &pInfo_host);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetDeviceMemoryOpaqueCaptureAddress(wine_device_from_handle(params->device)->host_device, &pInfo_host);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetDeviceMemoryOpaqueCaptureAddress(wine_device_from_handle(params->device)->obj.host.device, &pInfo_host);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45712,7 +45712,7 @@ static NTSTATUS thunk32_vkGetDeviceMemoryOpaqueCaptureAddress(void *args)
     TRACE("%#x, %#x\n", params->device, params->pInfo);
 
     convert_VkDeviceMemoryOpaqueCaptureAddressInfo_win32_to_host((const VkDeviceMemoryOpaqueCaptureAddressInfo32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceMemoryOpaqueCaptureAddress(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceMemoryOpaqueCaptureAddress(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -45725,7 +45725,7 @@ static NTSTATUS thunk64_vkGetDeviceMemoryOpaqueCaptureAddressKHR(void *args)
     TRACE("%p, %p\n", params->device, params->pInfo);
 
     convert_VkDeviceMemoryOpaqueCaptureAddressInfo_win64_to_host(params->pInfo, &pInfo_host);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetDeviceMemoryOpaqueCaptureAddressKHR(wine_device_from_handle(params->device)->host_device, &pInfo_host);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetDeviceMemoryOpaqueCaptureAddressKHR(wine_device_from_handle(params->device)->obj.host.device, &pInfo_host);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45743,7 +45743,7 @@ static NTSTATUS thunk32_vkGetDeviceMemoryOpaqueCaptureAddressKHR(void *args)
     TRACE("%#x, %#x\n", params->device, params->pInfo);
 
     convert_VkDeviceMemoryOpaqueCaptureAddressInfo_win32_to_host((const VkDeviceMemoryOpaqueCaptureAddressInfo32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceMemoryOpaqueCaptureAddressKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceMemoryOpaqueCaptureAddressKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -45754,7 +45754,7 @@ static NTSTATUS thunk64_vkGetDeviceMicromapCompatibilityEXT(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pVersionInfo, params->pCompatibility);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetDeviceMicromapCompatibilityEXT(wine_device_from_handle(params->device)->host_device, params->pVersionInfo, params->pCompatibility);
+    get_vulkan_device_funcs(params->device)->p_vkGetDeviceMicromapCompatibilityEXT(wine_device_from_handle(params->device)->obj.host.device, params->pVersionInfo, params->pCompatibility);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45772,7 +45772,7 @@ static NTSTATUS thunk32_vkGetDeviceMicromapCompatibilityEXT(void *args)
     TRACE("%#x, %#x, %#x\n", params->device, params->pVersionInfo, params->pCompatibility);
 
     convert_VkMicromapVersionInfoEXT_win32_to_host((const VkMicromapVersionInfoEXT32 *)UlongToPtr(params->pVersionInfo), &pVersionInfo_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceMicromapCompatibilityEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pVersionInfo_host, (VkAccelerationStructureCompatibilityKHR *)UlongToPtr(params->pCompatibility));
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceMicromapCompatibilityEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pVersionInfo_host, (VkAccelerationStructureCompatibilityKHR *)UlongToPtr(params->pCompatibility));
     return STATUS_SUCCESS;
 }
 
@@ -45846,7 +45846,7 @@ static NTSTATUS thunk64_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI(void *ar
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->renderpass), params->pMaxWorkgroupSize);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI(wine_device_from_handle(params->device)->host_device, params->renderpass, params->pMaxWorkgroupSize);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI(wine_device_from_handle(params->device)->obj.host.device, params->renderpass, params->pMaxWorkgroupSize);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45863,7 +45863,7 @@ static NTSTATUS thunk32_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI(void *ar
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->renderpass), params->pMaxWorkgroupSize);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->renderpass, (VkExtent2D *)UlongToPtr(params->pMaxWorkgroupSize));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->renderpass, (VkExtent2D *)UlongToPtr(params->pMaxWorkgroupSize));
     return STATUS_SUCCESS;
 }
 
@@ -45874,7 +45874,7 @@ static NTSTATUS thunk64_vkGetDynamicRenderingTilePropertiesQCOM(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pRenderingInfo, params->pProperties);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetDynamicRenderingTilePropertiesQCOM(wine_device_from_handle(params->device)->host_device, params->pRenderingInfo, params->pProperties);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetDynamicRenderingTilePropertiesQCOM(wine_device_from_handle(params->device)->obj.host.device, params->pRenderingInfo, params->pProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45898,7 +45898,7 @@ static NTSTATUS thunk32_vkGetDynamicRenderingTilePropertiesQCOM(void *args)
     init_conversion_context(ctx);
     convert_VkRenderingInfo_win32_to_host(ctx, (const VkRenderingInfo32 *)UlongToPtr(params->pRenderingInfo), &pRenderingInfo_host);
     convert_VkTilePropertiesQCOM_win32_to_host((VkTilePropertiesQCOM32 *)UlongToPtr(params->pProperties), &pProperties_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetDynamicRenderingTilePropertiesQCOM(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pRenderingInfo_host, &pProperties_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetDynamicRenderingTilePropertiesQCOM(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pRenderingInfo_host, &pProperties_host);
     convert_VkTilePropertiesQCOM_host_to_win32(&pProperties_host, (VkTilePropertiesQCOM32 *)UlongToPtr(params->pProperties));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -45911,7 +45911,7 @@ static NTSTATUS thunk64_vkGetEncodedVideoSessionParametersKHR(void *args)
 
     TRACE("%p, %p, %p, %p, %p\n", params->device, params->pVideoSessionParametersInfo, params->pFeedbackInfo, params->pDataSize, params->pData);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetEncodedVideoSessionParametersKHR(wine_device_from_handle(params->device)->host_device, params->pVideoSessionParametersInfo, params->pFeedbackInfo, params->pDataSize, params->pData);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetEncodedVideoSessionParametersKHR(wine_device_from_handle(params->device)->obj.host.device, params->pVideoSessionParametersInfo, params->pFeedbackInfo, params->pDataSize, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45943,7 +45943,7 @@ static NTSTATUS thunk32_vkGetEncodedVideoSessionParametersKHR(void *args)
         convert_VkVideoEncodeSessionParametersFeedbackInfoKHR_win32_to_host(ctx, (VkVideoEncodeSessionParametersFeedbackInfoKHR32 *)UlongToPtr(params->pFeedbackInfo), pFeedbackInfo_host);
     }
     pDataSize_host = *(PTR32 *)UlongToPtr(params->pDataSize);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetEncodedVideoSessionParametersKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pVideoSessionParametersInfo_host, pFeedbackInfo_host, &pDataSize_host, (void *)UlongToPtr(params->pData));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetEncodedVideoSessionParametersKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pVideoSessionParametersInfo_host, pFeedbackInfo_host, &pDataSize_host, (void *)UlongToPtr(params->pData));
     convert_VkVideoEncodeSessionParametersFeedbackInfoKHR_host_to_win32(pFeedbackInfo_host, (VkVideoEncodeSessionParametersFeedbackInfoKHR32 *)UlongToPtr(params->pFeedbackInfo));
     *(PTR32 *)UlongToPtr(params->pDataSize) = pDataSize_host;
     free_conversion_context(ctx);
@@ -45957,7 +45957,7 @@ static NTSTATUS thunk64_vkGetEventStatus(void *args)
 
     TRACE("%p, 0x%s\n", params->device, wine_dbgstr_longlong(params->event));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetEventStatus(wine_device_from_handle(params->device)->host_device, params->event);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetEventStatus(wine_device_from_handle(params->device)->obj.host.device, params->event);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -45973,7 +45973,7 @@ static NTSTATUS thunk32_vkGetEventStatus(void *args)
 
     TRACE("%#x, 0x%s\n", params->device, wine_dbgstr_longlong(params->event));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetEventStatus(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->event);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetEventStatus(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->event);
     return STATUS_SUCCESS;
 }
 
@@ -45984,7 +45984,7 @@ static NTSTATUS thunk64_vkGetFenceStatus(void *args)
 
     TRACE("%p, 0x%s\n", params->device, wine_dbgstr_longlong(params->fence));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetFenceStatus(wine_device_from_handle(params->device)->host_device, params->fence);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetFenceStatus(wine_device_from_handle(params->device)->obj.host.device, params->fence);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46000,7 +46000,7 @@ static NTSTATUS thunk32_vkGetFenceStatus(void *args)
 
     TRACE("%#x, 0x%s\n", params->device, wine_dbgstr_longlong(params->fence));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetFenceStatus(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->fence);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetFenceStatus(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->fence);
     return STATUS_SUCCESS;
 }
 
@@ -46011,7 +46011,7 @@ static NTSTATUS thunk64_vkGetFramebufferTilePropertiesQCOM(void *args)
 
     TRACE("%p, 0x%s, %p, %p\n", params->device, wine_dbgstr_longlong(params->framebuffer), params->pPropertiesCount, params->pProperties);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetFramebufferTilePropertiesQCOM(wine_device_from_handle(params->device)->host_device, params->framebuffer, params->pPropertiesCount, params->pProperties);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetFramebufferTilePropertiesQCOM(wine_device_from_handle(params->device)->obj.host.device, params->framebuffer, params->pPropertiesCount, params->pProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46034,7 +46034,7 @@ static NTSTATUS thunk32_vkGetFramebufferTilePropertiesQCOM(void *args)
 
     init_conversion_context(ctx);
     pProperties_host = convert_VkTilePropertiesQCOM_array_win32_to_host(ctx, (VkTilePropertiesQCOM32 *)UlongToPtr(params->pProperties), *(uint32_t *)UlongToPtr(params->pPropertiesCount));
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetFramebufferTilePropertiesQCOM(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->framebuffer, (uint32_t *)UlongToPtr(params->pPropertiesCount), pProperties_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetFramebufferTilePropertiesQCOM(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->framebuffer, (uint32_t *)UlongToPtr(params->pPropertiesCount), pProperties_host);
     convert_VkTilePropertiesQCOM_array_host_to_win32(pProperties_host, (VkTilePropertiesQCOM32 *)UlongToPtr(params->pProperties), *(uint32_t *)UlongToPtr(params->pPropertiesCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -46047,7 +46047,7 @@ static NTSTATUS thunk64_vkGetGeneratedCommandsMemoryRequirementsNV(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pInfo, params->pMemoryRequirements);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetGeneratedCommandsMemoryRequirementsNV(wine_device_from_handle(params->device)->host_device, params->pInfo, params->pMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetGeneratedCommandsMemoryRequirementsNV(wine_device_from_handle(params->device)->obj.host.device, params->pInfo, params->pMemoryRequirements);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46070,7 +46070,7 @@ static NTSTATUS thunk32_vkGetGeneratedCommandsMemoryRequirementsNV(void *args)
     init_conversion_context(ctx);
     convert_VkGeneratedCommandsMemoryRequirementsInfoNV_win32_to_host((const VkGeneratedCommandsMemoryRequirementsInfoNV32 *)UlongToPtr(params->pInfo), &pInfo_host);
     convert_VkMemoryRequirements2_win32_to_host(ctx, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements), &pMemoryRequirements_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetGeneratedCommandsMemoryRequirementsNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, &pMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetGeneratedCommandsMemoryRequirementsNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, &pMemoryRequirements_host);
     convert_VkMemoryRequirements2_host_to_win32(&pMemoryRequirements_host, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -46083,7 +46083,7 @@ static NTSTATUS thunk64_vkGetImageMemoryRequirements(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->image), params->pMemoryRequirements);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetImageMemoryRequirements(wine_device_from_handle(params->device)->host_device, params->image, params->pMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetImageMemoryRequirements(wine_device_from_handle(params->device)->obj.host.device, params->image, params->pMemoryRequirements);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46100,7 +46100,7 @@ static NTSTATUS thunk32_vkGetImageMemoryRequirements(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->image), params->pMemoryRequirements);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetImageMemoryRequirements(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->image, &pMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetImageMemoryRequirements(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->image, &pMemoryRequirements_host);
     convert_VkMemoryRequirements_host_to_win32(&pMemoryRequirements_host, (VkMemoryRequirements32 *)UlongToPtr(params->pMemoryRequirements));
     return STATUS_SUCCESS;
 }
@@ -46112,7 +46112,7 @@ static NTSTATUS thunk64_vkGetImageMemoryRequirements2(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pInfo, params->pMemoryRequirements);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetImageMemoryRequirements2(wine_device_from_handle(params->device)->host_device, params->pInfo, params->pMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetImageMemoryRequirements2(wine_device_from_handle(params->device)->obj.host.device, params->pInfo, params->pMemoryRequirements);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46135,7 +46135,7 @@ static NTSTATUS thunk32_vkGetImageMemoryRequirements2(void *args)
     init_conversion_context(ctx);
     convert_VkImageMemoryRequirementsInfo2_win32_to_host(ctx, (const VkImageMemoryRequirementsInfo232 *)UlongToPtr(params->pInfo), &pInfo_host);
     convert_VkMemoryRequirements2_win32_to_host(ctx, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements), &pMemoryRequirements_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetImageMemoryRequirements2(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, &pMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetImageMemoryRequirements2(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, &pMemoryRequirements_host);
     convert_VkMemoryRequirements2_host_to_win32(&pMemoryRequirements_host, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -46148,7 +46148,7 @@ static NTSTATUS thunk64_vkGetImageMemoryRequirements2KHR(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pInfo, params->pMemoryRequirements);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetImageMemoryRequirements2KHR(wine_device_from_handle(params->device)->host_device, params->pInfo, params->pMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetImageMemoryRequirements2KHR(wine_device_from_handle(params->device)->obj.host.device, params->pInfo, params->pMemoryRequirements);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46171,7 +46171,7 @@ static NTSTATUS thunk32_vkGetImageMemoryRequirements2KHR(void *args)
     init_conversion_context(ctx);
     convert_VkImageMemoryRequirementsInfo2_win32_to_host(ctx, (const VkImageMemoryRequirementsInfo232 *)UlongToPtr(params->pInfo), &pInfo_host);
     convert_VkMemoryRequirements2_win32_to_host(ctx, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements), &pMemoryRequirements_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetImageMemoryRequirements2KHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, &pMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetImageMemoryRequirements2KHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, &pMemoryRequirements_host);
     convert_VkMemoryRequirements2_host_to_win32(&pMemoryRequirements_host, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -46184,7 +46184,7 @@ static NTSTATUS thunk64_vkGetImageOpaqueCaptureDescriptorDataEXT(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pInfo, params->pData);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetImageOpaqueCaptureDescriptorDataEXT(wine_device_from_handle(params->device)->host_device, params->pInfo, params->pData);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetImageOpaqueCaptureDescriptorDataEXT(wine_device_from_handle(params->device)->obj.host.device, params->pInfo, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46203,7 +46203,7 @@ static NTSTATUS thunk32_vkGetImageOpaqueCaptureDescriptorDataEXT(void *args)
     TRACE("%#x, %#x, %#x\n", params->device, params->pInfo, params->pData);
 
     convert_VkImageCaptureDescriptorDataInfoEXT_win32_to_host((const VkImageCaptureDescriptorDataInfoEXT32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetImageOpaqueCaptureDescriptorDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, (void *)UlongToPtr(params->pData));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetImageOpaqueCaptureDescriptorDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, (void *)UlongToPtr(params->pData));
     return STATUS_SUCCESS;
 }
 
@@ -46214,7 +46214,7 @@ static NTSTATUS thunk64_vkGetImageSparseMemoryRequirements(void *args)
 
     TRACE("%p, 0x%s, %p, %p\n", params->device, wine_dbgstr_longlong(params->image), params->pSparseMemoryRequirementCount, params->pSparseMemoryRequirements);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetImageSparseMemoryRequirements(wine_device_from_handle(params->device)->host_device, params->image, params->pSparseMemoryRequirementCount, params->pSparseMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetImageSparseMemoryRequirements(wine_device_from_handle(params->device)->obj.host.device, params->image, params->pSparseMemoryRequirementCount, params->pSparseMemoryRequirements);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46236,7 +46236,7 @@ static NTSTATUS thunk32_vkGetImageSparseMemoryRequirements(void *args)
 
     init_conversion_context(ctx);
     pSparseMemoryRequirements_host = (params->pSparseMemoryRequirements && *(uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount)) ? conversion_context_alloc(ctx, sizeof(*pSparseMemoryRequirements_host) * *(uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount)) : NULL;
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetImageSparseMemoryRequirements(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->image, (uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount), pSparseMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetImageSparseMemoryRequirements(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->image, (uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount), pSparseMemoryRequirements_host);
     convert_VkSparseImageMemoryRequirements_array_host_to_win32(pSparseMemoryRequirements_host, (VkSparseImageMemoryRequirements32 *)UlongToPtr(params->pSparseMemoryRequirements), *(uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -46249,7 +46249,7 @@ static NTSTATUS thunk64_vkGetImageSparseMemoryRequirements2(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pInfo, params->pSparseMemoryRequirementCount, params->pSparseMemoryRequirements);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetImageSparseMemoryRequirements2(wine_device_from_handle(params->device)->host_device, params->pInfo, params->pSparseMemoryRequirementCount, params->pSparseMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetImageSparseMemoryRequirements2(wine_device_from_handle(params->device)->obj.host.device, params->pInfo, params->pSparseMemoryRequirementCount, params->pSparseMemoryRequirements);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46273,7 +46273,7 @@ static NTSTATUS thunk32_vkGetImageSparseMemoryRequirements2(void *args)
     init_conversion_context(ctx);
     convert_VkImageSparseMemoryRequirementsInfo2_win32_to_host((const VkImageSparseMemoryRequirementsInfo232 *)UlongToPtr(params->pInfo), &pInfo_host);
     pSparseMemoryRequirements_host = convert_VkSparseImageMemoryRequirements2_array_win32_to_host(ctx, (VkSparseImageMemoryRequirements232 *)UlongToPtr(params->pSparseMemoryRequirements), *(uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount));
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetImageSparseMemoryRequirements2(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, (uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount), pSparseMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetImageSparseMemoryRequirements2(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, (uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount), pSparseMemoryRequirements_host);
     convert_VkSparseImageMemoryRequirements2_array_host_to_win32(pSparseMemoryRequirements_host, (VkSparseImageMemoryRequirements232 *)UlongToPtr(params->pSparseMemoryRequirements), *(uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -46286,7 +46286,7 @@ static NTSTATUS thunk64_vkGetImageSparseMemoryRequirements2KHR(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pInfo, params->pSparseMemoryRequirementCount, params->pSparseMemoryRequirements);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetImageSparseMemoryRequirements2KHR(wine_device_from_handle(params->device)->host_device, params->pInfo, params->pSparseMemoryRequirementCount, params->pSparseMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetImageSparseMemoryRequirements2KHR(wine_device_from_handle(params->device)->obj.host.device, params->pInfo, params->pSparseMemoryRequirementCount, params->pSparseMemoryRequirements);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46310,7 +46310,7 @@ static NTSTATUS thunk32_vkGetImageSparseMemoryRequirements2KHR(void *args)
     init_conversion_context(ctx);
     convert_VkImageSparseMemoryRequirementsInfo2_win32_to_host((const VkImageSparseMemoryRequirementsInfo232 *)UlongToPtr(params->pInfo), &pInfo_host);
     pSparseMemoryRequirements_host = convert_VkSparseImageMemoryRequirements2_array_win32_to_host(ctx, (VkSparseImageMemoryRequirements232 *)UlongToPtr(params->pSparseMemoryRequirements), *(uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount));
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetImageSparseMemoryRequirements2KHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, (uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount), pSparseMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetImageSparseMemoryRequirements2KHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, (uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount), pSparseMemoryRequirements_host);
     convert_VkSparseImageMemoryRequirements2_array_host_to_win32(pSparseMemoryRequirements_host, (VkSparseImageMemoryRequirements232 *)UlongToPtr(params->pSparseMemoryRequirements), *(uint32_t *)UlongToPtr(params->pSparseMemoryRequirementCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -46323,7 +46323,7 @@ static NTSTATUS thunk64_vkGetImageSubresourceLayout(void *args)
 
     TRACE("%p, 0x%s, %p, %p\n", params->device, wine_dbgstr_longlong(params->image), params->pSubresource, params->pLayout);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetImageSubresourceLayout(wine_device_from_handle(params->device)->host_device, params->image, params->pSubresource, params->pLayout);
+    get_vulkan_device_funcs(params->device)->p_vkGetImageSubresourceLayout(wine_device_from_handle(params->device)->obj.host.device, params->image, params->pSubresource, params->pLayout);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46342,7 +46342,7 @@ static NTSTATUS thunk32_vkGetImageSubresourceLayout(void *args)
     TRACE("%#x, 0x%s, %#x, %#x\n", params->device, wine_dbgstr_longlong(params->image), params->pSubresource, params->pLayout);
 
     convert_VkSubresourceLayout_win32_to_host((VkSubresourceLayout32 *)UlongToPtr(params->pLayout), &pLayout_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetImageSubresourceLayout(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->image, (const VkImageSubresource *)UlongToPtr(params->pSubresource), &pLayout_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetImageSubresourceLayout(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->image, (const VkImageSubresource *)UlongToPtr(params->pSubresource), &pLayout_host);
     convert_VkSubresourceLayout_host_to_win32(&pLayout_host, (VkSubresourceLayout32 *)UlongToPtr(params->pLayout));
     return STATUS_SUCCESS;
 }
@@ -46354,7 +46354,7 @@ static NTSTATUS thunk64_vkGetImageSubresourceLayout2EXT(void *args)
 
     TRACE("%p, 0x%s, %p, %p\n", params->device, wine_dbgstr_longlong(params->image), params->pSubresource, params->pLayout);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetImageSubresourceLayout2EXT(wine_device_from_handle(params->device)->host_device, params->image, params->pSubresource, params->pLayout);
+    get_vulkan_device_funcs(params->device)->p_vkGetImageSubresourceLayout2EXT(wine_device_from_handle(params->device)->obj.host.device, params->image, params->pSubresource, params->pLayout);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46378,7 +46378,7 @@ static NTSTATUS thunk32_vkGetImageSubresourceLayout2EXT(void *args)
     init_conversion_context(ctx);
     convert_VkImageSubresource2KHR_win32_to_host((const VkImageSubresource2KHR32 *)UlongToPtr(params->pSubresource), &pSubresource_host);
     convert_VkSubresourceLayout2KHR_win32_to_host(ctx, (VkSubresourceLayout2KHR32 *)UlongToPtr(params->pLayout), &pLayout_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetImageSubresourceLayout2EXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->image, &pSubresource_host, &pLayout_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetImageSubresourceLayout2EXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->image, &pSubresource_host, &pLayout_host);
     convert_VkSubresourceLayout2KHR_host_to_win32(&pLayout_host, (VkSubresourceLayout2KHR32 *)UlongToPtr(params->pLayout));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -46391,7 +46391,7 @@ static NTSTATUS thunk64_vkGetImageSubresourceLayout2KHR(void *args)
 
     TRACE("%p, 0x%s, %p, %p\n", params->device, wine_dbgstr_longlong(params->image), params->pSubresource, params->pLayout);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetImageSubresourceLayout2KHR(wine_device_from_handle(params->device)->host_device, params->image, params->pSubresource, params->pLayout);
+    get_vulkan_device_funcs(params->device)->p_vkGetImageSubresourceLayout2KHR(wine_device_from_handle(params->device)->obj.host.device, params->image, params->pSubresource, params->pLayout);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46415,7 +46415,7 @@ static NTSTATUS thunk32_vkGetImageSubresourceLayout2KHR(void *args)
     init_conversion_context(ctx);
     convert_VkImageSubresource2KHR_win32_to_host((const VkImageSubresource2KHR32 *)UlongToPtr(params->pSubresource), &pSubresource_host);
     convert_VkSubresourceLayout2KHR_win32_to_host(ctx, (VkSubresourceLayout2KHR32 *)UlongToPtr(params->pLayout), &pLayout_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetImageSubresourceLayout2KHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->image, &pSubresource_host, &pLayout_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetImageSubresourceLayout2KHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->image, &pSubresource_host, &pLayout_host);
     convert_VkSubresourceLayout2KHR_host_to_win32(&pLayout_host, (VkSubresourceLayout2KHR32 *)UlongToPtr(params->pLayout));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -46428,7 +46428,7 @@ static NTSTATUS thunk64_vkGetImageViewAddressNVX(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->imageView), params->pProperties);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetImageViewAddressNVX(wine_device_from_handle(params->device)->host_device, params->imageView, params->pProperties);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetImageViewAddressNVX(wine_device_from_handle(params->device)->obj.host.device, params->imageView, params->pProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46447,7 +46447,7 @@ static NTSTATUS thunk32_vkGetImageViewAddressNVX(void *args)
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->imageView), params->pProperties);
 
     convert_VkImageViewAddressPropertiesNVX_win32_to_host((VkImageViewAddressPropertiesNVX32 *)UlongToPtr(params->pProperties), &pProperties_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetImageViewAddressNVX(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->imageView, &pProperties_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetImageViewAddressNVX(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->imageView, &pProperties_host);
     convert_VkImageViewAddressPropertiesNVX_host_to_win32(&pProperties_host, (VkImageViewAddressPropertiesNVX32 *)UlongToPtr(params->pProperties));
     return STATUS_SUCCESS;
 }
@@ -46459,7 +46459,7 @@ static NTSTATUS thunk64_vkGetImageViewHandleNVX(void *args)
 
     TRACE("%p, %p\n", params->device, params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetImageViewHandleNVX(wine_device_from_handle(params->device)->host_device, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetImageViewHandleNVX(wine_device_from_handle(params->device)->obj.host.device, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46477,7 +46477,7 @@ static NTSTATUS thunk32_vkGetImageViewHandleNVX(void *args)
     TRACE("%#x, %#x\n", params->device, params->pInfo);
 
     convert_VkImageViewHandleInfoNVX_win32_to_host((const VkImageViewHandleInfoNVX32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetImageViewHandleNVX(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetImageViewHandleNVX(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -46488,7 +46488,7 @@ static NTSTATUS thunk64_vkGetImageViewOpaqueCaptureDescriptorDataEXT(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pInfo, params->pData);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetImageViewOpaqueCaptureDescriptorDataEXT(wine_device_from_handle(params->device)->host_device, params->pInfo, params->pData);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetImageViewOpaqueCaptureDescriptorDataEXT(wine_device_from_handle(params->device)->obj.host.device, params->pInfo, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46507,7 +46507,7 @@ static NTSTATUS thunk32_vkGetImageViewOpaqueCaptureDescriptorDataEXT(void *args)
     TRACE("%#x, %#x, %#x\n", params->device, params->pInfo, params->pData);
 
     convert_VkImageViewCaptureDescriptorDataInfoEXT_win32_to_host((const VkImageViewCaptureDescriptorDataInfoEXT32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetImageViewOpaqueCaptureDescriptorDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, (void *)UlongToPtr(params->pData));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetImageViewOpaqueCaptureDescriptorDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, (void *)UlongToPtr(params->pData));
     return STATUS_SUCCESS;
 }
 
@@ -46518,7 +46518,7 @@ static NTSTATUS thunk64_vkGetLatencyTimingsNV(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->swapchain), params->pLatencyMarkerInfo);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetLatencyTimingsNV(wine_device_from_handle(params->device)->host_device, wine_swapchain_from_handle(params->swapchain)->host_swapchain, params->pLatencyMarkerInfo);
+    get_vulkan_device_funcs(params->device)->p_vkGetLatencyTimingsNV(wine_device_from_handle(params->device)->obj.host.device, wine_swapchain_from_handle(params->swapchain)->obj.host.swapchain, params->pLatencyMarkerInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46539,7 +46539,7 @@ static NTSTATUS thunk32_vkGetLatencyTimingsNV(void *args)
 
     init_conversion_context(ctx);
     convert_VkGetLatencyMarkerInfoNV_win32_to_host(ctx, (VkGetLatencyMarkerInfoNV32 *)UlongToPtr(params->pLatencyMarkerInfo), &pLatencyMarkerInfo_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetLatencyTimingsNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, wine_swapchain_from_handle(params->swapchain)->host_swapchain, &pLatencyMarkerInfo_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetLatencyTimingsNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, wine_swapchain_from_handle(params->swapchain)->obj.host.swapchain, &pLatencyMarkerInfo_host);
     convert_VkGetLatencyMarkerInfoNV_host_to_win32(&pLatencyMarkerInfo_host, (VkGetLatencyMarkerInfoNV32 *)UlongToPtr(params->pLatencyMarkerInfo));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -46552,7 +46552,7 @@ static NTSTATUS thunk64_vkGetMemoryHostPointerPropertiesEXT(void *args)
 
     TRACE("%p, %#x, %p, %p\n", params->device, params->handleType, params->pHostPointer, params->pMemoryHostPointerProperties);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetMemoryHostPointerPropertiesEXT(wine_device_from_handle(params->device)->host_device, params->handleType, params->pHostPointer, params->pMemoryHostPointerProperties);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetMemoryHostPointerPropertiesEXT(wine_device_from_handle(params->device)->obj.host.device, params->handleType, params->pHostPointer, params->pMemoryHostPointerProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46572,7 +46572,7 @@ static NTSTATUS thunk32_vkGetMemoryHostPointerPropertiesEXT(void *args)
     TRACE("%#x, %#x, %#x, %#x\n", params->device, params->handleType, params->pHostPointer, params->pMemoryHostPointerProperties);
 
     convert_VkMemoryHostPointerPropertiesEXT_win32_to_host((VkMemoryHostPointerPropertiesEXT32 *)UlongToPtr(params->pMemoryHostPointerProperties), &pMemoryHostPointerProperties_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetMemoryHostPointerPropertiesEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->handleType, (const void *)UlongToPtr(params->pHostPointer), &pMemoryHostPointerProperties_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetMemoryHostPointerPropertiesEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->handleType, (const void *)UlongToPtr(params->pHostPointer), &pMemoryHostPointerProperties_host);
     convert_VkMemoryHostPointerPropertiesEXT_host_to_win32(&pMemoryHostPointerProperties_host, (VkMemoryHostPointerPropertiesEXT32 *)UlongToPtr(params->pMemoryHostPointerProperties));
     return STATUS_SUCCESS;
 }
@@ -46584,7 +46584,7 @@ static NTSTATUS thunk64_vkGetMicromapBuildSizesEXT(void *args)
 
     TRACE("%p, %#x, %p, %p\n", params->device, params->buildType, params->pBuildInfo, params->pSizeInfo);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetMicromapBuildSizesEXT(wine_device_from_handle(params->device)->host_device, params->buildType, params->pBuildInfo, params->pSizeInfo);
+    get_vulkan_device_funcs(params->device)->p_vkGetMicromapBuildSizesEXT(wine_device_from_handle(params->device)->obj.host.device, params->buildType, params->pBuildInfo, params->pSizeInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46608,7 +46608,7 @@ static NTSTATUS thunk32_vkGetMicromapBuildSizesEXT(void *args)
     init_conversion_context(ctx);
     convert_VkMicromapBuildInfoEXT_win32_to_host(ctx, (const VkMicromapBuildInfoEXT32 *)UlongToPtr(params->pBuildInfo), &pBuildInfo_host);
     convert_VkMicromapBuildSizesInfoEXT_win32_to_host((VkMicromapBuildSizesInfoEXT32 *)UlongToPtr(params->pSizeInfo), &pSizeInfo_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetMicromapBuildSizesEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->buildType, &pBuildInfo_host, &pSizeInfo_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetMicromapBuildSizesEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->buildType, &pBuildInfo_host, &pSizeInfo_host);
     convert_VkMicromapBuildSizesInfoEXT_host_to_win32(&pSizeInfo_host, (VkMicromapBuildSizesInfoEXT32 *)UlongToPtr(params->pSizeInfo));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -46621,7 +46621,7 @@ static NTSTATUS thunk64_vkGetPerformanceParameterINTEL(void *args)
 
     TRACE("%p, %#x, %p\n", params->device, params->parameter, params->pValue);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetPerformanceParameterINTEL(wine_device_from_handle(params->device)->host_device, params->parameter, params->pValue);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetPerformanceParameterINTEL(wine_device_from_handle(params->device)->obj.host.device, params->parameter, params->pValue);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46639,7 +46639,7 @@ static NTSTATUS thunk32_vkGetPerformanceParameterINTEL(void *args)
 
     TRACE("%#x, %#x, %#x\n", params->device, params->parameter, params->pValue);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetPerformanceParameterINTEL(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->parameter, &pValue_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetPerformanceParameterINTEL(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->parameter, &pValue_host);
     convert_VkPerformanceValueINTEL_host_to_win32(&pValue_host, (VkPerformanceValueINTEL32 *)UlongToPtr(params->pValue));
     return STATUS_SUCCESS;
 }
@@ -46707,7 +46707,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR(void *
 
     TRACE("%p, %p, %p\n", params->physicalDevice, params->pPropertyCount, params->pProperties);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pPropertyCount, params->pProperties);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pPropertyCount, params->pProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46729,7 +46729,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR(void *
 
     init_conversion_context(ctx);
     pProperties_host = convert_VkCooperativeMatrixPropertiesKHR_array_win32_to_host(ctx, (VkCooperativeMatrixPropertiesKHR32 *)UlongToPtr(params->pProperties), *(uint32_t *)UlongToPtr(params->pPropertyCount));
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, (uint32_t *)UlongToPtr(params->pPropertyCount), pProperties_host);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, (uint32_t *)UlongToPtr(params->pPropertyCount), pProperties_host);
     convert_VkCooperativeMatrixPropertiesKHR_array_host_to_win32(pProperties_host, (VkCooperativeMatrixPropertiesKHR32 *)UlongToPtr(params->pProperties), *(uint32_t *)UlongToPtr(params->pPropertyCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -46742,7 +46742,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV(void *a
 
     TRACE("%p, %p, %p\n", params->physicalDevice, params->pPropertyCount, params->pProperties);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pPropertyCount, params->pProperties);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pPropertyCount, params->pProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -46764,7 +46764,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV(void *a
 
     init_conversion_context(ctx);
     pProperties_host = convert_VkCooperativeMatrixPropertiesNV_array_win32_to_host(ctx, (VkCooperativeMatrixPropertiesNV32 *)UlongToPtr(params->pProperties), *(uint32_t *)UlongToPtr(params->pPropertyCount));
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, (uint32_t *)UlongToPtr(params->pPropertyCount), pProperties_host);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, (uint32_t *)UlongToPtr(params->pPropertyCount), pProperties_host);
     convert_VkCooperativeMatrixPropertiesNV_array_host_to_win32(pProperties_host, (VkCooperativeMatrixPropertiesNV32 *)UlongToPtr(params->pProperties), *(uint32_t *)UlongToPtr(params->pPropertyCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -46985,7 +46985,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceFeatures(void *args)
 
     TRACE("%p, %p\n", params->physicalDevice, params->pFeatures);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceFeatures(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pFeatures);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceFeatures(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pFeatures);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47000,7 +47000,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceFeatures(void *args)
 
     TRACE("%#x, %#x\n", params->physicalDevice, params->pFeatures);
 
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceFeatures(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, (VkPhysicalDeviceFeatures *)UlongToPtr(params->pFeatures));
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceFeatures(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, (VkPhysicalDeviceFeatures *)UlongToPtr(params->pFeatures));
     return STATUS_SUCCESS;
 }
 
@@ -47011,7 +47011,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceFeatures2(void *args)
 
     TRACE("%p, %p\n", params->physicalDevice, params->pFeatures);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceFeatures2(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pFeatures);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceFeatures2(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pFeatures);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47031,7 +47031,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceFeatures2(void *args)
 
     init_conversion_context(ctx);
     convert_VkPhysicalDeviceFeatures2_win32_to_host(ctx, (VkPhysicalDeviceFeatures232 *)UlongToPtr(params->pFeatures), &pFeatures_host);
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceFeatures2(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, &pFeatures_host);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceFeatures2(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, &pFeatures_host);
     convert_VkPhysicalDeviceFeatures2_host_to_win32(&pFeatures_host, (VkPhysicalDeviceFeatures232 *)UlongToPtr(params->pFeatures));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -47044,7 +47044,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceFeatures2KHR(void *args)
 
     TRACE("%p, %p\n", params->physicalDevice, params->pFeatures);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceFeatures2KHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pFeatures);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceFeatures2KHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pFeatures);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47064,7 +47064,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceFeatures2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkPhysicalDeviceFeatures2_win32_to_host(ctx, (VkPhysicalDeviceFeatures232 *)UlongToPtr(params->pFeatures), &pFeatures_host);
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceFeatures2KHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, &pFeatures_host);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceFeatures2KHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, &pFeatures_host);
     convert_VkPhysicalDeviceFeatures2_host_to_win32(&pFeatures_host, (VkPhysicalDeviceFeatures232 *)UlongToPtr(params->pFeatures));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -47077,7 +47077,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceFormatProperties(void *args)
 
     TRACE("%p, %#x, %p\n", params->physicalDevice, params->format, params->pFormatProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceFormatProperties(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->format, params->pFormatProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceFormatProperties(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->format, params->pFormatProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47093,7 +47093,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceFormatProperties(void *args)
 
     TRACE("%#x, %#x, %#x\n", params->physicalDevice, params->format, params->pFormatProperties);
 
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceFormatProperties(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, params->format, (VkFormatProperties *)UlongToPtr(params->pFormatProperties));
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceFormatProperties(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, params->format, (VkFormatProperties *)UlongToPtr(params->pFormatProperties));
     return STATUS_SUCCESS;
 }
 
@@ -47104,7 +47104,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceFormatProperties2(void *args)
 
     TRACE("%p, %#x, %p\n", params->physicalDevice, params->format, params->pFormatProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceFormatProperties2(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->format, params->pFormatProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceFormatProperties2(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->format, params->pFormatProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47125,7 +47125,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceFormatProperties2(void *args)
 
     init_conversion_context(ctx);
     convert_VkFormatProperties2_win32_to_host(ctx, (VkFormatProperties232 *)UlongToPtr(params->pFormatProperties), &pFormatProperties_host);
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceFormatProperties2(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, params->format, &pFormatProperties_host);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceFormatProperties2(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, params->format, &pFormatProperties_host);
     convert_VkFormatProperties2_host_to_win32(&pFormatProperties_host, (VkFormatProperties232 *)UlongToPtr(params->pFormatProperties));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -47138,7 +47138,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceFormatProperties2KHR(void *args)
 
     TRACE("%p, %#x, %p\n", params->physicalDevice, params->format, params->pFormatProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceFormatProperties2KHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->format, params->pFormatProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceFormatProperties2KHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->format, params->pFormatProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47159,7 +47159,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceFormatProperties2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkFormatProperties2_win32_to_host(ctx, (VkFormatProperties232 *)UlongToPtr(params->pFormatProperties), &pFormatProperties_host);
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceFormatProperties2KHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, params->format, &pFormatProperties_host);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceFormatProperties2KHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, params->format, &pFormatProperties_host);
     convert_VkFormatProperties2_host_to_win32(&pFormatProperties_host, (VkFormatProperties232 *)UlongToPtr(params->pFormatProperties));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -47172,7 +47172,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceFragmentShadingRatesKHR(void *args)
 
     TRACE("%p, %p, %p\n", params->physicalDevice, params->pFragmentShadingRateCount, params->pFragmentShadingRates);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceFragmentShadingRatesKHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pFragmentShadingRateCount, params->pFragmentShadingRates);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceFragmentShadingRatesKHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pFragmentShadingRateCount, params->pFragmentShadingRates);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47194,7 +47194,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceFragmentShadingRatesKHR(void *args)
 
     init_conversion_context(ctx);
     pFragmentShadingRates_host = convert_VkPhysicalDeviceFragmentShadingRateKHR_array_win32_to_host(ctx, (VkPhysicalDeviceFragmentShadingRateKHR32 *)UlongToPtr(params->pFragmentShadingRates), *(uint32_t *)UlongToPtr(params->pFragmentShadingRateCount));
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceFragmentShadingRatesKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, (uint32_t *)UlongToPtr(params->pFragmentShadingRateCount), pFragmentShadingRates_host);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceFragmentShadingRatesKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, (uint32_t *)UlongToPtr(params->pFragmentShadingRateCount), pFragmentShadingRates_host);
     convert_VkPhysicalDeviceFragmentShadingRateKHR_array_host_to_win32(pFragmentShadingRates_host, (VkPhysicalDeviceFragmentShadingRateKHR32 *)UlongToPtr(params->pFragmentShadingRates), *(uint32_t *)UlongToPtr(params->pFragmentShadingRateCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -47207,7 +47207,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceImageFormatProperties(void *args)
 
     TRACE("%p, %#x, %#x, %#x, %#x, %#x, %p\n", params->physicalDevice, params->format, params->type, params->tiling, params->usage, params->flags, params->pImageFormatProperties);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceImageFormatProperties(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->format, params->type, params->tiling, params->usage, params->flags, params->pImageFormatProperties);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceImageFormatProperties(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->format, params->type, params->tiling, params->usage, params->flags, params->pImageFormatProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47229,7 +47229,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceImageFormatProperties(void *args)
 
     TRACE("%#x, %#x, %#x, %#x, %#x, %#x, %#x\n", params->physicalDevice, params->format, params->type, params->tiling, params->usage, params->flags, params->pImageFormatProperties);
 
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceImageFormatProperties(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, params->format, params->type, params->tiling, params->usage, params->flags, &pImageFormatProperties_host);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceImageFormatProperties(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, params->format, params->type, params->tiling, params->usage, params->flags, &pImageFormatProperties_host);
     convert_VkImageFormatProperties_host_to_win32(&pImageFormatProperties_host, (VkImageFormatProperties32 *)UlongToPtr(params->pImageFormatProperties));
     return STATUS_SUCCESS;
 }
@@ -47315,7 +47315,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceMemoryProperties(void *args)
 
     TRACE("%p, %p\n", params->physicalDevice, params->pMemoryProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceMemoryProperties(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pMemoryProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceMemoryProperties(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pMemoryProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47331,7 +47331,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceMemoryProperties(void *args)
 
     TRACE("%#x, %#x\n", params->physicalDevice, params->pMemoryProperties);
 
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceMemoryProperties(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, &pMemoryProperties_host);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceMemoryProperties(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, &pMemoryProperties_host);
     convert_VkPhysicalDeviceMemoryProperties_host_to_win32(&pMemoryProperties_host, (VkPhysicalDeviceMemoryProperties32 *)UlongToPtr(params->pMemoryProperties));
     return STATUS_SUCCESS;
 }
@@ -47343,7 +47343,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceMemoryProperties2(void *args)
 
     TRACE("%p, %p\n", params->physicalDevice, params->pMemoryProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceMemoryProperties2(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pMemoryProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceMemoryProperties2(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pMemoryProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47363,7 +47363,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceMemoryProperties2(void *args)
 
     init_conversion_context(ctx);
     convert_VkPhysicalDeviceMemoryProperties2_win32_to_host(ctx, (VkPhysicalDeviceMemoryProperties232 *)UlongToPtr(params->pMemoryProperties), &pMemoryProperties_host);
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceMemoryProperties2(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, &pMemoryProperties_host);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceMemoryProperties2(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, &pMemoryProperties_host);
     convert_VkPhysicalDeviceMemoryProperties2_host_to_win32(&pMemoryProperties_host, (VkPhysicalDeviceMemoryProperties232 *)UlongToPtr(params->pMemoryProperties));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -47376,7 +47376,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceMemoryProperties2KHR(void *args)
 
     TRACE("%p, %p\n", params->physicalDevice, params->pMemoryProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceMemoryProperties2KHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pMemoryProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceMemoryProperties2KHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pMemoryProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47396,7 +47396,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceMemoryProperties2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkPhysicalDeviceMemoryProperties2_win32_to_host(ctx, (VkPhysicalDeviceMemoryProperties232 *)UlongToPtr(params->pMemoryProperties), &pMemoryProperties_host);
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceMemoryProperties2KHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, &pMemoryProperties_host);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceMemoryProperties2KHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, &pMemoryProperties_host);
     convert_VkPhysicalDeviceMemoryProperties2_host_to_win32(&pMemoryProperties_host, (VkPhysicalDeviceMemoryProperties232 *)UlongToPtr(params->pMemoryProperties));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -47409,7 +47409,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceMultisamplePropertiesEXT(void *args)
 
     TRACE("%p, %#x, %p\n", params->physicalDevice, params->samples, params->pMultisampleProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceMultisamplePropertiesEXT(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->samples, params->pMultisampleProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceMultisamplePropertiesEXT(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->samples, params->pMultisampleProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47427,7 +47427,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceMultisamplePropertiesEXT(void *args)
     TRACE("%#x, %#x, %#x\n", params->physicalDevice, params->samples, params->pMultisampleProperties);
 
     convert_VkMultisamplePropertiesEXT_win32_to_host((VkMultisamplePropertiesEXT32 *)UlongToPtr(params->pMultisampleProperties), &pMultisampleProperties_host);
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceMultisamplePropertiesEXT(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, params->samples, &pMultisampleProperties_host);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceMultisamplePropertiesEXT(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, params->samples, &pMultisampleProperties_host);
     convert_VkMultisamplePropertiesEXT_host_to_win32(&pMultisampleProperties_host, (VkMultisamplePropertiesEXT32 *)UlongToPtr(params->pMultisampleProperties));
     return STATUS_SUCCESS;
 }
@@ -47439,7 +47439,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceOpticalFlowImageFormatsNV(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->physicalDevice, params->pOpticalFlowImageFormatInfo, params->pFormatCount, params->pImageFormatProperties);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceOpticalFlowImageFormatsNV(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pOpticalFlowImageFormatInfo, params->pFormatCount, params->pImageFormatProperties);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceOpticalFlowImageFormatsNV(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pOpticalFlowImageFormatInfo, params->pFormatCount, params->pImageFormatProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47464,7 +47464,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceOpticalFlowImageFormatsNV(void *args)
     init_conversion_context(ctx);
     convert_VkOpticalFlowImageFormatInfoNV_win32_to_host((const VkOpticalFlowImageFormatInfoNV32 *)UlongToPtr(params->pOpticalFlowImageFormatInfo), &pOpticalFlowImageFormatInfo_host);
     pImageFormatProperties_host = convert_VkOpticalFlowImageFormatPropertiesNV_array_win32_to_host(ctx, (VkOpticalFlowImageFormatPropertiesNV32 *)UlongToPtr(params->pImageFormatProperties), *(uint32_t *)UlongToPtr(params->pFormatCount));
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceOpticalFlowImageFormatsNV(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, &pOpticalFlowImageFormatInfo_host, (uint32_t *)UlongToPtr(params->pFormatCount), pImageFormatProperties_host);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceOpticalFlowImageFormatsNV(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, &pOpticalFlowImageFormatInfo_host, (uint32_t *)UlongToPtr(params->pFormatCount), pImageFormatProperties_host);
     convert_VkOpticalFlowImageFormatPropertiesNV_array_host_to_win32(pImageFormatProperties_host, (VkOpticalFlowImageFormatPropertiesNV32 *)UlongToPtr(params->pImageFormatProperties), *(uint32_t *)UlongToPtr(params->pFormatCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -47506,7 +47506,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceProperties(void *args)
 
     TRACE("%p, %p\n", params->physicalDevice, params->pProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceProperties(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceProperties(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47522,7 +47522,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceProperties(void *args)
 
     TRACE("%#x, %#x\n", params->physicalDevice, params->pProperties);
 
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceProperties(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, &pProperties_host);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceProperties(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, &pProperties_host);
     convert_VkPhysicalDeviceProperties_host_to_win32(&pProperties_host, (VkPhysicalDeviceProperties32 *)UlongToPtr(params->pProperties));
     return STATUS_SUCCESS;
 }
@@ -47534,7 +47534,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceProperties2(void *args)
 
     TRACE("%p, %p\n", params->physicalDevice, params->pProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceProperties2(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceProperties2(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47554,7 +47554,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceProperties2(void *args)
 
     init_conversion_context(ctx);
     convert_VkPhysicalDeviceProperties2_win32_to_host(ctx, (VkPhysicalDeviceProperties232 *)UlongToPtr(params->pProperties), &pProperties_host);
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceProperties2(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, &pProperties_host);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceProperties2(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, &pProperties_host);
     convert_VkPhysicalDeviceProperties2_host_to_win32(&pProperties_host, (VkPhysicalDeviceProperties232 *)UlongToPtr(params->pProperties));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -47567,7 +47567,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceProperties2KHR(void *args)
 
     TRACE("%p, %p\n", params->physicalDevice, params->pProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceProperties2KHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceProperties2KHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47587,7 +47587,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceProperties2KHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkPhysicalDeviceProperties2_win32_to_host(ctx, (VkPhysicalDeviceProperties232 *)UlongToPtr(params->pProperties), &pProperties_host);
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceProperties2KHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, &pProperties_host);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceProperties2KHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, &pProperties_host);
     convert_VkPhysicalDeviceProperties2_host_to_win32(&pProperties_host, (VkPhysicalDeviceProperties232 *)UlongToPtr(params->pProperties));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -47600,7 +47600,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR(
 
     TRACE("%p, %p, %p\n", params->physicalDevice, params->pPerformanceQueryCreateInfo, params->pNumPasses);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pPerformanceQueryCreateInfo, params->pNumPasses);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pPerformanceQueryCreateInfo, params->pNumPasses);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47618,7 +47618,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR(
     TRACE("%#x, %#x, %#x\n", params->physicalDevice, params->pPerformanceQueryCreateInfo, params->pNumPasses);
 
     convert_VkQueryPoolPerformanceCreateInfoKHR_win32_to_host((const VkQueryPoolPerformanceCreateInfoKHR32 *)UlongToPtr(params->pPerformanceQueryCreateInfo), &pPerformanceQueryCreateInfo_host);
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, &pPerformanceQueryCreateInfo_host, (uint32_t *)UlongToPtr(params->pNumPasses));
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, &pPerformanceQueryCreateInfo_host, (uint32_t *)UlongToPtr(params->pNumPasses));
     return STATUS_SUCCESS;
 }
 
@@ -47629,7 +47629,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceQueueFamilyProperties(void *args)
 
     TRACE("%p, %p, %p\n", params->physicalDevice, params->pQueueFamilyPropertyCount, params->pQueueFamilyProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceQueueFamilyProperties(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pQueueFamilyPropertyCount, params->pQueueFamilyProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceQueueFamilyProperties(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pQueueFamilyPropertyCount, params->pQueueFamilyProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47645,7 +47645,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceQueueFamilyProperties(void *args)
 
     TRACE("%#x, %#x, %#x\n", params->physicalDevice, params->pQueueFamilyPropertyCount, params->pQueueFamilyProperties);
 
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceQueueFamilyProperties(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, (uint32_t *)UlongToPtr(params->pQueueFamilyPropertyCount), (VkQueueFamilyProperties *)UlongToPtr(params->pQueueFamilyProperties));
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceQueueFamilyProperties(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, (uint32_t *)UlongToPtr(params->pQueueFamilyPropertyCount), (VkQueueFamilyProperties *)UlongToPtr(params->pQueueFamilyProperties));
     return STATUS_SUCCESS;
 }
 
@@ -47656,7 +47656,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceQueueFamilyProperties2(void *args)
 
     TRACE("%p, %p, %p\n", params->physicalDevice, params->pQueueFamilyPropertyCount, params->pQueueFamilyProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceQueueFamilyProperties2(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pQueueFamilyPropertyCount, params->pQueueFamilyProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceQueueFamilyProperties2(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pQueueFamilyPropertyCount, params->pQueueFamilyProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47677,7 +47677,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceQueueFamilyProperties2(void *args)
 
     init_conversion_context(ctx);
     pQueueFamilyProperties_host = convert_VkQueueFamilyProperties2_array_win32_to_host(ctx, (VkQueueFamilyProperties232 *)UlongToPtr(params->pQueueFamilyProperties), *(uint32_t *)UlongToPtr(params->pQueueFamilyPropertyCount));
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceQueueFamilyProperties2(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, (uint32_t *)UlongToPtr(params->pQueueFamilyPropertyCount), pQueueFamilyProperties_host);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceQueueFamilyProperties2(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, (uint32_t *)UlongToPtr(params->pQueueFamilyPropertyCount), pQueueFamilyProperties_host);
     convert_VkQueueFamilyProperties2_array_host_to_win32(pQueueFamilyProperties_host, (VkQueueFamilyProperties232 *)UlongToPtr(params->pQueueFamilyProperties), *(uint32_t *)UlongToPtr(params->pQueueFamilyPropertyCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -47690,7 +47690,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceQueueFamilyProperties2KHR(void *args)
 
     TRACE("%p, %p, %p\n", params->physicalDevice, params->pQueueFamilyPropertyCount, params->pQueueFamilyProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceQueueFamilyProperties2KHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pQueueFamilyPropertyCount, params->pQueueFamilyProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceQueueFamilyProperties2KHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pQueueFamilyPropertyCount, params->pQueueFamilyProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47711,7 +47711,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceQueueFamilyProperties2KHR(void *args)
 
     init_conversion_context(ctx);
     pQueueFamilyProperties_host = convert_VkQueueFamilyProperties2_array_win32_to_host(ctx, (VkQueueFamilyProperties232 *)UlongToPtr(params->pQueueFamilyProperties), *(uint32_t *)UlongToPtr(params->pQueueFamilyPropertyCount));
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceQueueFamilyProperties2KHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, (uint32_t *)UlongToPtr(params->pQueueFamilyPropertyCount), pQueueFamilyProperties_host);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceQueueFamilyProperties2KHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, (uint32_t *)UlongToPtr(params->pQueueFamilyPropertyCount), pQueueFamilyProperties_host);
     convert_VkQueueFamilyProperties2_array_host_to_win32(pQueueFamilyProperties_host, (VkQueueFamilyProperties232 *)UlongToPtr(params->pQueueFamilyProperties), *(uint32_t *)UlongToPtr(params->pQueueFamilyPropertyCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -47724,7 +47724,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceSparseImageFormatProperties(void *arg
 
     TRACE("%p, %#x, %#x, %#x, %#x, %#x, %p, %p\n", params->physicalDevice, params->format, params->type, params->samples, params->usage, params->tiling, params->pPropertyCount, params->pProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceSparseImageFormatProperties(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->format, params->type, params->samples, params->usage, params->tiling, params->pPropertyCount, params->pProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceSparseImageFormatProperties(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->format, params->type, params->samples, params->usage, params->tiling, params->pPropertyCount, params->pProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47745,7 +47745,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceSparseImageFormatProperties(void *arg
 
     TRACE("%#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x\n", params->physicalDevice, params->format, params->type, params->samples, params->usage, params->tiling, params->pPropertyCount, params->pProperties);
 
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceSparseImageFormatProperties(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, params->format, params->type, params->samples, params->usage, params->tiling, (uint32_t *)UlongToPtr(params->pPropertyCount), (VkSparseImageFormatProperties *)UlongToPtr(params->pProperties));
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceSparseImageFormatProperties(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, params->format, params->type, params->samples, params->usage, params->tiling, (uint32_t *)UlongToPtr(params->pPropertyCount), (VkSparseImageFormatProperties *)UlongToPtr(params->pProperties));
     return STATUS_SUCCESS;
 }
 
@@ -47756,7 +47756,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceSparseImageFormatProperties2(void *ar
 
     TRACE("%p, %p, %p, %p\n", params->physicalDevice, params->pFormatInfo, params->pPropertyCount, params->pProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceSparseImageFormatProperties2(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pFormatInfo, params->pPropertyCount, params->pProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceSparseImageFormatProperties2(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pFormatInfo, params->pPropertyCount, params->pProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47780,7 +47780,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceSparseImageFormatProperties2(void *ar
     init_conversion_context(ctx);
     convert_VkPhysicalDeviceSparseImageFormatInfo2_win32_to_host((const VkPhysicalDeviceSparseImageFormatInfo232 *)UlongToPtr(params->pFormatInfo), &pFormatInfo_host);
     pProperties_host = convert_VkSparseImageFormatProperties2_array_win32_to_host(ctx, (VkSparseImageFormatProperties232 *)UlongToPtr(params->pProperties), *(uint32_t *)UlongToPtr(params->pPropertyCount));
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceSparseImageFormatProperties2(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, &pFormatInfo_host, (uint32_t *)UlongToPtr(params->pPropertyCount), pProperties_host);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceSparseImageFormatProperties2(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, &pFormatInfo_host, (uint32_t *)UlongToPtr(params->pPropertyCount), pProperties_host);
     convert_VkSparseImageFormatProperties2_array_host_to_win32(pProperties_host, (VkSparseImageFormatProperties232 *)UlongToPtr(params->pProperties), *(uint32_t *)UlongToPtr(params->pPropertyCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -47793,7 +47793,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceSparseImageFormatProperties2KHR(void 
 
     TRACE("%p, %p, %p, %p\n", params->physicalDevice, params->pFormatInfo, params->pPropertyCount, params->pProperties);
 
-    wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceSparseImageFormatProperties2KHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pFormatInfo, params->pPropertyCount, params->pProperties);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceSparseImageFormatProperties2KHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pFormatInfo, params->pPropertyCount, params->pProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47817,7 +47817,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceSparseImageFormatProperties2KHR(void 
     init_conversion_context(ctx);
     convert_VkPhysicalDeviceSparseImageFormatInfo2_win32_to_host((const VkPhysicalDeviceSparseImageFormatInfo232 *)UlongToPtr(params->pFormatInfo), &pFormatInfo_host);
     pProperties_host = convert_VkSparseImageFormatProperties2_array_win32_to_host(ctx, (VkSparseImageFormatProperties232 *)UlongToPtr(params->pProperties), *(uint32_t *)UlongToPtr(params->pPropertyCount));
-    wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceSparseImageFormatProperties2KHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, &pFormatInfo_host, (uint32_t *)UlongToPtr(params->pPropertyCount), pProperties_host);
+    get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceSparseImageFormatProperties2KHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, &pFormatInfo_host, (uint32_t *)UlongToPtr(params->pPropertyCount), pProperties_host);
     convert_VkSparseImageFormatProperties2_array_host_to_win32(pProperties_host, (VkSparseImageFormatProperties232 *)UlongToPtr(params->pProperties), *(uint32_t *)UlongToPtr(params->pPropertyCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -47830,7 +47830,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombi
 
     TRACE("%p, %p, %p\n", params->physicalDevice, params->pCombinationCount, params->pCombinations);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pCombinationCount, params->pCombinations);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pCombinationCount, params->pCombinations);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47852,7 +47852,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombi
 
     init_conversion_context(ctx);
     pCombinations_host = convert_VkFramebufferMixedSamplesCombinationNV_array_win32_to_host(ctx, (VkFramebufferMixedSamplesCombinationNV32 *)UlongToPtr(params->pCombinations), *(uint32_t *)UlongToPtr(params->pCombinationCount));
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, (uint32_t *)UlongToPtr(params->pCombinationCount), pCombinations_host);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, (uint32_t *)UlongToPtr(params->pCombinationCount), pCombinations_host);
     convert_VkFramebufferMixedSamplesCombinationNV_array_host_to_win32(pCombinations_host, (VkFramebufferMixedSamplesCombinationNV32 *)UlongToPtr(params->pCombinations), *(uint32_t *)UlongToPtr(params->pCombinationCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -47968,7 +47968,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceSurfaceFormatsKHR(void *args)
 
     TRACE("%p, 0x%s, %p, %p\n", params->physicalDevice, wine_dbgstr_longlong(params->surface), params->pSurfaceFormatCount, params->pSurfaceFormats);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceSurfaceFormatsKHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->surface ? wine_surface_from_handle(params->surface)->host_surface : 0, params->pSurfaceFormatCount, params->pSurfaceFormats);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceSurfaceFormatsKHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->surface ? wine_surface_from_handle(params->surface)->obj.host.surface : 0, params->pSurfaceFormatCount, params->pSurfaceFormats);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -47986,7 +47986,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceSurfaceFormatsKHR(void *args)
 
     TRACE("%#x, 0x%s, %#x, %#x\n", params->physicalDevice, wine_dbgstr_longlong(params->surface), params->pSurfaceFormatCount, params->pSurfaceFormats);
 
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceSurfaceFormatsKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, params->surface ? wine_surface_from_handle(params->surface)->host_surface : 0, (uint32_t *)UlongToPtr(params->pSurfaceFormatCount), (VkSurfaceFormatKHR *)UlongToPtr(params->pSurfaceFormats));
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceSurfaceFormatsKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, params->surface ? wine_surface_from_handle(params->surface)->obj.host.surface : 0, (uint32_t *)UlongToPtr(params->pSurfaceFormatCount), (VkSurfaceFormatKHR *)UlongToPtr(params->pSurfaceFormats));
     return STATUS_SUCCESS;
 }
 
@@ -47997,7 +47997,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceSurfacePresentModesKHR(void *args)
 
     TRACE("%p, 0x%s, %p, %p\n", params->physicalDevice, wine_dbgstr_longlong(params->surface), params->pPresentModeCount, params->pPresentModes);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceSurfacePresentModesKHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->surface ? wine_surface_from_handle(params->surface)->host_surface : 0, params->pPresentModeCount, params->pPresentModes);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceSurfacePresentModesKHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->surface ? wine_surface_from_handle(params->surface)->obj.host.surface : 0, params->pPresentModeCount, params->pPresentModes);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48015,7 +48015,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceSurfacePresentModesKHR(void *args)
 
     TRACE("%#x, 0x%s, %#x, %#x\n", params->physicalDevice, wine_dbgstr_longlong(params->surface), params->pPresentModeCount, params->pPresentModes);
 
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceSurfacePresentModesKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, params->surface ? wine_surface_from_handle(params->surface)->host_surface : 0, (uint32_t *)UlongToPtr(params->pPresentModeCount), (VkPresentModeKHR *)UlongToPtr(params->pPresentModes));
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceSurfacePresentModesKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, params->surface ? wine_surface_from_handle(params->surface)->obj.host.surface : 0, (uint32_t *)UlongToPtr(params->pPresentModeCount), (VkPresentModeKHR *)UlongToPtr(params->pPresentModes));
     return STATUS_SUCCESS;
 }
 
@@ -48026,7 +48026,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceSurfaceSupportKHR(void *args)
 
     TRACE("%p, %u, 0x%s, %p\n", params->physicalDevice, params->queueFamilyIndex, wine_dbgstr_longlong(params->surface), params->pSupported);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceSurfaceSupportKHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->queueFamilyIndex, wine_surface_from_handle(params->surface)->host_surface, params->pSupported);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceSurfaceSupportKHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->queueFamilyIndex, wine_surface_from_handle(params->surface)->obj.host.surface, params->pSupported);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48044,7 +48044,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceSurfaceSupportKHR(void *args)
 
     TRACE("%#x, %u, 0x%s, %#x\n", params->physicalDevice, params->queueFamilyIndex, wine_dbgstr_longlong(params->surface), params->pSupported);
 
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceSurfaceSupportKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, params->queueFamilyIndex, wine_surface_from_handle(params->surface)->host_surface, (VkBool32 *)UlongToPtr(params->pSupported));
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceSurfaceSupportKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, params->queueFamilyIndex, wine_surface_from_handle(params->surface)->obj.host.surface, (VkBool32 *)UlongToPtr(params->pSupported));
     return STATUS_SUCCESS;
 }
 
@@ -48055,7 +48055,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceToolProperties(void *args)
 
     TRACE("%p, %p, %p\n", params->physicalDevice, params->pToolCount, params->pToolProperties);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceToolProperties(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pToolCount, params->pToolProperties);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceToolProperties(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pToolCount, params->pToolProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48077,7 +48077,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceToolProperties(void *args)
 
     init_conversion_context(ctx);
     pToolProperties_host = convert_VkPhysicalDeviceToolProperties_array_win32_to_host(ctx, (VkPhysicalDeviceToolProperties32 *)UlongToPtr(params->pToolProperties), *(uint32_t *)UlongToPtr(params->pToolCount));
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceToolProperties(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, (uint32_t *)UlongToPtr(params->pToolCount), pToolProperties_host);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceToolProperties(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, (uint32_t *)UlongToPtr(params->pToolCount), pToolProperties_host);
     convert_VkPhysicalDeviceToolProperties_array_host_to_win32(pToolProperties_host, (VkPhysicalDeviceToolProperties32 *)UlongToPtr(params->pToolProperties), *(uint32_t *)UlongToPtr(params->pToolCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -48090,7 +48090,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceToolPropertiesEXT(void *args)
 
     TRACE("%p, %p, %p\n", params->physicalDevice, params->pToolCount, params->pToolProperties);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceToolPropertiesEXT(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pToolCount, params->pToolProperties);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceToolPropertiesEXT(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pToolCount, params->pToolProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48112,7 +48112,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceToolPropertiesEXT(void *args)
 
     init_conversion_context(ctx);
     pToolProperties_host = convert_VkPhysicalDeviceToolProperties_array_win32_to_host(ctx, (VkPhysicalDeviceToolProperties32 *)UlongToPtr(params->pToolProperties), *(uint32_t *)UlongToPtr(params->pToolCount));
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceToolPropertiesEXT(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, (uint32_t *)UlongToPtr(params->pToolCount), pToolProperties_host);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceToolPropertiesEXT(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, (uint32_t *)UlongToPtr(params->pToolCount), pToolProperties_host);
     convert_VkPhysicalDeviceToolProperties_array_host_to_win32(pToolProperties_host, (VkPhysicalDeviceToolProperties32 *)UlongToPtr(params->pToolProperties), *(uint32_t *)UlongToPtr(params->pToolCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -48125,7 +48125,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceVideoCapabilitiesKHR(void *args)
 
     TRACE("%p, %p, %p\n", params->physicalDevice, params->pVideoProfile, params->pCapabilities);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceVideoCapabilitiesKHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pVideoProfile, params->pCapabilities);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceVideoCapabilitiesKHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pVideoProfile, params->pCapabilities);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48149,7 +48149,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceVideoCapabilitiesKHR(void *args)
     init_conversion_context(ctx);
     convert_VkVideoProfileInfoKHR_win32_to_host(ctx, (const VkVideoProfileInfoKHR32 *)UlongToPtr(params->pVideoProfile), &pVideoProfile_host);
     convert_VkVideoCapabilitiesKHR_win32_to_host(ctx, (VkVideoCapabilitiesKHR32 *)UlongToPtr(params->pCapabilities), &pCapabilities_host);
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceVideoCapabilitiesKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, &pVideoProfile_host, &pCapabilities_host);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceVideoCapabilitiesKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, &pVideoProfile_host, &pCapabilities_host);
     convert_VkVideoCapabilitiesKHR_host_to_win32(&pCapabilities_host, (VkVideoCapabilitiesKHR32 *)UlongToPtr(params->pCapabilities));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -48162,7 +48162,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR(
 
     TRACE("%p, %p, %p\n", params->physicalDevice, params->pQualityLevelInfo, params->pQualityLevelProperties);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pQualityLevelInfo, params->pQualityLevelProperties);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pQualityLevelInfo, params->pQualityLevelProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48186,7 +48186,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR(
     init_conversion_context(ctx);
     convert_VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR_win32_to_host(ctx, (const VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR32 *)UlongToPtr(params->pQualityLevelInfo), &pQualityLevelInfo_host);
     convert_VkVideoEncodeQualityLevelPropertiesKHR_win32_to_host(ctx, (VkVideoEncodeQualityLevelPropertiesKHR32 *)UlongToPtr(params->pQualityLevelProperties), &pQualityLevelProperties_host);
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, &pQualityLevelInfo_host, &pQualityLevelProperties_host);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, &pQualityLevelInfo_host, &pQualityLevelProperties_host);
     convert_VkVideoEncodeQualityLevelPropertiesKHR_host_to_win32(&pQualityLevelProperties_host, (VkVideoEncodeQualityLevelPropertiesKHR32 *)UlongToPtr(params->pQualityLevelProperties));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -48199,7 +48199,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceVideoFormatPropertiesKHR(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->physicalDevice, params->pVideoFormatInfo, params->pVideoFormatPropertyCount, params->pVideoFormatProperties);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceVideoFormatPropertiesKHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->pVideoFormatInfo, params->pVideoFormatPropertyCount, params->pVideoFormatProperties);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceVideoFormatPropertiesKHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->pVideoFormatInfo, params->pVideoFormatPropertyCount, params->pVideoFormatProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48224,7 +48224,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceVideoFormatPropertiesKHR(void *args)
     init_conversion_context(ctx);
     convert_VkPhysicalDeviceVideoFormatInfoKHR_win32_to_host(ctx, (const VkPhysicalDeviceVideoFormatInfoKHR32 *)UlongToPtr(params->pVideoFormatInfo), &pVideoFormatInfo_host);
     pVideoFormatProperties_host = convert_VkVideoFormatPropertiesKHR_array_win32_to_host(ctx, (VkVideoFormatPropertiesKHR32 *)UlongToPtr(params->pVideoFormatProperties), *(uint32_t *)UlongToPtr(params->pVideoFormatPropertyCount));
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceVideoFormatPropertiesKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, &pVideoFormatInfo_host, (uint32_t *)UlongToPtr(params->pVideoFormatPropertyCount), pVideoFormatProperties_host);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceVideoFormatPropertiesKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, &pVideoFormatInfo_host, (uint32_t *)UlongToPtr(params->pVideoFormatPropertyCount), pVideoFormatProperties_host);
     convert_VkVideoFormatPropertiesKHR_array_host_to_win32(pVideoFormatProperties_host, (VkVideoFormatPropertiesKHR32 *)UlongToPtr(params->pVideoFormatProperties), *(uint32_t *)UlongToPtr(params->pVideoFormatPropertyCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -48237,7 +48237,7 @@ static NTSTATUS thunk64_vkGetPhysicalDeviceWin32PresentationSupportKHR(void *arg
 
     TRACE("%p, %u\n", params->physicalDevice, params->queueFamilyIndex);
 
-    params->result = wine_phys_dev_from_handle(params->physicalDevice)->instance->funcs.p_vkGetPhysicalDeviceWin32PresentationSupportKHR(wine_phys_dev_from_handle(params->physicalDevice)->host_physical_device, params->queueFamilyIndex);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle(params->physicalDevice)->obj)->p_vkGetPhysicalDeviceWin32PresentationSupportKHR(wine_phys_dev_from_handle(params->physicalDevice)->obj.host.physical_device, params->queueFamilyIndex);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48253,7 +48253,7 @@ static NTSTATUS thunk32_vkGetPhysicalDeviceWin32PresentationSupportKHR(void *arg
 
     TRACE("%#x, %u\n", params->physicalDevice, params->queueFamilyIndex);
 
-    params->result = wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->instance->funcs.p_vkGetPhysicalDeviceWin32PresentationSupportKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->host_physical_device, params->queueFamilyIndex);
+    params->result = get_vulkan_parent_instance_funcs(&wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj)->p_vkGetPhysicalDeviceWin32PresentationSupportKHR(wine_phys_dev_from_handle((VkPhysicalDevice)UlongToPtr(params->physicalDevice))->obj.host.physical_device, params->queueFamilyIndex);
     return STATUS_SUCCESS;
 }
 
@@ -48264,7 +48264,7 @@ static NTSTATUS thunk64_vkGetPipelineCacheData(void *args)
 
     TRACE("%p, 0x%s, %p, %p\n", params->device, wine_dbgstr_longlong(params->pipelineCache), params->pDataSize, params->pData);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetPipelineCacheData(wine_device_from_handle(params->device)->host_device, params->pipelineCache, params->pDataSize, params->pData);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetPipelineCacheData(wine_device_from_handle(params->device)->obj.host.device, params->pipelineCache, params->pDataSize, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48284,7 +48284,7 @@ static NTSTATUS thunk32_vkGetPipelineCacheData(void *args)
     TRACE("%#x, 0x%s, %#x, %#x\n", params->device, wine_dbgstr_longlong(params->pipelineCache), params->pDataSize, params->pData);
 
     pDataSize_host = *(PTR32 *)UlongToPtr(params->pDataSize);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetPipelineCacheData(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->pipelineCache, &pDataSize_host, (void *)UlongToPtr(params->pData));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetPipelineCacheData(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->pipelineCache, &pDataSize_host, (void *)UlongToPtr(params->pData));
     *(PTR32 *)UlongToPtr(params->pDataSize) = pDataSize_host;
     return STATUS_SUCCESS;
 }
@@ -48296,7 +48296,7 @@ static NTSTATUS thunk64_vkGetPipelineExecutableInternalRepresentationsKHR(void *
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pExecutableInfo, params->pInternalRepresentationCount, params->pInternalRepresentations);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetPipelineExecutableInternalRepresentationsKHR(wine_device_from_handle(params->device)->host_device, params->pExecutableInfo, params->pInternalRepresentationCount, params->pInternalRepresentations);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetPipelineExecutableInternalRepresentationsKHR(wine_device_from_handle(params->device)->obj.host.device, params->pExecutableInfo, params->pInternalRepresentationCount, params->pInternalRepresentations);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48321,7 +48321,7 @@ static NTSTATUS thunk32_vkGetPipelineExecutableInternalRepresentationsKHR(void *
     init_conversion_context(ctx);
     convert_VkPipelineExecutableInfoKHR_win32_to_host((const VkPipelineExecutableInfoKHR32 *)UlongToPtr(params->pExecutableInfo), &pExecutableInfo_host);
     pInternalRepresentations_host = convert_VkPipelineExecutableInternalRepresentationKHR_array_win32_to_host(ctx, (VkPipelineExecutableInternalRepresentationKHR32 *)UlongToPtr(params->pInternalRepresentations), *(uint32_t *)UlongToPtr(params->pInternalRepresentationCount));
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetPipelineExecutableInternalRepresentationsKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pExecutableInfo_host, (uint32_t *)UlongToPtr(params->pInternalRepresentationCount), pInternalRepresentations_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetPipelineExecutableInternalRepresentationsKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pExecutableInfo_host, (uint32_t *)UlongToPtr(params->pInternalRepresentationCount), pInternalRepresentations_host);
     convert_VkPipelineExecutableInternalRepresentationKHR_array_host_to_win32(pInternalRepresentations_host, (VkPipelineExecutableInternalRepresentationKHR32 *)UlongToPtr(params->pInternalRepresentations), *(uint32_t *)UlongToPtr(params->pInternalRepresentationCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -48334,7 +48334,7 @@ static NTSTATUS thunk64_vkGetPipelineExecutablePropertiesKHR(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pPipelineInfo, params->pExecutableCount, params->pProperties);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetPipelineExecutablePropertiesKHR(wine_device_from_handle(params->device)->host_device, params->pPipelineInfo, params->pExecutableCount, params->pProperties);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetPipelineExecutablePropertiesKHR(wine_device_from_handle(params->device)->obj.host.device, params->pPipelineInfo, params->pExecutableCount, params->pProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48359,7 +48359,7 @@ static NTSTATUS thunk32_vkGetPipelineExecutablePropertiesKHR(void *args)
     init_conversion_context(ctx);
     convert_VkPipelineInfoKHR_win32_to_host((const VkPipelineInfoKHR32 *)UlongToPtr(params->pPipelineInfo), &pPipelineInfo_host);
     pProperties_host = convert_VkPipelineExecutablePropertiesKHR_array_win32_to_host(ctx, (VkPipelineExecutablePropertiesKHR32 *)UlongToPtr(params->pProperties), *(uint32_t *)UlongToPtr(params->pExecutableCount));
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetPipelineExecutablePropertiesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pPipelineInfo_host, (uint32_t *)UlongToPtr(params->pExecutableCount), pProperties_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetPipelineExecutablePropertiesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pPipelineInfo_host, (uint32_t *)UlongToPtr(params->pExecutableCount), pProperties_host);
     convert_VkPipelineExecutablePropertiesKHR_array_host_to_win32(pProperties_host, (VkPipelineExecutablePropertiesKHR32 *)UlongToPtr(params->pProperties), *(uint32_t *)UlongToPtr(params->pExecutableCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -48372,7 +48372,7 @@ static NTSTATUS thunk64_vkGetPipelineExecutableStatisticsKHR(void *args)
 
     TRACE("%p, %p, %p, %p\n", params->device, params->pExecutableInfo, params->pStatisticCount, params->pStatistics);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetPipelineExecutableStatisticsKHR(wine_device_from_handle(params->device)->host_device, params->pExecutableInfo, params->pStatisticCount, params->pStatistics);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetPipelineExecutableStatisticsKHR(wine_device_from_handle(params->device)->obj.host.device, params->pExecutableInfo, params->pStatisticCount, params->pStatistics);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48397,7 +48397,7 @@ static NTSTATUS thunk32_vkGetPipelineExecutableStatisticsKHR(void *args)
     init_conversion_context(ctx);
     convert_VkPipelineExecutableInfoKHR_win32_to_host((const VkPipelineExecutableInfoKHR32 *)UlongToPtr(params->pExecutableInfo), &pExecutableInfo_host);
     pStatistics_host = convert_VkPipelineExecutableStatisticKHR_array_win32_to_host(ctx, (VkPipelineExecutableStatisticKHR32 *)UlongToPtr(params->pStatistics), *(uint32_t *)UlongToPtr(params->pStatisticCount));
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetPipelineExecutableStatisticsKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pExecutableInfo_host, (uint32_t *)UlongToPtr(params->pStatisticCount), pStatistics_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetPipelineExecutableStatisticsKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pExecutableInfo_host, (uint32_t *)UlongToPtr(params->pStatisticCount), pStatistics_host);
     convert_VkPipelineExecutableStatisticKHR_array_host_to_win32(pStatistics_host, (VkPipelineExecutableStatisticKHR32 *)UlongToPtr(params->pStatistics), *(uint32_t *)UlongToPtr(params->pStatisticCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -48410,7 +48410,7 @@ static NTSTATUS thunk64_vkGetPipelineIndirectDeviceAddressNV(void *args)
 
     TRACE("%p, %p\n", params->device, params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetPipelineIndirectDeviceAddressNV(wine_device_from_handle(params->device)->host_device, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetPipelineIndirectDeviceAddressNV(wine_device_from_handle(params->device)->obj.host.device, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48428,7 +48428,7 @@ static NTSTATUS thunk32_vkGetPipelineIndirectDeviceAddressNV(void *args)
     TRACE("%#x, %#x\n", params->device, params->pInfo);
 
     convert_VkPipelineIndirectDeviceAddressInfoNV_win32_to_host((const VkPipelineIndirectDeviceAddressInfoNV32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetPipelineIndirectDeviceAddressNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetPipelineIndirectDeviceAddressNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -48444,7 +48444,7 @@ static NTSTATUS thunk64_vkGetPipelineIndirectMemoryRequirementsNV(void *args)
 
     init_conversion_context(ctx);
     convert_VkComputePipelineCreateInfo_win64_to_host(ctx, params->pCreateInfo, &pCreateInfo_host);
-    wine_device_from_handle(params->device)->funcs.p_vkGetPipelineIndirectMemoryRequirementsNV(wine_device_from_handle(params->device)->host_device, &pCreateInfo_host, params->pMemoryRequirements);
+    get_vulkan_device_funcs(params->device)->p_vkGetPipelineIndirectMemoryRequirementsNV(wine_device_from_handle(params->device)->obj.host.device, &pCreateInfo_host, params->pMemoryRequirements);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -48468,7 +48468,7 @@ static NTSTATUS thunk32_vkGetPipelineIndirectMemoryRequirementsNV(void *args)
     init_conversion_context(ctx);
     convert_VkComputePipelineCreateInfo_win32_to_host(ctx, (const VkComputePipelineCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
     convert_VkMemoryRequirements2_win32_to_host(ctx, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements), &pMemoryRequirements_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetPipelineIndirectMemoryRequirementsNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, &pMemoryRequirements_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetPipelineIndirectMemoryRequirementsNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, &pMemoryRequirements_host);
     convert_VkComputePipelineCreateInfo_host_to_win32(&pCreateInfo_host, (const VkComputePipelineCreateInfo32 *)UlongToPtr(params->pCreateInfo));
     convert_VkMemoryRequirements2_host_to_win32(&pMemoryRequirements_host, (VkMemoryRequirements232 *)UlongToPtr(params->pMemoryRequirements));
     free_conversion_context(ctx);
@@ -48482,7 +48482,7 @@ static NTSTATUS thunk64_vkGetPipelinePropertiesEXT(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pPipelineInfo, params->pPipelineProperties);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetPipelinePropertiesEXT(wine_device_from_handle(params->device)->host_device, params->pPipelineInfo, params->pPipelineProperties);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetPipelinePropertiesEXT(wine_device_from_handle(params->device)->obj.host.device, params->pPipelineInfo, params->pPipelineProperties);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48501,7 +48501,7 @@ static NTSTATUS thunk32_vkGetPipelinePropertiesEXT(void *args)
     TRACE("%#x, %#x, %#x\n", params->device, params->pPipelineInfo, params->pPipelineProperties);
 
     convert_VkPipelineInfoEXT_win32_to_host((const VkPipelineInfoEXT32 *)UlongToPtr(params->pPipelineInfo), &pPipelineInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetPipelinePropertiesEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pPipelineInfo_host, (VkBaseOutStructure *)UlongToPtr(params->pPipelineProperties));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetPipelinePropertiesEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pPipelineInfo_host, (VkBaseOutStructure *)UlongToPtr(params->pPipelineProperties));
     return STATUS_SUCCESS;
 }
 
@@ -48512,7 +48512,7 @@ static NTSTATUS thunk64_vkGetPrivateData(void *args)
 
     TRACE("%p, %#x, 0x%s, 0x%s, %p\n", params->device, params->objectType, wine_dbgstr_longlong(params->objectHandle), wine_dbgstr_longlong(params->privateDataSlot), params->pData);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetPrivateData(wine_device_from_handle(params->device)->host_device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, params->pData);
+    get_vulkan_device_funcs(params->device)->p_vkGetPrivateData(wine_device_from_handle(params->device)->obj.host.device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48530,7 +48530,7 @@ static NTSTATUS thunk32_vkGetPrivateData(void *args)
 
     TRACE("%#x, %#x, 0x%s, 0x%s, %#x\n", params->device, params->objectType, wine_dbgstr_longlong(params->objectHandle), wine_dbgstr_longlong(params->privateDataSlot), params->pData);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetPrivateData(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, (uint64_t *)UlongToPtr(params->pData));
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetPrivateData(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, (uint64_t *)UlongToPtr(params->pData));
     return STATUS_SUCCESS;
 }
 
@@ -48541,7 +48541,7 @@ static NTSTATUS thunk64_vkGetPrivateDataEXT(void *args)
 
     TRACE("%p, %#x, 0x%s, 0x%s, %p\n", params->device, params->objectType, wine_dbgstr_longlong(params->objectHandle), wine_dbgstr_longlong(params->privateDataSlot), params->pData);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetPrivateDataEXT(wine_device_from_handle(params->device)->host_device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, params->pData);
+    get_vulkan_device_funcs(params->device)->p_vkGetPrivateDataEXT(wine_device_from_handle(params->device)->obj.host.device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48559,7 +48559,7 @@ static NTSTATUS thunk32_vkGetPrivateDataEXT(void *args)
 
     TRACE("%#x, %#x, 0x%s, 0x%s, %#x\n", params->device, params->objectType, wine_dbgstr_longlong(params->objectHandle), wine_dbgstr_longlong(params->privateDataSlot), params->pData);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetPrivateDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, (uint64_t *)UlongToPtr(params->pData));
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetPrivateDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, (uint64_t *)UlongToPtr(params->pData));
     return STATUS_SUCCESS;
 }
 
@@ -48570,7 +48570,7 @@ static NTSTATUS thunk64_vkGetQueryPoolResults(void *args)
 
     TRACE("%p, 0x%s, %u, %u, 0x%s, %p, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->queryPool), params->firstQuery, params->queryCount, wine_dbgstr_longlong(params->dataSize), params->pData, wine_dbgstr_longlong(params->stride), params->flags);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetQueryPoolResults(wine_device_from_handle(params->device)->host_device, params->queryPool, params->firstQuery, params->queryCount, params->dataSize, params->pData, params->stride, params->flags);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetQueryPoolResults(wine_device_from_handle(params->device)->obj.host.device, params->queryPool, params->firstQuery, params->queryCount, params->dataSize, params->pData, params->stride, params->flags);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48592,7 +48592,7 @@ static NTSTATUS thunk32_vkGetQueryPoolResults(void *args)
 
     TRACE("%#x, 0x%s, %u, %u, 0x%s, %#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->queryPool), params->firstQuery, params->queryCount, wine_dbgstr_longlong(params->dataSize), params->pData, wine_dbgstr_longlong(params->stride), params->flags);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetQueryPoolResults(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->queryPool, params->firstQuery, params->queryCount, params->dataSize, (void *)UlongToPtr(params->pData), params->stride, params->flags);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetQueryPoolResults(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->queryPool, params->firstQuery, params->queryCount, params->dataSize, (void *)UlongToPtr(params->pData), params->stride, params->flags);
     return STATUS_SUCCESS;
 }
 
@@ -48603,7 +48603,7 @@ static NTSTATUS thunk64_vkGetQueueCheckpointData2NV(void *args)
 
     TRACE("%p, %p, %p\n", params->queue, params->pCheckpointDataCount, params->pCheckpointData);
 
-    wine_queue_from_handle(params->queue)->device->funcs.p_vkGetQueueCheckpointData2NV(wine_queue_from_handle(params->queue)->host_queue, params->pCheckpointDataCount, params->pCheckpointData);
+    get_vulkan_parent_device_funcs(&wine_queue_from_handle(params->queue)->obj)->p_vkGetQueueCheckpointData2NV(wine_queue_from_handle(params->queue)->obj.host.queue, params->pCheckpointDataCount, params->pCheckpointData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48624,7 +48624,7 @@ static NTSTATUS thunk32_vkGetQueueCheckpointData2NV(void *args)
 
     init_conversion_context(ctx);
     pCheckpointData_host = convert_VkCheckpointData2NV_array_win32_to_host(ctx, (VkCheckpointData2NV32 *)UlongToPtr(params->pCheckpointData), *(uint32_t *)UlongToPtr(params->pCheckpointDataCount));
-    wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->device->funcs.p_vkGetQueueCheckpointData2NV(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->host_queue, (uint32_t *)UlongToPtr(params->pCheckpointDataCount), pCheckpointData_host);
+    get_vulkan_parent_device_funcs(&wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj)->p_vkGetQueueCheckpointData2NV(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj.host.queue, (uint32_t *)UlongToPtr(params->pCheckpointDataCount), pCheckpointData_host);
     convert_VkCheckpointData2NV_array_host_to_win32(pCheckpointData_host, (VkCheckpointData2NV32 *)UlongToPtr(params->pCheckpointData), *(uint32_t *)UlongToPtr(params->pCheckpointDataCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -48637,7 +48637,7 @@ static NTSTATUS thunk64_vkGetQueueCheckpointDataNV(void *args)
 
     TRACE("%p, %p, %p\n", params->queue, params->pCheckpointDataCount, params->pCheckpointData);
 
-    wine_queue_from_handle(params->queue)->device->funcs.p_vkGetQueueCheckpointDataNV(wine_queue_from_handle(params->queue)->host_queue, params->pCheckpointDataCount, params->pCheckpointData);
+    get_vulkan_parent_device_funcs(&wine_queue_from_handle(params->queue)->obj)->p_vkGetQueueCheckpointDataNV(wine_queue_from_handle(params->queue)->obj.host.queue, params->pCheckpointDataCount, params->pCheckpointData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48658,7 +48658,7 @@ static NTSTATUS thunk32_vkGetQueueCheckpointDataNV(void *args)
 
     init_conversion_context(ctx);
     pCheckpointData_host = convert_VkCheckpointDataNV_array_win32_to_host(ctx, (VkCheckpointDataNV32 *)UlongToPtr(params->pCheckpointData), *(uint32_t *)UlongToPtr(params->pCheckpointDataCount));
-    wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->device->funcs.p_vkGetQueueCheckpointDataNV(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->host_queue, (uint32_t *)UlongToPtr(params->pCheckpointDataCount), pCheckpointData_host);
+    get_vulkan_parent_device_funcs(&wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj)->p_vkGetQueueCheckpointDataNV(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj.host.queue, (uint32_t *)UlongToPtr(params->pCheckpointDataCount), pCheckpointData_host);
     convert_VkCheckpointDataNV_array_host_to_win32(pCheckpointData_host, (VkCheckpointDataNV32 *)UlongToPtr(params->pCheckpointData), *(uint32_t *)UlongToPtr(params->pCheckpointDataCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -48671,7 +48671,7 @@ static NTSTATUS thunk64_vkGetRayTracingCaptureReplayShaderGroupHandlesKHR(void *
 
     TRACE("%p, 0x%s, %u, %u, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->pipeline), params->firstGroup, params->groupCount, wine_dbgstr_longlong(params->dataSize), params->pData);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetRayTracingCaptureReplayShaderGroupHandlesKHR(wine_device_from_handle(params->device)->host_device, params->pipeline, params->firstGroup, params->groupCount, params->dataSize, params->pData);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetRayTracingCaptureReplayShaderGroupHandlesKHR(wine_device_from_handle(params->device)->obj.host.device, params->pipeline, params->firstGroup, params->groupCount, params->dataSize, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48691,7 +48691,7 @@ static NTSTATUS thunk32_vkGetRayTracingCaptureReplayShaderGroupHandlesKHR(void *
 
     TRACE("%#x, 0x%s, %u, %u, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->pipeline), params->firstGroup, params->groupCount, wine_dbgstr_longlong(params->dataSize), params->pData);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetRayTracingCaptureReplayShaderGroupHandlesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->pipeline, params->firstGroup, params->groupCount, params->dataSize, (void *)UlongToPtr(params->pData));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetRayTracingCaptureReplayShaderGroupHandlesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->pipeline, params->firstGroup, params->groupCount, params->dataSize, (void *)UlongToPtr(params->pData));
     return STATUS_SUCCESS;
 }
 
@@ -48702,7 +48702,7 @@ static NTSTATUS thunk64_vkGetRayTracingShaderGroupHandlesKHR(void *args)
 
     TRACE("%p, 0x%s, %u, %u, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->pipeline), params->firstGroup, params->groupCount, wine_dbgstr_longlong(params->dataSize), params->pData);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetRayTracingShaderGroupHandlesKHR(wine_device_from_handle(params->device)->host_device, params->pipeline, params->firstGroup, params->groupCount, params->dataSize, params->pData);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetRayTracingShaderGroupHandlesKHR(wine_device_from_handle(params->device)->obj.host.device, params->pipeline, params->firstGroup, params->groupCount, params->dataSize, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48722,7 +48722,7 @@ static NTSTATUS thunk32_vkGetRayTracingShaderGroupHandlesKHR(void *args)
 
     TRACE("%#x, 0x%s, %u, %u, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->pipeline), params->firstGroup, params->groupCount, wine_dbgstr_longlong(params->dataSize), params->pData);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetRayTracingShaderGroupHandlesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->pipeline, params->firstGroup, params->groupCount, params->dataSize, (void *)UlongToPtr(params->pData));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetRayTracingShaderGroupHandlesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->pipeline, params->firstGroup, params->groupCount, params->dataSize, (void *)UlongToPtr(params->pData));
     return STATUS_SUCCESS;
 }
 
@@ -48733,7 +48733,7 @@ static NTSTATUS thunk64_vkGetRayTracingShaderGroupHandlesNV(void *args)
 
     TRACE("%p, 0x%s, %u, %u, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->pipeline), params->firstGroup, params->groupCount, wine_dbgstr_longlong(params->dataSize), params->pData);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetRayTracingShaderGroupHandlesNV(wine_device_from_handle(params->device)->host_device, params->pipeline, params->firstGroup, params->groupCount, params->dataSize, params->pData);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetRayTracingShaderGroupHandlesNV(wine_device_from_handle(params->device)->obj.host.device, params->pipeline, params->firstGroup, params->groupCount, params->dataSize, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48753,7 +48753,7 @@ static NTSTATUS thunk32_vkGetRayTracingShaderGroupHandlesNV(void *args)
 
     TRACE("%#x, 0x%s, %u, %u, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->pipeline), params->firstGroup, params->groupCount, wine_dbgstr_longlong(params->dataSize), params->pData);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetRayTracingShaderGroupHandlesNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->pipeline, params->firstGroup, params->groupCount, params->dataSize, (void *)UlongToPtr(params->pData));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetRayTracingShaderGroupHandlesNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->pipeline, params->firstGroup, params->groupCount, params->dataSize, (void *)UlongToPtr(params->pData));
     return STATUS_SUCCESS;
 }
 
@@ -48764,7 +48764,7 @@ static NTSTATUS thunk64_vkGetRayTracingShaderGroupStackSizeKHR(void *args)
 
     TRACE("%p, 0x%s, %u, %#x\n", params->device, wine_dbgstr_longlong(params->pipeline), params->group, params->groupShader);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetRayTracingShaderGroupStackSizeKHR(wine_device_from_handle(params->device)->host_device, params->pipeline, params->group, params->groupShader);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetRayTracingShaderGroupStackSizeKHR(wine_device_from_handle(params->device)->obj.host.device, params->pipeline, params->group, params->groupShader);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48782,7 +48782,7 @@ static NTSTATUS thunk32_vkGetRayTracingShaderGroupStackSizeKHR(void *args)
 
     TRACE("%#x, 0x%s, %u, %#x\n", params->device, wine_dbgstr_longlong(params->pipeline), params->group, params->groupShader);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetRayTracingShaderGroupStackSizeKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->pipeline, params->group, params->groupShader);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetRayTracingShaderGroupStackSizeKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->pipeline, params->group, params->groupShader);
     return STATUS_SUCCESS;
 }
 
@@ -48793,7 +48793,7 @@ static NTSTATUS thunk64_vkGetRenderAreaGranularity(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->renderPass), params->pGranularity);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetRenderAreaGranularity(wine_device_from_handle(params->device)->host_device, params->renderPass, params->pGranularity);
+    get_vulkan_device_funcs(params->device)->p_vkGetRenderAreaGranularity(wine_device_from_handle(params->device)->obj.host.device, params->renderPass, params->pGranularity);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48809,7 +48809,7 @@ static NTSTATUS thunk32_vkGetRenderAreaGranularity(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->renderPass), params->pGranularity);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetRenderAreaGranularity(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->renderPass, (VkExtent2D *)UlongToPtr(params->pGranularity));
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetRenderAreaGranularity(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->renderPass, (VkExtent2D *)UlongToPtr(params->pGranularity));
     return STATUS_SUCCESS;
 }
 
@@ -48820,7 +48820,7 @@ static NTSTATUS thunk64_vkGetRenderingAreaGranularityKHR(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pRenderingAreaInfo, params->pGranularity);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetRenderingAreaGranularityKHR(wine_device_from_handle(params->device)->host_device, params->pRenderingAreaInfo, params->pGranularity);
+    get_vulkan_device_funcs(params->device)->p_vkGetRenderingAreaGranularityKHR(wine_device_from_handle(params->device)->obj.host.device, params->pRenderingAreaInfo, params->pGranularity);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48838,7 +48838,7 @@ static NTSTATUS thunk32_vkGetRenderingAreaGranularityKHR(void *args)
     TRACE("%#x, %#x, %#x\n", params->device, params->pRenderingAreaInfo, params->pGranularity);
 
     convert_VkRenderingAreaInfoKHR_win32_to_host((const VkRenderingAreaInfoKHR32 *)UlongToPtr(params->pRenderingAreaInfo), &pRenderingAreaInfo_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetRenderingAreaGranularityKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pRenderingAreaInfo_host, (VkExtent2D *)UlongToPtr(params->pGranularity));
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetRenderingAreaGranularityKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pRenderingAreaInfo_host, (VkExtent2D *)UlongToPtr(params->pGranularity));
     return STATUS_SUCCESS;
 }
 
@@ -48849,7 +48849,7 @@ static NTSTATUS thunk64_vkGetSamplerOpaqueCaptureDescriptorDataEXT(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pInfo, params->pData);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetSamplerOpaqueCaptureDescriptorDataEXT(wine_device_from_handle(params->device)->host_device, params->pInfo, params->pData);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetSamplerOpaqueCaptureDescriptorDataEXT(wine_device_from_handle(params->device)->obj.host.device, params->pInfo, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48868,7 +48868,7 @@ static NTSTATUS thunk32_vkGetSamplerOpaqueCaptureDescriptorDataEXT(void *args)
     TRACE("%#x, %#x, %#x\n", params->device, params->pInfo, params->pData);
 
     convert_VkSamplerCaptureDescriptorDataInfoEXT_win32_to_host((const VkSamplerCaptureDescriptorDataInfoEXT32 *)UlongToPtr(params->pInfo), &pInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetSamplerOpaqueCaptureDescriptorDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInfo_host, (void *)UlongToPtr(params->pData));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetSamplerOpaqueCaptureDescriptorDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInfo_host, (void *)UlongToPtr(params->pData));
     return STATUS_SUCCESS;
 }
 
@@ -48879,7 +48879,7 @@ static NTSTATUS thunk64_vkGetSemaphoreCounterValue(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->semaphore), params->pValue);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetSemaphoreCounterValue(wine_device_from_handle(params->device)->host_device, params->semaphore, params->pValue);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetSemaphoreCounterValue(wine_device_from_handle(params->device)->obj.host.device, params->semaphore, params->pValue);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48896,7 +48896,7 @@ static NTSTATUS thunk32_vkGetSemaphoreCounterValue(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->semaphore), params->pValue);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetSemaphoreCounterValue(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->semaphore, (uint64_t *)UlongToPtr(params->pValue));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetSemaphoreCounterValue(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->semaphore, (uint64_t *)UlongToPtr(params->pValue));
     return STATUS_SUCCESS;
 }
 
@@ -48907,7 +48907,7 @@ static NTSTATUS thunk64_vkGetSemaphoreCounterValueKHR(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->semaphore), params->pValue);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetSemaphoreCounterValueKHR(wine_device_from_handle(params->device)->host_device, params->semaphore, params->pValue);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetSemaphoreCounterValueKHR(wine_device_from_handle(params->device)->obj.host.device, params->semaphore, params->pValue);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48924,7 +48924,7 @@ static NTSTATUS thunk32_vkGetSemaphoreCounterValueKHR(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->semaphore), params->pValue);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetSemaphoreCounterValueKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->semaphore, (uint64_t *)UlongToPtr(params->pValue));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetSemaphoreCounterValueKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->semaphore, (uint64_t *)UlongToPtr(params->pValue));
     return STATUS_SUCCESS;
 }
 
@@ -48935,7 +48935,7 @@ static NTSTATUS thunk64_vkGetShaderBinaryDataEXT(void *args)
 
     TRACE("%p, 0x%s, %p, %p\n", params->device, wine_dbgstr_longlong(params->shader), params->pDataSize, params->pData);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetShaderBinaryDataEXT(wine_device_from_handle(params->device)->host_device, params->shader, params->pDataSize, params->pData);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetShaderBinaryDataEXT(wine_device_from_handle(params->device)->obj.host.device, params->shader, params->pDataSize, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48955,7 +48955,7 @@ static NTSTATUS thunk32_vkGetShaderBinaryDataEXT(void *args)
     TRACE("%#x, 0x%s, %#x, %#x\n", params->device, wine_dbgstr_longlong(params->shader), params->pDataSize, params->pData);
 
     pDataSize_host = *(PTR32 *)UlongToPtr(params->pDataSize);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetShaderBinaryDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->shader, &pDataSize_host, (void *)UlongToPtr(params->pData));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetShaderBinaryDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->shader, &pDataSize_host, (void *)UlongToPtr(params->pData));
     *(PTR32 *)UlongToPtr(params->pDataSize) = pDataSize_host;
     return STATUS_SUCCESS;
 }
@@ -48967,7 +48967,7 @@ static NTSTATUS thunk64_vkGetShaderInfoAMD(void *args)
 
     TRACE("%p, 0x%s, %#x, %#x, %p, %p\n", params->device, wine_dbgstr_longlong(params->pipeline), params->shaderStage, params->infoType, params->pInfoSize, params->pInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetShaderInfoAMD(wine_device_from_handle(params->device)->host_device, params->pipeline, params->shaderStage, params->infoType, params->pInfoSize, params->pInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetShaderInfoAMD(wine_device_from_handle(params->device)->obj.host.device, params->pipeline, params->shaderStage, params->infoType, params->pInfoSize, params->pInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -48989,7 +48989,7 @@ static NTSTATUS thunk32_vkGetShaderInfoAMD(void *args)
     TRACE("%#x, 0x%s, %#x, %#x, %#x, %#x\n", params->device, wine_dbgstr_longlong(params->pipeline), params->shaderStage, params->infoType, params->pInfoSize, params->pInfo);
 
     pInfoSize_host = *(PTR32 *)UlongToPtr(params->pInfoSize);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetShaderInfoAMD(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->pipeline, params->shaderStage, params->infoType, &pInfoSize_host, (void *)UlongToPtr(params->pInfo));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetShaderInfoAMD(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->pipeline, params->shaderStage, params->infoType, &pInfoSize_host, (void *)UlongToPtr(params->pInfo));
     *(PTR32 *)UlongToPtr(params->pInfoSize) = pInfoSize_host;
     return STATUS_SUCCESS;
 }
@@ -49001,7 +49001,7 @@ static NTSTATUS thunk64_vkGetShaderModuleCreateInfoIdentifierEXT(void *args)
 
     TRACE("%p, %p, %p\n", params->device, params->pCreateInfo, params->pIdentifier);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetShaderModuleCreateInfoIdentifierEXT(wine_device_from_handle(params->device)->host_device, params->pCreateInfo, params->pIdentifier);
+    get_vulkan_device_funcs(params->device)->p_vkGetShaderModuleCreateInfoIdentifierEXT(wine_device_from_handle(params->device)->obj.host.device, params->pCreateInfo, params->pIdentifier);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49024,7 +49024,7 @@ static NTSTATUS thunk32_vkGetShaderModuleCreateInfoIdentifierEXT(void *args)
     init_conversion_context(ctx);
     convert_VkShaderModuleCreateInfo_win32_to_host(ctx, (const VkShaderModuleCreateInfo32 *)UlongToPtr(params->pCreateInfo), &pCreateInfo_host);
     convert_VkShaderModuleIdentifierEXT_win32_to_host((VkShaderModuleIdentifierEXT32 *)UlongToPtr(params->pIdentifier), &pIdentifier_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetShaderModuleCreateInfoIdentifierEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pCreateInfo_host, &pIdentifier_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetShaderModuleCreateInfoIdentifierEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pCreateInfo_host, &pIdentifier_host);
     convert_VkShaderModuleIdentifierEXT_host_to_win32(&pIdentifier_host, (VkShaderModuleIdentifierEXT32 *)UlongToPtr(params->pIdentifier));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -49037,7 +49037,7 @@ static NTSTATUS thunk64_vkGetShaderModuleIdentifierEXT(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->shaderModule), params->pIdentifier);
 
-    wine_device_from_handle(params->device)->funcs.p_vkGetShaderModuleIdentifierEXT(wine_device_from_handle(params->device)->host_device, params->shaderModule, params->pIdentifier);
+    get_vulkan_device_funcs(params->device)->p_vkGetShaderModuleIdentifierEXT(wine_device_from_handle(params->device)->obj.host.device, params->shaderModule, params->pIdentifier);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49055,7 +49055,7 @@ static NTSTATUS thunk32_vkGetShaderModuleIdentifierEXT(void *args)
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->shaderModule), params->pIdentifier);
 
     convert_VkShaderModuleIdentifierEXT_win32_to_host((VkShaderModuleIdentifierEXT32 *)UlongToPtr(params->pIdentifier), &pIdentifier_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetShaderModuleIdentifierEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->shaderModule, &pIdentifier_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetShaderModuleIdentifierEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->shaderModule, &pIdentifier_host);
     convert_VkShaderModuleIdentifierEXT_host_to_win32(&pIdentifier_host, (VkShaderModuleIdentifierEXT32 *)UlongToPtr(params->pIdentifier));
     return STATUS_SUCCESS;
 }
@@ -49067,7 +49067,7 @@ static NTSTATUS thunk64_vkGetSwapchainImagesKHR(void *args)
 
     TRACE("%p, 0x%s, %p, %p\n", params->device, wine_dbgstr_longlong(params->swapchain), params->pSwapchainImageCount, params->pSwapchainImages);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetSwapchainImagesKHR(wine_device_from_handle(params->device)->host_device, wine_swapchain_from_handle(params->swapchain)->host_swapchain, params->pSwapchainImageCount, params->pSwapchainImages);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetSwapchainImagesKHR(wine_device_from_handle(params->device)->obj.host.device, wine_swapchain_from_handle(params->swapchain)->obj.host.swapchain, params->pSwapchainImageCount, params->pSwapchainImages);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49085,7 +49085,7 @@ static NTSTATUS thunk32_vkGetSwapchainImagesKHR(void *args)
 
     TRACE("%#x, 0x%s, %#x, %#x\n", params->device, wine_dbgstr_longlong(params->swapchain), params->pSwapchainImageCount, params->pSwapchainImages);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetSwapchainImagesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, wine_swapchain_from_handle(params->swapchain)->host_swapchain, (uint32_t *)UlongToPtr(params->pSwapchainImageCount), (VkImage *)UlongToPtr(params->pSwapchainImages));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetSwapchainImagesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, wine_swapchain_from_handle(params->swapchain)->obj.host.swapchain, (uint32_t *)UlongToPtr(params->pSwapchainImageCount), (VkImage *)UlongToPtr(params->pSwapchainImages));
     return STATUS_SUCCESS;
 }
 
@@ -49096,7 +49096,7 @@ static NTSTATUS thunk64_vkGetValidationCacheDataEXT(void *args)
 
     TRACE("%p, 0x%s, %p, %p\n", params->device, wine_dbgstr_longlong(params->validationCache), params->pDataSize, params->pData);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetValidationCacheDataEXT(wine_device_from_handle(params->device)->host_device, params->validationCache, params->pDataSize, params->pData);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetValidationCacheDataEXT(wine_device_from_handle(params->device)->obj.host.device, params->validationCache, params->pDataSize, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49116,7 +49116,7 @@ static NTSTATUS thunk32_vkGetValidationCacheDataEXT(void *args)
     TRACE("%#x, 0x%s, %#x, %#x\n", params->device, wine_dbgstr_longlong(params->validationCache), params->pDataSize, params->pData);
 
     pDataSize_host = *(PTR32 *)UlongToPtr(params->pDataSize);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetValidationCacheDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->validationCache, &pDataSize_host, (void *)UlongToPtr(params->pData));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetValidationCacheDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->validationCache, &pDataSize_host, (void *)UlongToPtr(params->pData));
     *(PTR32 *)UlongToPtr(params->pDataSize) = pDataSize_host;
     return STATUS_SUCCESS;
 }
@@ -49128,7 +49128,7 @@ static NTSTATUS thunk64_vkGetVideoSessionMemoryRequirementsKHR(void *args)
 
     TRACE("%p, 0x%s, %p, %p\n", params->device, wine_dbgstr_longlong(params->videoSession), params->pMemoryRequirementsCount, params->pMemoryRequirements);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkGetVideoSessionMemoryRequirementsKHR(wine_device_from_handle(params->device)->host_device, params->videoSession, params->pMemoryRequirementsCount, params->pMemoryRequirements);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkGetVideoSessionMemoryRequirementsKHR(wine_device_from_handle(params->device)->obj.host.device, params->videoSession, params->pMemoryRequirementsCount, params->pMemoryRequirements);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49151,7 +49151,7 @@ static NTSTATUS thunk32_vkGetVideoSessionMemoryRequirementsKHR(void *args)
 
     init_conversion_context(ctx);
     pMemoryRequirements_host = convert_VkVideoSessionMemoryRequirementsKHR_array_win32_to_host(ctx, (VkVideoSessionMemoryRequirementsKHR32 *)UlongToPtr(params->pMemoryRequirements), *(uint32_t *)UlongToPtr(params->pMemoryRequirementsCount));
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkGetVideoSessionMemoryRequirementsKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->videoSession, (uint32_t *)UlongToPtr(params->pMemoryRequirementsCount), pMemoryRequirements_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkGetVideoSessionMemoryRequirementsKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->videoSession, (uint32_t *)UlongToPtr(params->pMemoryRequirementsCount), pMemoryRequirements_host);
     convert_VkVideoSessionMemoryRequirementsKHR_array_host_to_win32(pMemoryRequirements_host, (VkVideoSessionMemoryRequirementsKHR32 *)UlongToPtr(params->pMemoryRequirements), *(uint32_t *)UlongToPtr(params->pMemoryRequirementsCount));
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
@@ -49164,7 +49164,7 @@ static NTSTATUS thunk64_vkInitializePerformanceApiINTEL(void *args)
 
     TRACE("%p, %p\n", params->device, params->pInitializeInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkInitializePerformanceApiINTEL(wine_device_from_handle(params->device)->host_device, params->pInitializeInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkInitializePerformanceApiINTEL(wine_device_from_handle(params->device)->obj.host.device, params->pInitializeInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49182,7 +49182,7 @@ static NTSTATUS thunk32_vkInitializePerformanceApiINTEL(void *args)
     TRACE("%#x, %#x\n", params->device, params->pInitializeInfo);
 
     convert_VkInitializePerformanceApiInfoINTEL_win32_to_host((const VkInitializePerformanceApiInfoINTEL32 *)UlongToPtr(params->pInitializeInfo), &pInitializeInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkInitializePerformanceApiINTEL(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pInitializeInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkInitializePerformanceApiINTEL(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pInitializeInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -49198,7 +49198,7 @@ static NTSTATUS thunk64_vkInvalidateMappedMemoryRanges(void *args)
 
     init_conversion_context(ctx);
     pMemoryRanges_host = convert_VkMappedMemoryRange_array_win64_to_host(ctx, params->pMemoryRanges, params->memoryRangeCount);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkInvalidateMappedMemoryRanges(wine_device_from_handle(params->device)->host_device, params->memoryRangeCount, pMemoryRanges_host);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkInvalidateMappedMemoryRanges(wine_device_from_handle(params->device)->obj.host.device, params->memoryRangeCount, pMemoryRanges_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -49221,7 +49221,7 @@ static NTSTATUS thunk32_vkInvalidateMappedMemoryRanges(void *args)
 
     init_conversion_context(ctx);
     pMemoryRanges_host = convert_VkMappedMemoryRange_array_win32_to_host(ctx, (const VkMappedMemoryRange32 *)UlongToPtr(params->pMemoryRanges), params->memoryRangeCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkInvalidateMappedMemoryRanges(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->memoryRangeCount, pMemoryRanges_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkInvalidateMappedMemoryRanges(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->memoryRangeCount, pMemoryRanges_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -49233,7 +49233,7 @@ static NTSTATUS thunk64_vkLatencySleepNV(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->swapchain), params->pSleepInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkLatencySleepNV(wine_device_from_handle(params->device)->host_device, wine_swapchain_from_handle(params->swapchain)->host_swapchain, params->pSleepInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkLatencySleepNV(wine_device_from_handle(params->device)->obj.host.device, wine_swapchain_from_handle(params->swapchain)->obj.host.swapchain, params->pSleepInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49252,7 +49252,7 @@ static NTSTATUS thunk32_vkLatencySleepNV(void *args)
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->swapchain), params->pSleepInfo);
 
     convert_VkLatencySleepInfoNV_win32_to_host((const VkLatencySleepInfoNV32 *)UlongToPtr(params->pSleepInfo), &pSleepInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkLatencySleepNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, wine_swapchain_from_handle(params->swapchain)->host_swapchain, &pSleepInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkLatencySleepNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, wine_swapchain_from_handle(params->swapchain)->obj.host.swapchain, &pSleepInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -49334,7 +49334,7 @@ static NTSTATUS thunk64_vkMergePipelineCaches(void *args)
 
     TRACE("%p, 0x%s, %u, %p\n", params->device, wine_dbgstr_longlong(params->dstCache), params->srcCacheCount, params->pSrcCaches);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkMergePipelineCaches(wine_device_from_handle(params->device)->host_device, params->dstCache, params->srcCacheCount, params->pSrcCaches);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkMergePipelineCaches(wine_device_from_handle(params->device)->obj.host.device, params->dstCache, params->srcCacheCount, params->pSrcCaches);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49352,7 +49352,7 @@ static NTSTATUS thunk32_vkMergePipelineCaches(void *args)
 
     TRACE("%#x, 0x%s, %u, %#x\n", params->device, wine_dbgstr_longlong(params->dstCache), params->srcCacheCount, params->pSrcCaches);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkMergePipelineCaches(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->dstCache, params->srcCacheCount, (const VkPipelineCache *)UlongToPtr(params->pSrcCaches));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkMergePipelineCaches(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->dstCache, params->srcCacheCount, (const VkPipelineCache *)UlongToPtr(params->pSrcCaches));
     return STATUS_SUCCESS;
 }
 
@@ -49363,7 +49363,7 @@ static NTSTATUS thunk64_vkMergeValidationCachesEXT(void *args)
 
     TRACE("%p, 0x%s, %u, %p\n", params->device, wine_dbgstr_longlong(params->dstCache), params->srcCacheCount, params->pSrcCaches);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkMergeValidationCachesEXT(wine_device_from_handle(params->device)->host_device, params->dstCache, params->srcCacheCount, params->pSrcCaches);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkMergeValidationCachesEXT(wine_device_from_handle(params->device)->obj.host.device, params->dstCache, params->srcCacheCount, params->pSrcCaches);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49381,7 +49381,7 @@ static NTSTATUS thunk32_vkMergeValidationCachesEXT(void *args)
 
     TRACE("%#x, 0x%s, %u, %#x\n", params->device, wine_dbgstr_longlong(params->dstCache), params->srcCacheCount, params->pSrcCaches);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkMergeValidationCachesEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->dstCache, params->srcCacheCount, (const VkValidationCacheEXT *)UlongToPtr(params->pSrcCaches));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkMergeValidationCachesEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->dstCache, params->srcCacheCount, (const VkValidationCacheEXT *)UlongToPtr(params->pSrcCaches));
     return STATUS_SUCCESS;
 }
 
@@ -49392,7 +49392,7 @@ static NTSTATUS thunk64_vkQueueBeginDebugUtilsLabelEXT(void *args)
 
     TRACE("%p, %p\n", params->queue, params->pLabelInfo);
 
-    wine_queue_from_handle(params->queue)->device->funcs.p_vkQueueBeginDebugUtilsLabelEXT(wine_queue_from_handle(params->queue)->host_queue, params->pLabelInfo);
+    get_vulkan_parent_device_funcs(&wine_queue_from_handle(params->queue)->obj)->p_vkQueueBeginDebugUtilsLabelEXT(wine_queue_from_handle(params->queue)->obj.host.queue, params->pLabelInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49409,7 +49409,7 @@ static NTSTATUS thunk32_vkQueueBeginDebugUtilsLabelEXT(void *args)
     TRACE("%#x, %#x\n", params->queue, params->pLabelInfo);
 
     convert_VkDebugUtilsLabelEXT_win32_to_host((const VkDebugUtilsLabelEXT32 *)UlongToPtr(params->pLabelInfo), &pLabelInfo_host);
-    wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->device->funcs.p_vkQueueBeginDebugUtilsLabelEXT(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->host_queue, &pLabelInfo_host);
+    get_vulkan_parent_device_funcs(&wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj)->p_vkQueueBeginDebugUtilsLabelEXT(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj.host.queue, &pLabelInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -49425,7 +49425,7 @@ static NTSTATUS thunk64_vkQueueBindSparse(void *args)
 
     init_conversion_context(ctx);
     pBindInfo_host = convert_VkBindSparseInfo_array_win64_to_host(ctx, params->pBindInfo, params->bindInfoCount);
-    params->result = wine_queue_from_handle(params->queue)->device->funcs.p_vkQueueBindSparse(wine_queue_from_handle(params->queue)->host_queue, params->bindInfoCount, pBindInfo_host, params->fence);
+    params->result = get_vulkan_parent_device_funcs(&wine_queue_from_handle(params->queue)->obj)->p_vkQueueBindSparse(wine_queue_from_handle(params->queue)->obj.host.queue, params->bindInfoCount, pBindInfo_host, params->fence);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -49449,7 +49449,7 @@ static NTSTATUS thunk32_vkQueueBindSparse(void *args)
 
     init_conversion_context(ctx);
     pBindInfo_host = convert_VkBindSparseInfo_array_win32_to_host(ctx, (const VkBindSparseInfo32 *)UlongToPtr(params->pBindInfo), params->bindInfoCount);
-    params->result = wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->device->funcs.p_vkQueueBindSparse(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->host_queue, params->bindInfoCount, pBindInfo_host, params->fence);
+    params->result = get_vulkan_parent_device_funcs(&wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj)->p_vkQueueBindSparse(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj.host.queue, params->bindInfoCount, pBindInfo_host, params->fence);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -49461,7 +49461,7 @@ static NTSTATUS thunk64_vkQueueEndDebugUtilsLabelEXT(void *args)
 
     TRACE("%p\n", params->queue);
 
-    wine_queue_from_handle(params->queue)->device->funcs.p_vkQueueEndDebugUtilsLabelEXT(wine_queue_from_handle(params->queue)->host_queue);
+    get_vulkan_parent_device_funcs(&wine_queue_from_handle(params->queue)->obj)->p_vkQueueEndDebugUtilsLabelEXT(wine_queue_from_handle(params->queue)->obj.host.queue);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49475,7 +49475,7 @@ static NTSTATUS thunk32_vkQueueEndDebugUtilsLabelEXT(void *args)
 
     TRACE("%#x\n", params->queue);
 
-    wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->device->funcs.p_vkQueueEndDebugUtilsLabelEXT(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->host_queue);
+    get_vulkan_parent_device_funcs(&wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj)->p_vkQueueEndDebugUtilsLabelEXT(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj.host.queue);
     return STATUS_SUCCESS;
 }
 
@@ -49486,7 +49486,7 @@ static NTSTATUS thunk64_vkQueueInsertDebugUtilsLabelEXT(void *args)
 
     TRACE("%p, %p\n", params->queue, params->pLabelInfo);
 
-    wine_queue_from_handle(params->queue)->device->funcs.p_vkQueueInsertDebugUtilsLabelEXT(wine_queue_from_handle(params->queue)->host_queue, params->pLabelInfo);
+    get_vulkan_parent_device_funcs(&wine_queue_from_handle(params->queue)->obj)->p_vkQueueInsertDebugUtilsLabelEXT(wine_queue_from_handle(params->queue)->obj.host.queue, params->pLabelInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49503,7 +49503,7 @@ static NTSTATUS thunk32_vkQueueInsertDebugUtilsLabelEXT(void *args)
     TRACE("%#x, %#x\n", params->queue, params->pLabelInfo);
 
     convert_VkDebugUtilsLabelEXT_win32_to_host((const VkDebugUtilsLabelEXT32 *)UlongToPtr(params->pLabelInfo), &pLabelInfo_host);
-    wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->device->funcs.p_vkQueueInsertDebugUtilsLabelEXT(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->host_queue, &pLabelInfo_host);
+    get_vulkan_parent_device_funcs(&wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj)->p_vkQueueInsertDebugUtilsLabelEXT(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj.host.queue, &pLabelInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -49514,7 +49514,7 @@ static NTSTATUS thunk64_vkQueueNotifyOutOfBandNV(void *args)
 
     TRACE("%p, %p\n", params->queue, params->pQueueTypeInfo);
 
-    wine_queue_from_handle(params->queue)->device->funcs.p_vkQueueNotifyOutOfBandNV(wine_queue_from_handle(params->queue)->host_queue, params->pQueueTypeInfo);
+    get_vulkan_parent_device_funcs(&wine_queue_from_handle(params->queue)->obj)->p_vkQueueNotifyOutOfBandNV(wine_queue_from_handle(params->queue)->obj.host.queue, params->pQueueTypeInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49531,7 +49531,7 @@ static NTSTATUS thunk32_vkQueueNotifyOutOfBandNV(void *args)
     TRACE("%#x, %#x\n", params->queue, params->pQueueTypeInfo);
 
     convert_VkOutOfBandQueueTypeInfoNV_win32_to_host((const VkOutOfBandQueueTypeInfoNV32 *)UlongToPtr(params->pQueueTypeInfo), &pQueueTypeInfo_host);
-    wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->device->funcs.p_vkQueueNotifyOutOfBandNV(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->host_queue, &pQueueTypeInfo_host);
+    get_vulkan_parent_device_funcs(&wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj)->p_vkQueueNotifyOutOfBandNV(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj.host.queue, &pQueueTypeInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -49575,7 +49575,7 @@ static NTSTATUS thunk64_vkQueueSetPerformanceConfigurationINTEL(void *args)
 
     TRACE("%p, 0x%s\n", params->queue, wine_dbgstr_longlong(params->configuration));
 
-    params->result = wine_queue_from_handle(params->queue)->device->funcs.p_vkQueueSetPerformanceConfigurationINTEL(wine_queue_from_handle(params->queue)->host_queue, params->configuration);
+    params->result = get_vulkan_parent_device_funcs(&wine_queue_from_handle(params->queue)->obj)->p_vkQueueSetPerformanceConfigurationINTEL(wine_queue_from_handle(params->queue)->obj.host.queue, params->configuration);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49591,7 +49591,7 @@ static NTSTATUS thunk32_vkQueueSetPerformanceConfigurationINTEL(void *args)
 
     TRACE("%#x, 0x%s\n", params->queue, wine_dbgstr_longlong(params->configuration));
 
-    params->result = wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->device->funcs.p_vkQueueSetPerformanceConfigurationINTEL(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->host_queue, params->configuration);
+    params->result = get_vulkan_parent_device_funcs(&wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj)->p_vkQueueSetPerformanceConfigurationINTEL(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj.host.queue, params->configuration);
     return STATUS_SUCCESS;
 }
 
@@ -49607,7 +49607,7 @@ static NTSTATUS thunk64_vkQueueSubmit(void *args)
 
     init_conversion_context(ctx);
     pSubmits_host = convert_VkSubmitInfo_array_win64_to_host(ctx, params->pSubmits, params->submitCount);
-    params->result = wine_queue_from_handle(params->queue)->device->funcs.p_vkQueueSubmit(wine_queue_from_handle(params->queue)->host_queue, params->submitCount, pSubmits_host, params->fence);
+    params->result = get_vulkan_parent_device_funcs(&wine_queue_from_handle(params->queue)->obj)->p_vkQueueSubmit(wine_queue_from_handle(params->queue)->obj.host.queue, params->submitCount, pSubmits_host, params->fence);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -49631,7 +49631,7 @@ static NTSTATUS thunk32_vkQueueSubmit(void *args)
 
     init_conversion_context(ctx);
     pSubmits_host = convert_VkSubmitInfo_array_win32_to_host(ctx, (const VkSubmitInfo32 *)UlongToPtr(params->pSubmits), params->submitCount);
-    params->result = wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->device->funcs.p_vkQueueSubmit(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->host_queue, params->submitCount, pSubmits_host, params->fence);
+    params->result = get_vulkan_parent_device_funcs(&wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj)->p_vkQueueSubmit(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj.host.queue, params->submitCount, pSubmits_host, params->fence);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -49648,7 +49648,7 @@ static NTSTATUS thunk64_vkQueueSubmit2(void *args)
 
     init_conversion_context(ctx);
     pSubmits_host = convert_VkSubmitInfo2_array_win64_to_host(ctx, params->pSubmits, params->submitCount);
-    params->result = wine_queue_from_handle(params->queue)->device->funcs.p_vkQueueSubmit2(wine_queue_from_handle(params->queue)->host_queue, params->submitCount, pSubmits_host, params->fence);
+    params->result = get_vulkan_parent_device_funcs(&wine_queue_from_handle(params->queue)->obj)->p_vkQueueSubmit2(wine_queue_from_handle(params->queue)->obj.host.queue, params->submitCount, pSubmits_host, params->fence);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -49672,7 +49672,7 @@ static NTSTATUS thunk32_vkQueueSubmit2(void *args)
 
     init_conversion_context(ctx);
     pSubmits_host = convert_VkSubmitInfo2_array_win32_to_host(ctx, (const VkSubmitInfo232 *)UlongToPtr(params->pSubmits), params->submitCount);
-    params->result = wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->device->funcs.p_vkQueueSubmit2(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->host_queue, params->submitCount, pSubmits_host, params->fence);
+    params->result = get_vulkan_parent_device_funcs(&wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj)->p_vkQueueSubmit2(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj.host.queue, params->submitCount, pSubmits_host, params->fence);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -49689,7 +49689,7 @@ static NTSTATUS thunk64_vkQueueSubmit2KHR(void *args)
 
     init_conversion_context(ctx);
     pSubmits_host = convert_VkSubmitInfo2_array_win64_to_host(ctx, params->pSubmits, params->submitCount);
-    params->result = wine_queue_from_handle(params->queue)->device->funcs.p_vkQueueSubmit2KHR(wine_queue_from_handle(params->queue)->host_queue, params->submitCount, pSubmits_host, params->fence);
+    params->result = get_vulkan_parent_device_funcs(&wine_queue_from_handle(params->queue)->obj)->p_vkQueueSubmit2KHR(wine_queue_from_handle(params->queue)->obj.host.queue, params->submitCount, pSubmits_host, params->fence);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -49713,7 +49713,7 @@ static NTSTATUS thunk32_vkQueueSubmit2KHR(void *args)
 
     init_conversion_context(ctx);
     pSubmits_host = convert_VkSubmitInfo2_array_win32_to_host(ctx, (const VkSubmitInfo232 *)UlongToPtr(params->pSubmits), params->submitCount);
-    params->result = wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->device->funcs.p_vkQueueSubmit2KHR(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->host_queue, params->submitCount, pSubmits_host, params->fence);
+    params->result = get_vulkan_parent_device_funcs(&wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj)->p_vkQueueSubmit2KHR(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj.host.queue, params->submitCount, pSubmits_host, params->fence);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -49725,7 +49725,7 @@ static NTSTATUS thunk64_vkQueueWaitIdle(void *args)
 
     TRACE("%p\n", params->queue);
 
-    params->result = wine_queue_from_handle(params->queue)->device->funcs.p_vkQueueWaitIdle(wine_queue_from_handle(params->queue)->host_queue);
+    params->result = get_vulkan_parent_device_funcs(&wine_queue_from_handle(params->queue)->obj)->p_vkQueueWaitIdle(wine_queue_from_handle(params->queue)->obj.host.queue);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49740,7 +49740,7 @@ static NTSTATUS thunk32_vkQueueWaitIdle(void *args)
 
     TRACE("%#x\n", params->queue);
 
-    params->result = wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->device->funcs.p_vkQueueWaitIdle(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->host_queue);
+    params->result = get_vulkan_parent_device_funcs(&wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj)->p_vkQueueWaitIdle(wine_queue_from_handle((VkQueue)UlongToPtr(params->queue))->obj.host.queue);
     return STATUS_SUCCESS;
 }
 
@@ -49751,7 +49751,7 @@ static NTSTATUS thunk64_vkReleasePerformanceConfigurationINTEL(void *args)
 
     TRACE("%p, 0x%s\n", params->device, wine_dbgstr_longlong(params->configuration));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkReleasePerformanceConfigurationINTEL(wine_device_from_handle(params->device)->host_device, params->configuration);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkReleasePerformanceConfigurationINTEL(wine_device_from_handle(params->device)->obj.host.device, params->configuration);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49767,7 +49767,7 @@ static NTSTATUS thunk32_vkReleasePerformanceConfigurationINTEL(void *args)
 
     TRACE("%#x, 0x%s\n", params->device, wine_dbgstr_longlong(params->configuration));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkReleasePerformanceConfigurationINTEL(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->configuration);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkReleasePerformanceConfigurationINTEL(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->configuration);
     return STATUS_SUCCESS;
 }
 
@@ -49778,7 +49778,7 @@ static NTSTATUS thunk64_vkReleaseProfilingLockKHR(void *args)
 
     TRACE("%p\n", params->device);
 
-    wine_device_from_handle(params->device)->funcs.p_vkReleaseProfilingLockKHR(wine_device_from_handle(params->device)->host_device);
+    get_vulkan_device_funcs(params->device)->p_vkReleaseProfilingLockKHR(wine_device_from_handle(params->device)->obj.host.device);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49792,7 +49792,7 @@ static NTSTATUS thunk32_vkReleaseProfilingLockKHR(void *args)
 
     TRACE("%#x\n", params->device);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkReleaseProfilingLockKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkReleaseProfilingLockKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device);
     return STATUS_SUCCESS;
 }
 
@@ -49805,7 +49805,7 @@ static NTSTATUS thunk64_vkReleaseSwapchainImagesEXT(void *args)
     TRACE("%p, %p\n", params->device, params->pReleaseInfo);
 
     convert_VkReleaseSwapchainImagesInfoEXT_win64_to_host(params->pReleaseInfo, &pReleaseInfo_host);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkReleaseSwapchainImagesEXT(wine_device_from_handle(params->device)->host_device, &pReleaseInfo_host);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkReleaseSwapchainImagesEXT(wine_device_from_handle(params->device)->obj.host.device, &pReleaseInfo_host);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49823,7 +49823,7 @@ static NTSTATUS thunk32_vkReleaseSwapchainImagesEXT(void *args)
     TRACE("%#x, %#x\n", params->device, params->pReleaseInfo);
 
     convert_VkReleaseSwapchainImagesInfoEXT_win32_to_host((const VkReleaseSwapchainImagesInfoEXT32 *)UlongToPtr(params->pReleaseInfo), &pReleaseInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkReleaseSwapchainImagesEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pReleaseInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkReleaseSwapchainImagesEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pReleaseInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -49834,7 +49834,7 @@ static NTSTATUS thunk64_vkResetCommandBuffer(void *args)
 
     TRACE("%p, %#x\n", params->commandBuffer, params->flags);
 
-    params->result = wine_cmd_buffer_from_handle(params->commandBuffer)->device->funcs.p_vkResetCommandBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->host_command_buffer, params->flags);
+    params->result = get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle(params->commandBuffer)->obj)->p_vkResetCommandBuffer(wine_cmd_buffer_from_handle(params->commandBuffer)->obj.host.command_buffer, params->flags);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49850,7 +49850,7 @@ static NTSTATUS thunk32_vkResetCommandBuffer(void *args)
 
     TRACE("%#x, %#x\n", params->commandBuffer, params->flags);
 
-    params->result = wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->device->funcs.p_vkResetCommandBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->host_command_buffer, params->flags);
+    params->result = get_vulkan_parent_device_funcs(&wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj)->p_vkResetCommandBuffer(wine_cmd_buffer_from_handle((VkCommandBuffer)UlongToPtr(params->commandBuffer))->obj.host.command_buffer, params->flags);
     return STATUS_SUCCESS;
 }
 
@@ -49861,7 +49861,7 @@ static NTSTATUS thunk64_vkResetCommandPool(void *args)
 
     TRACE("%p, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->commandPool), params->flags);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkResetCommandPool(wine_device_from_handle(params->device)->host_device, wine_cmd_pool_from_handle(params->commandPool)->host_command_pool, params->flags);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkResetCommandPool(wine_device_from_handle(params->device)->obj.host.device, wine_cmd_pool_from_handle(params->commandPool)->obj.host.command_pool, params->flags);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49878,7 +49878,7 @@ static NTSTATUS thunk32_vkResetCommandPool(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->commandPool), params->flags);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkResetCommandPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, wine_cmd_pool_from_handle(params->commandPool)->host_command_pool, params->flags);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkResetCommandPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, wine_cmd_pool_from_handle(params->commandPool)->obj.host.command_pool, params->flags);
     return STATUS_SUCCESS;
 }
 
@@ -49889,7 +49889,7 @@ static NTSTATUS thunk64_vkResetDescriptorPool(void *args)
 
     TRACE("%p, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->descriptorPool), params->flags);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkResetDescriptorPool(wine_device_from_handle(params->device)->host_device, params->descriptorPool, params->flags);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkResetDescriptorPool(wine_device_from_handle(params->device)->obj.host.device, params->descriptorPool, params->flags);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49906,7 +49906,7 @@ static NTSTATUS thunk32_vkResetDescriptorPool(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->descriptorPool), params->flags);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkResetDescriptorPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->descriptorPool, params->flags);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkResetDescriptorPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->descriptorPool, params->flags);
     return STATUS_SUCCESS;
 }
 
@@ -49917,7 +49917,7 @@ static NTSTATUS thunk64_vkResetEvent(void *args)
 
     TRACE("%p, 0x%s\n", params->device, wine_dbgstr_longlong(params->event));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkResetEvent(wine_device_from_handle(params->device)->host_device, params->event);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkResetEvent(wine_device_from_handle(params->device)->obj.host.device, params->event);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49933,7 +49933,7 @@ static NTSTATUS thunk32_vkResetEvent(void *args)
 
     TRACE("%#x, 0x%s\n", params->device, wine_dbgstr_longlong(params->event));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkResetEvent(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->event);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkResetEvent(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->event);
     return STATUS_SUCCESS;
 }
 
@@ -49944,7 +49944,7 @@ static NTSTATUS thunk64_vkResetFences(void *args)
 
     TRACE("%p, %u, %p\n", params->device, params->fenceCount, params->pFences);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkResetFences(wine_device_from_handle(params->device)->host_device, params->fenceCount, params->pFences);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkResetFences(wine_device_from_handle(params->device)->obj.host.device, params->fenceCount, params->pFences);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49961,7 +49961,7 @@ static NTSTATUS thunk32_vkResetFences(void *args)
 
     TRACE("%#x, %u, %#x\n", params->device, params->fenceCount, params->pFences);
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkResetFences(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->fenceCount, (const VkFence *)UlongToPtr(params->pFences));
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkResetFences(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->fenceCount, (const VkFence *)UlongToPtr(params->pFences));
     return STATUS_SUCCESS;
 }
 
@@ -49972,7 +49972,7 @@ static NTSTATUS thunk64_vkResetQueryPool(void *args)
 
     TRACE("%p, 0x%s, %u, %u\n", params->device, wine_dbgstr_longlong(params->queryPool), params->firstQuery, params->queryCount);
 
-    wine_device_from_handle(params->device)->funcs.p_vkResetQueryPool(wine_device_from_handle(params->device)->host_device, params->queryPool, params->firstQuery, params->queryCount);
+    get_vulkan_device_funcs(params->device)->p_vkResetQueryPool(wine_device_from_handle(params->device)->obj.host.device, params->queryPool, params->firstQuery, params->queryCount);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -49989,7 +49989,7 @@ static NTSTATUS thunk32_vkResetQueryPool(void *args)
 
     TRACE("%#x, 0x%s, %u, %u\n", params->device, wine_dbgstr_longlong(params->queryPool), params->firstQuery, params->queryCount);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkResetQueryPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->queryPool, params->firstQuery, params->queryCount);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkResetQueryPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->queryPool, params->firstQuery, params->queryCount);
     return STATUS_SUCCESS;
 }
 
@@ -50000,7 +50000,7 @@ static NTSTATUS thunk64_vkResetQueryPoolEXT(void *args)
 
     TRACE("%p, 0x%s, %u, %u\n", params->device, wine_dbgstr_longlong(params->queryPool), params->firstQuery, params->queryCount);
 
-    wine_device_from_handle(params->device)->funcs.p_vkResetQueryPoolEXT(wine_device_from_handle(params->device)->host_device, params->queryPool, params->firstQuery, params->queryCount);
+    get_vulkan_device_funcs(params->device)->p_vkResetQueryPoolEXT(wine_device_from_handle(params->device)->obj.host.device, params->queryPool, params->firstQuery, params->queryCount);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50017,7 +50017,7 @@ static NTSTATUS thunk32_vkResetQueryPoolEXT(void *args)
 
     TRACE("%#x, 0x%s, %u, %u\n", params->device, wine_dbgstr_longlong(params->queryPool), params->firstQuery, params->queryCount);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkResetQueryPoolEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->queryPool, params->firstQuery, params->queryCount);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkResetQueryPoolEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->queryPool, params->firstQuery, params->queryCount);
     return STATUS_SUCCESS;
 }
 
@@ -50030,7 +50030,7 @@ static NTSTATUS thunk64_vkSetDebugUtilsObjectNameEXT(void *args)
     TRACE("%p, %p\n", params->device, params->pNameInfo);
 
     convert_VkDebugUtilsObjectNameInfoEXT_win64_to_host(params->pNameInfo, &pNameInfo_host);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkSetDebugUtilsObjectNameEXT(wine_device_from_handle(params->device)->host_device, &pNameInfo_host);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkSetDebugUtilsObjectNameEXT(wine_device_from_handle(params->device)->obj.host.device, &pNameInfo_host);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50048,7 +50048,7 @@ static NTSTATUS thunk32_vkSetDebugUtilsObjectNameEXT(void *args)
     TRACE("%#x, %#x\n", params->device, params->pNameInfo);
 
     convert_VkDebugUtilsObjectNameInfoEXT_win32_to_host((const VkDebugUtilsObjectNameInfoEXT32 *)UlongToPtr(params->pNameInfo), &pNameInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkSetDebugUtilsObjectNameEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pNameInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkSetDebugUtilsObjectNameEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pNameInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -50061,7 +50061,7 @@ static NTSTATUS thunk64_vkSetDebugUtilsObjectTagEXT(void *args)
     TRACE("%p, %p\n", params->device, params->pTagInfo);
 
     convert_VkDebugUtilsObjectTagInfoEXT_win64_to_host(params->pTagInfo, &pTagInfo_host);
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkSetDebugUtilsObjectTagEXT(wine_device_from_handle(params->device)->host_device, &pTagInfo_host);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkSetDebugUtilsObjectTagEXT(wine_device_from_handle(params->device)->obj.host.device, &pTagInfo_host);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50079,7 +50079,7 @@ static NTSTATUS thunk32_vkSetDebugUtilsObjectTagEXT(void *args)
     TRACE("%#x, %#x\n", params->device, params->pTagInfo);
 
     convert_VkDebugUtilsObjectTagInfoEXT_win32_to_host((const VkDebugUtilsObjectTagInfoEXT32 *)UlongToPtr(params->pTagInfo), &pTagInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkSetDebugUtilsObjectTagEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pTagInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkSetDebugUtilsObjectTagEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pTagInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -50090,7 +50090,7 @@ static NTSTATUS thunk64_vkSetDeviceMemoryPriorityEXT(void *args)
 
     TRACE("%p, 0x%s, %f\n", params->device, wine_dbgstr_longlong(params->memory), params->priority);
 
-    wine_device_from_handle(params->device)->funcs.p_vkSetDeviceMemoryPriorityEXT(wine_device_from_handle(params->device)->host_device, wine_device_memory_from_handle(params->memory)->host_memory, params->priority);
+    get_vulkan_device_funcs(params->device)->p_vkSetDeviceMemoryPriorityEXT(wine_device_from_handle(params->device)->obj.host.device, wine_device_memory_from_handle(params->memory)->obj.host.device_memory, params->priority);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50106,7 +50106,7 @@ static NTSTATUS thunk32_vkSetDeviceMemoryPriorityEXT(void *args)
 
     TRACE("%#x, 0x%s, %f\n", params->device, wine_dbgstr_longlong(params->memory), params->priority);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkSetDeviceMemoryPriorityEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, wine_device_memory_from_handle(params->memory)->host_memory, params->priority);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkSetDeviceMemoryPriorityEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, wine_device_memory_from_handle(params->memory)->obj.host.device_memory, params->priority);
     return STATUS_SUCCESS;
 }
 
@@ -50117,7 +50117,7 @@ static NTSTATUS thunk64_vkSetEvent(void *args)
 
     TRACE("%p, 0x%s\n", params->device, wine_dbgstr_longlong(params->event));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkSetEvent(wine_device_from_handle(params->device)->host_device, params->event);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkSetEvent(wine_device_from_handle(params->device)->obj.host.device, params->event);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50133,7 +50133,7 @@ static NTSTATUS thunk32_vkSetEvent(void *args)
 
     TRACE("%#x, 0x%s\n", params->device, wine_dbgstr_longlong(params->event));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkSetEvent(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->event);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkSetEvent(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->event);
     return STATUS_SUCCESS;
 }
 
@@ -50149,7 +50149,7 @@ static NTSTATUS thunk64_vkSetHdrMetadataEXT(void *args)
 
     init_conversion_context(ctx);
     pSwapchains_host = convert_VkSwapchainKHR_array_win64_to_host(ctx, params->pSwapchains, params->swapchainCount);
-    wine_device_from_handle(params->device)->funcs.p_vkSetHdrMetadataEXT(wine_device_from_handle(params->device)->host_device, params->swapchainCount, pSwapchains_host, params->pMetadata);
+    get_vulkan_device_funcs(params->device)->p_vkSetHdrMetadataEXT(wine_device_from_handle(params->device)->obj.host.device, params->swapchainCount, pSwapchains_host, params->pMetadata);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -50174,7 +50174,7 @@ static NTSTATUS thunk32_vkSetHdrMetadataEXT(void *args)
     init_conversion_context(ctx);
     pSwapchains_host = convert_VkSwapchainKHR_array_win32_to_host(ctx, (const VkSwapchainKHR *)UlongToPtr(params->pSwapchains), params->swapchainCount);
     pMetadata_host = convert_VkHdrMetadataEXT_array_win32_to_host(ctx, (const VkHdrMetadataEXT32 *)UlongToPtr(params->pMetadata), params->swapchainCount);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkSetHdrMetadataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->swapchainCount, pSwapchains_host, pMetadata_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkSetHdrMetadataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->swapchainCount, pSwapchains_host, pMetadata_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -50186,7 +50186,7 @@ static NTSTATUS thunk64_vkSetLatencyMarkerNV(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->swapchain), params->pLatencyMarkerInfo);
 
-    wine_device_from_handle(params->device)->funcs.p_vkSetLatencyMarkerNV(wine_device_from_handle(params->device)->host_device, wine_swapchain_from_handle(params->swapchain)->host_swapchain, params->pLatencyMarkerInfo);
+    get_vulkan_device_funcs(params->device)->p_vkSetLatencyMarkerNV(wine_device_from_handle(params->device)->obj.host.device, wine_swapchain_from_handle(params->swapchain)->obj.host.swapchain, params->pLatencyMarkerInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50204,7 +50204,7 @@ static NTSTATUS thunk32_vkSetLatencyMarkerNV(void *args)
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->swapchain), params->pLatencyMarkerInfo);
 
     convert_VkSetLatencyMarkerInfoNV_win32_to_host((const VkSetLatencyMarkerInfoNV32 *)UlongToPtr(params->pLatencyMarkerInfo), &pLatencyMarkerInfo_host);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkSetLatencyMarkerNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, wine_swapchain_from_handle(params->swapchain)->host_swapchain, &pLatencyMarkerInfo_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkSetLatencyMarkerNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, wine_swapchain_from_handle(params->swapchain)->obj.host.swapchain, &pLatencyMarkerInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -50215,7 +50215,7 @@ static NTSTATUS thunk64_vkSetLatencySleepModeNV(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->swapchain), params->pSleepModeInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkSetLatencySleepModeNV(wine_device_from_handle(params->device)->host_device, wine_swapchain_from_handle(params->swapchain)->host_swapchain, params->pSleepModeInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkSetLatencySleepModeNV(wine_device_from_handle(params->device)->obj.host.device, wine_swapchain_from_handle(params->swapchain)->obj.host.swapchain, params->pSleepModeInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50234,7 +50234,7 @@ static NTSTATUS thunk32_vkSetLatencySleepModeNV(void *args)
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->swapchain), params->pSleepModeInfo);
 
     convert_VkLatencySleepModeInfoNV_win32_to_host((const VkLatencySleepModeInfoNV32 *)UlongToPtr(params->pSleepModeInfo), &pSleepModeInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkSetLatencySleepModeNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, wine_swapchain_from_handle(params->swapchain)->host_swapchain, &pSleepModeInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkSetLatencySleepModeNV(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, wine_swapchain_from_handle(params->swapchain)->obj.host.swapchain, &pSleepModeInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -50245,7 +50245,7 @@ static NTSTATUS thunk64_vkSetPrivateData(void *args)
 
     TRACE("%p, %#x, 0x%s, 0x%s, 0x%s\n", params->device, params->objectType, wine_dbgstr_longlong(params->objectHandle), wine_dbgstr_longlong(params->privateDataSlot), wine_dbgstr_longlong(params->data));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkSetPrivateData(wine_device_from_handle(params->device)->host_device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, params->data);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkSetPrivateData(wine_device_from_handle(params->device)->obj.host.device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, params->data);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50264,7 +50264,7 @@ static NTSTATUS thunk32_vkSetPrivateData(void *args)
 
     TRACE("%#x, %#x, 0x%s, 0x%s, 0x%s\n", params->device, params->objectType, wine_dbgstr_longlong(params->objectHandle), wine_dbgstr_longlong(params->privateDataSlot), wine_dbgstr_longlong(params->data));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkSetPrivateData(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, params->data);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkSetPrivateData(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, params->data);
     return STATUS_SUCCESS;
 }
 
@@ -50275,7 +50275,7 @@ static NTSTATUS thunk64_vkSetPrivateDataEXT(void *args)
 
     TRACE("%p, %#x, 0x%s, 0x%s, 0x%s\n", params->device, params->objectType, wine_dbgstr_longlong(params->objectHandle), wine_dbgstr_longlong(params->privateDataSlot), wine_dbgstr_longlong(params->data));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkSetPrivateDataEXT(wine_device_from_handle(params->device)->host_device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, params->data);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkSetPrivateDataEXT(wine_device_from_handle(params->device)->obj.host.device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, params->data);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50294,7 +50294,7 @@ static NTSTATUS thunk32_vkSetPrivateDataEXT(void *args)
 
     TRACE("%#x, %#x, 0x%s, 0x%s, 0x%s\n", params->device, params->objectType, wine_dbgstr_longlong(params->objectHandle), wine_dbgstr_longlong(params->privateDataSlot), wine_dbgstr_longlong(params->data));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkSetPrivateDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, params->data);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkSetPrivateDataEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->objectType, wine_vk_unwrap_handle(params->objectType, params->objectHandle), params->privateDataSlot, params->data);
     return STATUS_SUCCESS;
 }
 
@@ -50305,7 +50305,7 @@ static NTSTATUS thunk64_vkSignalSemaphore(void *args)
 
     TRACE("%p, %p\n", params->device, params->pSignalInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkSignalSemaphore(wine_device_from_handle(params->device)->host_device, params->pSignalInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkSignalSemaphore(wine_device_from_handle(params->device)->obj.host.device, params->pSignalInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50323,7 +50323,7 @@ static NTSTATUS thunk32_vkSignalSemaphore(void *args)
     TRACE("%#x, %#x\n", params->device, params->pSignalInfo);
 
     convert_VkSemaphoreSignalInfo_win32_to_host((const VkSemaphoreSignalInfo32 *)UlongToPtr(params->pSignalInfo), &pSignalInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkSignalSemaphore(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pSignalInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkSignalSemaphore(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pSignalInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -50334,7 +50334,7 @@ static NTSTATUS thunk64_vkSignalSemaphoreKHR(void *args)
 
     TRACE("%p, %p\n", params->device, params->pSignalInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkSignalSemaphoreKHR(wine_device_from_handle(params->device)->host_device, params->pSignalInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkSignalSemaphoreKHR(wine_device_from_handle(params->device)->obj.host.device, params->pSignalInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50352,7 +50352,7 @@ static NTSTATUS thunk32_vkSignalSemaphoreKHR(void *args)
     TRACE("%#x, %#x\n", params->device, params->pSignalInfo);
 
     convert_VkSemaphoreSignalInfo_win32_to_host((const VkSemaphoreSignalInfo32 *)UlongToPtr(params->pSignalInfo), &pSignalInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkSignalSemaphoreKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pSignalInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkSignalSemaphoreKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pSignalInfo_host);
     return STATUS_SUCCESS;
 }
 
@@ -50368,7 +50368,7 @@ static NTSTATUS thunk64_vkSubmitDebugUtilsMessageEXT(void *args)
 
     init_conversion_context(ctx);
     convert_VkDebugUtilsMessengerCallbackDataEXT_win64_to_host(ctx, params->pCallbackData, &pCallbackData_host);
-    wine_instance_from_handle(params->instance)->funcs.p_vkSubmitDebugUtilsMessageEXT(wine_instance_from_handle(params->instance)->host_instance, params->messageSeverity, params->messageTypes, &pCallbackData_host);
+    get_vulkan_instance_funcs(params->instance)->p_vkSubmitDebugUtilsMessageEXT(wine_instance_from_handle(params->instance)->obj.host.instance, params->messageSeverity, params->messageTypes, &pCallbackData_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -50391,7 +50391,7 @@ static NTSTATUS thunk32_vkSubmitDebugUtilsMessageEXT(void *args)
 
     init_conversion_context(ctx);
     convert_VkDebugUtilsMessengerCallbackDataEXT_win32_to_host(ctx, (const VkDebugUtilsMessengerCallbackDataEXT32 *)UlongToPtr(params->pCallbackData), &pCallbackData_host);
-    wine_instance_from_handle((VkInstance)UlongToPtr(params->instance))->funcs.p_vkSubmitDebugUtilsMessageEXT(wine_instance_from_handle((VkInstance)UlongToPtr(params->instance))->host_instance, params->messageSeverity, params->messageTypes, &pCallbackData_host);
+    get_vulkan_instance_funcs((VkInstance)UlongToPtr(params->instance))->p_vkSubmitDebugUtilsMessageEXT(wine_instance_from_handle((VkInstance)UlongToPtr(params->instance))->obj.host.instance, params->messageSeverity, params->messageTypes, &pCallbackData_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -50403,7 +50403,7 @@ static NTSTATUS thunk64_vkTransitionImageLayoutEXT(void *args)
 
     TRACE("%p, %u, %p\n", params->device, params->transitionCount, params->pTransitions);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkTransitionImageLayoutEXT(wine_device_from_handle(params->device)->host_device, params->transitionCount, params->pTransitions);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkTransitionImageLayoutEXT(wine_device_from_handle(params->device)->obj.host.device, params->transitionCount, params->pTransitions);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50425,7 +50425,7 @@ static NTSTATUS thunk32_vkTransitionImageLayoutEXT(void *args)
 
     init_conversion_context(ctx);
     pTransitions_host = convert_VkHostImageLayoutTransitionInfoEXT_array_win32_to_host(ctx, (const VkHostImageLayoutTransitionInfoEXT32 *)UlongToPtr(params->pTransitions), params->transitionCount);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkTransitionImageLayoutEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->transitionCount, pTransitions_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkTransitionImageLayoutEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->transitionCount, pTransitions_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -50437,7 +50437,7 @@ static NTSTATUS thunk64_vkTrimCommandPool(void *args)
 
     TRACE("%p, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->commandPool), params->flags);
 
-    wine_device_from_handle(params->device)->funcs.p_vkTrimCommandPool(wine_device_from_handle(params->device)->host_device, wine_cmd_pool_from_handle(params->commandPool)->host_command_pool, params->flags);
+    get_vulkan_device_funcs(params->device)->p_vkTrimCommandPool(wine_device_from_handle(params->device)->obj.host.device, wine_cmd_pool_from_handle(params->commandPool)->obj.host.command_pool, params->flags);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50453,7 +50453,7 @@ static NTSTATUS thunk32_vkTrimCommandPool(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->commandPool), params->flags);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkTrimCommandPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, wine_cmd_pool_from_handle(params->commandPool)->host_command_pool, params->flags);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkTrimCommandPool(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, wine_cmd_pool_from_handle(params->commandPool)->obj.host.command_pool, params->flags);
     return STATUS_SUCCESS;
 }
 
@@ -50464,7 +50464,7 @@ static NTSTATUS thunk64_vkTrimCommandPoolKHR(void *args)
 
     TRACE("%p, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->commandPool), params->flags);
 
-    wine_device_from_handle(params->device)->funcs.p_vkTrimCommandPoolKHR(wine_device_from_handle(params->device)->host_device, wine_cmd_pool_from_handle(params->commandPool)->host_command_pool, params->flags);
+    get_vulkan_device_funcs(params->device)->p_vkTrimCommandPoolKHR(wine_device_from_handle(params->device)->obj.host.device, wine_cmd_pool_from_handle(params->commandPool)->obj.host.command_pool, params->flags);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50480,7 +50480,7 @@ static NTSTATUS thunk32_vkTrimCommandPoolKHR(void *args)
 
     TRACE("%#x, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->commandPool), params->flags);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkTrimCommandPoolKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, wine_cmd_pool_from_handle(params->commandPool)->host_command_pool, params->flags);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkTrimCommandPoolKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, wine_cmd_pool_from_handle(params->commandPool)->obj.host.command_pool, params->flags);
     return STATUS_SUCCESS;
 }
 
@@ -50491,7 +50491,7 @@ static NTSTATUS thunk64_vkUninitializePerformanceApiINTEL(void *args)
 
     TRACE("%p\n", params->device);
 
-    wine_device_from_handle(params->device)->funcs.p_vkUninitializePerformanceApiINTEL(wine_device_from_handle(params->device)->host_device);
+    get_vulkan_device_funcs(params->device)->p_vkUninitializePerformanceApiINTEL(wine_device_from_handle(params->device)->obj.host.device);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50505,7 +50505,7 @@ static NTSTATUS thunk32_vkUninitializePerformanceApiINTEL(void *args)
 
     TRACE("%#x\n", params->device);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkUninitializePerformanceApiINTEL(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkUninitializePerformanceApiINTEL(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device);
     return STATUS_SUCCESS;
 }
 
@@ -50569,7 +50569,7 @@ static void thunk64_vkUpdateDescriptorSetWithTemplate(void *args)
 {
     struct vkUpdateDescriptorSetWithTemplate_params *params = args;
 
-    wine_device_from_handle(params->device)->funcs.p_vkUpdateDescriptorSetWithTemplate(wine_device_from_handle(params->device)->host_device, params->descriptorSet, params->descriptorUpdateTemplate, params->pData);
+    get_vulkan_device_funcs(params->device)->p_vkUpdateDescriptorSetWithTemplate(wine_device_from_handle(params->device)->obj.host.device, params->descriptorSet, params->descriptorUpdateTemplate, params->pData);
 }
 #endif /* _WIN64 */
 
@@ -50583,7 +50583,7 @@ static void thunk32_vkUpdateDescriptorSetWithTemplate(void *args)
         PTR32 pData;
     } *params = args;
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkUpdateDescriptorSetWithTemplate(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->descriptorSet, params->descriptorUpdateTemplate, (const void *)UlongToPtr(params->pData));
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkUpdateDescriptorSetWithTemplate(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->descriptorSet, params->descriptorUpdateTemplate, (const void *)UlongToPtr(params->pData));
 }
 
 #ifdef _WIN64
@@ -50593,7 +50593,7 @@ static NTSTATUS thunk64_vkUpdateDescriptorSetWithTemplateKHR(void *args)
 
     TRACE("%p, 0x%s, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->descriptorSet), wine_dbgstr_longlong(params->descriptorUpdateTemplate), params->pData);
 
-    wine_device_from_handle(params->device)->funcs.p_vkUpdateDescriptorSetWithTemplateKHR(wine_device_from_handle(params->device)->host_device, params->descriptorSet, params->descriptorUpdateTemplate, params->pData);
+    get_vulkan_device_funcs(params->device)->p_vkUpdateDescriptorSetWithTemplateKHR(wine_device_from_handle(params->device)->obj.host.device, params->descriptorSet, params->descriptorUpdateTemplate, params->pData);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50610,7 +50610,7 @@ static NTSTATUS thunk32_vkUpdateDescriptorSetWithTemplateKHR(void *args)
 
     TRACE("%#x, 0x%s, 0x%s, %#x\n", params->device, wine_dbgstr_longlong(params->descriptorSet), wine_dbgstr_longlong(params->descriptorUpdateTemplate), params->pData);
 
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkUpdateDescriptorSetWithTemplateKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->descriptorSet, params->descriptorUpdateTemplate, (const void *)UlongToPtr(params->pData));
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkUpdateDescriptorSetWithTemplateKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->descriptorSet, params->descriptorUpdateTemplate, (const void *)UlongToPtr(params->pData));
     return STATUS_SUCCESS;
 }
 
@@ -50619,7 +50619,7 @@ static void thunk64_vkUpdateDescriptorSets(void *args)
 {
     struct vkUpdateDescriptorSets_params *params = args;
 
-    wine_device_from_handle(params->device)->funcs.p_vkUpdateDescriptorSets(wine_device_from_handle(params->device)->host_device, params->descriptorWriteCount, params->pDescriptorWrites, params->descriptorCopyCount, params->pDescriptorCopies);
+    get_vulkan_device_funcs(params->device)->p_vkUpdateDescriptorSets(wine_device_from_handle(params->device)->obj.host.device, params->descriptorWriteCount, params->pDescriptorWrites, params->descriptorCopyCount, params->pDescriptorCopies);
 }
 #endif /* _WIN64 */
 
@@ -50641,7 +50641,7 @@ static void thunk32_vkUpdateDescriptorSets(void *args)
     init_conversion_context(ctx);
     pDescriptorWrites_host = convert_VkWriteDescriptorSet_array_win32_to_host(ctx, (const VkWriteDescriptorSet32 *)UlongToPtr(params->pDescriptorWrites), params->descriptorWriteCount);
     pDescriptorCopies_host = convert_VkCopyDescriptorSet_array_win32_to_host(ctx, (const VkCopyDescriptorSet32 *)UlongToPtr(params->pDescriptorCopies), params->descriptorCopyCount);
-    wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkUpdateDescriptorSets(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->descriptorWriteCount, pDescriptorWrites_host, params->descriptorCopyCount, pDescriptorCopies_host);
+    get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkUpdateDescriptorSets(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->descriptorWriteCount, pDescriptorWrites_host, params->descriptorCopyCount, pDescriptorCopies_host);
     free_conversion_context(ctx);
 }
 
@@ -50652,7 +50652,7 @@ static NTSTATUS thunk64_vkUpdateVideoSessionParametersKHR(void *args)
 
     TRACE("%p, 0x%s, %p\n", params->device, wine_dbgstr_longlong(params->videoSessionParameters), params->pUpdateInfo);
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkUpdateVideoSessionParametersKHR(wine_device_from_handle(params->device)->host_device, params->videoSessionParameters, params->pUpdateInfo);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkUpdateVideoSessionParametersKHR(wine_device_from_handle(params->device)->obj.host.device, params->videoSessionParameters, params->pUpdateInfo);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50674,7 +50674,7 @@ static NTSTATUS thunk32_vkUpdateVideoSessionParametersKHR(void *args)
 
     init_conversion_context(ctx);
     convert_VkVideoSessionParametersUpdateInfoKHR_win32_to_host(ctx, (const VkVideoSessionParametersUpdateInfoKHR32 *)UlongToPtr(params->pUpdateInfo), &pUpdateInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkUpdateVideoSessionParametersKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->videoSessionParameters, &pUpdateInfo_host);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkUpdateVideoSessionParametersKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->videoSessionParameters, &pUpdateInfo_host);
     free_conversion_context(ctx);
     return STATUS_SUCCESS;
 }
@@ -50686,7 +50686,7 @@ static NTSTATUS thunk64_vkWaitForFences(void *args)
 
     TRACE("%p, %u, %p, %u, 0x%s\n", params->device, params->fenceCount, params->pFences, params->waitAll, wine_dbgstr_longlong(params->timeout));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkWaitForFences(wine_device_from_handle(params->device)->host_device, params->fenceCount, params->pFences, params->waitAll, params->timeout);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkWaitForFences(wine_device_from_handle(params->device)->obj.host.device, params->fenceCount, params->pFences, params->waitAll, params->timeout);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50705,7 +50705,7 @@ static NTSTATUS thunk32_vkWaitForFences(void *args)
 
     TRACE("%#x, %u, %#x, %u, 0x%s\n", params->device, params->fenceCount, params->pFences, params->waitAll, wine_dbgstr_longlong(params->timeout));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkWaitForFences(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->fenceCount, (const VkFence *)UlongToPtr(params->pFences), params->waitAll, params->timeout);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkWaitForFences(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->fenceCount, (const VkFence *)UlongToPtr(params->pFences), params->waitAll, params->timeout);
     return STATUS_SUCCESS;
 }
 
@@ -50716,7 +50716,7 @@ static NTSTATUS thunk64_vkWaitForPresentKHR(void *args)
 
     TRACE("%p, 0x%s, 0x%s, 0x%s\n", params->device, wine_dbgstr_longlong(params->swapchain), wine_dbgstr_longlong(params->presentId), wine_dbgstr_longlong(params->timeout));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkWaitForPresentKHR(wine_device_from_handle(params->device)->host_device, wine_swapchain_from_handle(params->swapchain)->host_swapchain, params->presentId, params->timeout);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkWaitForPresentKHR(wine_device_from_handle(params->device)->obj.host.device, wine_swapchain_from_handle(params->swapchain)->obj.host.swapchain, params->presentId, params->timeout);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50734,7 +50734,7 @@ static NTSTATUS thunk32_vkWaitForPresentKHR(void *args)
 
     TRACE("%#x, 0x%s, 0x%s, 0x%s\n", params->device, wine_dbgstr_longlong(params->swapchain), wine_dbgstr_longlong(params->presentId), wine_dbgstr_longlong(params->timeout));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkWaitForPresentKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, wine_swapchain_from_handle(params->swapchain)->host_swapchain, params->presentId, params->timeout);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkWaitForPresentKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, wine_swapchain_from_handle(params->swapchain)->obj.host.swapchain, params->presentId, params->timeout);
     return STATUS_SUCCESS;
 }
 
@@ -50745,7 +50745,7 @@ static NTSTATUS thunk64_vkWaitSemaphores(void *args)
 
     TRACE("%p, %p, 0x%s\n", params->device, params->pWaitInfo, wine_dbgstr_longlong(params->timeout));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkWaitSemaphores(wine_device_from_handle(params->device)->host_device, params->pWaitInfo, params->timeout);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkWaitSemaphores(wine_device_from_handle(params->device)->obj.host.device, params->pWaitInfo, params->timeout);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50764,7 +50764,7 @@ static NTSTATUS thunk32_vkWaitSemaphores(void *args)
     TRACE("%#x, %#x, 0x%s\n", params->device, params->pWaitInfo, wine_dbgstr_longlong(params->timeout));
 
     convert_VkSemaphoreWaitInfo_win32_to_host((const VkSemaphoreWaitInfo32 *)UlongToPtr(params->pWaitInfo), &pWaitInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkWaitSemaphores(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pWaitInfo_host, params->timeout);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkWaitSemaphores(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pWaitInfo_host, params->timeout);
     return STATUS_SUCCESS;
 }
 
@@ -50775,7 +50775,7 @@ static NTSTATUS thunk64_vkWaitSemaphoresKHR(void *args)
 
     TRACE("%p, %p, 0x%s\n", params->device, params->pWaitInfo, wine_dbgstr_longlong(params->timeout));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkWaitSemaphoresKHR(wine_device_from_handle(params->device)->host_device, params->pWaitInfo, params->timeout);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkWaitSemaphoresKHR(wine_device_from_handle(params->device)->obj.host.device, params->pWaitInfo, params->timeout);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50794,7 +50794,7 @@ static NTSTATUS thunk32_vkWaitSemaphoresKHR(void *args)
     TRACE("%#x, %#x, 0x%s\n", params->device, params->pWaitInfo, wine_dbgstr_longlong(params->timeout));
 
     convert_VkSemaphoreWaitInfo_win32_to_host((const VkSemaphoreWaitInfo32 *)UlongToPtr(params->pWaitInfo), &pWaitInfo_host);
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkWaitSemaphoresKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, &pWaitInfo_host, params->timeout);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkWaitSemaphoresKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, &pWaitInfo_host, params->timeout);
     return STATUS_SUCCESS;
 }
 
@@ -50805,7 +50805,7 @@ static NTSTATUS thunk64_vkWriteAccelerationStructuresPropertiesKHR(void *args)
 
     TRACE("%p, %u, %p, %#x, 0x%s, %p, 0x%s\n", params->device, params->accelerationStructureCount, params->pAccelerationStructures, params->queryType, wine_dbgstr_longlong(params->dataSize), params->pData, wine_dbgstr_longlong(params->stride));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkWriteAccelerationStructuresPropertiesKHR(wine_device_from_handle(params->device)->host_device, params->accelerationStructureCount, params->pAccelerationStructures, params->queryType, params->dataSize, params->pData, params->stride);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkWriteAccelerationStructuresPropertiesKHR(wine_device_from_handle(params->device)->obj.host.device, params->accelerationStructureCount, params->pAccelerationStructures, params->queryType, params->dataSize, params->pData, params->stride);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50826,7 +50826,7 @@ static NTSTATUS thunk32_vkWriteAccelerationStructuresPropertiesKHR(void *args)
 
     TRACE("%#x, %u, %#x, %#x, 0x%s, %#x, 0x%s\n", params->device, params->accelerationStructureCount, params->pAccelerationStructures, params->queryType, wine_dbgstr_longlong(params->dataSize), params->pData, wine_dbgstr_longlong(params->stride));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkWriteAccelerationStructuresPropertiesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->accelerationStructureCount, (const VkAccelerationStructureKHR *)UlongToPtr(params->pAccelerationStructures), params->queryType, params->dataSize, (void *)UlongToPtr(params->pData), params->stride);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkWriteAccelerationStructuresPropertiesKHR(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->accelerationStructureCount, (const VkAccelerationStructureKHR *)UlongToPtr(params->pAccelerationStructures), params->queryType, params->dataSize, (void *)UlongToPtr(params->pData), params->stride);
     return STATUS_SUCCESS;
 }
 
@@ -50837,7 +50837,7 @@ static NTSTATUS thunk64_vkWriteMicromapsPropertiesEXT(void *args)
 
     TRACE("%p, %u, %p, %#x, 0x%s, %p, 0x%s\n", params->device, params->micromapCount, params->pMicromaps, params->queryType, wine_dbgstr_longlong(params->dataSize), params->pData, wine_dbgstr_longlong(params->stride));
 
-    params->result = wine_device_from_handle(params->device)->funcs.p_vkWriteMicromapsPropertiesEXT(wine_device_from_handle(params->device)->host_device, params->micromapCount, params->pMicromaps, params->queryType, params->dataSize, params->pData, params->stride);
+    params->result = get_vulkan_device_funcs(params->device)->p_vkWriteMicromapsPropertiesEXT(wine_device_from_handle(params->device)->obj.host.device, params->micromapCount, params->pMicromaps, params->queryType, params->dataSize, params->pData, params->stride);
     return STATUS_SUCCESS;
 }
 #endif /* _WIN64 */
@@ -50858,7 +50858,7 @@ static NTSTATUS thunk32_vkWriteMicromapsPropertiesEXT(void *args)
 
     TRACE("%#x, %u, %#x, %#x, 0x%s, %#x, 0x%s\n", params->device, params->micromapCount, params->pMicromaps, params->queryType, wine_dbgstr_longlong(params->dataSize), params->pData, wine_dbgstr_longlong(params->stride));
 
-    params->result = wine_device_from_handle((VkDevice)UlongToPtr(params->device))->funcs.p_vkWriteMicromapsPropertiesEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->host_device, params->micromapCount, (const VkMicromapEXT *)UlongToPtr(params->pMicromaps), params->queryType, params->dataSize, (void *)UlongToPtr(params->pData), params->stride);
+    params->result = get_vulkan_device_funcs((VkDevice)UlongToPtr(params->device))->p_vkWriteMicromapsPropertiesEXT(wine_device_from_handle((VkDevice)UlongToPtr(params->device))->obj.host.device, params->micromapCount, (const VkMicromapEXT *)UlongToPtr(params->pMicromaps), params->queryType, params->dataSize, (void *)UlongToPtr(params->pData), params->stride);
     return STATUS_SUCCESS;
 }
 
