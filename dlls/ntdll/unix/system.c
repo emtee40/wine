@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
@@ -2924,6 +2925,101 @@ NTSTATUS WINAPI NtQuerySystemInformation( SYSTEM_INFORMATION_CLASS class,
             else memcpy( info, &sbi, len);
         }
         else ret = STATUS_INFO_LENGTH_MISMATCH;
+        break;
+    }
+
+    case SystemBootEnvironmentInformation: /* 90 */
+    {
+        static SYSTEM_BOOT_ENVIRONMENT_INFORMATION boot_info = {0};
+        struct stat stat_info = {0};
+        ssize_t ssz;
+#if defined(__linux__) || defined(__gnu_linux__)
+        int fd;
+        char buffer[32];
+#endif
+        len = sizeof(boot_info);
+        if (size == len)
+        {
+#if defined(__linux__) || defined(__gnu_linux__)
+            if (boot_info.FirmwareType == FirmwareTypeUnknown)
+            {
+                if (!stat("/sys/firmware/efi", &stat_info))
+                    boot_info.FirmwareType = FirmwareTypeUefi;
+                else
+                    boot_info.FirmwareType = FirmwareTypeBios;
+            }
+#elif defined(__APPLE__)
+            /*
+            * Since 2006, Mac computers use Extensible Firmware Interface (EFI).
+            * Reference: https://support.apple.com/guide/security/uefi-firmware-security-in-an-intel-based-mac-seced055bcf6/web
+            */
+            boot_info.FirmwareType = FirmwareTypeUefi;
+#else
+            boot_info.FirmwareType = FirmwareTypeBios;
+#endif
+            if (boot_info.BootIdentifier.Data1 == 0)
+            {
+#if defined(__linux__) || defined(__gnu_linux__)
+                if (!stat("/etc/machine-id", &stat_info) && stat_info.st_size >= 32)
+                {
+                    fd = open("/etc/machine-id", O_RDONLY);
+                    if (fd == -1)
+                        goto try_read_hostid;
+                    ssz = read(fd, &buffer, 32);
+                    if (ssz < 0)
+                    {
+                        close(fd);
+                        goto try_read_hostid;
+                    }
+                    close(fd);
+                    if (sscanf(buffer,
+                               "%08X%04hX%04hX%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX",
+                               (unsigned int *)&boot_info.BootIdentifier.Data1, &boot_info.BootIdentifier.Data2,
+                               &boot_info.BootIdentifier.Data3, &boot_info.BootIdentifier.Data4[0],
+                               &boot_info.BootIdentifier.Data4[1], &boot_info.BootIdentifier.Data4[2],
+                               &boot_info.BootIdentifier.Data4[3], &boot_info.BootIdentifier.Data4[4],
+                               &boot_info.BootIdentifier.Data4[5], &boot_info.BootIdentifier.Data4[6],
+                               &boot_info.BootIdentifier.Data4[7]) != 11)
+                        goto try_read_hostid;
+                }
+                else
+                {
+                try_read_hostid:
+#endif
+#ifdef __APPLE__
+                    if (!stat("/Users", &stat_info) || !stat("/System", &stat_info))
+#else
+                    if (!stat("/home", &stat_info) || !stat("/usr", &stat_info))
+#endif
+                    {
+                        boot_info.BootIdentifier.Data1 = gethostid() & 0xFFFFFFFF;
+                        boot_info.BootIdentifier.Data2 = stat_info.st_dev & 0xFFFF;
+                        boot_info.BootIdentifier.Data3 = stat_info.st_ino & 0xFFFF;
+                        boot_info.BootIdentifier.Data4[0] = 'W' ^ (boot_info.BootIdentifier.Data1 & 0xFF);
+                        boot_info.BootIdentifier.Data4[1] = 'I' ^ ((boot_info.BootIdentifier.Data1 >> 4) & 0xFF);
+                        boot_info.BootIdentifier.Data4[2] = 'N' ^ ((boot_info.BootIdentifier.Data1 >> 8) & 0xFF);
+                        boot_info.BootIdentifier.Data4[3] = 'E' ^ ((boot_info.BootIdentifier.Data1 >> 12) & 0xFF);
+                        boot_info.BootIdentifier.Data4[4] = 'B' ^ ((boot_info.BootIdentifier.Data1 >> 16) & 0xFF);
+                        boot_info.BootIdentifier.Data4[5] = 'O' ^ ((boot_info.BootIdentifier.Data1 >> 20) & 0xFF);
+                        boot_info.BootIdentifier.Data4[6] = 'O' ^ ((boot_info.BootIdentifier.Data1 >> 24) & 0xFF);
+                        boot_info.BootIdentifier.Data4[7] = 'T' ^ ((boot_info.BootIdentifier.Data1 >> 28) & 0xFF);
+                    }
+#if defined(__linux__) || defined(__gnu_linux__)
+                }
+#endif
+                boot_info.BootIdentifier.Data3 &= 0x0fff;
+                boot_info.BootIdentifier.Data3 |= (4 << 12);
+                /* Set the topmost bits of Data4 (clock_seq_hi_and_reserved) as
+                 * specified in RFC 4122, section 4.4.
+                 */
+                boot_info.BootIdentifier.Data4[0] &= 0x3f;
+                boot_info.BootIdentifier.Data4[0] |= 0x80;
+            }
+            if (!info) ret = STATUS_ACCESS_VIOLATION;
+            else memcpy(info, &boot_info, len);
+        }
+        else ret = STATUS_INFO_LENGTH_MISMATCH;
+        if (ret_size) *ret_size = len;
         break;
     }
 

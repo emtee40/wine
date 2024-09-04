@@ -322,6 +322,37 @@ static void test_query_basic(void)
     }
 }
 
+static void test_query_boot(void)
+{
+    NTSTATUS status;
+    ULONG ret_size;
+    SYSTEM_BOOT_ENVIRONMENT_INFORMATION bi = {0};
+
+    /*
+     * NtQuerySystemInformation - SystemBootEnvironmentInformation
+     */
+    status = pNtQuerySystemInformation(SystemBootEnvironmentInformation, &bi, sizeof(bi), &ret_size);
+    if (status == STATUS_NOT_IMPLEMENTED)
+    {
+        skip("NtQuerySystemInformation - SystemBootEnvironmentInformation not implemented.\n");
+        return;
+    }
+    ok(status == STATUS_SUCCESS, "Expected STATUS_SUCCESS.\n");
+
+    ok(ret_size == sizeof(bi), "Expected ret_size == sizeof(SYSTEM_BOOT_ENVIRONMENT_INFORMATION).\n");
+
+    ok(bi.FirmwareType == FirmwareTypeBios || bi.FirmwareType == FirmwareTypeUefi,
+       "Expected FirmwareTypeBios or FirmwareTypeUefi, got %02x\n", bi.FirmwareType);
+
+    ok(bi.BootIdentifier.Data1 != 0, "A non-zero BootIdentifier value is expected.\n");
+
+    status = pNtQuerySystemInformation(SystemBootEnvironmentInformation, NULL, sizeof(bi), NULL);
+    ok(status == STATUS_ACCESS_VIOLATION, "Expected STATUS_ACCESS_VIOLATION.\n");
+
+    status = pNtQuerySystemInformation(SystemBootEnvironmentInformation, NULL, 0, NULL);
+    ok(status == STATUS_INFO_LENGTH_MISMATCH, "Expected STATUS_INFO_LENGTH_MISMATCH.\n");
+}
+
 static void test_query_cpu(void)
 {
     NTSTATUS status;
@@ -4080,6 +4111,7 @@ START_TEST(info)
 
     /* NtQuerySystemInformation */
     test_query_basic();
+    test_query_boot();
     test_query_cpu();
     test_query_performance();
     test_query_timeofday();
