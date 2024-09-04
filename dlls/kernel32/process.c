@@ -763,10 +763,20 @@ BOOL WINAPI SetFirmwareEnvironmentVariableW(const WCHAR *name, const WCHAR *guid
  */
 BOOL WINAPI GetFirmwareType(FIRMWARE_TYPE *type)
 {
+    SYSTEM_BOOT_ENVIRONMENT_INFORMATION boot_info = {0};
+
     if (!type)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return FALSE;
+    }
+
+    if(!set_ntstatus(NtQuerySystemInformation(SystemBootEnvironmentInformation,
+                                              &boot_info, sizeof(boot_info), NULL)))
         return FALSE;
 
-    *type = FirmwareTypeUnknown;
+    *type = boot_info.FirmwareType;
+
     return TRUE;
 }
 
