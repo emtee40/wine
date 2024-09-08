@@ -1210,6 +1210,18 @@ static void session_set_stopped(struct media_session *session, HRESULT status)
     session_command_complete(session);
 }
 
+static void session_do_stop(struct media_session *session)
+{
+    HRESULT hr;
+
+    /* Transition in two steps - stop the clock, wait for sinks, then stop sources. */
+    IMFPresentationClock_GetTime(session->clock, &session->presentation.clock_stop_time);
+    if (SUCCEEDED(hr = IMFPresentationClock_Stop(session->clock)))
+        session->state = SESSION_STATE_STOPPING_SINKS;
+    else
+        session_set_stopped(session, hr);
+}
+
 static void session_stop(struct media_session *session)
 {
     HRESULT hr = MF_E_INVALIDREQUEST;
@@ -1218,14 +1230,7 @@ static void session_stop(struct media_session *session)
     {
         case SESSION_STATE_STARTED:
         case SESSION_STATE_PAUSED:
-
-            /* Transition in two steps - stop the clock, wait for sinks, then stop sources. */
-            IMFPresentationClock_GetTime(session->clock, &session->presentation.clock_stop_time);
-            if (SUCCEEDED(hr = IMFPresentationClock_Stop(session->clock)))
-                session->state = SESSION_STATE_STOPPING_SINKS;
-            else
-                session_set_stopped(session, hr);
-
+            session_do_stop(session);
             break;
         case SESSION_STATE_STOPPED:
             hr = S_OK;
@@ -3121,7 +3126,8 @@ static void session_set_source_object_state(struct media_session *session, IUnkn
                         &session->presentation.time_format, &session->presentation.start_position)))
                 {
                     WARN("Failed to start media source %p, hr %#lx.\n", source->source, hr);
-                    session_command_complete_with_event(session, MESessionStarted, hr, NULL);
+                    IMFMediaEventQueue_QueueEventParamVar(session->event_queue, MESessionStarted, &GUID_NULL, hr, NULL);
+                    session_do_stop(session);
                     return;
                 }
             }
@@ -3157,7 +3163,7 @@ static void session_set_sink_stream_state(struct media_session *session, IMFStre
     struct media_source *source;
     enum object_state state;
     HRESULT hr = S_OK;
-    BOOL changed;
+    BOOL changed, stopping = FALSE;
 
     if ((state = session_get_object_state_for_event(event_type)) == OBJ_STATE_INVALID)
         return;
@@ -3204,15 +3210,19 @@ static void session_set_sink_stream_state(struct media_session *session, IMFStre
 
             LIST_FOR_EACH_ENTRY(source, &session->presentation.sources, struct media_source, entry)
             {
-                if (session->presentation.flags & SESSION_FLAG_END_OF_PRESENTATION)
-                    IMFMediaSource_Stop(source->source);
-                else if (FAILED(hr = IMFMediaSource_Stop(source->source)))
-                    break;
+                if (source->state != OBJ_STATE_STOPPED)
+                {
+                    stopping = TRUE;
+                    if (session->presentation.flags & SESSION_FLAG_END_OF_PRESENTATION)
+                        IMFMediaSource_Stop(source->source);
+                    else if (FAILED(hr = IMFMediaSource_Stop(source->source)))
+                        break;
+                }
             }
 
             if (session->presentation.flags & SESSION_FLAG_END_OF_PRESENTATION)
                 session_set_stopped(session, hr);
-            else if (FAILED(hr))
+            else if (!stopping || FAILED(hr))
             {
                 if (session->presentation.flags & SESSION_FLAG_FINALIZE_SINKS)
                     session_set_closed(session, hr);
