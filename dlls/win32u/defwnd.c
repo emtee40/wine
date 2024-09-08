@@ -822,7 +822,7 @@ static void sys_command_size_move( HWND hwnd, WPARAM wparam )
             HMONITOR newmon;
             MONITORINFO info;
 
-            if ((newmon = monitor_from_point( pt, MONITOR_DEFAULTTONULL, get_thread_dpi() )))
+            if ((newmon = monitor_from_point( pt, MONITOR_DEFAULTTONEAREST, get_thread_dpi() )))
                 mon = newmon;
 
             info.cbSize = sizeof(info);
