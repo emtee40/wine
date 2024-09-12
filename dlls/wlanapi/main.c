@@ -28,11 +28,17 @@
 
 #include <stdarg.h>
 
+#include <ntstatus.h>
+#define WIN32_NO_STATUS
+
 #include "windef.h"
 #include "winbase.h"
 #include "wine/debug.h"
+#include "wine/unixlib.h"
 
 #include "wlanapi.h"
+
+#include "unixlib.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(wlanapi);
 
@@ -41,6 +47,7 @@ WINE_DEFAULT_DEBUG_CHANNEL(wlanapi);
 static struct wine_wlan
 {
     DWORD magic, cli_version;
+    UINT_PTR unix_handle;
 } handle_table[16];
 
 static struct wine_wlan* handle_index(HANDLE handle)
@@ -98,6 +105,8 @@ DWORD WINAPI WlanEnumInterfaces(HANDLE handle, void *reserved, WLAN_INTERFACE_IN
 DWORD WINAPI WlanCloseHandle(HANDLE handle, void *reserved)
 {
     struct wine_wlan *wlan;
+    struct wlan_close_handle_params params = {0};
+    NTSTATUS status;
 
     TRACE("(%p, %p)\n", handle, reserved);
 
@@ -108,6 +117,11 @@ DWORD WINAPI WlanCloseHandle(HANDLE handle, void *reserved)
     if (!wlan)
         return ERROR_INVALID_HANDLE;
 
+    params.handle = wlan->unix_handle;
+    status = UNIX_WLAN_CALL( wlan_close_handle, &params );
+    if (status != STATUS_SUCCESS && status != STATUS_NOT_SUPPORTED)
+        return RtlNtStatusToDosError( status );
+
     wlan->magic = 0;
     return ERROR_SUCCESS;
 }
@@ -115,7 +129,9 @@ DWORD WINAPI WlanCloseHandle(HANDLE handle, void *reserved)
 DWORD WINAPI WlanOpenHandle(DWORD client_version, void *reserved, DWORD *negotiated_version, HANDLE *handle)
 {
     struct wine_wlan *wlan;
+    struct wlan_open_handle_params params = {0};
     HANDLE ret_handle;
+    NTSTATUS status;
 
     TRACE("(%lu, %p, %p, %p)\n", client_version, reserved, negotiated_version, handle);
 
@@ -129,6 +145,11 @@ DWORD WINAPI WlanOpenHandle(DWORD client_version, void *reserved, DWORD *negotia
     if (!ret_handle)
         return ERROR_REMOTE_SESSION_LIMIT_EXCEEDED;
 
+    status = UNIX_WLAN_CALL( wlan_open_handle, &params );
+    if (status != STATUS_SUCCESS && status != STATUS_NOT_SUPPORTED)
+        return RtlNtStatusToDosError( status );
+
+    wlan->unix_handle = params.handle;
     wlan->magic = WLAN_MAGIC;
     wlan->cli_version = *negotiated_version = client_version;
     *handle = ret_handle;
@@ -224,4 +245,18 @@ void *WINAPI WlanAllocateMemory(DWORD size)
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
 
     return ret;
+}
+
+BOOL WINAPI DllMain( HINSTANCE instance, DWORD reason, LPVOID reserved )
+{
+    switch (reason)
+    {
+    case DLL_PROCESS_ATTACH:
+        DisableThreadLibraryCalls( instance );
+        if (__wine_init_unix_call()) return FALSE;
+        UNIX_WLAN_CALL( wlan_init, NULL );
+        break;
+    }
+
+    return TRUE;
 }

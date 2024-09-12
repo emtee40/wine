@@ -1,7 +1,11 @@
 MODULE    = wlanapi.dll
 IMPORTLIB = wlanapi
+UNIXLIB = wlanapi.so
+UNIX_CFLAGS = $(DBUS_CFLAGS)
 
 EXTRADLLFLAGS = -Wb,--prefer-native
 
 SOURCES = \
-	main.c
+	dbus.c \
+	main.c \
+	unixlib.c
