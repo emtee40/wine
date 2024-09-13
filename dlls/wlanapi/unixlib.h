@@ -33,12 +33,43 @@ struct wlan_close_handle_params
     UINT_PTR handle;
 };
 
+struct wlan_get_interfaces_params
+{
+    UINT_PTR handle;
+
+    UINT_PTR interfaces;
+    SIZE_T len;
+};
+
+struct unix_wlan_interface_info
+{
+    GUID guid;
+    CHAR description[256];
+    WLAN_INTERFACE_STATE state;
+};
+
+struct wlan_copy_and_free_interfaces_params
+{
+    UINT_PTR interfaces;
+
+    struct unix_wlan_interface_info *info;
+};
+
+struct wlan_free_interfaces_params
+{
+    UINT_PTR interfaces;
+};
+
 enum wlanpi_funcs
 {
     unix_wlan_init,
 
     unix_wlan_open_handle,
     unix_wlan_close_handle,
+
+    unix_wlan_get_interfaces,
+    unix_wlan_copy_and_free_interfaces,
+    unix_wlan_free_interfaces,
 
     unix_funcs_count
 };

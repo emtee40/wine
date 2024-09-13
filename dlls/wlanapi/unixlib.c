@@ -24,10 +24,14 @@
 
 #include "config.h"
 
+#include <stdlib.h>
+
 #include <ntstatus.h>
 #define WIN32_NO_STATUS
 #include <winternl.h>
+#include <wlanapi.h>
 
+#include <wine/list.h>
 #include <wine/unixlib.h>
 
 #include "unixlib.h"
@@ -62,10 +66,74 @@ NTSTATUS wlan_close_handle( void *params )
     return STATUS_SUCCESS;
 }
 
+NTSTATUS wlan_get_interfaces( void *params )
+{
+    struct wlan_get_interfaces_params *args = params;
+    struct list *ifaces;
+    NTSTATUS status;
+
+    if (!initialized)
+        return STATUS_NOT_SUPPORTED;
+
+    ifaces = malloc( sizeof( *ifaces ) );
+    if (!ifaces) return STATUS_NO_MEMORY;
+
+    list_init( ifaces );
+    status = networkmanager_get_wifi_devices( (void *)args->handle, ifaces );
+    if (status != STATUS_SUCCESS)
+    {
+        free( ifaces );
+        return status;
+    }
+
+    args->interfaces = (UINT_PTR)ifaces;
+    args->len = list_count( ifaces );
+    return STATUS_SUCCESS;
+}
+
+NTSTATUS wlan_copy_and_free_interfaces( void *params )
+{
+    struct wlan_copy_and_free_interfaces_params *args = params;
+    struct wlan_interface *ifaces = (struct wlan_interface *)args->interfaces;
+    struct wlan_interface *cur, *next;
+    SIZE_T i = 0;
+
+    LIST_FOR_EACH_ENTRY_SAFE(cur, next, &ifaces->entry, struct wlan_interface, entry)
+    {
+        args->info[i++] = cur->info;
+        list_remove( &cur->entry );
+        free( cur );
+    }
+
+    free( ifaces );
+    return STATUS_SUCCESS;
+}
+
+NTSTATUS wlan_free_interfaces( void *params )
+{
+    struct wlan_free_interfaces_params *args = params;
+    struct wlan_interface *ifaces = (struct wlan_interface *)args->interfaces;
+    struct wlan_interface *cur, *next;
+
+    LIST_FOR_EACH_ENTRY_SAFE(cur, next, &ifaces->entry, struct wlan_interface, entry)
+    {
+        list_remove( &cur->entry );
+        free( cur );
+    }
+
+    free( ifaces );
+    return STATUS_SUCCESS;
+}
+
 const unixlib_entry_t __wine_unix_call_funcs[] = {
     wlan_init,
     wlan_open_handle,
-    wlan_close_handle
+    wlan_close_handle,
+
+    wlan_get_interfaces,
+    wlan_copy_and_free_interfaces,
+
+    wlan_free_interfaces,
 };
 
 C_ASSERT( ARRAYSIZE( __wine_unix_call_funcs ) == unix_funcs_count );

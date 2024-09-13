@@ -27,12 +27,14 @@
  */
 
 #include <stdarg.h>
+#include <stdlib.h>
 
 #include <ntstatus.h>
 #define WIN32_NO_STATUS
 
 #include "windef.h"
 #include "winbase.h"
+
 #include "wine/debug.h"
 #include "wine/unixlib.h"
 
@@ -79,9 +81,12 @@ static HANDLE handle_new(struct wine_wlan **entry)
 DWORD WINAPI WlanEnumInterfaces(HANDLE handle, void *reserved, WLAN_INTERFACE_INFO_LIST **interface_list)
 {
     struct wine_wlan *wlan;
+    struct wlan_get_interfaces_params args = {0};
+    SIZE_T count = 0, list_size;
     WLAN_INTERFACE_INFO_LIST *ret_list;
+    NTSTATUS status;
 
-    FIXME("(%p, %p, %p) semi-stub\n", handle, reserved, interface_list);
+    TRACE( "(%p, %p, %p)\n", handle, reserved, interface_list );
 
     if (!handle || reserved || !interface_list)
         return ERROR_INVALID_PARAMETER;
@@ -90,12 +95,67 @@ DWORD WINAPI WlanEnumInterfaces(HANDLE handle, void *reserved, WLAN_INTERFACE_IN
     if (!wlan)
         return ERROR_INVALID_HANDLE;
 
-    ret_list = WlanAllocateMemory(sizeof(WLAN_INTERFACE_INFO_LIST));
-    if (!ret_list)
-        return ERROR_NOT_ENOUGH_MEMORY;
+    args.handle = wlan->unix_handle;
+    status = UNIX_WLAN_CALL( wlan_get_interfaces, &args );
+    if (status != STATUS_SUCCESS)
+    {
+        ERR( "Could not get list of interfaces from host: %lx.\n", status );
+        return RtlNtStatusToDosError( status );
+    }
+    else
+        count = args.len;
 
-    memset(&ret_list->InterfaceInfo[0], 0, sizeof(WLAN_INTERFACE_INFO));
-    ret_list->dwNumberOfItems = 0;
+    list_size = offsetof(WLAN_INTERFACE_INFO_LIST, InterfaceInfo[count ? count : 1]);
+    ret_list = WlanAllocateMemory(list_size);
+    if (!ret_list)
+    {
+        if (args.interfaces)
+        {
+            struct wlan_free_interfaces_params free_args = {0};
+
+            free_args.interfaces = args.interfaces;
+            UNIX_WLAN_CALL( wlan_free_interfaces, &free_args );
+        }
+        return ERROR_NOT_ENOUGH_MEMORY;
+    }
+
+    memset( ret_list, 0, list_size );
+    if (args.interfaces)
+    {
+        struct wlan_copy_and_free_interfaces_params copy_args = {0};
+        struct unix_wlan_interface_info *unix_ifaces = NULL;
+        SIZE_T i;
+
+        unix_ifaces = malloc( sizeof( *unix_ifaces ) * count );
+        if (!unix_ifaces)
+        {
+            struct wlan_free_interfaces_params free_args = {0};
+
+            free_args.interfaces = args.interfaces;
+            UNIX_WLAN_CALL( wlan_free_interfaces, &free_args );
+            WlanFreeMemory( ret_list );
+            return ERROR_NOT_ENOUGH_MEMORY;
+        }
+
+        copy_args.info = unix_ifaces;
+        copy_args.interfaces = args.interfaces;
+        UNIX_WLAN_CALL( wlan_copy_and_free_interfaces, &copy_args );
+
+        for (i = 0; i < count; i++)
+        {
+            const size_t desc_max =
+                sizeof( ret_list->InterfaceInfo[i].strInterfaceDescription ) / sizeof( WCHAR );
+
+            ret_list->InterfaceInfo[i].InterfaceGuid = unix_ifaces[i].guid;
+            ret_list->InterfaceInfo[i].isState = unix_ifaces[i].state;
+
+            mbstowcs( ret_list->InterfaceInfo[i].strInterfaceDescription,
+                     unix_ifaces[i].description, desc_max );
+            ret_list->InterfaceInfo[i].strInterfaceDescription[desc_max - 1] = '\0';
+        }
+        free( unix_ifaces );
+    }
+    ret_list->dwNumberOfItems = args.interfaces ? count : 0;
     ret_list->dwIndex = 0; /* unused in this function */
     *interface_list = ret_list;
 

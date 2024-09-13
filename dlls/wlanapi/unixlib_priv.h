@@ -21,8 +21,15 @@
 #ifndef __WINE_WLANAPI_UNIXLIB_PRIV_H
 #define __WINE_WLANAPI_UNIXLIB_PRIV_H
 
+struct wlan_interface
+{
+    struct list entry;
+    struct unix_wlan_interface_info info;
+};
+
 extern BOOL load_dbus_functions( void );
 extern NTSTATUS init_dbus_connection( UINT_PTR *handle );
 extern void close_dbus_connection( void *c );
+extern NTSTATUS networkmanager_get_wifi_devices( void *connection, struct list *devices );
 
 #endif /* __WINE_WLANAPI_UNIXLIB_PRIV_H */
