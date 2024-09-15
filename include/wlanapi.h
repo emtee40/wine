@@ -109,6 +109,8 @@ typedef enum _DOT11_CIPHER_ALGORITHM
 
 #define WLAN_MAX_PHY_TYPE_NUMBER 8
 
+#define WLAN_AVAILABLE_NETWORK_CONNECTED 0x1
+
 typedef struct _WLAN_AVAILABLE_NETWORK
 {
     WCHAR strProfileName[256];
