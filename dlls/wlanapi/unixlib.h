@@ -60,6 +60,27 @@ struct wlan_free_interfaces_params
     UINT_PTR interfaces;
 };
 
+struct wlan_network_list_get_params
+{
+    UINT_PTR handle;
+    const GUID *interface;
+
+    UINT_PTR networks;
+    SIZE_T len;
+};
+
+struct wlan_network_list_move_to_avail_network_params
+{
+    UINT_PTR networks;
+
+    WLAN_AVAILABLE_NETWORK *dest;
+};
+
+struct wlan_network_list_free_params
+{
+    UINT_PTR networks;
+};
+
 enum wlanpi_funcs
 {
     unix_wlan_init,
@@ -70,6 +91,10 @@ enum wlanpi_funcs
     unix_wlan_get_interfaces,
     unix_wlan_copy_and_free_interfaces,
     unix_wlan_free_interfaces,
+
+    unix_wlan_network_list_get,
+    unix_wlan_network_list_move_to_avail_network,
+    unix_wlan_network_list_free,
 
     unix_funcs_count
 };

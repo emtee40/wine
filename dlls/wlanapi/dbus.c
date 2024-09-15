@@ -55,6 +55,9 @@ DBUS_FUNCS;
 
 #define NETWORKMANAGER_INTERFACE_MANAGER "org.freedesktop.NetworkManager"
 #define NETWORKMANAGER_INTERFACE_DEVICE "org.freedesktop.NetworkManager.Device"
+#define NETWORKMANAGER_INTERFACE_DEVICE_WIRELESS "org.freedesktop.NetworkManager.Device.Wireless"
+#define NETWORKMANAGER_INTERFACE_ACCESS_POINT "org.freedesktop.NetworkManager.AccessPoint"
+#define NETWORKMANAGER_INTERFACE_CONNECTION_ACTIVE "org.freedesktop.NetworkManager.Connection.Active"
 
 BOOL load_dbus_functions( void )
 {
@@ -183,15 +186,46 @@ static BOOL networkmanager_device_is_wifi( void *connection, const char *object_
    index. We use index as the last 4 bytes of this GUID to create a Win32 WLAN interface GUID. */
 const static GUID NETWORKMANAGER_DEVICE_BASE_INTERFACE_GUID = {
     0xa53634f7, 0xc1bc, 0x4d41, { 0xbc, 0x06, 0xd3, 0xf7, 0x00, 0x00, 0x00, 0x00 } };
+#define NETWORKMANAGER_DEVICE_PATH_PREFIX "/org/freedesktop/NetworkManager/Devices/"
+
+static BOOL networkmanager_valid_device_guid( const GUID *guid )
+{
+    return !memcmp( &NETWORKMANAGER_DEVICE_BASE_INTERFACE_GUID, guid, offsetof( GUID, Data4[4] ) );
+}
+
+static __WINE_MALLOC char *networkmanager_device_guid_to_path( const GUID *guid )
+{
+    char *path;
+    UINT32 idx = *(UINT32 *)&guid->Data4[4];
+    size_t orig_size = sizeof( NETWORKMANAGER_DEVICE_PATH_PREFIX ) + 3;
+    size_t size;
+
+    path = malloc( orig_size );
+    if (!path) return NULL;
+
+    size = snprintf( path, orig_size, NETWORKMANAGER_DEVICE_PATH_PREFIX "%u", idx );
+    if (size >= orig_size)
+    {
+        char *ptr = realloc( path, size );
+        if (!ptr)
+        {
+            free( path );
+            return NULL;
+        }
+        path = ptr;
+        snprintf( path, size, NETWORKMANAGER_DEVICE_PATH_PREFIX "%u", idx );
+    }
+
+    return path;
+}
 
 static BOOL networkmanager_device_path_to_guid( const char *object_path, GUID *guid )
 {
-    const static char device_prefix[] = "/org/freedesktop/NetworkManager/Devices/";
-    BOOL is_device = strncmp( object_path, device_prefix, sizeof( device_prefix ) );
+    BOOL is_device = strncmp( object_path, NETWORKMANAGER_DEVICE_PATH_PREFIX, sizeof( NETWORKMANAGER_DEVICE_PATH_PREFIX ) );
     UINT32 idx;
 
     if (!is_device) return FALSE;
-    idx = atoi( object_path + sizeof(device_prefix) - 1 );
+    idx = atoi( object_path + sizeof( NETWORKMANAGER_DEVICE_PATH_PREFIX ) - 1 );
     if (!idx) /* NetworkManager doesn't seem to use 0 as an index for devices. */
     {
         ERR( "Could not parse index from device path %s:\n", debugstr_a( object_path ));
@@ -384,8 +418,432 @@ NTSTATUS networkmanager_get_wifi_devices( void *connection, struct list *devices
     return STATUS_SUCCESS;
 }
 
+static void parse_mac_address( const char *addr_str, BYTE dest[6] )
+{
+    int addr[6], i;
+
+    sscanf( addr_str, "%x:%x:%x:%x:%x:%x", &addr[0], &addr[1], &addr[2], &addr[3], &addr[4],
+            &addr[5] );
+    for (i = 0 ; i < 6; i++)
+        dest[i] = addr[i];
+}
+
+static BOOL networkmanager_get_access_point_info( void *connection, const char *object_path,
+                                                  struct wlan_bss_info *network )
+{
+    DBusMessage *request, *reply;
+    DBusMessageIter dict, prop_iter, variant;
+    DBusError error;
+    dbus_bool_t success;
+    const char *prop_name;
+    const char *iface_accesspoint = NETWORKMANAGER_INTERFACE_ACCESS_POINT;
+
+    TRACE( "(%p, %s, %p)\n", connection, debugstr_a( object_path ), network );
+    request = p_dbus_message_new_method_call( NETWORKMANAGER_SERVICE, object_path,
+                                              DBUS_INTERFACE_PROPERTIES, "GetAll" );
+    if (!request) return FALSE;
+    success = p_dbus_message_append_args( request, DBUS_TYPE_STRING, &iface_accesspoint,
+                                          DBUS_TYPE_INVALID );
+    if (!success)
+    {
+        p_dbus_message_unref( request );
+        return FALSE;
+    }
+
+    p_dbus_error_init( &error );
+    reply =
+        p_dbus_connection_send_with_reply_and_block( connection, request, dbus_timeout, &error );
+    p_dbus_message_unref( request );
+    if (!reply)
+    {
+        ERR( "Could not get proerties for access point %s: %s: %s.\n", debugstr_a( object_path ),
+             debugstr_a( error.name ), debugstr_a( error.message ) );
+        p_dbus_error_free( &error );
+        return FALSE;
+    }
+
+
+    p_dbus_error_free( &error );
+    p_dbus_message_iter_init( reply, &dict );
+    p_dbus_message_iter_recurse( &dict, &prop_iter );
+    while ((prop_name = dbus_next_dict_entry( &prop_iter, &variant )))
+    {
+        if (!strcmp( prop_name, "Flags" ) &&
+            p_dbus_message_iter_get_arg_type( &variant ) == DBUS_TYPE_UINT32)
+        {
+            p_dbus_message_iter_get_basic( &variant, &network->flags );
+        }
+        else if (!strcmp( prop_name, "WpaFlags" ) &&
+                 p_dbus_message_iter_get_arg_type( &variant ) == DBUS_TYPE_UINT32)
+        {
+            p_dbus_message_iter_get_basic( &variant, &network->wpa_flags );
+        }
+        else if (!strcmp( prop_name, "RsnFlags" ) &&
+                 p_dbus_message_iter_get_arg_type( &variant ) == DBUS_TYPE_UINT32)
+        {
+            p_dbus_message_iter_get_basic( &variant, &network->rsn_flags );
+        }
+        else if (!strcmp( prop_name, "Ssid" ) &&
+                 p_dbus_message_iter_get_arg_type( &variant ) == DBUS_TYPE_ARRAY &&
+                 p_dbus_message_iter_get_element_type( &variant ) == DBUS_TYPE_BYTE)
+        {
+            DBusMessageIter iter;
+            const char *ssid;
+            int len;
+
+            p_dbus_message_iter_recurse( &variant, &iter );
+            p_dbus_message_iter_get_fixed_array( &iter, &ssid, &len );
+            if (len > sizeof( network->ssid ))
+                WARN( "SSID %s for %s is too long\n", debugstr_a( object_path ),
+                      debugstr_an( ssid, len ) );
+
+            memcpy( network->ssid, ssid, min( len, sizeof( network->ssid ) ) );
+            network->ssid_len = min( len, sizeof( network->ssid ) );
+        }
+        else if (!strcmp( prop_name, "Frequency" ) &&
+                 p_dbus_message_iter_get_arg_type( &variant ) == DBUS_TYPE_UINT32)
+        {
+            p_dbus_message_iter_get_basic( &variant, &network->frequency );
+        }
+        else if (!strcmp( prop_name, "HwAddress") &&
+                 p_dbus_message_iter_get_arg_type( &variant ) == DBUS_TYPE_STRING)
+        {
+            const char *addr_str;
+
+            p_dbus_message_iter_get_basic( &variant, &addr_str );
+            if (strlen( addr_str ) != 17)
+                ERR( "Unexpected HwAddress %s for %s\n", debugstr_a( addr_str ),
+                     debugstr_a( object_path ) );
+
+            parse_mac_address( addr_str, network->hw_address );
+        }
+        else if (!strcmp( prop_name, "Mode" ) &&
+            p_dbus_message_iter_get_arg_type( &variant ) == DBUS_TYPE_UINT32)
+        {
+            p_dbus_message_iter_get_basic( &variant, &network->mode );
+        }
+        else if (!strcmp( prop_name, "MaxBitrate") &&
+                 p_dbus_message_iter_get_arg_type( &variant ) == DBUS_TYPE_UINT32)
+        {
+            p_dbus_message_iter_get_basic( &variant, &network->max_bitrate );
+        }
+        else if (!strcmp( prop_name, "Bandwidth" ) &&
+                 p_dbus_message_iter_get_arg_type( &variant ) == DBUS_TYPE_UINT32)
+        {
+            p_dbus_message_iter_get_basic( &variant, &network->bandwidth );
+        }
+        else if (!strcmp( prop_name, "Strength" ) &&
+                 p_dbus_message_iter_get_arg_type( &variant ) == DBUS_TYPE_BYTE)
+        {
+            p_dbus_message_iter_get_basic( &variant, &network->strength );
+        }
+        else if (!strcmp( prop_name, "LastSeen") &&
+                 p_dbus_message_iter_get_arg_type( &variant ) == DBUS_TYPE_INT32)
+        {
+            p_dbus_message_iter_get_basic( &variant, &network->last_seen );
+        }
+
+    }
+
+    p_dbus_message_unref( reply );
+    return TRUE;
+}
+
+static char *__WINE_MALLOC networkmanager_device_get_active_ap( void *connection,
+                                                                const char *device_path )
+{
+    DBusMessage *request, *reply;
+    DBusMessageIter iter, variant;
+    DBusError error;
+    const char *str;
+    char *dup;
+    const char *device_iface = NETWORKMANAGER_INTERFACE_DEVICE,
+               *conn_active_iface = NETWORKMANAGER_INTERFACE_CONNECTION_ACTIVE;
+    const char *activeconn_prop = "ActiveConnection", *specobj_prop = "SpecificObject";
+    dbus_bool_t success;
+
+    request = p_dbus_message_new_method_call( NETWORKMANAGER_SERVICE, device_path,
+                                              DBUS_INTERFACE_PROPERTIES,
+                                              "Get" );
+    if (!request) return NULL;
+    success = p_dbus_message_append_args( request, DBUS_TYPE_STRING, &device_iface,
+                                          DBUS_TYPE_STRING, &activeconn_prop, DBUS_TYPE_INVALID );
+    if (!success)
+    {
+        p_dbus_message_unref( request );
+        return NULL;
+    }
+
+    p_dbus_error_init( &error );
+    reply = p_dbus_connection_send_with_reply_and_block( connection, request, dbus_timeout, &error );
+    p_dbus_message_unref( request );
+    if (!reply)
+    {
+        p_dbus_error_free( &error );
+        return NULL;
+    }
+    p_dbus_error_free( &error );
+
+    p_dbus_message_iter_init( reply, &iter );
+    p_dbus_message_iter_recurse( &iter, &variant );
+    if (p_dbus_message_iter_get_arg_type( &variant ) != DBUS_TYPE_OBJECT_PATH)
+    {
+        ERR( "Unexpected signature for property ActiveConnection: %c\n",
+            p_dbus_message_iter_get_arg_type( &variant ) );
+        return NULL;
+    }
+    p_dbus_message_iter_get_basic( &variant, &str );
+
+    request = p_dbus_message_new_method_call( NETWORKMANAGER_SERVICE, str,
+                                              DBUS_INTERFACE_PROPERTIES, "Get" );
+    p_dbus_message_unref( reply );
+
+    if (!request) return NULL;
+    success = p_dbus_message_append_args( request, DBUS_TYPE_STRING, &conn_active_iface,
+                                          DBUS_TYPE_STRING, &specobj_prop, DBUS_TYPE_INVALID );
+    if (!success)
+    {
+        p_dbus_message_unref( request );
+        return NULL;
+    }
+
+    p_dbus_error_init( &error );
+    reply = p_dbus_connection_send_with_reply_and_block( connection, request, dbus_timeout, &error );
+    p_dbus_message_unref( request );
+    if (!reply)
+    {
+        ERR( "Could not get properties for %s: %s: %s.\n", debugstr_a( device_path ), error.name,
+             error.message );
+        p_dbus_error_free( &error );
+        return NULL;
+    }
+    p_dbus_error_free( &error );
+    p_dbus_message_iter_init( reply, &iter );
+    p_dbus_message_iter_recurse( &iter, &variant );
+    if ( p_dbus_message_iter_get_arg_type( &variant ) != DBUS_TYPE_OBJECT_PATH )
+    {
+        ERR( "Unexpected signature for property SpecificObject: %c\n",
+            p_dbus_message_iter_get_arg_type( &variant ) );
+        return NULL;
+    }
+
+    p_dbus_message_iter_get_basic( &variant, &str );
+    dup = strdup( str );
+    p_dbus_message_unref( reply );
+
+    return dup;
+}
+
+NTSTATUS networkmanager_get_access_points( void *connection, const GUID *device, struct list *access_points )
+{
+    DBusMessage *request, *reply;
+    DBusError error;
+    dbus_bool_t success;
+    char *device_path, *active_ap = NULL;
+    char **object_paths;
+    int n_objects, i;
+
+    TRACE( "(%p, %s, %p)\n", connection, debugstr_guid( device ), access_points );
+
+    if (!networkmanager_valid_device_guid( device )) return STATUS_INVALID_PARAMETER;
+    device_path = networkmanager_device_guid_to_path( device );
+    if (!device_path) return STATUS_NO_MEMORY;
+
+    request = p_dbus_message_new_method_call( NETWORKMANAGER_SERVICE, device_path,
+                                              NETWORKMANAGER_INTERFACE_DEVICE_WIRELESS,
+                                              "GetAllAccessPoints" );
+    active_ap = networkmanager_device_get_active_ap( connection, device_path );
+
+    free( device_path );
+    if (!request)
+    {
+        free( active_ap );
+        return STATUS_NO_MEMORY;
+    }
+
+    p_dbus_error_init( &error );
+    reply =
+        p_dbus_connection_send_with_reply_and_block( connection, request, dbus_timeout, &error );
+    p_dbus_message_unref( request );
+    if (!reply)
+    {
+        NTSTATUS ret = dbus_error_to_ntstatus( &error );
+        ERR( "Could not get list of access points: %s: %s.\n", debugstr_a( error.name ),
+             debugstr_a( error.message ) );
+        p_dbus_error_free( &error );
+        free( active_ap );
+        return ret;
+    }
+
+    p_dbus_error_free( &error );
+    p_dbus_error_init( &error );
+    success = p_dbus_message_get_args( reply, &error, DBUS_TYPE_ARRAY, DBUS_TYPE_OBJECT_PATH,
+                                       &object_paths, &n_objects, DBUS_TYPE_INVALID );
+    if (!success)
+    {
+        NTSTATUS ret = dbus_error_to_ntstatus( &error );
+        ERR( "Could not read object paths from GetDevices reply: %s: %s.\n",
+             debugstr_a( error.name ), debugstr_a( error.message ) );
+        p_dbus_error_free( &error );
+        p_dbus_message_unref( reply );
+        free( active_ap );
+        return ret;
+    }
+
+    p_dbus_error_free( &error );
+    for (i = 0; i < n_objects; i++)
+    {
+        const char *object_path = object_paths[i];
+        struct wlan_bss_info info = {0};
+
+        if (networkmanager_get_access_point_info( connection, object_path, &info ))
+        {
+            struct wlan_network *network = calloc( 1, sizeof( *network ) );
+
+            if (!network) continue;
+            network->info = info;
+            network->info.connected = active_ap && !strcmp( active_ap, object_path );
+            list_add_tail( access_points, &network->entry );
+        }
+    }
+
+    free( active_ap );
+    p_dbus_free_string_array( object_paths );
+    p_dbus_message_unref( reply );
+    return STATUS_SUCCESS;
+}
+
 #else /* SONAME_LIBDBUS_1 */
 BOOL load_dbus_functions( void ) { return FALSE; }
 NTSTATUS init_dbus_connection( UINT_PTR *handle ) { return STATUS_NOT_SUPPORTED; }
 void close_dbus_connection( void *c ) { return STATUS_NOT_SUPPORTED; }
+NTSTATUS networkmanager_get_wifi_devices( void *connection, struct list *devices )
+{
+    return STATUS_NOT_SUPPORTED;
+}
+NTSTATUS networkmanager_get_access_points( void *connection, GUID device,
+                                           struct list *access_points )
+{
+    return STATUS_NOT_SUPPORTED;
+}
 #endif
+
+#define NM_802_11_MODE_UNKNOWN 0
+#define NM_802_11_MODE_ADHOC   1
+#define NM_802_11_MODE_INFRA   2
+#define NM_802_11_MODE_AP      3
+#define NM_802_11_MODE_MESH    4
+
+#define NM_802_11_AP_FLAGS_NONE    0x00000000
+#define NM_802_11_AP_FLAGS_PRIVACY 0x00000001
+#define NM_802_11_AP_FLAGS_WPS     0x00000002
+#define NM_802_11_AP_FLAGS_WPS_PBC 0x00000004
+#define NM_802_11_AP_FLAGS_WPS_PIN 0x00000008
+
+#define NM_802_11_AP_SEC_NONE                     0x00000000
+#define NM_802_11_AP_SEC_PAIR_WEP40               0x00000001
+#define NM_802_11_AP_SEC_PAIR_WEP104              0x00000002
+#define NM_802_11_AP_SEC_PAIR_TKIP                0x00000004
+#define NM_802_11_AP_SEC_PAIR_CCMP                0x00000008
+#define NM_802_11_AP_SEC_GROUP_WEP40              0x00000010
+#define NM_802_11_AP_SEC_GROUP_WEP104             0x00000020
+#define NM_802_11_AP_SEC_GROUP_TKIP               0x00000040
+#define NM_802_11_AP_SEC_GROUP_CCMP               0x00000080
+#define NM_802_11_AP_SEC_KEY_MGMT_PSK             0x00000100
+#define NM_802_11_AP_SEC_KEY_MGMT_802_1X          0x00000200
+#define NM_802_11_AP_SEC_KEY_MGMT_SAE             0x00000400
+#define NM_802_11_AP_SEC_KEY_MGMT_OWE             0x00000800
+#define NM_802_11_AP_SEC_KEY_MGMT_OWE_TM          0x00001000
+#define NM_802_11_AP_SEC_KEY_MGMT_EAP_SUITE_B_192 0x00002000
+
+void wlan_bss_info_to_WLAN_AVAILABLE_NETWORK( const struct wlan_bss_info *info,
+                                              WLAN_AVAILABLE_NETWORK *dest )
+{
+    memset( dest, 0, sizeof( *dest ) );
+
+    memcpy( dest->dot11Ssid.ucSSID, info->ssid, sizeof( info->ssid ) );
+    dest->dot11Ssid.uSSIDLength = info->ssid_len;
+    dest->dot11BssType = info->mode == NM_802_11_MODE_INFRA ? dot11_BSS_type_infrastructure
+                                                            : dot11_BSS_type_independent;
+    dest->uNumberOfBssids = 1;
+    dest->bNetworkConnectable = TRUE;
+    dest->uNumberOfPhyTypes = 1;
+    /* Use dot11_phy_type_any for now, as NetworkManager AccessPoints object do not have an equivalent
+     * property. */
+    dest->dot11PhyTypes[0] = dot11_phy_type_any;
+    dest->bMorePhyTypes = FALSE;
+    dest->wlanSignalQuality = info->strength;
+    dest->bSecurityEnabled = !(info->flags & NM_802_11_AP_FLAGS_PRIVACY);
+
+    if (info->rsn_flags)
+    {
+        if (info->rsn_flags & NM_802_11_AP_SEC_KEY_MGMT_802_1X)
+        {
+            dest->dot11DefaultAuthAlgorithm = DOT11_AUTH_ALGO_RSNA;
+            if (info->rsn_flags & NM_802_11_AP_SEC_GROUP_TKIP)
+                dest->dot11DefaultCipherAlgorithm = DOT11_CIPHER_ALGO_TKIP;
+            else if (info->rsn_flags & NM_802_11_AP_SEC_PAIR_CCMP)
+                dest->dot11DefaultCipherAlgorithm = DOT11_CIPHER_ALGO_CCMP;
+            else if (info->rsn_flags & (NM_802_11_AP_SEC_GROUP_TKIP | NM_802_11_AP_SEC_GROUP_CCMP))
+                dest->dot11DefaultCipherAlgorithm = DOT11_CIPHER_ALGO_RSN_USE_GROUP;
+        }
+        if (info->rsn_flags & NM_802_11_AP_SEC_KEY_MGMT_EAP_SUITE_B_192)
+        {
+            dest->dot11DefaultAuthAlgorithm = DOT11_AUTH_ALGO_WPA3_ENT_192;
+            if (info->rsn_flags & NM_802_11_AP_SEC_GROUP_TKIP)
+                dest->dot11DefaultCipherAlgorithm = DOT11_CIPHER_ALGO_TKIP;
+            else if (info->rsn_flags & NM_802_11_AP_SEC_PAIR_CCMP)
+                dest->dot11DefaultCipherAlgorithm = DOT11_CIPHER_ALGO_CCMP;
+            else if (info->rsn_flags & (NM_802_11_AP_SEC_GROUP_TKIP | NM_802_11_AP_SEC_GROUP_CCMP))
+                dest->dot11DefaultCipherAlgorithm = DOT11_CIPHER_ALGO_RSN_USE_GROUP;
+        }
+        if (info->rsn_flags & NM_802_11_AP_SEC_KEY_MGMT_SAE)
+        {
+            dest->dot11DefaultAuthAlgorithm = DOT11_AUTH_ALGO_WPA3_SAE;
+            dest->dot11DefaultCipherAlgorithm = info->rsn_flags & NM_802_11_AP_SEC_PAIR_TKIP
+                                                    ? DOT11_CIPHER_ALGO_TKIP
+                                                    : DOT11_CIPHER_ALGO_CCMP;
+        }
+        if (info->rsn_flags & (NM_802_11_AP_SEC_KEY_MGMT_OWE | NM_802_11_AP_SEC_KEY_MGMT_OWE_TM))
+        {
+            dest->dot11DefaultAuthAlgorithm = DOT11_AUTH_ALGO_OWE;
+            dest->dot11DefaultCipherAlgorithm = info->rsn_flags & NM_802_11_AP_SEC_PAIR_TKIP
+                                                    ? DOT11_CIPHER_ALGO_TKIP
+                                                    : DOT11_CIPHER_ALGO_CCMP;
+        }
+    }
+    else if (info->wpa_flags)
+    {
+        if (info->wpa_flags & NM_802_11_AP_SEC_KEY_MGMT_802_1X)
+        {
+            dest->dot11DefaultAuthAlgorithm = DOT11_AUTH_ALGO_WPA;
+            if (info->wpa_flags & NM_802_11_AP_SEC_GROUP_TKIP)
+                dest->dot11DefaultCipherAlgorithm = DOT11_CIPHER_ALGO_TKIP;
+            else if (info->wpa_flags & NM_802_11_AP_SEC_PAIR_CCMP)
+                dest->dot11DefaultCipherAlgorithm = DOT11_CIPHER_ALGO_CCMP;
+            else if (info->wpa_flags & (NM_802_11_AP_SEC_GROUP_TKIP | NM_802_11_AP_SEC_GROUP_CCMP))
+                dest->dot11DefaultCipherAlgorithm = DOT11_CIPHER_ALGO_WPA_USE_GROUP;
+        }
+        if (info->wpa_flags & (NM_802_11_AP_SEC_PAIR_WEP40 | NM_802_11_AP_SEC_PAIR_WEP104))
+        {
+            dest->dot11DefaultAuthAlgorithm = DOT11_AUTH_ALGO_80211_SHARED_KEY;
+            dest->dot11DefaultCipherAlgorithm =
+                info->wpa_flags & ( NM_802_11_AP_SEC_PAIR_WEP40 | NM_802_11_AP_SEC_GROUP_WEP40 )
+                    ? DOT11_CIPHER_ALGO_WEP40
+                    : DOT11_CIPHER_ALGO_WEP104;
+        }
+        if (info->wpa_flags & NM_802_11_AP_SEC_KEY_MGMT_PSK)
+        {
+            dest->dot11DefaultAuthAlgorithm = DOT11_AUTH_ALGO_WPA_PSK;
+            if (info->wpa_flags & NM_802_11_AP_SEC_GROUP_TKIP)
+                dest->dot11DefaultCipherAlgorithm = DOT11_CIPHER_ALGO_TKIP;
+            else if (info->wpa_flags & NM_802_11_AP_SEC_PAIR_CCMP)
+                dest->dot11DefaultCipherAlgorithm = DOT11_CIPHER_ALGO_CCMP;
+            else if (info->wpa_flags & (NM_802_11_AP_SEC_GROUP_TKIP | NM_802_11_AP_SEC_GROUP_CCMP))
+                dest->dot11DefaultCipherAlgorithm = DOT11_CIPHER_ALGO_WPA_USE_GROUP;
+        }
+    }
+
+    if (info->connected)
+        dest->dwFlags |= WLAN_AVAILABLE_NETWORK_CONNECTED;
+}

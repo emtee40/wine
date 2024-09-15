@@ -239,10 +239,46 @@ DWORD WINAPI WlanRegisterNotification(HANDLE handle, DWORD notify_source, BOOL i
 DWORD WINAPI WlanGetAvailableNetworkList(HANDLE handle, const GUID *guid, DWORD flags,
                                          void *reserved, WLAN_AVAILABLE_NETWORK_LIST **network_list)
 {
-    FIXME("(%p, %s, 0x%lx, %p, %p) stub\n",
-          handle, wine_dbgstr_guid(guid), flags, reserved, network_list);
+    struct wine_wlan *wlan;
+    struct wlan_network_list_get_params params = {0};
+    struct wlan_network_list_move_to_avail_network_params move_params = {0};
+    WLAN_AVAILABLE_NETWORK_LIST *ret_list;
+    NTSTATUS status;
 
-    return ERROR_CALL_NOT_IMPLEMENTED;
+    TRACE( "(%p, %s, 0x%lx, %p, %p)\n", handle, wine_dbgstr_guid( guid ), flags, reserved,
+           network_list );
+
+    if (!handle || !guid || reserved || !network_list)
+        return ERROR_INVALID_PARAMETER;
+
+    wlan = handle_index( handle );
+    if (!wlan)
+        return ERROR_INVALID_HANDLE;
+
+    params.handle = wlan->unix_handle;
+    params.interface = guid;
+    status = UNIX_WLAN_CALL( wlan_network_list_get, &params );
+    if (status != STATUS_SUCCESS)
+        return RtlNtStatusToDosError( status );
+
+    ret_list = WlanAllocateMemory( offsetof( WLAN_AVAILABLE_NETWORK_LIST, Network[params.len] ) );
+    if (!ret_list)
+    {
+        struct wlan_network_list_free_params free_params = {0};
+        free_params.networks = params.networks;
+        UNIX_WLAN_CALL( wlan_network_list_free, &free_params );
+        return ERROR_NOT_ENOUGH_MEMORY;
+    }
+
+    move_params.networks = params.networks;
+    move_params.dest = ret_list->Network;
+    UNIX_WLAN_CALL( wlan_network_list_move_to_avail_network, &move_params );
+
+    ret_list->dwNumberOfItems = params.len;
+    ret_list->dwIndex = 0;
+    *network_list = ret_list;
+
+    return ERROR_SUCCESS;
 }
 
 DWORD WINAPI WlanQueryInterface(HANDLE handle, const GUID *guid, WLAN_INTF_OPCODE opcode,

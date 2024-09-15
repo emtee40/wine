@@ -125,6 +125,65 @@ NTSTATUS wlan_free_interfaces( void *params )
     return STATUS_SUCCESS;
 }
 
+NTSTATUS wlan_network_list_get( void *params )
+{
+    NTSTATUS status;
+    struct wlan_network_list_get_params *args = params;
+    struct list *networks;
+
+    if (!initialized)
+        return STATUS_NOT_SUPPORTED;
+
+    networks = malloc( sizeof( *networks ));
+    if (!networks) return STATUS_NO_MEMORY;
+
+    list_init( networks );
+    status = networkmanager_get_access_points( (void *)args->handle, args->interface, networks );
+    if (status != STATUS_SUCCESS)
+    {
+        free( networks );
+        return status;
+    }
+
+    args->networks = (UINT_PTR)networks;
+    args->len = list_count( networks );
+    return STATUS_SUCCESS;
+}
+
+NTSTATUS wlan_network_list_move_to_avail_network( void *params )
+{
+    struct wlan_network_list_move_to_avail_network_params *args = params;
+    struct wlan_network *networks = (struct wlan_network *)args->networks;
+    struct wlan_network *cur, *next;
+    SIZE_T i = 0;
+
+    LIST_FOR_EACH_ENTRY_SAFE( cur, next, &networks->entry, struct wlan_network, entry)
+    {
+        wlan_bss_info_to_WLAN_AVAILABLE_NETWORK( &cur->info, &args->dest[i++] );
+        list_remove( &cur->entry );
+        free( cur );
+    }
+
+    free( networks );
+    return STATUS_SUCCESS;
+}
+
+NTSTATUS wlan_network_list_free( void *params )
+{
+    struct wlan_network_list_free_params *args = params;
+    struct wlan_network *networks = (struct wlan_network *)args->networks;
+    struct wlan_network *cur, *next;
+
+    LIST_FOR_EACH_ENTRY_SAFE(cur, next, &networks->entry, struct wlan_network, entry)
+    {
+        list_remove( &cur->entry );
+        free( cur );
+    }
+
+    free( networks );
+    return STATUS_SUCCESS;
+}
+
 const unixlib_entry_t __wine_unix_call_funcs[] = {
     wlan_init,
     wlan_open_handle,
@@ -132,8 +191,11 @@ const unixlib_entry_t __wine_unix_call_funcs[] = {
 
     wlan_get_interfaces,
     wlan_copy_and_free_interfaces,
-
     wlan_free_interfaces,
+
+    wlan_network_list_get,
+    wlan_network_list_move_to_avail_network,
+    wlan_network_list_free,
 };
 
 C_ASSERT( ARRAYSIZE( __wine_unix_call_funcs ) == unix_funcs_count );

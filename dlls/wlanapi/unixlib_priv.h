@@ -21,15 +21,44 @@
 #ifndef __WINE_WLANAPI_UNIXLIB_PRIV_H
 #define __WINE_WLANAPI_UNIXLIB_PRIV_H
 
+struct wlan_bss_info
+{
+    UINT32 flags;
+    UINT32 wpa_flags;
+    UINT32 rsn_flags;
+
+    USHORT ssid_len;
+    BYTE ssid[32];
+
+    UINT32 frequency;
+    BYTE hw_address[6];
+    UINT32 mode;
+    UINT32 max_bitrate;
+    UINT32 bandwidth;
+    UINT8 strength;
+    INT32 last_seen;
+
+    BOOL connected;
+};
+
 struct wlan_interface
 {
     struct list entry;
     struct unix_wlan_interface_info info;
 };
 
+struct wlan_network
+{
+    struct list entry;
+    struct wlan_bss_info info;
+};
+
 extern BOOL load_dbus_functions( void );
 extern NTSTATUS init_dbus_connection( UINT_PTR *handle );
 extern void close_dbus_connection( void *c );
 extern NTSTATUS networkmanager_get_wifi_devices( void *connection, struct list *devices );
-
+extern NTSTATUS networkmanager_get_access_points( void *connection, const GUID *device,
+                                                 struct list *access_points );
+extern void wlan_bss_info_to_WLAN_AVAILABLE_NETWORK( const struct wlan_bss_info *info,
+                                                    WLAN_AVAILABLE_NETWORK *dest );
 #endif /* __WINE_WLANAPI_UNIXLIB_PRIV_H */
