@@ -295,22 +295,22 @@ static void test_WlanGetNetworkBssList( void )
 
         /* invalid parameters */
         ret = WlanGetNetworkBssList( NULL, NULL, NULL, 0, FALSE, NULL, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
-        todo_wine ok( list == bad_list, "list changed\n" );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( list == bad_list, "list changed\n" );
         ret = WlanGetNetworkBssList( handle, &info->InterfaceGuid, NULL, 0, FALSE, NULL, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
-        todo_wine ok( list == bad_list, "list changed\n" );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( list == bad_list, "list changed\n" );
         ret = WlanGetNetworkBssList( handle, &info->InterfaceGuid, NULL, 0, FALSE, NULL, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
-        todo_wine ok( list == bad_list, "list changed\n" );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( list == bad_list, "list changed\n" );
         ret =
             WlanGetNetworkBssList( handle, &info->InterfaceGuid, NULL, 0, FALSE, &reserved, &list );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
-        todo_wine ok( list == bad_list, "list changed\n" );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( list == bad_list, "list changed\n" );
 
         /* valid paramters */
         ret = WlanGetNetworkBssList( handle, &info->InterfaceGuid, NULL, 0, FALSE, NULL, &list );
-        todo_wine ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret);
+        ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret);
         if (!list || !list->dwNumberOfItems)
         {
             skip( "No wireless networks\n" );
@@ -322,9 +322,9 @@ static void test_WlanGetNetworkBssList( void )
         {
             WLAN_BSS_ENTRY *entry = &list->wlanBssEntries[j];
 
-            todo_wine ok( entry->dot11Ssid.uSSIDLength <= sizeof( entry->dot11Ssid.ucSSID ),
-                          "Unexpected length for uSSID, should be <= 32: %ld\n",
-                          entry->dot11Ssid.uSSIDLength );
+            ok( entry->dot11Ssid.uSSIDLength <= sizeof( entry->dot11Ssid.ucSSID ),
+                "Unexpected length for uSSID, should be <= 32: %ld\n",
+                entry->dot11Ssid.uSSIDLength );
 
             trace(
                 "    Index[%ld] SSID: %s\n", j,

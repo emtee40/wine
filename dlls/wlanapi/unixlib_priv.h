@@ -58,7 +58,10 @@ extern NTSTATUS init_dbus_connection( UINT_PTR *handle );
 extern void close_dbus_connection( void *c );
 extern NTSTATUS networkmanager_get_wifi_devices( void *connection, struct list *devices );
 extern NTSTATUS networkmanager_get_access_points( void *connection, const GUID *device,
-                                                 struct list *access_points );
+                                                  const DOT11_SSID *ssid, BOOL security,
+                                                  struct list *access_points );
 extern void wlan_bss_info_to_WLAN_AVAILABLE_NETWORK( const struct wlan_bss_info *info,
-                                                    WLAN_AVAILABLE_NETWORK *dest );
+                                                     WLAN_AVAILABLE_NETWORK *dest );
+extern void wlan_bss_info_to_WLAN_BSS_ENTRY( const struct wlan_bss_info *info,
+                                             WLAN_BSS_ENTRY *dest );
 #endif /* __WINE_WLANAPI_UNIXLIB_PRIV_H */

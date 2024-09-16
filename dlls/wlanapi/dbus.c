@@ -634,7 +634,9 @@ static char *__WINE_MALLOC networkmanager_device_get_active_ap( void *connection
     return dup;
 }
 
-NTSTATUS networkmanager_get_access_points( void *connection, const GUID *device, struct list *access_points )
+NTSTATUS networkmanager_get_access_points( void *connection, const GUID *device,
+                                           const DOT11_SSID *ssid, BOOL security,
+                                           struct list *access_points )
 {
     DBusMessage *request, *reply;
     DBusError error;
@@ -698,8 +700,15 @@ NTSTATUS networkmanager_get_access_points( void *connection, const GUID *device,
 
         if (networkmanager_get_access_point_info( connection, object_path, &info ))
         {
-            struct wlan_network *network = calloc( 1, sizeof( *network ) );
+            struct wlan_network *network;
 
+            if (ssid && !(info.ssid_len == ssid->uSSIDLength &&
+                          !memcmp( info.ssid, ssid->ucSSID, sizeof( info.ssid ) )))
+                continue;
+            if (security && !(info.flags & 1)) /* NM_802_11_AP_FLAGS_PRIVACY */
+                continue;
+
+            network = calloc( 1, sizeof( *network ) );
             if (!network) continue;
             network->info = info;
             network->info.connected = active_ap && !strcmp( active_ap, object_path );
@@ -846,4 +855,20 @@ void wlan_bss_info_to_WLAN_AVAILABLE_NETWORK( const struct wlan_bss_info *info,
 
     if (info->connected)
         dest->dwFlags |= WLAN_AVAILABLE_NETWORK_CONNECTED;
+}
+
+void wlan_bss_info_to_WLAN_BSS_ENTRY( const struct wlan_bss_info *info, WLAN_BSS_ENTRY *dest )
+{
+    memset( dest, 0, sizeof( *dest ));
+
+    FIXME( "(%p, %p) semi-stub\n", info, dest );
+    memcpy( dest->dot11Ssid.ucSSID, info->ssid, sizeof( info->ssid ) );
+    dest->dot11Ssid.uSSIDLength = info->ssid_len;
+
+    memcpy( dest->dot11Bssid, info->hw_address, sizeof( info->hw_address ) );
+    dest->dot11BssType = info->mode == NM_802_11_MODE_INFRA ? dot11_BSS_type_infrastructure
+                                                            : dot11_BSS_type_independent;
+    dest->uLinkQuality = info->strength;
+    dest->bInRegDomain = TRUE;
+    dest->usBeaconPeriod = 1;
 }

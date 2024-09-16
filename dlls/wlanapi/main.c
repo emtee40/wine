@@ -285,10 +285,64 @@ DWORD WINAPI WlanGetNetworkBssList( HANDLE handle, const GUID *guid, const DOT11
                                     DOT11_BSS_TYPE bss_type, BOOL security, void *reserved,
                                     WLAN_BSS_LIST **bss_list )
 {
-    FIXME( "(%p, %s, %p, %d, %d, %p, %p) stub\n", handle, debugstr_guid( guid ), ssid, bss_type,
-           security, reserved, bss_list );
+    struct wine_wlan *wlan;
+    struct wlan_network_list_get_params params = {0};
+    struct wlan_network_list_move_to_bss_entry_params move_params = {0};
+    WLAN_BSS_LIST *ret_list;
+    NTSTATUS status;
+    DWORD size;
 
-    return ERROR_CALL_NOT_IMPLEMENTED;
+    TRACE( "(%p, %s, %p, %d, %d, %p, %p)\n", handle, debugstr_guid( guid ), ssid, bss_type, security, reserved,
+           bss_list );
+
+    if (!handle || !guid || reserved || !bss_list)
+        return ERROR_INVALID_PARAMETER;
+    if (ssid)
+    {
+        if (ssid->uSSIDLength > sizeof(ssid->ucSSID))
+            return ERROR_INVALID_PARAMETER;
+        switch (bss_type)
+        {
+            case dot11_BSS_type_infrastructure:
+            case dot11_BSS_type_independent:
+            case dot11_BSS_type_any:
+                break;
+            default:
+                return ERROR_INVALID_PARAMETER;
+        }
+    }
+
+    wlan = handle_index( handle );
+    if (!wlan)
+        return ERROR_INVALID_HANDLE;
+
+    params.handle = wlan->unix_handle;
+    params.interface = guid;
+    params.ssid_filter = ssid;
+    params.security = ssid && security;
+    status = UNIX_WLAN_CALL( wlan_network_list_get, &params );
+    if (status != STATUS_SUCCESS)
+        return RtlNtStatusToDosError( status );
+
+    size = offsetof( WLAN_BSS_LIST, wlanBssEntries[params.len] );
+    ret_list = WlanAllocateMemory( size );
+    if (!ret_list)
+    {
+        struct wlan_network_list_free_params free_params = {0};
+        free_params.networks = params.networks;
+        UNIX_WLAN_CALL( wlan_network_list_free, &free_params );
+        return ERROR_NOT_ENOUGH_MEMORY;
+    }
+
+    move_params.networks = params.networks;
+    move_params.dest = ret_list->wlanBssEntries;
+    UNIX_WLAN_CALL( wlan_network_list_move_to_bss_entry, &move_params );
+
+    ret_list->dwTotalSize = size;
+    ret_list->dwNumberOfItems = params.len;
+    *bss_list = ret_list;
+
+    return ERROR_SUCCESS;
 }
 
 DWORD WINAPI WlanQueryInterface(HANDLE handle, const GUID *guid, WLAN_INTF_OPCODE opcode,

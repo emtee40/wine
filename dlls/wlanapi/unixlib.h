@@ -64,6 +64,8 @@ struct wlan_network_list_get_params
 {
     UINT_PTR handle;
     const GUID *interface;
+    const DOT11_SSID *ssid_filter;
+    BOOL security;
 
     UINT_PTR networks;
     SIZE_T len;
@@ -74,6 +76,13 @@ struct wlan_network_list_move_to_avail_network_params
     UINT_PTR networks;
 
     WLAN_AVAILABLE_NETWORK *dest;
+};
+
+struct wlan_network_list_move_to_bss_entry_params
+{
+    UINT_PTR networks;
+
+    WLAN_BSS_ENTRY *dest;
 };
 
 struct wlan_network_list_free_params
@@ -94,6 +103,7 @@ enum wlanpi_funcs
 
     unix_wlan_network_list_get,
     unix_wlan_network_list_move_to_avail_network,
+    unix_wlan_network_list_move_to_bss_entry,
     unix_wlan_network_list_free,
 
     unix_funcs_count
