@@ -1,5 +1,6 @@
 /*
  * Copyright 2010 Ričardas Barkauskas
+ * Copyright 2024 Vibhav Pant
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -220,10 +221,28 @@ DWORD WINAPI WlanOpenHandle(DWORD client_version, void *reserved, DWORD *negotia
 DWORD WINAPI WlanScan(HANDLE handle, const GUID *guid, const DOT11_SSID *ssid,
                       const WLAN_RAW_DATA *raw, void *reserved)
 {
-    FIXME("(%p, %s, %p, %p, %p) stub\n",
-          handle, wine_dbgstr_guid(guid), ssid, raw, reserved);
+    struct wine_wlan *wlan;
+    struct wlan_start_scan params = {0};
+    NTSTATUS status;
 
-    return ERROR_CALL_NOT_IMPLEMENTED;
+    TRACE( "(%p, %s, %p, %p, %p)\n", handle, wine_dbgstr_guid( guid ), ssid, raw, reserved );
+
+    if (!handle || !guid || reserved)
+        return ERROR_INVALID_PARAMETER;
+
+    if (ssid && ssid->uSSIDLength > sizeof( ssid->ucSSID ))
+        return ERROR_INVALID_PARAMETER;
+
+    wlan = handle_index( handle );
+    if (!wlan)
+        return ERROR_INVALID_HANDLE;
+
+    params.handle = wlan->unix_handle;
+    params.interface = guid;
+    params.ssid = ssid;
+    status = UNIX_WLAN_CALL( wlan_start_scan, &params );
+
+    return RtlNtStatusToDosError( status );
 }
 
 DWORD WINAPI WlanRegisterNotification(HANDLE handle, DWORD notify_source, BOOL ignore_dup,

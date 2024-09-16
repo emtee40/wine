@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <dlfcn.h>
+#include <assert.h>
 
 #ifdef SONAME_LIBDBUS_1
 #include <dbus/dbus.h>
@@ -719,6 +720,104 @@ NTSTATUS networkmanager_get_access_points( void *connection, const GUID *device,
     free( active_ap );
     p_dbus_free_string_array( object_paths );
     p_dbus_message_unref( reply );
+    return STATUS_SUCCESS;
+}
+
+static BOOL networkmanager_requestscan_call_set_ssid( DBusMessageIter *dict, const DOT11_SSID *ssid )
+{
+    DBusMessageIter entry, variant = DBUS_MESSAGE_ITER_INIT_CLOSED,
+                           ssids = DBUS_MESSAGE_ITER_INIT_CLOSED,
+                           ssid_bytes = DBUS_MESSAGE_ITER_INIT_CLOSED;
+    const char *ssids_key = "ssids";
+    unsigned char ssid_copy[32];
+    INT i;
+    dbus_bool_t success;
+
+    memcpy( ssid_copy, ssid->ucSSID, sizeof( ssid->ucSSID ) );
+
+    success = p_dbus_message_iter_open_container( dict, DBUS_TYPE_DICT_ENTRY, NULL, &entry );
+    if (!success) return FALSE;
+
+    success = p_dbus_message_iter_append_basic( &entry, DBUS_TYPE_STRING, &ssids_key );
+    if (!success) goto failed;
+    success = p_dbus_message_iter_open_container( &entry, DBUS_TYPE_VARIANT, "aay", &variant );
+    if (!success) goto failed;
+
+    success = p_dbus_message_iter_open_container( &variant, DBUS_TYPE_ARRAY, "ay", &ssids );
+    if (!success) goto failed;
+    success = p_dbus_message_iter_open_container( &ssids, DBUS_TYPE_ARRAY, DBUS_TYPE_BYTE_AS_STRING,
+                                                  &ssid_bytes );
+    if (!success) goto failed;
+    for (i = 0; i < ssid->uSSIDLength; i++)
+    {
+        success = p_dbus_message_iter_append_basic( &ssid_bytes, DBUS_TYPE_BYTE, &ssid_copy[i] );
+        if (!success) goto failed;
+    }
+
+    p_dbus_message_iter_close_container( &ssids, &ssid_bytes );
+    p_dbus_message_iter_close_container( &variant, &ssids );
+    p_dbus_message_iter_close_container( &entry, &variant );
+    p_dbus_message_iter_close_container( dict, &entry );
+    return TRUE;
+
+ failed:
+    p_dbus_message_iter_abandon_container_if_open( &ssids, &ssid_bytes );
+    p_dbus_message_iter_abandon_container_if_open( &variant, &ssids );
+    p_dbus_message_iter_abandon_container_if_open( &entry, &variant );
+    p_dbus_message_iter_abandon_container_if_open( dict, &entry );
+    return FALSE;
+}
+
+NTSTATUS networkmanager_start_scan( void *connection, const GUID *interface,
+                                    const DOT11_SSID *ssid )
+{
+    DBusMessage *request, *reply;
+    DBusMessageIter iter, options;
+    DBusError error;
+    dbus_bool_t success;
+    char *device_path;
+
+    TRACE( "(%p, %p, %p)\n", connection, debugstr_guid( interface ), ssid );
+
+    if (!networkmanager_valid_device_guid( interface )) return STATUS_INVALID_PARAMETER;
+    device_path = networkmanager_device_guid_to_path( interface );
+    if (!device_path) return STATUS_NO_MEMORY;
+
+    request =
+        p_dbus_message_new_method_call( NETWORKMANAGER_SERVICE, device_path,
+                                        NETWORKMANAGER_INTERFACE_DEVICE_WIRELESS, "RequestScan" );
+    free( device_path );
+    if (!request) return STATUS_NO_MEMORY;
+
+    p_dbus_message_iter_init_append( request, &iter );
+    success = p_dbus_message_iter_open_container( &iter, DBUS_TYPE_ARRAY, "{sv}", &options );
+    if (!success)
+    {
+        p_dbus_message_unref( request );
+        return STATUS_NO_MEMORY;
+    }
+
+    if (ssid)
+    {
+        assert( ssid->uSSIDLength <= sizeof( ssid->ucSSID ) );
+        networkmanager_requestscan_call_set_ssid( &options, ssid );
+    }
+    p_dbus_message_iter_close_container( &iter, &options );
+
+    p_dbus_error_init( &error );
+    reply =
+        p_dbus_connection_send_with_reply_and_block( connection, request, dbus_timeout, &error );
+    p_dbus_message_unref( request );
+    if (!reply)
+    {
+        NTSTATUS ret = dbus_error_to_ntstatus( &error );
+        ERR( "Error calling RequestScan on interface %s: %s: %s.\n", debugstr_guid( interface ),
+             debugstr_a( error.name ), debugstr_a( error.message ) );
+        p_dbus_error_free( &error );
+        return ret;
+    }
+    p_dbus_message_unref( reply );
+
     return STATUS_SUCCESS;
 }
 

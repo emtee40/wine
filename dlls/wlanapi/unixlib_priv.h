@@ -64,4 +64,6 @@ extern void wlan_bss_info_to_WLAN_AVAILABLE_NETWORK( const struct wlan_bss_info 
                                                      WLAN_AVAILABLE_NETWORK *dest );
 extern void wlan_bss_info_to_WLAN_BSS_ENTRY( const struct wlan_bss_info *info,
                                              WLAN_BSS_ENTRY *dest );
+extern NTSTATUS networkmanager_start_scan( void *connection, const GUID *interface,
+                                           const DOT11_SSID *ssid );
 #endif /* __WINE_WLANAPI_UNIXLIB_PRIV_H */

@@ -370,19 +370,19 @@ static void test_WlanStartScan( void )
 
         /* invalid parameters */
         ret = WlanScan( NULL, NULL, NULL, NULL, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok (ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret);
         ret = WlanScan( handle, NULL, NULL, NULL, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok (ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret);
         ret = WlanScan( handle, &info->InterfaceGuid, &invalid_ssid, NULL, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
-        ret = WlanScan( handle, &info->InterfaceGuid, &ssid, NULL, &reserved );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok (ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret);
+        ret = WlanScan ( handle, &info->InterfaceGuid, &ssid, NULL, &reserved );
+        ok (ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret);
 
         /* valid parameters */
         ret = WlanScan( handle, &info->InterfaceGuid, NULL, NULL, NULL );
-        todo_wine ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret );
+        ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret );
         ret = WlanScan( handle, &info->InterfaceGuid, &ssid, NULL, NULL );
-        todo_wine ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret );
+        ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret );
     }
 
     WlanFreeMemory( ifaces );

@@ -203,6 +203,13 @@ NTSTATUS wlan_network_list_free( void *params )
     return STATUS_SUCCESS;
 }
 
+NTSTATUS wlan_start_scan( void *params )
+{
+    struct wlan_start_scan *args = params;
+
+    return networkmanager_start_scan( (void *) args->handle, args->interface, args->ssid );
+}
+
 const unixlib_entry_t __wine_unix_call_funcs[] = {
     wlan_init,
     wlan_open_handle,
@@ -216,6 +223,8 @@ const unixlib_entry_t __wine_unix_call_funcs[] = {
     wlan_network_list_move_to_avail_network,
     wlan_network_list_move_to_bss_entry,
     wlan_network_list_free,
+
+    wlan_start_scan,
 };
 
 C_ASSERT( ARRAYSIZE( __wine_unix_call_funcs ) == unix_funcs_count );

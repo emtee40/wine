@@ -90,6 +90,13 @@ struct wlan_network_list_free_params
     UINT_PTR networks;
 };
 
+struct wlan_start_scan
+{
+    UINT_PTR handle;
+    const GUID *interface;
+    const DOT11_SSID *ssid;
+};
+
 enum wlanpi_funcs
 {
     unix_wlan_init,
@@ -105,6 +112,8 @@ enum wlanpi_funcs
     unix_wlan_network_list_move_to_avail_network,
     unix_wlan_network_list_move_to_bss_entry,
     unix_wlan_network_list_free,
+
+    unix_wlan_start_scan,
 
     unix_funcs_count
 };
