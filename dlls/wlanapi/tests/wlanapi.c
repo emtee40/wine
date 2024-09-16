@@ -339,6 +339,57 @@ static void test_WlanGetNetworkBssList( void )
     ok( ret == 0, "Expected 0, got %ld\n", ret );
 }
 
+static void test_WlanStartScan( void )
+{
+    HANDLE handle;
+    DWORD neg_version, i, ret, reserved = 0xdeadbeef;
+    WLAN_INTERFACE_INFO_LIST *ifaces;
+
+    ret = WlanOpenHandle(1, NULL, &neg_version, &handle);
+    ok(ret == 0, "Expected 0, got %ld\n", ret);
+
+    ret = WlanEnumInterfaces( handle, NULL, &ifaces );
+    ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret);
+    if (!ifaces || !ifaces->dwNumberOfItems)
+    {
+        skip( "No wireless interfaces\n" );
+        WlanCloseHandle( handle, NULL );
+        WlanFreeMemory( ifaces );
+        return;
+    }
+
+    trace("Wireless interfaces: %ld\n", ifaces->dwNumberOfItems);
+    for (i = 0; i < ifaces->dwNumberOfItems; i++)
+    {
+        WLAN_INTERFACE_INFO *info;
+        DOT11_SSID invalid_ssid = {.uSSIDLength = 60},
+                   ssid = {.uSSIDLength = 4, .ucSSID = {'t', 'e', 's', 't'}};
+
+        info = &ifaces->InterfaceInfo[i];
+        trace( "  Index[%ld] GUID: %s\n", i, debugstr_guid( &info->InterfaceGuid ) );
+
+        /* invalid parameters */
+        ret = WlanScan( NULL, NULL, NULL, NULL, NULL );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ret = WlanScan( handle, NULL, NULL, NULL, NULL );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ret = WlanScan( handle, &info->InterfaceGuid, &invalid_ssid, NULL, NULL );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ret = WlanScan( handle, &info->InterfaceGuid, &ssid, NULL, &reserved );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+
+        /* valid parameters */
+        ret = WlanScan( handle, &info->InterfaceGuid, NULL, NULL, NULL );
+        todo_wine ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret );
+        ret = WlanScan( handle, &info->InterfaceGuid, &ssid, NULL, NULL );
+        todo_wine ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret );
+    }
+
+    WlanFreeMemory( ifaces );
+    ret = WlanCloseHandle( handle, NULL );
+    ok( ret == 0, "Expected 0, got %ld\n", ret );
+}
+
 START_TEST(wlanapi)
 {
   HANDLE handle;
@@ -355,6 +406,7 @@ START_TEST(wlanapi)
   test_WlanOpenHandle();
   test_WlanAllocateFreeMemory();
   test_WlanEnumInterfaces();
+  test_WlanStartScan();
   test_WlanGetAvailableNetworkList();
   test_WlanGetNetworkBssList();
 }
