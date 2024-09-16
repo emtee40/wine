@@ -263,6 +263,82 @@ static void test_WlanGetAvailableNetworkList( void )
     ok( ret == 0, "Expected 0, got %ld\n", ret );
 }
 
+static void test_WlanGetNetworkBssList( void )
+{
+    HANDLE handle;
+    DWORD neg_version, i, ret, reserved = 0xdeadbeef;
+    WLAN_INTERFACE_INFO_LIST *ifaces;
+
+    ret = WlanOpenHandle(1, NULL, &neg_version, &handle);
+    ok(ret == 0, "Expected 0, got %ld\n", ret);
+
+    ret = WlanEnumInterfaces( handle, NULL, &ifaces );
+    ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret);
+    if (!ifaces || !ifaces->dwNumberOfItems)
+    {
+        skip( "No wireless interfaces\n" );
+        WlanCloseHandle( handle, NULL );
+        WlanFreeMemory( ifaces );
+        return;
+    }
+
+    trace("Wireless interfaces: %ld\n", ifaces->dwNumberOfItems);
+
+    for (i = 0; i < ifaces->dwNumberOfItems; i++)
+    {
+        WLAN_INTERFACE_INFO *info;
+        WLAN_BSS_LIST *bad_list = (WLAN_BSS_LIST *)0xdeadbeef, *list = bad_list;
+        DWORD j;
+
+        info = &ifaces->InterfaceInfo[i];
+        trace( "  Index[%ld] GUID: %s\n", i, debugstr_guid( &info->InterfaceGuid ) );
+
+        /* invalid parameters */
+        ret = WlanGetNetworkBssList( NULL, NULL, NULL, 0, FALSE, NULL, NULL );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        todo_wine ok( list == bad_list, "list changed\n" );
+        ret = WlanGetNetworkBssList( handle, &info->InterfaceGuid, NULL, 0, FALSE, NULL, NULL );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        todo_wine ok( list == bad_list, "list changed\n" );
+        ret = WlanGetNetworkBssList( handle, &info->InterfaceGuid, NULL, 0, FALSE, NULL, NULL );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        todo_wine ok( list == bad_list, "list changed\n" );
+        ret =
+            WlanGetNetworkBssList( handle, &info->InterfaceGuid, NULL, 0, FALSE, &reserved, &list );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        todo_wine ok( list == bad_list, "list changed\n" );
+
+        /* valid paramters */
+        ret = WlanGetNetworkBssList( handle, &info->InterfaceGuid, NULL, 0, FALSE, NULL, &list );
+        todo_wine ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret);
+        if (!list || !list->dwNumberOfItems)
+        {
+            skip( "No wireless networks\n" );
+            WlanFreeMemory( list );
+            continue;
+        }
+
+        for (j = 0; j < list->dwNumberOfItems; j++)
+        {
+            WLAN_BSS_ENTRY *entry = &list->wlanBssEntries[j];
+
+            todo_wine ok( entry->dot11Ssid.uSSIDLength <= sizeof( entry->dot11Ssid.ucSSID ),
+                          "Unexpected length for uSSID, should be <= 32: %ld\n",
+                          entry->dot11Ssid.uSSIDLength );
+
+            trace(
+                "    Index[%ld] SSID: %s\n", j,
+                  debugstr_an( (char *)entry->dot11Ssid.ucSSID, entry->dot11Ssid.uSSIDLength ) );
+        }
+
+        WlanFreeMemory( list );
+    }
+
+    WlanFreeMemory( ifaces );
+    ret = WlanCloseHandle( handle, NULL );
+    ok( ret == 0, "Expected 0, got %ld\n", ret );
+}
+
 START_TEST(wlanapi)
 {
   HANDLE handle;
@@ -280,4 +356,5 @@ START_TEST(wlanapi)
   test_WlanAllocateFreeMemory();
   test_WlanEnumInterfaces();
   test_WlanGetAvailableNetworkList();
+  test_WlanGetNetworkBssList();
 }
