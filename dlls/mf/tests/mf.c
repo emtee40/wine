@@ -2727,7 +2727,7 @@ static void test_media_session_topologies(void)
     PropVariantClear(&pv);
 
     hr = wait_media_event_until_blocking(session, callback, MESessionEnded, 1000, &pv);
-    todo_wine ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
     ok(pv.vt == VT_EMPTY, "got vt %u\n", pv.vt);
     ok(pv.punkVal != (IUnknown *)topology, "got punkVal %p\n", pv.punkVal);
     PropVariantClear(&pv);

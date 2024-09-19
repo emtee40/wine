@@ -861,8 +861,6 @@ static void session_clear_presentation(struct media_session *session)
     struct media_sink *sink, *sink2;
     struct topo_node *node, *node2;
 
-    session_shutdown_current_topology(session);
-
     IMFTopology_Clear(session->presentation.current_topology);
     session->presentation.topo_status = MF_TOPOSTATUS_INVALID;
     session->presentation.flags = 0;
@@ -2117,6 +2115,7 @@ static ULONG WINAPI mfsession_Release(IMFMediaSession *iface)
     if (!refcount)
     {
         session_clear_queued_topologies(session);
+        session_shutdown_current_topology(session);
         session_clear_presentation(session);
         session_clear_command_list(session);
         if (session->presentation.current_topology)
@@ -2397,6 +2396,7 @@ static HRESULT WINAPI mfsession_Shutdown(IMFMediaSession *iface)
         MFShutdownObject((IUnknown *)session->clock);
         IMFPresentationClock_Release(session->clock);
         session->clock = NULL;
+        session_shutdown_current_topology(session);
         session_clear_presentation(session);
         session_clear_queued_topologies(session);
         session_submit_simple_command(session, SESSION_CMD_SHUTDOWN);
