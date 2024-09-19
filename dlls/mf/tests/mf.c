@@ -2830,7 +2830,7 @@ static void test_media_session_topologies(void)
     IMFMediaSession_Shutdown(session);
 
     is_shutdown = is_topology_shutdown(topology);
-    todo_wine ok(is_shutdown, "expected topology to be shutdown.\n");
+    ok(is_shutdown, "expected topology to be shutdown.\n");
     is_shutdown = is_topology_shutdown(topology2);
     ok(is_shutdown, "expected topology2 to be shutdown.\n");
 
