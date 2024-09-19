@@ -2617,6 +2617,21 @@ static void test_media_session_rate_control(void)
     ok(hr == S_OK, "Shutdown failure, hr %#lx.\n", hr);
 }
 
+static IMFTopologyNode *get_sink_node(IMFTopology *topology, DWORD index)
+{
+    IMFCollection *output_nodes;
+    IMFTopologyNode *node;
+    IUnknown *nodeunk;
+
+    IMFTopology_GetOutputNodeCollection(topology, &output_nodes);
+    IMFCollection_GetElement(output_nodes, index, &nodeunk);
+    IMFCollection_Release(output_nodes);
+    IUnknown_QueryInterface(nodeunk, &IID_IMFTopologyNode, (void**)&node);
+    IUnknown_Release(nodeunk);
+
+    return node;
+}
+
 static IMFTopology *create_topology_from_file(LPCWSTR file, LPCWSTR mime)
 {
     IMFTopologyNode *src_node, *sink_node;
@@ -2663,11 +2678,36 @@ static IMFTopology *create_topology_from_file(LPCWSTR file, LPCWSTR mime)
     return topology;
 }
 
+static BOOL is_topology_shutdown(IMFTopology *topology)
+{
+    IMFTopologyNode *node;
+    IMFStreamSink *stream_sink;
+    IUnknown *unk;
+    HRESULT hr;
+
+    node = get_sink_node(topology, 0);
+    hr = IMFTopologyNode_GetObject(node, &unk);
+    ok(hr == S_OK, "Unexpected hr %#lx\n", hr);
+
+
+    hr = IUnknown_QueryInterface(unk, &IID_IMFStreamSink, (void**)&stream_sink);
+    ok(hr == S_OK, "Unexpected hr %#lx\n", hr);
+
+    hr = IMFStreamSink_Flush(stream_sink);
+    ok(SUCCEEDED(hr) || hr == MF_E_STREAMSINK_REMOVED, "Unexpected hr %#lx\n", hr);
+
+    IMFStreamSink_Release(stream_sink);
+    IUnknown_Release(unk);
+
+    return hr == MF_E_STREAMSINK_REMOVED;
+}
+
 static void test_media_session_topologies(void)
 {
-    IMFTopology *topology;
+    IMFTopology *topology, *topology2;
     IMFAsyncCallback *callback;
     IMFMediaSession *session;
+    BOOL is_shutdown;
     PROPVARIANT pv;
     HRESULT hr;
 
@@ -2680,6 +2720,8 @@ static void test_media_session_topologies(void)
         MFShutdown();
         return;
     }
+
+    topology2 = create_topology_from_file(L"mp3encdata.bin", L"audio/mpeg");
 
     callback = create_test_callback(TRUE);
     hr = MFCreateMediaSession(NULL, &session);
@@ -2732,8 +2774,65 @@ static void test_media_session_topologies(void)
     ok(pv.punkVal != (IUnknown *)topology, "got punkVal %p\n", pv.punkVal);
     PropVariantClear(&pv);
 
+    pv.vt = VT_EMPTY;
+    hr = IMFMediaSession_Stop(session);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    hr = wait_media_event(session, callback, MESessionStopped, 1000, &pv);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    ok(pv.vt == VT_EMPTY, "got vt %u\n", pv.vt);
+    ok(pv.punkVal != (IUnknown *)topology, "got punkVal %p\n", pv.punkVal);
+    PropVariantClear(&pv);
+
+    /* Test behavior with more than one topology. */
+    hr = IMFMediaSession_SetTopology(session, MFSESSION_SETTOPOLOGY_IMMEDIATE, topology2);
+    ok(hr == S_OK, "Unexpected hr %#lx\n", hr);
+    hr = wait_media_event(session, callback, MESessionTopologySet, 1000, &pv);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    ok(pv.vt == VT_UNKNOWN, "got vt %u\n", pv.vt);
+    ok(pv.punkVal != (IUnknown *)topology, "got punkVal %p\n", pv.punkVal);
+    PropVariantClear(&pv);
+
+    hr = IMFMediaSession_SetTopology(session, 0, topology);
+    ok(hr == S_OK, "Unexpected hr %#lx\n", hr);
+    hr = wait_media_event(session, callback, MESessionTopologySet, 1000, &pv);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    ok(pv.vt == VT_UNKNOWN, "got vt %u\n", pv.vt);
+    ok(pv.punkVal != (IUnknown *)topology, "got punkVal %p\n", pv.punkVal);
+    PropVariantClear(&pv);
+
+    pv.vt = VT_EMPTY;
+    hr = IMFMediaSession_Start(session, &GUID_NULL, &pv);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    hr = wait_media_event(session, callback, MESessionStarted, 1000, &pv);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    ok(pv.vt == VT_EMPTY, "got vt %u\n", pv.vt);
+    ok(pv.punkVal != (IUnknown *)topology, "got punkVal %p\n", pv.punkVal);
+    PropVariantClear(&pv);
+
+    hr = wait_media_event_until_blocking(session, callback, MEEndOfPresentation, 1000, &pv);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    ok(pv.vt == VT_EMPTY, "got vt %u\n", pv.vt);
+    ok(pv.punkVal != (IUnknown *)topology, "got punkVal %p\n", pv.punkVal);
+    PropVariantClear(&pv);
+
+    hr = wait_media_event_until_blocking(session, callback, MESessionEnded, 1000, &pv);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    ok(pv.vt == VT_EMPTY, "got vt %u\n", pv.vt);
+    ok(pv.punkVal != (IUnknown *)topology, "got punkVal %p\n", pv.punkVal);
+    PropVariantClear(&pv);
+
+    is_shutdown = is_topology_shutdown(topology);
+    ok(!is_shutdown, "expected topology to not be shutdown.\n");
+    is_shutdown = is_topology_shutdown(topology2);
+    ok(!is_shutdown, "expected topology2 to not be shutdown.\n");
+
     IMFMediaSession_Close(session);
     IMFMediaSession_Shutdown(session);
+
+    is_shutdown = is_topology_shutdown(topology);
+    todo_wine ok(is_shutdown, "expected topology to be shutdown.\n");
+    is_shutdown = is_topology_shutdown(topology2);
+    ok(is_shutdown, "expected topology2 to be shutdown.\n");
 
     IMFMediaSession_Release(session);
     IMFAsyncCallback_Release(callback);
