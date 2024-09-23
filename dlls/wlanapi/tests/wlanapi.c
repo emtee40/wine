@@ -390,6 +390,69 @@ static void test_WlanStartScan( void )
     ok( ret == 0, "Expected 0, got %ld\n", ret );
 }
 
+static void test_WlanGetProfileList( void )
+{
+    HANDLE handle;
+    DWORD neg_version, i, ret, reserved = 0xdeadbeef;
+    WLAN_INTERFACE_INFO_LIST *ifaces;
+
+    ret = WlanOpenHandle(1, NULL, &neg_version, &handle);
+    ok(ret == 0, "Expected 0, got %ld\n", ret);
+
+    ret = WlanEnumInterfaces( handle, NULL, &ifaces );
+    ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret);
+    if (!ifaces || !ifaces->dwNumberOfItems)
+    {
+        skip( "No wireless interfaces\n" );
+        WlanCloseHandle( handle, NULL );
+        WlanFreeMemory( ifaces );
+        return;
+    }
+
+    trace("Wireless interfaces: %ld\n", ifaces->dwNumberOfItems);
+    for (i = 0; i < ifaces->dwNumberOfItems; i++)
+    {
+        WLAN_PROFILE_INFO_LIST *bad_list = (WLAN_PROFILE_INFO_LIST *)0xdeadbeef, *list = bad_list;
+        WLAN_INTERFACE_INFO *info;
+        DWORD j;
+
+        info = &ifaces->InterfaceInfo[i];
+        trace( "  Index[%ld] GUID: %s\n", i, debugstr_guid( &info->InterfaceGuid ) );
+
+        ret = WlanGetProfileList( NULL, NULL, NULL, NULL );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ret = WlanGetProfileList( handle, NULL, NULL, &list );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        todo_wine ok( list == bad_list, "list changed\n" );
+        ret = WlanGetProfileList( handle, &info->InterfaceGuid, NULL, NULL );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ret = WlanGetProfileList( handle, &info->InterfaceGuid, &reserved, &list );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        todo_wine ok( list == bad_list, "list changed\n" );
+
+        ret = WlanGetProfileList( handle, &info->InterfaceGuid, NULL, &list );
+        ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret);
+        if (!list || !list->dwNumberOfItems)
+        {
+            skip( "No WLAN profiles\n" );
+            WlanFreeMemory( list );
+            continue;
+        }
+
+        for (j = 0; j < list->dwNumberOfItems; j++)
+        {
+            trace( "    Index[%ld] Name: %s Flags: %#lx\n", j,
+                   debugstr_w( list->ProfileInfo[j].strProfileName ),
+                   list->ProfileInfo[j].dwFlags );
+        }
+        WlanFreeMemory( list );
+    }
+
+    WlanFreeMemory( ifaces );
+    ret = WlanCloseHandle( handle, NULL );
+    ok( ret == 0, "Expected 0, got %ld\n", ret );
+}
+
 START_TEST(wlanapi)
 {
   HANDLE handle;
@@ -409,4 +472,5 @@ START_TEST(wlanapi)
   test_WlanStartScan();
   test_WlanGetAvailableNetworkList();
   test_WlanGetNetworkBssList();
+  test_WlanGetProfileList();
 }
