@@ -53,6 +53,12 @@ struct wlan_network
     struct wlan_bss_info info;
 };
 
+struct wlan_profile
+{
+    struct list entry;
+    CHAR name[WLAN_MAX_NAME_LENGTH];
+};
+
 extern BOOL load_dbus_functions( void );
 extern NTSTATUS init_dbus_connection( UINT_PTR *handle );
 extern void close_dbus_connection( void *c );
@@ -66,4 +72,6 @@ extern void wlan_bss_info_to_WLAN_BSS_ENTRY( const struct wlan_bss_info *info,
                                              WLAN_BSS_ENTRY *dest );
 extern NTSTATUS networkmanager_start_scan( void *connection, const GUID *interface,
                                            const DOT11_SSID *ssid );
+extern NTSTATUS networkmanager_wifi_device_get_setting_ids( void *connection, const GUID *device,
+                                                            struct list *ids );
 #endif /* __WINE_WLANAPI_UNIXLIB_PRIV_H */

@@ -285,6 +285,8 @@ typedef struct _WLAN_HOSTED_NETWORK_STATUS
 
 #define WLAN_MAX_NAME_LENGTH 256
 
+#define WLAN_PROFILE_USER 0x00000002
+
 typedef struct _WLAN_PROFILE_INFO
 {
     WCHAR strProfileName[WLAN_MAX_NAME_LENGTH];

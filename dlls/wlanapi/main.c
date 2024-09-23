@@ -367,9 +367,47 @@ DWORD WINAPI WlanGetNetworkBssList( HANDLE handle, const GUID *guid, const DOT11
 DWORD WINAPI WlanGetProfileList( HANDLE handle, const GUID *guid, void *reserved,
                                  WLAN_PROFILE_INFO_LIST **list )
 {
-    FIXME("(%p, %p, %p, %p) stub\n", handle, guid, reserved, list);
+    NTSTATUS status;
+    WLAN_PROFILE_INFO_LIST *ret_list;
+    struct wine_wlan *wlan;
+    struct wlan_get_profile_list_params params = {0};
+    struct wlan_profile_list_move_to_profile_info_params move_params = {0};
+    DWORD size;
 
-    return ERROR_CALL_NOT_IMPLEMENTED;
+    TRACE( "(%p, %s, %p, %p)\n", handle, debugstr_guid( guid ), reserved, list );
+
+    if (!handle || !guid || reserved || !list)
+        return ERROR_INVALID_PARAMETER;
+
+    wlan = handle_index( handle );
+    if (!wlan)
+        return ERROR_INVALID_HANDLE;
+
+    params.handle = wlan->unix_handle;
+    params.interface = guid;
+    status = UNIX_WLAN_CALL( wlan_get_profile_list, &params );
+    if (status)
+        return RtlNtStatusToDosError( status );
+
+    size = offsetof( WLAN_PROFILE_INFO_LIST, ProfileInfo[params.len] );
+    ret_list = WlanAllocateMemory( size );
+    if (!ret_list)
+    {
+        struct wlan_profile_list_free_params free_params = {0};
+        free_params.profiles = params.list;
+        UNIX_WLAN_CALL( wlan_profile_list_free, &free_params );
+        return ERROR_NOT_ENOUGH_MEMORY;
+    }
+
+    move_params.dest = ret_list->ProfileInfo;
+    move_params.profiles = params.list;
+    UNIX_WLAN_CALL( wlan_profile_list_move_to_profile_info, &move_params );
+
+    ret_list->dwIndex = 0;
+    ret_list->dwNumberOfItems = params.len;
+    *list = ret_list;
+
+    return ERROR_SUCCESS;
 }
 
 DWORD WINAPI WlanQueryInterface(HANDLE handle, const GUID *guid, WLAN_INTF_OPCODE opcode,

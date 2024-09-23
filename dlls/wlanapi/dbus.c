@@ -59,6 +59,8 @@ DBUS_FUNCS;
 #define NETWORKMANAGER_INTERFACE_DEVICE_WIRELESS "org.freedesktop.NetworkManager.Device.Wireless"
 #define NETWORKMANAGER_INTERFACE_ACCESS_POINT "org.freedesktop.NetworkManager.AccessPoint"
 #define NETWORKMANAGER_INTERFACE_CONNECTION_ACTIVE "org.freedesktop.NetworkManager.Connection.Active"
+#define NETWORKMANAGER_INTERFACE_SETTINGS "org.freedesktop.NetworkManager.Settings"
+#define NETWORKMANAGER_INTERFACE_SETTINGS_CONNECTION "org.freedesktop.NetworkManager.Settings.Connection"
 
 BOOL load_dbus_functions( void )
 {
@@ -818,6 +820,172 @@ NTSTATUS networkmanager_start_scan( void *connection, const GUID *interface,
     }
     p_dbus_message_unref( reply );
 
+    return STATUS_SUCCESS;
+}
+
+struct networkmanager_settings
+{
+    const char *id;
+    dbus_bool_t autoconnect;
+    const char *type;
+    const char *interface;
+};
+
+static BOOL networkmanager_settings_get_section_dict( DBusMessage *getsettings_reply,
+                                                      const char *name, DBusMessageIter *dict )
+{
+    DBusMessageIter iter, sections;
+
+    p_dbus_message_iter_init( getsettings_reply, &iter );
+    p_dbus_message_iter_recurse( &iter, &sections );
+    while (p_dbus_message_iter_has_next( &sections ))
+    {
+        DBusMessageIter section;
+        const char *section_name;
+
+        p_dbus_message_iter_recurse( &sections, &section );
+        p_dbus_message_iter_get_basic( &section, &section_name );
+        if (!strcmp( section_name, name ))
+        {
+            p_dbus_message_iter_next( &section );
+            p_dbus_message_iter_recurse( &section, dict );
+            return TRUE;
+        }
+        p_dbus_message_iter_next( &sections );
+    }
+
+    return FALSE;
+}
+
+static BOOL networkmanager_read_settings( DBusMessage *getsettings_reply,
+                                          struct networkmanager_settings *settings,
+                                          const char *filter_id )
+{
+    DBusMessageIter dict, variant;
+    const char *prop_name;
+
+    if (networkmanager_settings_get_section_dict( getsettings_reply, "connection", &dict ))
+    {
+        settings->autoconnect = 1;
+
+        while((prop_name = dbus_next_dict_entry( &dict, &variant )))
+        {
+            if (!strcmp( prop_name, "id" ) &&
+                p_dbus_message_iter_get_arg_type( &variant ) == DBUS_TYPE_STRING)
+                p_dbus_message_iter_get_basic( &variant, &settings->id );
+            else if (!strcmp( prop_name, "autoconnect" ) &&
+                     p_dbus_message_iter_get_arg_type( &variant ) == DBUS_TYPE_BOOLEAN)
+                p_dbus_message_iter_get_basic( &variant, &settings->autoconnect );
+            else if (!strcmp( prop_name, "type" ) &&
+                     p_dbus_message_iter_get_arg_type( &variant ) == DBUS_TYPE_STRING)
+                p_dbus_message_iter_get_basic( &variant, &settings->type );
+            else if (!strcmp( prop_name, "interface-name" ) &&
+                     p_dbus_message_iter_get_arg_type( &variant ) == DBUS_TYPE_STRING)
+                p_dbus_message_iter_get_basic( &variant, &settings->interface );
+        }
+    }
+    if (filter_id && !(settings->id && !strcmp(settings->id, filter_id)))
+        return FALSE;
+
+    return TRUE;
+}
+
+NTSTATUS networkmanager_wifi_device_get_setting_ids( void *connection, const GUID *device,
+                                                     struct list *ids)
+{
+    DBusMessage *request, *reply;
+    DBusError error;
+    char **object_paths;
+    int n_objects, i;
+    dbus_bool_t success;
+    char *device_path;
+    struct unix_wlan_interface_info device_info = {0};
+
+    if (!networkmanager_valid_device_guid( device )) return STATUS_INVALID_PARAMETER;
+    device_path = networkmanager_device_guid_to_path( device );
+    if (!device_path) return STATUS_NO_MEMORY;
+    if (!networkmanager_wifi_device_get_info( connection, device_path, &device_info))
+    {
+        free( device_path );
+        return STATUS_INTERNAL_ERROR;
+    }
+    free( device_path );
+
+    request = p_dbus_message_new_method_call(
+        NETWORKMANAGER_SERVICE, "/org/freedesktop/NetworkManager/Settings",
+        NETWORKMANAGER_INTERFACE_SETTINGS, "ListConnections" );
+    if (!request) return STATUS_NO_MEMORY;
+
+    p_dbus_error_init( &error );
+    reply =
+        p_dbus_connection_send_with_reply_and_block( connection, request, dbus_timeout, &error );
+    p_dbus_message_unref( request );
+    if (!reply)
+    {
+        NTSTATUS ret = dbus_error_to_ntstatus( &error );
+        ERR( "Could not get list of connections settings: %s: %s.\n", debugstr_a( error.name ),
+             debugstr_a( error.message ) );
+        p_dbus_error_free( &error );
+        return ret;
+    }
+
+    p_dbus_error_free( &error );
+    p_dbus_error_init( &error );
+    success = p_dbus_message_get_args( reply, &error, DBUS_TYPE_ARRAY, DBUS_TYPE_OBJECT_PATH,
+                                      &object_paths, &n_objects, DBUS_TYPE_INVALID );
+     if (!success)
+    {
+        NTSTATUS ret = dbus_error_to_ntstatus( &error );
+        ERR( "Could not read object paths from ListConnections reply: %s: %s.\n",
+             debugstr_a( error.name ), debugstr_a( error.message ) );
+        p_dbus_error_free( &error );
+        p_dbus_message_unref( reply );
+        return ret;
+    }
+
+    p_dbus_error_free( &error );
+    for (i = 0; i < n_objects; i++)
+    {
+        DBusMessage *getsettings_req, *getsettings_reply;
+        const char *object_path = object_paths[i];
+        struct networkmanager_settings settings = {0};
+
+        getsettings_req = p_dbus_message_new_method_call(
+            NETWORKMANAGER_SERVICE, object_path, NETWORKMANAGER_INTERFACE_SETTINGS_CONNECTION,
+                                                         "GetSettings" );
+        if (!getsettings_req) continue;
+        p_dbus_error_init( &error );
+        getsettings_reply = p_dbus_connection_send_with_reply_and_block( connection, getsettings_req,
+                                                                         dbus_timeout, &error );
+        p_dbus_message_unref( getsettings_req );
+        if (!getsettings_reply)
+        {
+            ERR( "Could not get settings for %s: %s: %s.\n", debugstr_a( object_path ),
+             debugstr_a( error.name ), debugstr_a( error.message ) );
+            p_dbus_error_free( &error );
+            continue;
+        }
+        p_dbus_error_free( &error );
+        if (networkmanager_read_settings( getsettings_reply, &settings, NULL ) && settings.id &&
+            settings.type && !strcmp( settings.type, "802-11-wireless" ) &&
+            settings.interface && !strcmp ( settings.interface, device_info.description ))
+        {
+            struct wlan_profile *entry;
+            SIZE_T len;
+
+            entry = malloc( sizeof( *entry ) );
+            if (!entry) continue;
+
+            len = min( strlen( settings.id ), sizeof( entry->name ) - 1 );
+            memcpy( entry->name, settings.id, len );
+            entry->name[len] = '\0';
+            list_add_tail( ids, &entry->entry );
+        }
+        p_dbus_message_unref( getsettings_reply );
+    }
+
+    p_dbus_free_string_array( object_paths );
+    p_dbus_message_unref( reply );
     return STATUS_SUCCESS;
 }
 

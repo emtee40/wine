@@ -420,15 +420,15 @@ static void test_WlanGetProfileList( void )
         trace( "  Index[%ld] GUID: %s\n", i, debugstr_guid( &info->InterfaceGuid ) );
 
         ret = WlanGetProfileList( NULL, NULL, NULL, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
         ret = WlanGetProfileList( handle, NULL, NULL, &list );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
-        todo_wine ok( list == bad_list, "list changed\n" );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( list == bad_list, "list changed\n" );
         ret = WlanGetProfileList( handle, &info->InterfaceGuid, NULL, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
         ret = WlanGetProfileList( handle, &info->InterfaceGuid, &reserved, &list );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
-        todo_wine ok( list == bad_list, "list changed\n" );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( list == bad_list, "list changed\n" );
 
         ret = WlanGetProfileList( handle, &info->InterfaceGuid, NULL, &list );
         ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret);

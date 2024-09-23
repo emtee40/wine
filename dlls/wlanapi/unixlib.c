@@ -210,6 +210,70 @@ NTSTATUS wlan_start_scan( void *params )
     return networkmanager_start_scan( (void *) args->handle, args->interface, args->ssid );
 }
 
+NTSTATUS wlan_get_profile_list( void *params )
+{
+    NTSTATUS status;
+    struct wlan_get_profile_list_params *args = params;
+    struct list *profiles;
+
+    if (!initialized)
+        return STATUS_NOT_SUPPORTED;
+
+    profiles = malloc( sizeof( *profiles ));
+    if (!profiles) return STATUS_NO_MEMORY;
+
+    list_init( profiles );
+    status = networkmanager_wifi_device_get_setting_ids( (void *)args->handle, args->interface,
+                                                         profiles );
+    if (status)
+    {
+        free( profiles );
+        return status;
+    }
+
+    args->list = (UINT_PTR)profiles;
+    args->len = list_count( profiles );
+    return STATUS_SUCCESS;
+}
+
+NTSTATUS wlan_profile_list_move_to_profile_info( void *params )
+{
+    struct wlan_profile_list_move_to_profile_info_params *args = params;
+    struct list *profiles = (struct list *)args->profiles;
+    struct wlan_profile *cur, *next;
+    SIZE_T i = 0;
+
+    LIST_FOR_EACH_ENTRY_SAFE( cur, next, profiles, struct wlan_profile, entry)
+    {
+        WCHAR *dst = args->dest[i].strProfileName;
+
+        args->dest[i++].dwFlags = WLAN_PROFILE_USER;
+        ntdll_umbstowcs( cur->name, strlen( cur->name ) + 1, dst,
+                        ARRAY_SIZE( args->dest[0].strProfileName ) );
+        list_remove( &cur->entry );
+        free( cur );
+    }
+
+    free( profiles );
+    return STATUS_SUCCESS;
+}
+
+NTSTATUS wlan_profile_list_free( void *params )
+{
+    struct wlan_profile_list_free_params *args = params;
+    struct list *profiles = (struct list *)args->profiles;
+    struct wlan_profile *cur, *next;
+
+    LIST_FOR_EACH_ENTRY_SAFE( cur, next, profiles, struct wlan_profile, entry)
+    {
+        list_remove( &cur->entry );
+        free( cur );
+    }
+
+    free( profiles );
+    return STATUS_SUCCESS;
+}
+
 const unixlib_entry_t __wine_unix_call_funcs[] = {
     wlan_init,
     wlan_open_handle,
@@ -225,6 +289,10 @@ const unixlib_entry_t __wine_unix_call_funcs[] = {
     wlan_network_list_free,
 
     wlan_start_scan,
+
+    wlan_get_profile_list,
+    wlan_profile_list_move_to_profile_info,
+    wlan_profile_list_free
 };
 
 C_ASSERT( ARRAYSIZE( __wine_unix_call_funcs ) == unix_funcs_count );

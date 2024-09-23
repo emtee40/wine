@@ -97,6 +97,27 @@ struct wlan_start_scan
     const DOT11_SSID *ssid;
 };
 
+struct wlan_get_profile_list_params
+{
+    UINT_PTR handle;
+    const GUID *interface;
+
+    UINT_PTR list;
+    SIZE_T len;
+};
+
+struct wlan_profile_list_move_to_profile_info_params
+{
+    UINT_PTR profiles;
+
+    WLAN_PROFILE_INFO *dest;
+};
+
+struct wlan_profile_list_free_params
+{
+    UINT_PTR profiles;
+};
+
 enum wlanpi_funcs
 {
     unix_wlan_init,
@@ -114,6 +135,10 @@ enum wlanpi_funcs
     unix_wlan_network_list_free,
 
     unix_wlan_start_scan,
+
+    unix_wlan_get_profile_list,
+    unix_wlan_profile_list_move_to_profile_info,
+    unix_wlan_profile_list_free,
 
     unix_funcs_count
 };
