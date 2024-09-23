@@ -281,6 +281,16 @@ DWORD WINAPI WlanGetAvailableNetworkList(HANDLE handle, const GUID *guid, DWORD 
     return ERROR_SUCCESS;
 }
 
+DWORD WINAPI WlanGetNetworkBssList( HANDLE handle, const GUID *guid, const DOT11_SSID *ssid,
+                                    DOT11_BSS_TYPE bss_type, BOOL security, void *reserved,
+                                    WLAN_BSS_LIST **bss_list )
+{
+    FIXME( "(%p, %s, %p, %d, %d, %p, %p) stub\n", handle, debugstr_guid( guid ), ssid, bss_type,
+           security, reserved, bss_list );
+
+    return ERROR_CALL_NOT_IMPLEMENTED;
+}
+
 DWORD WINAPI WlanQueryInterface(HANDLE handle, const GUID *guid, WLAN_INTF_OPCODE opcode,
                     void *reserved, DWORD *data_size, void **data, WLAN_OPCODE_VALUE_TYPE *opcode_type)
 {

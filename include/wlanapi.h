@@ -135,6 +135,38 @@ typedef struct _WLAN_AVAILABLE_NETWORK
     DWORD dwReserved;
 } WLAN_AVAILABLE_NETWORK, *PWLAN_AVAILABLE_NETWORK;
 
+typedef struct _WLAN_RATE_SET {
+  ULONG  uRateSetLength;
+  USHORT usRateSet[DOT11_RATE_SET_MAX_LENGTH];
+} WLAN_RATE_SET, *PWLAN_RATE_SET;
+
+typedef struct _WLAN_BSS_ENTRY
+{
+    DOT11_SSID dot11Ssid;
+    ULONG uPhyId;
+    DOT11_MAC_ADDRESS dot11Bssid;
+    DOT11_BSS_TYPE dot11BssType;
+    DOT11_PHY_TYPE dot11BssPhyType;
+    LONG lRssi;
+    ULONG uLinkQuality;
+    BOOLEAN bInRegDomain;
+    USHORT usBeaconPeriod;
+    ULONGLONG ullTimestamp;
+    ULONGLONG ullHostTimestamp;
+    USHORT usCapabilityInformation;
+    ULONG ulChCenterFrequency;
+    WLAN_RATE_SET wlanRateSet;
+    ULONG ulIeOffset;
+    ULONG ulIeSize;
+} WLAN_BSS_ENTRY, *PWLAN_BSS_ENTRY;
+
+typedef struct _WLAN_BSS_LIST
+{
+    DWORD dwTotalSize;
+    DWORD dwNumberOfItems;
+    WLAN_BSS_ENTRY wlanBssEntries[1];
+} WLAN_BSS_LIST, *PWLAN_BSS_LIST;
+
 typedef enum _WLAN_INTF_OPCODE
 {
     wlan_intf_opcode_autoconf_start = 0x000000000,
@@ -260,5 +292,7 @@ DWORD WINAPI WlanScan(HANDLE, const GUID *, const DOT11_SSID *, const WLAN_RAW_D
 DWORD WINAPI WlanRegisterNotification(HANDLE, DWORD, BOOL, WLAN_NOTIFICATION_CALLBACK, void *, void *, DWORD *);
 DWORD WINAPI WlanGetAvailableNetworkList(HANDLE, const GUID *, DWORD, void *, WLAN_AVAILABLE_NETWORK_LIST **);
 DWORD WINAPI WlanQueryInterface(HANDLE, const GUID *, WLAN_INTF_OPCODE, void *, DWORD *, void **, WLAN_OPCODE_VALUE_TYPE *);
+DWORD WINAPI WlanGetNetworkBssList( HANDLE, const GUID *, const DOT11_SSID *, DOT11_BSS_TYPE, BOOL,
+                                    void *, WLAN_BSS_LIST ** );
 
 #endif /* _WLAN_WLANAPI_H */
