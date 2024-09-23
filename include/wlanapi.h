@@ -283,6 +283,21 @@ typedef struct _WLAN_HOSTED_NETWORK_STATUS
     WLAN_HOSTED_NETWORK_PEER_STATE PeerList[1];
 } WLAN_HOSTED_NETWORK_STATUS, *PWLAN_HOSTED_NETWORK_STATUS;
 
+#define WLAN_MAX_NAME_LENGTH 256
+
+typedef struct _WLAN_PROFILE_INFO
+{
+    WCHAR strProfileName[WLAN_MAX_NAME_LENGTH];
+    DWORD dwFlags;
+} WLAN_PROFILE_INFO, *PWLAN_PROFILE_INFO;
+
+typedef struct _WLAN_PROFILE_INFO_LIST
+{
+    DWORD dwNumberOfItems;
+    DWORD dwIndex;
+    WLAN_PROFILE_INFO ProfileInfo[1];
+} WLAN_PROFILE_INFO_LIST, *PWLAN_PROFILE_INFO_LIST;
+
 DWORD WINAPI WlanCloseHandle(HANDLE, void *);
 DWORD WINAPI WlanEnumInterfaces(HANDLE, void *, WLAN_INTERFACE_INFO_LIST **);
 DWORD WINAPI WlanOpenHandle(DWORD, void *, DWORD *, HANDLE *);
@@ -294,5 +309,6 @@ DWORD WINAPI WlanGetAvailableNetworkList(HANDLE, const GUID *, DWORD, void *, WL
 DWORD WINAPI WlanQueryInterface(HANDLE, const GUID *, WLAN_INTF_OPCODE, void *, DWORD *, void **, WLAN_OPCODE_VALUE_TYPE *);
 DWORD WINAPI WlanGetNetworkBssList( HANDLE, const GUID *, const DOT11_SSID *, DOT11_BSS_TYPE, BOOL,
                                     void *, WLAN_BSS_LIST ** );
+DWORD WINAPI WlanGetProfileList( HANDLE, const GUID *, void *, WLAN_PROFILE_INFO_LIST ** );
 
 #endif /* _WLAN_WLANAPI_H */

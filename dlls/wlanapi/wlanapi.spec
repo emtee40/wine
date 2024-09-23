@@ -12,7 +12,7 @@
 @ stdcall WlanGetNetworkBssList(ptr ptr ptr long long ptr ptr)
 @ stub WlanGetProfile
 @ stub WlanGetProfileCustomUserData
-@ stub WlanGetProfileList
+@ stdcall WlanGetProfileList(ptr ptr ptr ptr)
 @ stub WlanGetSecuritySettings
 @ stdcall WlanHostedNetworkQueryProperty(ptr long ptr ptr ptr ptr)
 @ stdcall WlanHostedNetworkQuerySecondaryKey(ptr ptr ptr ptr ptr ptr ptr)

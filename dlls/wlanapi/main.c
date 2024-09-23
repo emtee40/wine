@@ -364,6 +364,14 @@ DWORD WINAPI WlanGetNetworkBssList( HANDLE handle, const GUID *guid, const DOT11
     return ERROR_SUCCESS;
 }
 
+DWORD WINAPI WlanGetProfileList( HANDLE handle, const GUID *guid, void *reserved,
+                                 WLAN_PROFILE_INFO_LIST **list )
+{
+    FIXME("(%p, %p, %p, %p) stub\n", handle, guid, reserved, list);
+
+    return ERROR_CALL_NOT_IMPLEMENTED;
+}
+
 DWORD WINAPI WlanQueryInterface(HANDLE handle, const GUID *guid, WLAN_INTF_OPCODE opcode,
                     void *reserved, DWORD *data_size, void **data, WLAN_OPCODE_VALUE_TYPE *opcode_type)
 {
