@@ -300,6 +300,26 @@ typedef struct _WLAN_PROFILE_INFO_LIST
     WLAN_PROFILE_INFO ProfileInfo[1];
 } WLAN_PROFILE_INFO_LIST, *PWLAN_PROFILE_INFO_LIST;
 
+typedef enum _WLAN_CONNECTION_MODE
+{
+    wlan_connection_mode_profile = 0,
+    wlan_connection_mode_temporary_profile,
+    wlan_connection_mode_discovery_secure,
+    wlan_connection_mode_discovery_unsecure,
+    wlan_connection_mode_auto,
+    wlan_connection_mode_invalid
+} WLAN_CONNECTION_MODE, *PWLAN_CONNECTION_MODE;
+
+typedef struct _WLAN_CONNECTION_PARAMETERS
+{
+    WLAN_CONNECTION_MODE wlanConnectionMode;
+    const WCHAR *strProfile;
+    DOT11_SSID *pdot11Ssid;
+    DOT11_BSSID_LIST *pDesiredBssidList;
+    DOT11_BSS_TYPE dot11BssType;
+    DWORD dwFlags;
+} WLAN_CONNECTION_PARAMETERS, *PWLAN_CONNECTION_PARAMETERS;
+
 DWORD WINAPI WlanCloseHandle(HANDLE, void *);
 DWORD WINAPI WlanEnumInterfaces(HANDLE, void *, WLAN_INTERFACE_INFO_LIST **);
 DWORD WINAPI WlanOpenHandle(DWORD, void *, DWORD *, HANDLE *);
@@ -312,5 +332,6 @@ DWORD WINAPI WlanQueryInterface(HANDLE, const GUID *, WLAN_INTF_OPCODE, void *, 
 DWORD WINAPI WlanGetNetworkBssList( HANDLE, const GUID *, const DOT11_SSID *, DOT11_BSS_TYPE, BOOL,
                                     void *, WLAN_BSS_LIST ** );
 DWORD WINAPI WlanGetProfileList( HANDLE, const GUID *, void *, WLAN_PROFILE_INFO_LIST ** );
+DWORD WINAPI WlanConnect( HANDLE, const GUID *, const WLAN_CONNECTION_PARAMETERS *, void * );
 
 #endif /* _WLAN_WLANAPI_H */

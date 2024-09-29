@@ -1,6 +1,6 @@
 @ stdcall WlanAllocateMemory(long)
 @ stdcall WlanCloseHandle(ptr ptr)
-@ stub WlanConnect
+@ stdcall WlanConnect(ptr ptr ptr ptr)
 @ stub WlanDeleteProfile
 @ stub WlanDisconnect
 @ stdcall WlanEnumInterfaces(long ptr ptr)
