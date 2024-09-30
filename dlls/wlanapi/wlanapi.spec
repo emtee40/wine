@@ -29,7 +29,7 @@
 @ stub WlanSetAutoConfigParameter
 @ stub WlanSetFilterList
 @ stub WlanSetInterface
-@ stub WlanSetProfile
+@ stdcall WlanSetProfile(ptr ptr long ptr ptr long ptr ptr)
 @ stub WlanSetProfileCustomUserData
 @ stub WlanSetProfileEapUserData
 @ stub WlanSetProfileEapXmlUserData

@@ -410,6 +410,15 @@ DWORD WINAPI WlanGetProfileList( HANDLE handle, const GUID *guid, void *reserved
     return ERROR_SUCCESS;
 }
 
+DWORD WINAPI WlanSetProfile( HANDLE handle, const GUID *guid, DWORD flags,
+                             const WCHAR *profile_xml_str, const WCHAR *sec_desc, BOOL overwrite,
+                             void *reserved, DWORD *wlan_reason )
+{
+    FIXME( "(%p, %p, 0x%lx, %p, %p, %d, %p, %p) stub\n", handle, guid, flags, profile_xml_str, sec_desc,
+           overwrite, reserved, wlan_reason );
+    return ERROR_CALL_NOT_IMPLEMENTED;
+}
+
 DWORD WINAPI WlanConnect( HANDLE handle, const GUID *guid, const WLAN_CONNECTION_PARAMETERS *params,
                           void *reserved )
 {
