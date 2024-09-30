@@ -2,7 +2,7 @@
 @ stdcall WlanCloseHandle(ptr ptr)
 @ stdcall WlanConnect(ptr ptr ptr ptr)
 @ stub WlanDeleteProfile
-@ stub WlanDisconnect
+@ stdcall WlanDisconnect(ptr ptr ptr)
 @ stdcall WlanEnumInterfaces(long ptr ptr)
 @ stub WlanExtractPsdIEDataList
 @ stdcall WlanFreeMemory(ptr)

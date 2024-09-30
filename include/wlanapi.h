@@ -333,5 +333,6 @@ DWORD WINAPI WlanGetNetworkBssList( HANDLE, const GUID *, const DOT11_SSID *, DO
                                     void *, WLAN_BSS_LIST ** );
 DWORD WINAPI WlanGetProfileList( HANDLE, const GUID *, void *, WLAN_PROFILE_INFO_LIST ** );
 DWORD WINAPI WlanConnect( HANDLE, const GUID *, const WLAN_CONNECTION_PARAMETERS *, void * );
+DWORD WINAPI WlanDisconnect( HANDLE, const GUID *, void * );
 
 #endif /* _WLAN_WLANAPI_H */
