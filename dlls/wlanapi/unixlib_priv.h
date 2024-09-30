@@ -74,4 +74,6 @@ extern NTSTATUS networkmanager_start_scan( void *connection, const GUID *interfa
                                            const DOT11_SSID *ssid );
 extern NTSTATUS networkmanager_wifi_device_get_setting_ids( void *connection, const GUID *device,
                                                             struct list *ids );
+extern NTSTATUS networkmanager_connect_with_setting_id( void *connection, const GUID *device,
+                                                        const char *id );
 #endif /* __WINE_WLANAPI_UNIXLIB_PRIV_H */

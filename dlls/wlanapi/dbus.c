@@ -989,6 +989,163 @@ NTSTATUS networkmanager_wifi_device_get_setting_ids( void *connection, const GUI
     return STATUS_SUCCESS;
 }
 
+static NTSTATUS networkmanager_get_setting_path_by_id( void *connection, const char *id,
+                                                       char **path )
+{
+    DBusMessage *request, *reply;
+    DBusError error;
+    dbus_bool_t success;
+    char **object_paths;
+    int n_objects, i;
+
+    request = p_dbus_message_new_method_call(
+        NETWORKMANAGER_SERVICE, "/org/freedesktop/NetworkManager/Settings",
+        NETWORKMANAGER_INTERFACE_SETTINGS, "ListConnections" );
+    if (!request) return STATUS_NO_MEMORY;
+
+    p_dbus_error_init( &error );
+    reply =
+        p_dbus_connection_send_with_reply_and_block( connection, request, dbus_timeout, &error );
+    p_dbus_message_unref( request );
+    if (!reply)
+    {
+        NTSTATUS ret = dbus_error_to_ntstatus( &error );
+        ERR( "Could not get list of connections settings: %s: %s.\n", debugstr_a( error.name ),
+             debugstr_a( error.message ) );
+        p_dbus_error_free( &error );
+        return ret;
+    }
+
+    p_dbus_error_free( &error );
+    p_dbus_error_init( &error );
+    success = p_dbus_message_get_args( reply, &error, DBUS_TYPE_ARRAY, DBUS_TYPE_OBJECT_PATH,
+                                      &object_paths, &n_objects, DBUS_TYPE_INVALID );
+    if (!success)
+    {
+        NTSTATUS ret = dbus_error_to_ntstatus( &error );
+        ERR( "Could not read object paths from ListConnections reply: %s: %s.\n",
+             debugstr_a( error.name ), debugstr_a( error.message ) );
+        p_dbus_error_free( &error );
+        p_dbus_message_unref( reply );
+        return ret;
+    }
+
+    p_dbus_error_free( &error );
+    *path = NULL;
+    for (i = 0; i < n_objects; i++)
+    {
+        DBusMessage *getsettings_req, *getsettings_reply;
+        const char *object_path = object_paths[i];
+        struct networkmanager_settings settings = {0};
+
+        getsettings_req = p_dbus_message_new_method_call(
+            NETWORKMANAGER_SERVICE, object_path, NETWORKMANAGER_INTERFACE_SETTINGS_CONNECTION,
+                                                         "GetSettings" );
+        if (!getsettings_req) continue;
+        p_dbus_error_init( &error );
+        getsettings_reply = p_dbus_connection_send_with_reply_and_block( connection, getsettings_req,
+                                                                         dbus_timeout, &error );
+        p_dbus_message_unref( getsettings_req );
+        if (!getsettings_reply)
+        {
+            ERR( "Could not get settings for %s: %s: %s.\n", debugstr_a( object_path ),
+             debugstr_a( error.name ), debugstr_a( error.message ) );
+            p_dbus_error_free( &error );
+            continue;
+        }
+        p_dbus_error_free( &error );
+
+        if (networkmanager_read_settings( getsettings_reply, &settings, id ))
+        {
+            *path = strdup( object_path );
+            if (!*path)
+            {
+                p_dbus_message_unref( getsettings_reply );
+                p_dbus_free_string_array( object_paths );
+                p_dbus_message_unref( reply );
+                return STATUS_NO_MEMORY;
+            }
+            p_dbus_message_unref( getsettings_reply );
+            break;
+        }
+    }
+
+    p_dbus_free_string_array( object_paths );
+    p_dbus_message_unref( reply );
+    return *path ? STATUS_SUCCESS : STATUS_NOT_FOUND;
+}
+
+NTSTATUS networkmanager_connect_with_setting_id( void *connection, const GUID *device,
+                                                 const char *id )
+{
+    NTSTATUS status;
+    DBusMessage *request, *reply;
+    DBusError error;
+    dbus_bool_t success;
+    char *device_path, *settings_path;
+    const char *connection_path, *root_path = "/";
+
+    TRACE( "(%p, %s, %s)\n", connection, debugstr_guid( device ), debugstr_a( id ) );
+
+    if (!networkmanager_valid_device_guid( device )) return STATUS_INVALID_PARAMETER;
+    device_path = networkmanager_device_guid_to_path( device );
+    if (!device_path) return STATUS_NO_MEMORY;
+
+    status = networkmanager_get_setting_path_by_id( connection, id, &settings_path );
+    if (status)
+    {
+        free( device_path );
+        return status;
+    }
+
+    request =
+        p_dbus_message_new_method_call( NETWORKMANAGER_SERVICE, "/org/freedesktop/NetworkManager",
+                                        NETWORKMANAGER_INTERFACE_MANAGER, "ActivateConnection" );
+    if (!request)
+    {
+        free( device_path );
+        return STATUS_NO_MEMORY;
+    }
+
+    success = p_dbus_message_append_args( request, DBUS_TYPE_OBJECT_PATH, &settings_path,
+                                          DBUS_TYPE_OBJECT_PATH, &device_path, DBUS_TYPE_OBJECT_PATH,
+                                          &root_path, DBUS_TYPE_INVALID );
+    if (!success)
+    {
+        free( device_path );
+        p_dbus_message_unref( request );
+        return STATUS_NO_MEMORY;
+    }
+
+    TRACE( "Activating connection using settings %s (%s) with device %s\n",
+           debugstr_a( settings_path ), debugstr_a( id ), debugstr_a( device_path ) );
+    free( settings_path );
+    free( device_path );
+
+    p_dbus_error_init( &error );
+    reply = p_dbus_connection_send_with_reply_and_block( connection, request, dbus_timeout, &error );
+    p_dbus_message_unref( request );
+    if (!reply)
+    {
+        ERR( "Unable to activate connection: %s: %s\n", debugstr_a( error.name ),
+             debugstr_a( error.message ) );
+        status = dbus_error_to_ntstatus( &error );
+        p_dbus_error_free( &error );
+        return status;
+    }
+
+    p_dbus_error_free( &error );
+    p_dbus_error_init( &error );
+    success = p_dbus_message_get_args( reply, &error, DBUS_TYPE_OBJECT_PATH, &connection_path,
+                                       DBUS_TYPE_INVALID );
+    if (success)
+        TRACE("Activated connection %s\n", debugstr_a( connection_path ));
+    p_dbus_error_free( &error );
+    p_dbus_message_unref( reply );
+
+    return STATUS_SUCCESS;
+}
+
 #else /* SONAME_LIBDBUS_1 */
 BOOL load_dbus_functions( void ) { return FALSE; }
 NTSTATUS init_dbus_connection( UINT_PTR *handle ) { return STATUS_NOT_SUPPORTED; }

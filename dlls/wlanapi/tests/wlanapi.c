@@ -463,10 +463,10 @@ static void test_WlanConnect( void )
     ok( ret == 0, "Expected 0, got %ld\n", ret );
 
     ret = WlanConnect( NULL, NULL, NULL, NULL );
-    todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+    ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
     ret = WlanConnect( handle, NULL, NULL, NULL );
-    todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+    ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
     ret = WlanEnumInterfaces( handle, NULL, &ifaces );
     ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret);
@@ -497,15 +497,15 @@ static void test_WlanConnect( void )
         }
 
         ret = WlanConnect( handle, &info->InterfaceGuid, NULL, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
         params.wlanConnectionMode = wlan_connection_mode_auto;
         ret = WlanConnect( handle, &info->InterfaceGuid, &params, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
         params.wlanConnectionMode = wlan_connection_mode_invalid;
         ret = WlanConnect( handle, &info->InterfaceGuid, &params, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
         for (j = 0; j < list->dwNumberOfItems; j++)
         {
@@ -516,51 +516,51 @@ static void test_WlanConnect( void )
             params.dot11BssType = dot11_BSS_type_infrastructure;
             params.strProfile = list->ProfileInfo[j].strProfileName;
             ret = WlanConnect( handle, &info->InterfaceGuid, &params, NULL );
-            todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+            ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
             params.wlanConnectionMode = wlan_connection_mode_discovery_unsecure;
             ret = WlanConnect( handle, &info->InterfaceGuid, &params, NULL );
-            todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+            ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
             params.wlanConnectionMode = wlan_connection_mode_discovery_secure;
             params.strProfile = NULL;
             params.dot11BssType = dot11_BSS_type_any;
             ret = WlanConnect( handle, &info->InterfaceGuid, &params, NULL );
-            todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+            ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
             params.wlanConnectionMode = wlan_connection_mode_discovery_unsecure;
             ret = WlanConnect( handle, &info->InterfaceGuid, &params, NULL );
-            todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+            ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
             params.wlanConnectionMode = wlan_connection_mode_discovery_secure;
             params.dot11BssType = dot11_BSS_type_infrastructure;
             params.pdot11Ssid = NULL;
             ret = WlanConnect( handle, &info->InterfaceGuid, &params, NULL );
-            todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+            ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
             params.wlanConnectionMode = wlan_connection_mode_discovery_unsecure;
             ret = WlanConnect( handle, &info->InterfaceGuid, &params, NULL );
-            todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+            ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
             params.pdot11Ssid = &dummy_ssid;
             ret = WlanConnect( handle, &info->InterfaceGuid, &params, &reserved );
-            todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+            ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
             memset( &params, 0, sizeof( params ) );
 
             params.wlanConnectionMode = wlan_connection_mode_profile;
             params.strProfile = NULL;
             ret = WlanConnect( handle, &info->InterfaceGuid, &params, NULL );
-            todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+            ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
             params.strProfile = list->ProfileInfo[j].strProfileName;
             ret = WlanConnect( handle, &info->InterfaceGuid, &params, &reserved );
-            todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+            ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
             /* WlanConnect succeeds immediately, regardless of whether the connection was successful
              * or not. */
             ret = WlanConnect( handle, &info->InterfaceGuid, &params, NULL );
-            todo_wine ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret );
+            ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret );
         }
 
         WlanFreeMemory( list );

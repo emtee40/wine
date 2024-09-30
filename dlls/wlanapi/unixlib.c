@@ -274,6 +274,17 @@ NTSTATUS wlan_profile_list_free( void *params )
     return STATUS_SUCCESS;
 }
 
+NTSTATUS wlan_connect_with_profile_name( void *params )
+{
+    struct wlan_connect_with_profile_name_params *args = params;
+
+    if (!initialized)
+        return STATUS_NOT_SUPPORTED;
+
+    return networkmanager_connect_with_setting_id( (void *)args->handle, args->device,
+                                                   args->profile_name );
+}
+
 const unixlib_entry_t __wine_unix_call_funcs[] = {
     wlan_init,
     wlan_open_handle,
@@ -292,7 +303,9 @@ const unixlib_entry_t __wine_unix_call_funcs[] = {
 
     wlan_get_profile_list,
     wlan_profile_list_move_to_profile_info,
-    wlan_profile_list_free
+    wlan_profile_list_free,
+
+    wlan_connect_with_profile_name
 };
 
 C_ASSERT( ARRAYSIZE( __wine_unix_call_funcs ) == unix_funcs_count );

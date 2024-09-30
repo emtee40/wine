@@ -413,8 +413,61 @@ DWORD WINAPI WlanGetProfileList( HANDLE handle, const GUID *guid, void *reserved
 DWORD WINAPI WlanConnect( HANDLE handle, const GUID *guid, const WLAN_CONNECTION_PARAMETERS *params,
                           void *reserved )
 {
-    FIXME( "(%p, %s, %p, %p) stub\n", handle, debugstr_guid( guid ), params, reserved );
-    return ERROR_CALL_NOT_IMPLEMENTED;
+    struct wine_wlan *wlan;
+
+    TRACE( "(%p, %s, %p, %p)\n", handle, debugstr_guid( guid ), params, reserved );
+
+    if (!handle || !guid || !params || reserved)
+        return ERROR_INVALID_PARAMETER;
+
+    wlan = handle_index( handle );
+    if (!wlan)
+        return ERROR_INVALID_HANDLE;
+
+    switch (params->wlanConnectionMode)
+    {
+        case wlan_connection_mode_profile:
+        {
+            struct wlan_connect_with_profile_name_params connect_params = {0};
+            char *name;
+            SIZE_T len;
+            NTSTATUS status;
+
+            if (!params->strProfile || !wcslen( params->strProfile ) ||
+                wcslen( params->strProfile ) > WLAN_MAX_NAME_LENGTH)
+                return ERROR_INVALID_PARAMETER;
+
+            connect_params.handle = wlan->unix_handle;
+            connect_params.device = guid;
+            len = wcstombs( NULL, params->strProfile, 0 ) + 1;
+            name = malloc( len );
+            if (!name)
+                return ERROR_INVALID_PARAMETER;
+            wcstombs( name, params->strProfile, len );
+            connect_params.profile_name = name;
+            status = UNIX_WLAN_CALL( wlan_connect_with_profile_name, &connect_params );
+            if (status)
+            {
+                free( name );
+                return RtlNtStatusToDosError( status );
+            }
+            return ERROR_SUCCESS;
+        }
+
+        case wlan_connection_mode_discovery_secure:
+        case wlan_connection_mode_discovery_unsecure:
+            if (params->strProfile || !params->pdot11Ssid ||
+                params->dot11BssType == dot11_BSS_type_any)
+                return ERROR_INVALID_PARAMETER;
+        case wlan_connection_mode_temporary_profile:
+            FIXME( "unsupported wlanConnectionMode value: %#x", params->wlanConnectionMode );
+            return ERROR_CALL_NOT_IMPLEMENTED;
+
+        case wlan_connection_mode_invalid:
+        case wlan_connection_mode_auto:
+        default:
+            return ERROR_INVALID_PARAMETER;
+    }
 }
 
 DWORD WINAPI WlanQueryInterface(HANDLE handle, const GUID *guid, WLAN_INTF_OPCODE opcode,

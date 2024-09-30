@@ -118,6 +118,13 @@ struct wlan_profile_list_free_params
     UINT_PTR profiles;
 };
 
+struct wlan_connect_with_profile_name_params
+{
+    UINT_PTR handle;
+    const GUID *device;
+    const CHAR *profile_name;
+};
+
 enum wlanpi_funcs
 {
     unix_wlan_init,
@@ -139,6 +146,8 @@ enum wlanpi_funcs
     unix_wlan_get_profile_list,
     unix_wlan_profile_list_move_to_profile_info,
     unix_wlan_profile_list_free,
+
+    unix_wlan_connect_with_profile_name,
 
     unix_funcs_count
 };
