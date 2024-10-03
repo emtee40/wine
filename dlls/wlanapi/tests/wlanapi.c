@@ -654,12 +654,12 @@ static void test_WlanSetProfile( void )
         trace( "  Index[%ld] GUID: %s\n", i, debugstr_guid( &info->InterfaceGuid ) );
 
         ret = WlanSetProfile( NULL, NULL, 0, NULL, NULL, FALSE, NULL, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
         ret = WlanSetProfile( handle, NULL, 0, NULL, NULL, FALSE, NULL, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
         ret = WlanSetProfile( handle, &ifaces->InterfaceInfo[i].InterfaceGuid, 0, NULL, NULL, FALSE,
                               NULL, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
         for (j = 0; j < ARRAY_SIZE( valid_profiles ); j++)
         {
@@ -676,21 +676,21 @@ static void test_WlanSetProfile( void )
 
             ret = WlanSetProfile( handle, &info->InterfaceGuid, 0, profile_xml, NULL, FALSE, NULL,
                                   NULL );
-            todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+            ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
             ret = WlanSetProfile( handle, &info->InterfaceGuid, 0, profile_xml, NULL, FALSE,
                                   &reserved, &wlan_reason );
-            todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+            ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
             ret = WlanSetProfile( handle, &info->InterfaceGuid, 0, profile_xml, NULL, TRUE, NULL,
                                   &wlan_reason );
-            todo_wine ok( !ret, "Expected 0, got %ld\n", ret );
-            todo_wine ok( !wlan_reason, "Expected 0, got %ld\n", wlan_reason );
-            test_WlanGetProfileList( valid_profiles[j].profile_name, winetest_platform_is_wine );
+            ok( !ret, "Expected 0, got %ld\n", ret );
+            ok( !wlan_reason, "Expected 0, got %ld\n", wlan_reason );
+            test_WlanGetProfileList( valid_profiles[j].profile_name, FALSE );
 
             ret = WlanSetProfile( handle, &info->InterfaceGuid, 0, profile_xml, NULL, FALSE, NULL,
                                   &wlan_reason );
-            todo_wine ok( ret == ERROR_ALREADY_EXISTS, "Expected 183, got %ld\n", ret );
-            todo_wine ok( !wlan_reason, "Expected 0, got %ld\n", wlan_reason );
+            ok( ret == ERROR_ALREADY_EXISTS, "Expected 183, got %ld\n", ret );
+            ok( !wlan_reason, "Expected 0, got %ld\n", wlan_reason );
             winetest_pop_context();
         }
     }

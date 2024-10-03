@@ -42,6 +42,7 @@
 #include "wlanapi.h"
 
 #include "unixlib.h"
+#include "profile.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(wlanapi);
 
@@ -414,9 +415,40 @@ DWORD WINAPI WlanSetProfile( HANDLE handle, const GUID *guid, DWORD flags,
                              const WCHAR *profile_xml_str, const WCHAR *sec_desc, BOOL overwrite,
                              void *reserved, DWORD *wlan_reason )
 {
-    FIXME( "(%p, %p, 0x%lx, %p, %p, %d, %p, %p) stub\n", handle, guid, flags, profile_xml_str, sec_desc,
+    NTSTATUS status;
+    DWORD ret;
+    struct wine_wlan *wlan;
+    struct wlan_profile_data profile = {0};
+    struct wlan_profile_set_params params = {0};
+
+    TRACE( "(%p, %p, 0x%lx, %p, %p, %d, %p, %p)\n", handle, guid, flags, profile_xml_str, sec_desc,
            overwrite, reserved, wlan_reason );
-    return ERROR_CALL_NOT_IMPLEMENTED;
+
+    if (!handle || !guid || !profile_xml_str || reserved || !wlan_reason )
+        return ERROR_INVALID_PARAMETER;
+
+    wlan = handle_index( handle );
+    if (!wlan)
+        return ERROR_INVALID_HANDLE;
+
+    ret = wlan_profile_parse( profile_xml_str, &profile, wlan_reason );
+    if (ret)
+        return ret;
+
+    params.handle = wlan->unix_handle;
+    params.device = guid;
+    params.profile = &profile;
+    params.override = overwrite;
+
+    status = UNIX_WLAN_CALL( wlan_profile_set, &params );
+    if (status)
+    {
+        if (params.already_exists)
+            return ERROR_ALREADY_EXISTS;
+        return RtlNtStatusToDosError( status );
+    }
+
+    return ERROR_SUCCESS;
 }
 
 DWORD WINAPI WlanConnect( HANDLE handle, const GUID *guid, const WLAN_CONNECTION_PARAMETERS *params,

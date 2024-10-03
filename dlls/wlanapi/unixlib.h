@@ -23,6 +23,8 @@
 
 #include <windef.h>
 
+#include "profile.h"
+
 struct wlan_open_handle_params
 {
     UINT_PTR handle;
@@ -125,6 +127,17 @@ struct wlan_connect_with_profile_name_params
     const CHAR *profile_name;
 };
 
+struct wlan_profile_set_params
+{
+    UINT_PTR handle;
+    const GUID *device;
+    const struct wlan_profile_data *profile;
+    BOOL override;
+
+    BOOL already_exists;
+};
+
+
 enum wlanpi_funcs
 {
     unix_wlan_init,
@@ -148,6 +161,8 @@ enum wlanpi_funcs
     unix_wlan_profile_list_free,
 
     unix_wlan_connect_with_profile_name,
+
+    unix_wlan_profile_set,
 
     unix_funcs_count
 };

@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <dlfcn.h>
 #include <assert.h>
+#include <inttypes.h>
 
 #ifdef SONAME_LIBDBUS_1
 #include <dbus/dbus.h>
@@ -39,10 +40,12 @@
 
 #include <wine/debug.h>
 #include <wine/list.h>
+#include <wine/unixlib.h>
 
 #include "unixlib.h"
 #include "unixlib_priv.h"
 #include "dbus.h"
+#include "profile.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL( wlanapi );
 
@@ -1143,6 +1146,469 @@ NTSTATUS networkmanager_connect_with_setting_id( void *connection, const GUID *d
     p_dbus_error_free( &error );
     p_dbus_message_unref( reply );
 
+    return STATUS_SUCCESS;
+}
+
+static const char *debugstr_dbus_basic_value( int type, const void *value )
+{
+    switch (type)
+    {
+        case DBUS_TYPE_STRING:
+            return wine_dbg_sprintf( "%s", debugstr_a( *(char **)value ) );
+        case DBUS_TYPE_BOOLEAN:
+            return wine_dbg_sprintf( "%d", *( (dbus_bool_t *)value ) );
+        case DBUS_TYPE_UINT32:
+            return wine_dbg_sprintf( "%" PRIu32, *(dbus_uint32_t *)value );
+        default:
+            /* We don't use any other types below ATM. */
+            return wine_dbg_sprintf( "{%p}", value );
+    }
+}
+
+static BOOL dbus_append_basic_dict_entry( DBusMessageIter *dict_iter, const char *key,
+                                          int basic_type, const void *value )
+{
+    DBusMessageIter entry_iter = DBUS_MESSAGE_ITER_INIT_CLOSED,
+                    variant = DBUS_MESSAGE_ITER_INIT_CLOSED;
+    const char sig[2] = { basic_type, '\0' };
+
+    TRACE( "(%p, %s, %c, %s)\n", dict_iter, debugstr_a( key ), basic_type,
+           debugstr_dbus_basic_value( basic_type, value ) );
+
+    if (!p_dbus_message_iter_open_container( dict_iter, DBUS_TYPE_DICT_ENTRY, NULL, &entry_iter ))
+        return FALSE;
+    if (!p_dbus_message_iter_append_basic( &entry_iter, DBUS_TYPE_STRING, &key ))
+        goto failed;
+
+    if (!p_dbus_message_iter_open_container( &entry_iter, DBUS_TYPE_VARIANT, sig, &variant ))
+        goto failed;
+    if (!p_dbus_message_iter_append_basic( &variant, basic_type, value ))
+        goto failed;
+
+    if (!p_dbus_message_iter_close_container( &entry_iter, &variant ))
+        goto failed;
+    if (!p_dbus_message_iter_close_container( dict_iter, &entry_iter ))
+        goto failed;
+
+    return TRUE;
+ failed:
+    p_dbus_message_iter_abandon_container_if_open( &entry_iter, &variant );
+    p_dbus_message_iter_abandon_container_if_open( dict_iter, &entry_iter );
+    return FALSE;
+}
+
+static BOOL dbus_append_fixed_array_dict_entry( DBusMessageIter *dict_iter, const char *key,
+                                                int element_type, const void *value,
+                                                int n_elements )
+{
+    DBusMessageIter entry_iter = DBUS_MESSAGE_ITER_INIT_CLOSED,
+                    variant = DBUS_MESSAGE_ITER_INIT_CLOSED,
+                    array_iter = DBUS_MESSAGE_ITER_INIT_CLOSED;
+    const char sig[3] = { DBUS_TYPE_ARRAY, element_type, '\0' };
+
+    TRACE( "(%p, %s, %c, %p, %d)\n", dict_iter, debugstr_a( key ), element_type, value,
+           n_elements );
+
+    if (!p_dbus_message_iter_open_container( dict_iter, DBUS_TYPE_DICT_ENTRY, NULL, &entry_iter ))
+        return FALSE;
+
+    if (!p_dbus_message_iter_append_basic( &entry_iter, DBUS_TYPE_STRING, &key ))
+        goto failed;
+
+    if (!p_dbus_message_iter_open_container( &entry_iter, DBUS_TYPE_VARIANT, sig, &variant ))
+        goto failed;
+
+    if (!p_dbus_message_iter_open_container( &variant, DBUS_TYPE_ARRAY, &sig[1], &array_iter ))
+        goto failed;
+    if (!p_dbus_message_iter_append_fixed_array( &array_iter, element_type, value, n_elements ))
+        goto failed;
+    if (!p_dbus_message_iter_close_container( &variant, &array_iter ))
+        goto failed;
+    if (!p_dbus_message_iter_close_container( &entry_iter, &variant ))
+        goto failed;
+    if (!p_dbus_message_iter_close_container( dict_iter, &entry_iter ))
+        goto failed;
+
+    return TRUE;
+ failed:
+     p_dbus_message_iter_abandon_container_if_open( &variant, &array_iter );
+     p_dbus_message_iter_abandon_container_if_open( &entry_iter, &variant );
+     p_dbus_message_iter_abandon_container_if_open( dict_iter, &entry_iter );
+     return FALSE;
+ }
+
+ static BOOL dbus_append_string_array_dict( DBusMessageIter *dict_iter, const char *key,
+                                            const char * const*strings, int n_elements )
+ {
+     DBusMessageIter entry_iter = DBUS_MESSAGE_ITER_INIT_CLOSED,
+                     variant = DBUS_MESSAGE_ITER_INIT_CLOSED,
+                     array_iter = DBUS_MESSAGE_ITER_INIT_CLOSED;
+     const char *sig = "as";
+     int i;
+
+     TRACE( "(%p, %s, %p, %d)\n", dict_iter, debugstr_a( key ), strings, n_elements );
+
+     if ( !p_dbus_message_iter_open_container( dict_iter, DBUS_TYPE_DICT_ENTRY, NULL,
+                                               &entry_iter ) )
+         return FALSE;
+
+     if ( !p_dbus_message_iter_append_basic( &entry_iter, DBUS_TYPE_STRING, &key ) ) goto failed;
+
+     if ( !p_dbus_message_iter_open_container( &entry_iter, DBUS_TYPE_VARIANT, sig, &variant ) )
+         goto failed;
+
+     if ( !p_dbus_message_iter_open_container( &variant, DBUS_TYPE_ARRAY, DBUS_TYPE_STRING_AS_STRING, &array_iter ) )
+         goto failed;
+     for (i = 0; i < n_elements; i++)
+     {
+         const char *str = strings[i];
+         p_dbus_message_iter_append_basic( &array_iter, DBUS_TYPE_STRING, &str );
+     }
+
+     if ( !p_dbus_message_iter_close_container( &variant, &array_iter ) ) goto failed;
+     if ( !p_dbus_message_iter_close_container( &entry_iter, &variant ) ) goto failed;
+     if ( !p_dbus_message_iter_close_container( dict_iter, &entry_iter ) ) goto failed;
+
+     return TRUE;
+ failed:
+     p_dbus_message_iter_abandon_container_if_open( &variant, &array_iter );
+     p_dbus_message_iter_abandon_container_if_open( &entry_iter, &variant );
+     p_dbus_message_iter_abandon_container_if_open( dict_iter, &entry_iter );
+     return FALSE;
+}
+
+
+static BOOL networkmanager_settings_iter_open_section( const char *section_name,
+                                                       DBusMessageIter *settings_iter,
+                                                       DBusMessageIter *section_iter,
+                                                       DBusMessageIter *dict_iter )
+{
+    TRACE( "(%s, %p, %p, %p)\n", debugstr_a( section_name ), settings_iter, section_iter,
+           dict_iter );
+
+    if (!p_dbus_message_iter_open_container( settings_iter, DBUS_TYPE_DICT_ENTRY, NULL, section_iter ))
+        goto failed;
+    if (!p_dbus_message_iter_append_basic( section_iter, DBUS_TYPE_STRING, &section_name ))
+        goto failed;
+    if (!p_dbus_message_iter_open_container( section_iter, DBUS_TYPE_ARRAY, "{sv}", dict_iter ))
+        goto failed;
+
+    return TRUE;
+failed:
+    p_dbus_message_iter_abandon_container_if_open( section_iter, dict_iter );
+    p_dbus_message_iter_abandon_container_if_open( settings_iter, section_iter );
+    return FALSE;
+}
+
+static BOOL networkmanager_settings_iter_close_section( DBusMessageIter *settings_iter,
+                                                        DBusMessageIter *section_iter,
+                                                        DBusMessageIter *dict_iter )
+{
+    TRACE( "(%p, %p, %p)\n", settings_iter, section_iter, dict_iter );
+
+    if (!p_dbus_message_iter_close_container( section_iter, dict_iter ))
+        goto failed;
+    if (!p_dbus_message_iter_close_container( settings_iter, section_iter ))
+        goto failed;
+
+    return TRUE;
+failed:
+    p_dbus_message_iter_abandon_container_if_open( section_iter, dict_iter );
+    p_dbus_message_iter_abandon_container_if_open( settings_iter, section_iter );
+    return FALSE;
+}
+
+static BOOL networkmanager_create_settings_object_from_profile(
+    DBusMessageIter *settings_iter, const char *interface, const struct wlan_profile_data *profile )
+{
+    DBusMessageIter section_iter = DBUS_MESSAGE_ITER_INIT_CLOSED,
+                    dict_iter = DBUS_MESSAGE_ITER_INIT_CLOSED;
+    dbus_bool_t bool_val;
+    const char *str_val;
+    char ssid[32];
+    const char *ssid_ptr;
+    static const char *conn_type_wireless = "802-11-wireless";
+
+    TRACE( "(%p, %s, %p)\n", settings_iter, debugstr_a( interface ), profile );
+
+#define START_SECTION( n )                                                                         \
+    if (!networkmanager_settings_iter_open_section( (n), settings_iter, &section_iter,             \
+                                                     &dict_iter ))                                 \
+        goto failed
+
+#define END_SECTION                                                                                \
+    if (!networkmanager_settings_iter_close_section( settings_iter, &section_iter,                 \
+                                                      &dict_iter ))                                \
+        goto failed
+#define APPEND_BASIC_ENTRY( k, t, v ) if (!dbus_append_basic_dict_entry( &dict_iter, (k), (t), (v))) goto failed
+
+    /* [connection] */
+    START_SECTION( "connection" );
+    APPEND_BASIC_ENTRY( "type", DBUS_TYPE_STRING, &conn_type_wireless );
+    APPEND_BASIC_ENTRY( "interface-name", DBUS_TYPE_STRING, &interface );
+    str_val = profile->name;
+    APPEND_BASIC_ENTRY( "id", DBUS_TYPE_STRING, &str_val );
+    bool_val = profile->connection_mode == WLANAPI_PROFILE_MODE_AUTO;
+    APPEND_BASIC_ENTRY( "autoconnect", DBUS_TYPE_BOOLEAN, &bool_val );
+    END_SECTION;
+
+    /* [802-11-wireless] */
+    START_SECTION( conn_type_wireless );
+    switch (profile->connection_type)
+    {
+        case dot11_BSS_type_independent:
+            str_val = "adhoc";
+            break;
+        case dot11_BSS_type_infrastructure:
+        default:
+            str_val = "infrastructure";
+            break;
+    }
+    APPEND_BASIC_ENTRY( "mode", DBUS_TYPE_STRING, &str_val );
+    if (profile->msm.security_enabled)
+    {
+        str_val = "802-11-wireless-security";
+        /* Deprecated property, here for backwards compatibility */
+        APPEND_BASIC_ENTRY( "security", DBUS_TYPE_STRING, &str_val );
+    }
+    if (profile->mac_randomization.enable_randomization)
+    {
+        str_val = "random";
+        APPEND_BASIC_ENTRY( "assigned-mac-address", DBUS_TYPE_STRING, &str_val );
+    }
+    if (profile->ssid_config.non_broadcast)
+    {
+        bool_val = TRUE;
+        APPEND_BASIC_ENTRY( "hidden", DBUS_TYPE_BOOLEAN, &bool_val );
+    }
+    memcpy( ssid, profile->ssid_config.ssid.ucSSID, sizeof( ssid ) );
+    ssid_ptr = ssid;
+    if (!dbus_append_fixed_array_dict_entry( &dict_iter, "ssid", DBUS_TYPE_BYTE, &ssid_ptr,
+                                             profile->ssid_config.ssid.uSSIDLength ))
+        goto failed;
+    END_SECTION;
+
+    if (profile->msm.security_enabled)
+    {
+        const struct wlan_profile_security *security = &profile->msm.security;
+        char key_buf[200];
+        const static struct
+        {
+            DOT11_AUTH_ALGORITHM alg;
+            size_t settings_len;
+            struct
+            {
+                const char *key;
+                const char *value;
+            } settings[2]; /* We need to set atmost two entries for now. */
+        } auth_alg_settings[] = {
+            {DOT11_AUTH_ALGO_80211_OPEN, 1, {{"auth-alg", "open"}}},
+            {DOT11_AUTH_ALGO_80211_SHARED_KEY, 1, {{"auth-alg", "shared"}}},
+            {DOT11_AUTH_ALGO_WPA, 2, {{"key-mgmt", "wpa-eap"}, {"proto", "wpa"}}},
+            {DOT11_AUTH_ALGO_WPA_PSK, 2, {{"key-mgmt", "wpa-psk"}, {"proto", "wpa"}}},
+            {DOT11_AUTH_ALGO_RSNA, 2, {{"key-mgmt", "wpa-eap"}, {"proto", "rsn"}}},
+            {DOT11_AUTH_ALGO_RSNA_PSK, 2, {{"key-mgmt", "wpa-psk"}, {"proto", "rsn"}}},
+            {DOT11_AUTH_ALGO_WPA3, 1, {{"key-mgmt", "wpa-eap"}}},
+            {DOT11_AUTH_ALGO_WPA3_ENT, 1, {{"key-mgmt", "wpa-eap-suite-b-192"}}},
+            {DOT11_AUTH_ALGO_WPA3_SAE, 1, {{"key-mgmt", "sae"}}},
+            {DOT11_AUTH_ALGO_OWE, 1, {{"key-mgmt", "owe"}}},
+        };
+        const static struct
+        {
+            DOT11_CIPHER_ALGORITHM alg;
+            const char *key;
+            size_t len;
+            const char *values[2];
+        } cipher_alg_settings[] = {
+            {DOT11_CIPHER_ALGO_WEP, "group", 2, {"wep40", "wep104"}},
+            {DOT11_CIPHER_ALGO_WEP40, "group", 1, {"wep40"}},
+            {DOT11_CIPHER_ALGO_WEP104, "group", 1, {"wep104"}},
+            {DOT11_CIPHER_ALGO_TKIP, "pairwise", 1, {"tkip"}},
+            {DOT11_CIPHER_ALGO_CCMP, "pairwise", 1, {"ccmp"}},
+        };
+        size_t i;
+        BOOL wep = security->encryption == DOT11_CIPHER_ALGO_WEP ||
+                   security->encryption == DOT11_CIPHER_ALGO_WEP40 ||
+                   security->encryption == DOT11_CIPHER_ALGO_WEP104;
+
+        /* [802-11-wireless-security] */
+        START_SECTION( "802-11-wireless-security" );
+        for (i = 0; i < ARRAY_SIZE( auth_alg_settings); i++)
+        {
+            if (security->authentication == auth_alg_settings[i].alg)
+            {
+                size_t j;
+                for (j = 0; j < auth_alg_settings[i].settings_len; j++)
+                {
+                    const char *key = auth_alg_settings[i].settings[j].key;
+                    const char *value = auth_alg_settings[i].settings[j].value;
+
+                    if (!strcmp( key, "proto" ))
+                    {
+                        if (!dbus_append_string_array_dict( &dict_iter, key, &value, 1 ))
+                            goto failed;
+                    }
+                    else
+                        APPEND_BASIC_ENTRY( key, DBUS_TYPE_STRING, &value );
+                }
+
+                break;
+            }
+        }
+        if (i == ARRAY_SIZE( auth_alg_settings ))
+            FIXME( "Unsupported auth algorithm value: %d\n", security->authentication );
+
+        for (i = 0; i < ARRAY_SIZE( cipher_alg_settings ); i++)
+        {
+            if (security->encryption == cipher_alg_settings[i].alg)
+            {
+                if (!dbus_append_string_array_dict( &dict_iter, cipher_alg_settings[i].key,
+                                                   cipher_alg_settings[i].values,
+                                                   cipher_alg_settings[i].len ))
+                    goto failed;
+                break;
+            }
+        }
+        if (i == ARRAY_SIZE( cipher_alg_settings ))
+            FIXME( "Unsupported cipher algorithm value: %d\n", security->encryption );
+
+        for (i = 0; i < security->keys_len; i++)
+        {
+            const struct wlan_shared_key *key = &security->shared_key[i];
+            size_t len = ntdll_wcslen( key->key_material );
+            ntdll_wcstoumbs( key->key_material, len + 1, key_buf, sizeof( key_buf ), TRUE );
+
+            if (wep && i < 4)
+            {
+                const static char *wep_keys[4] = {"wep-key0", "wep-key1", "wep-key2", "wep-key3"};
+                APPEND_BASIC_ENTRY( wep_keys[i], DBUS_TYPE_STRING, &key_buf );
+            }
+            else if (!wep && i == 0)
+                APPEND_BASIC_ENTRY( "psk", DBUS_TYPE_STRING, &key_buf );
+        }
+        if (wep && security->keys_len)
+        {
+            dbus_uint32_t key_type = 1;
+            APPEND_BASIC_ENTRY( "wep-key-type", DBUS_TYPE_UINT32, &key_type );
+            APPEND_BASIC_ENTRY( "wep-tx-keyidx", DBUS_TYPE_UINT32, &security->key_index );
+        }
+        END_SECTION;
+    }
+    return TRUE;
+
+ failed:
+    p_dbus_message_iter_abandon_container_if_open( &section_iter, &dict_iter );
+    p_dbus_message_iter_abandon_container_if_open( settings_iter, &section_iter );
+    return FALSE;
+ }
+
+NTSTATUS networkmanager_set_connection_settings( void *connection, const GUID *device,
+                                                 const struct wlan_profile_data *profile,
+                                                 BOOL override, BOOL *already_exists )
+{
+    NTSTATUS status;
+    DBusMessage *request, *reply;
+    DBusMessageIter iter, settings_iter;
+    DBusError error;
+    dbus_bool_t success;
+    char *device_path, *settings_path;
+    BOOL new_connection = FALSE;
+    struct unix_wlan_interface_info info = {0};
+
+    TRACE( "(%p, %s, %p, %d, %p)\n", connection, debugstr_guid( device ), profile, override,
+           already_exists );
+
+    if (!networkmanager_valid_device_guid( device ))
+        return STATUS_INVALID_PARAMETER;
+    device_path = networkmanager_device_guid_to_path( device );
+    if (!device_path)
+        return STATUS_NO_MEMORY;
+
+    if (!networkmanager_wifi_device_get_info( connection, device_path, &info ))
+    {
+        free( device_path );
+        return STATUS_INTERNAL_ERROR;
+    }
+    free( device_path );
+
+    status = networkmanager_get_setting_path_by_id( connection, profile->name, &settings_path );
+    if (status && status != STATUS_NOT_FOUND)
+        return status;
+
+    if (status == STATUS_NOT_FOUND)
+    {
+        request = p_dbus_message_new_method_call(
+            NETWORKMANAGER_SERVICE, "/org/freedesktop/NetworkManager/Settings",
+            NETWORKMANAGER_INTERFACE_SETTINGS, "AddConnection" );
+        if (!request)
+            return STATUS_NO_MEMORY;
+        new_connection = TRUE;
+    }
+    else if (!override)
+    {
+        *already_exists = TRUE;
+        free( settings_path );
+        return STATUS_INTERNAL_ERROR;
+    }
+    else
+    {
+        TRACE( "Updating settings for connection %s\n", debugstr_a( settings_path ) );
+        request = p_dbus_message_new_method_call( NETWORKMANAGER_SERVICE, settings_path,
+                                                  NETWORKMANAGER_INTERFACE_SETTINGS_CONNECTION,
+                                                  "Update" );
+        free( settings_path );
+        if (!request)
+            return STATUS_NO_MEMORY;
+    }
+
+    p_dbus_message_iter_init_append( request, &iter );
+    success =
+        p_dbus_message_iter_open_container( &iter, DBUS_TYPE_ARRAY, "{sa{sv}}", &settings_iter );
+    if (!success)
+    {
+        p_dbus_message_unref( request );
+        return STATUS_NO_MEMORY;
+    }
+    if (!networkmanager_create_settings_object_from_profile( &settings_iter, info.description, profile ))
+    {
+        p_dbus_message_iter_abandon_container( &settings_iter, &iter );
+        p_dbus_message_unref( request );
+        return STATUS_NO_MEMORY;
+    }
+    if (!p_dbus_message_iter_close_container( &iter, &settings_iter ))
+    {
+        p_dbus_message_unref( request );
+        return STATUS_NO_MEMORY;
+    }
+
+    p_dbus_error_init( &error );
+    reply = p_dbus_connection_send_with_reply_and_block( connection, request, dbus_timeout, &error );
+    p_dbus_message_unref( request );
+    if (!reply)
+    {
+        status = dbus_error_to_ntstatus( &error );
+        ERR( "Unable to add/update connection settings: %s: %s\n", debugstr_a( error.name ),
+             debugstr_a( error.message ) );
+        p_dbus_error_free( &error );
+        return status;
+    }
+    p_dbus_error_free( &error );
+
+    if (new_connection)
+    {
+        const char *path;
+
+        p_dbus_error_init( &error );
+        success = p_dbus_message_get_args( reply, &error, DBUS_TYPE_OBJECT_PATH, &path, DBUS_TYPE_INVALID );
+        if (!success)
+            WARN( "Could not get object path for the new connection: %s: %s\n",
+                  debugstr_a( error.name ), debugstr_a( error.message ) );
+        else
+            TRACE( "Added new connection %s\n", debugstr_a( path ) );
+        p_dbus_error_free( &error );
+    }
+
+    p_dbus_message_unref( reply );
     return STATUS_SUCCESS;
 }
 
