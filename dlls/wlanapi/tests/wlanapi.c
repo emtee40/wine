@@ -727,14 +727,14 @@ static void test_WlanDisconnect( void )
         trace( "  Index[%ld] GUID: %s\n", i, debugstr_guid( &info->InterfaceGuid ) );
 
         ret = WlanDisconnect( NULL, NULL, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
         ret = WlanDisconnect( handle, NULL, NULL );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
         ret = WlanDisconnect( handle, &info->InterfaceGuid, &reserved );
-        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
 
         ret = WlanDisconnect( handle, &info->InterfaceGuid, NULL );
-        todo_wine ok( !ret, "Expected 0, got %ld\n", ret );
+        ok( !ret, "Expected 0, got %ld\n", ret );
     }
 
     WlanFreeMemory( ifaces );

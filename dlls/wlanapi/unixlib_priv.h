@@ -79,4 +79,5 @@ extern NTSTATUS networkmanager_connect_with_setting_id( void *connection, const 
 extern NTSTATUS networkmanager_set_connection_settings( void *connection, const GUID *device,
                                                         const struct wlan_profile_data *profile,
                                                         BOOL override, BOOL *already_exists );
+extern NTSTATUS networkmanager_device_disconnect( void *connection, const GUID *device );
 #endif /* __WINE_WLANAPI_UNIXLIB_PRIV_H */

@@ -137,6 +137,11 @@ struct wlan_profile_set_params
     BOOL already_exists;
 };
 
+struct wlan_disconnect_params
+{
+    UINT_PTR handle;
+    const GUID *device;    
+};
 
 enum wlanpi_funcs
 {
@@ -161,6 +166,7 @@ enum wlanpi_funcs
     unix_wlan_profile_list_free,
 
     unix_wlan_connect_with_profile_name,
+    unix_wlan_disconnect,
 
     unix_wlan_profile_set,
 

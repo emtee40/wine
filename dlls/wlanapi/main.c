@@ -513,9 +513,22 @@ DWORD WINAPI WlanConnect( HANDLE handle, const GUID *guid, const WLAN_CONNECTION
 
 DWORD WINAPI WlanDisconnect( HANDLE handle, const GUID *guid, void *reserved )
 {
-    FIXME( "(%p, %s, %p) stub\n", handle, debugstr_guid( guid ), reserved );
+    struct wine_wlan *wlan;
+    struct wlan_disconnect_params params = {0};
 
-    return ERROR_CALL_NOT_IMPLEMENTED;
+    TRACE( "(%p, %s, %p)\n", handle, debugstr_guid( guid ), reserved );
+
+    if (!handle || !guid || reserved)
+        return ERROR_INVALID_PARAMETER;
+
+    wlan = handle_index( handle );
+    if (!wlan)
+        return ERROR_INVALID_HANDLE;
+
+    params.handle = wlan->unix_handle;
+    params.device = guid;
+
+    return RtlNtStatusToDosError( UNIX_WLAN_CALL( wlan_disconnect, &params ));
 }
 
 DWORD WINAPI WlanQueryInterface(HANDLE handle, const GUID *guid, WLAN_INTF_OPCODE opcode,

@@ -1612,13 +1612,57 @@ NTSTATUS networkmanager_set_connection_settings( void *connection, const GUID *d
     return STATUS_SUCCESS;
 }
 
-#else /* SONAME_LIBDBUS_1 */
-BOOL load_dbus_functions( void ) { return FALSE; }
-NTSTATUS init_dbus_connection( UINT_PTR *handle ) { return STATUS_NOT_SUPPORTED; }
-void close_dbus_connection( void *c ) { return STATUS_NOT_SUPPORTED; }
-NTSTATUS networkmanager_get_wifi_devices( void *connection, struct list *devices )
+NTSTATUS networkmanager_device_disconnect( void *connection, const GUID *device )
 {
-    return STATUS_NOT_SUPPORTED;
+    DBusMessage *request, *reply;
+    DBusError error;
+    char *device_path;
+
+    TRACE( "(%p, %s)\n", connection, debugstr_guid( device ) );
+
+    if (!networkmanager_valid_device_guid( device ))
+        return STATUS_INVALID_PARAMETER;
+    device_path = networkmanager_device_guid_to_path( device );
+    if (!device_path)
+        return STATUS_NO_MEMORY;
+
+    request = p_dbus_message_new_method_call( NETWORKMANAGER_SERVICE, device_path,
+                                              NETWORKMANAGER_INTERFACE_DEVICE, "Disconnect" );
+    free( device_path );
+    if (!request)
+        return STATUS_NO_MEMORY;
+
+    p_dbus_error_init( &error );
+    reply =
+        p_dbus_connection_send_with_reply_and_block( connection, request, dbus_timeout, &error );
+    p_dbus_message_unref( request );
+    if (!reply)
+    {
+        NTSTATUS status;
+
+        /* WlanDisconnect succeeds when called on an interface that has no associated network. */
+        if (p_dbus_error_has_name( &error, "org.freedesktop.NetworkManager.Device.NotActive" ))
+            return STATUS_SUCCESS;
+
+        status = dbus_error_to_ntstatus( &error );
+        ERR( "Could not disconnect device %s: %s\n", debugstr_a( error.name ),
+             debugstr_a( error.message ) );
+        p_dbus_error_free( &error );
+        return status;
+    }
+    p_dbus_error_free( &error );
+    p_dbus_message_unref( reply );
+
+    return STATUS_SUCCESS;
+}
+
+#else /* SONAME_LIBDBUS_1 */
+        BOOL load_dbus_functions( void ) { return FALSE; }
+        NTSTATUS init_dbus_connection( UINT_PTR * handle ) { return STATUS_NOT_SUPPORTED; }
+        void close_dbus_connection( void *c ) { return STATUS_NOT_SUPPORTED; }
+        NTSTATUS networkmanager_get_wifi_devices( void *connection, struct list *devices )
+        {
+            return STATUS_NOT_SUPPORTED;
 }
 NTSTATUS networkmanager_get_access_points( void *connection, GUID device,
                                            struct list *access_points )

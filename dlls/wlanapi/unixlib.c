@@ -296,6 +296,16 @@ NTSTATUS wlan_profile_set( void *params )
         (void *)args->handle, args->device, args->profile, args->override, &args->already_exists );
 }
 
+NTSTATUS wlan_disconnect( void *params )
+{
+    struct wlan_disconnect_params *args = params;
+
+    if (!initialized)
+        return STATUS_NOT_SUPPORTED;
+
+    return networkmanager_device_disconnect( (void *)args->handle, args->device );
+}
+
 const unixlib_entry_t __wine_unix_call_funcs[] = {
     wlan_init,
     wlan_open_handle,
@@ -317,6 +327,7 @@ const unixlib_entry_t __wine_unix_call_funcs[] = {
     wlan_profile_list_free,
 
     wlan_connect_with_profile_name,
+    wlan_disconnect,
 
     wlan_profile_set
 };
