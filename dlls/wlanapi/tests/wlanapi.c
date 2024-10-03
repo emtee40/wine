@@ -700,6 +700,48 @@ static void test_WlanSetProfile( void )
     ok( ret == 0, "Expected 0, got %ld\n", ret );
 }
 
+static void test_WlanDisconnect( void )
+{
+    HANDLE handle;
+    DWORD neg_version, i, ret, reserved = 0xdeadbeef;
+    WLAN_INTERFACE_INFO_LIST *ifaces;
+
+    ret = WlanOpenHandle(1, NULL, &neg_version, &handle);
+    ok(ret == 0, "Expected 0, got %ld\n", ret);
+
+    ret = WlanEnumInterfaces( handle, NULL, &ifaces );
+    ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret);
+    if (!ifaces || !ifaces->dwNumberOfItems)
+    {
+        skip( "No wireless interfaces\n" );
+        WlanCloseHandle( handle, NULL );
+        WlanFreeMemory( ifaces );
+        return;
+    }
+
+    trace("Wireless interfaces: %ld\n", ifaces->dwNumberOfItems);
+    for (i = 0; i < ifaces->dwNumberOfItems; i++)
+    {
+        WLAN_INTERFACE_INFO *info = &ifaces->InterfaceInfo[i];
+
+        trace( "  Index[%ld] GUID: %s\n", i, debugstr_guid( &info->InterfaceGuid ) );
+
+        ret = WlanDisconnect( NULL, NULL, NULL );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ret = WlanDisconnect( handle, NULL, NULL );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ret = WlanDisconnect( handle, &info->InterfaceGuid, &reserved );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+
+        ret = WlanDisconnect( handle, &info->InterfaceGuid, NULL );
+        todo_wine ok( !ret, "Expected 0, got %ld\n", ret );
+    }
+
+    WlanFreeMemory( ifaces );
+    ret = WlanCloseHandle( handle, NULL );
+    ok( ret == 0, "Expected 0, got %ld\n", ret );
+}
+
 START_TEST(wlanapi)
 {
   HANDLE handle;
@@ -724,4 +766,5 @@ START_TEST(wlanapi)
   test_WlanGetProfileList( NULL, FALSE );
   test_WlanConnect();
   test_WlanSetProfile();
+  test_WlanDisconnect();
 }
