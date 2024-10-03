@@ -390,11 +390,13 @@ static void test_WlanStartScan( void )
     ok( ret == 0, "Expected 0, got %ld\n", ret );
 }
 
-static void test_WlanGetProfileList( void )
+/* If profile_name is not NULL, additionally test whether a WLAN profile with this name exists. */
+static void test_WlanGetProfileList( const WCHAR *profile_name, int todo )
 {
     HANDLE handle;
     DWORD neg_version, i, ret, reserved = 0xdeadbeef;
     WLAN_INTERFACE_INFO_LIST *ifaces;
+    BOOL profile_exists = FALSE;
 
     ret = WlanOpenHandle(1, NULL, &neg_version, &handle);
     ok(ret == 0, "Expected 0, got %ld\n", ret);
@@ -441,9 +443,12 @@ static void test_WlanGetProfileList( void )
 
         for (j = 0; j < list->dwNumberOfItems; j++)
         {
-            trace( "    Index[%ld] Name: %s Flags: %#lx\n", j,
-                   debugstr_w( list->ProfileInfo[j].strProfileName ),
+            const WCHAR *name = list->ProfileInfo[j].strProfileName;
+            trace( "    Index[%ld] Name: %s Flags: %#lx\n", j, debugstr_w( name ),
                    list->ProfileInfo[j].dwFlags );
+
+            if (profile_name && !profile_exists)
+                profile_exists = !wcscmp( name, profile_name );
         }
         WlanFreeMemory( list );
     }
@@ -451,6 +456,10 @@ static void test_WlanGetProfileList( void )
     WlanFreeMemory( ifaces );
     ret = WlanCloseHandle( handle, NULL );
     ok( ret == 0, "Expected 0, got %ld\n", ret );
+
+    if (profile_name)
+        todo_if( todo ) ok( profile_exists, "Could not find a WLAN profile with the name %s.\n",
+                            debugstr_w( profile_name ) );
 }
 
 static void test_WlanConnect( void )
@@ -571,6 +580,126 @@ static void test_WlanConnect( void )
     ok( ret == 0, "Expected 0, got %ld\n", ret );
 }
 
+
+static const WCHAR *load_res( const WCHAR *name )
+{
+    const char *data;
+    WCHAR *dataW;
+    DWORD lenW, size;
+    HRSRC src;
+    HMODULE module = GetModuleHandleW( NULL );
+
+    src = FindResourceW( NULL, name, (const WCHAR *)RT_RCDATA );
+    ok( src != NULL, "Could not find resource %s\n", debugstr_w( name ) );
+    if (!src)
+        return NULL;
+
+    data = LockResource( LoadResource( module, src ) );
+    size = SizeofResource( module, src );
+    lenW = MultiByteToWideChar( CP_ACP, 0, data, size, NULL, 0 );
+    dataW = malloc( lenW * sizeof( WCHAR ) );
+    MultiByteToWideChar( CP_ACP, 0, data, -1, dataW, lenW );
+
+    return dataW;
+}
+
+static struct
+{
+    const WCHAR *profile_name;
+    const WCHAR *profile_res_name;
+    const WCHAR *profile_xml_str;
+} valid_profiles[] = {
+    {L"Wine Testing WPA-PSK AES Profile", L"wpa-psk-aes.xml"},
+    {L"Wine Testing WPA-PSK TKIP Profile", L"wpa-psk-tkip.xml"},
+};
+
+static void initialize_profiles( void )
+{
+    SIZE_T i;
+
+    for (i = 0; i < ARRAY_SIZE( valid_profiles ); i++)
+    {
+        const WCHAR *xml = load_res( valid_profiles[i].profile_res_name );
+        ok( xml != NULL, "Could not load resource %s\n", debugstr_w( valid_profiles[i].profile_res_name ) );
+        valid_profiles[i].profile_xml_str = xml;
+    }
+}
+
+static void test_WlanSetProfile( void )
+{
+    HANDLE handle;
+    DWORD neg_version, i, ret, reserved = 0xdeadbeef;
+    WLAN_INTERFACE_INFO_LIST *ifaces;
+
+    ret = WlanOpenHandle(1, NULL, &neg_version, &handle);
+    ok(ret == 0, "Expected 0, got %ld\n", ret);
+
+    ret = WlanEnumInterfaces( handle, NULL, &ifaces );
+    ok( ret == ERROR_SUCCESS, "Expected 0, got %ld\n", ret);
+    if (!ifaces || !ifaces->dwNumberOfItems)
+    {
+        skip( "No wireless interfaces\n" );
+        WlanCloseHandle( handle, NULL );
+        WlanFreeMemory( ifaces );
+        return;
+    }
+
+    trace("Wireless interfaces: %ld\n", ifaces->dwNumberOfItems);
+    for (i = 0; i < ifaces->dwNumberOfItems; i++)
+    {
+        DWORD wlan_reason = 0;
+        SIZE_T j;
+        WLAN_INTERFACE_INFO *info = &ifaces->InterfaceInfo[i];
+
+        trace( "  Index[%ld] GUID: %s\n", i, debugstr_guid( &info->InterfaceGuid ) );
+
+        ret = WlanSetProfile( NULL, NULL, 0, NULL, NULL, FALSE, NULL, NULL );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ret = WlanSetProfile( handle, NULL, 0, NULL, NULL, FALSE, NULL, NULL );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+        ret = WlanSetProfile( handle, &ifaces->InterfaceInfo[i].InterfaceGuid, 0, NULL, NULL, FALSE,
+                              NULL, NULL );
+        todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+
+        for (j = 0; j < ARRAY_SIZE( valid_profiles ); j++)
+        {
+            const WCHAR *profile_xml = valid_profiles[j].profile_xml_str;
+
+            winetest_push_context( "WLAN profile %s\n",
+                                   debugstr_w( valid_profiles[j].profile_res_name ) );
+            if (!profile_xml)
+            {
+                skip("profile not loaded, skipping\n");
+                winetest_pop_context();
+                continue;
+            }
+
+            ret = WlanSetProfile( handle, &info->InterfaceGuid, 0, profile_xml, NULL, FALSE, NULL,
+                                  NULL );
+            todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+            ret = WlanSetProfile( handle, &info->InterfaceGuid, 0, profile_xml, NULL, FALSE,
+                                  &reserved, &wlan_reason );
+            todo_wine ok( ret == ERROR_INVALID_PARAMETER, "Expected 87, got %ld\n", ret );
+
+            ret = WlanSetProfile( handle, &info->InterfaceGuid, 0, profile_xml, NULL, TRUE, NULL,
+                                  &wlan_reason );
+            todo_wine ok( !ret, "Expected 0, got %ld\n", ret );
+            todo_wine ok( !wlan_reason, "Expected 0, got %ld\n", wlan_reason );
+            test_WlanGetProfileList( valid_profiles[j].profile_name, winetest_platform_is_wine );
+
+            ret = WlanSetProfile( handle, &info->InterfaceGuid, 0, profile_xml, NULL, FALSE, NULL,
+                                  &wlan_reason );
+            todo_wine ok( ret == ERROR_ALREADY_EXISTS, "Expected 183, got %ld\n", ret );
+            todo_wine ok( !wlan_reason, "Expected 0, got %ld\n", wlan_reason );
+            winetest_pop_context();
+        }
+    }
+
+    WlanFreeMemory( ifaces );
+    ret = WlanCloseHandle( handle, NULL );
+    ok( ret == 0, "Expected 0, got %ld\n", ret );
+}
+
 START_TEST(wlanapi)
 {
   HANDLE handle;
@@ -584,12 +713,15 @@ START_TEST(wlanapi)
       return;
   }
 
+  initialize_profiles();
+
   test_WlanOpenHandle();
   test_WlanAllocateFreeMemory();
   test_WlanEnumInterfaces();
   test_WlanStartScan();
   test_WlanGetAvailableNetworkList();
   test_WlanGetNetworkBssList();
-  test_WlanGetProfileList();
+  test_WlanGetProfileList( NULL, FALSE );
   test_WlanConnect();
+  test_WlanSetProfile();
 }
