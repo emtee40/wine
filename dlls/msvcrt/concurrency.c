@@ -3553,7 +3553,7 @@ void __thiscall _ReentrantBlockingLock_dtor(_ReentrantBlockingLock *this)
 /* ?_Acquire@_ReentrantBlockingLock@details@Concurrency@@QAEXXZ */
 /* ?_Acquire@_ReentrantBlockingLock@details@Concurrency@@QEAAXXZ */
 DEFINE_THISCALL_WRAPPER(_ReentrantBlockingLock__Acquire, 4)
-void __thiscall _ReentrantBlockingLock__Acquire(_ReentrantBlockingLock *this)
+void __thiscall _ReentrantBlockingLock__Acquire(_ReentrantBlockingLock *this) __WINE_ACQUIRE(&this->cs)
 {
     TRACE("(%p)\n", this);
     EnterCriticalSection(&this->cs);
@@ -3562,7 +3562,7 @@ void __thiscall _ReentrantBlockingLock__Acquire(_ReentrantBlockingLock *this)
 /* ?_Release@_ReentrantBlockingLock@details@Concurrency@@QAEXXZ */
 /* ?_Release@_ReentrantBlockingLock@details@Concurrency@@QEAAXXZ */
 DEFINE_THISCALL_WRAPPER(_ReentrantBlockingLock__Release, 4)
-void __thiscall _ReentrantBlockingLock__Release(_ReentrantBlockingLock *this)
+void __thiscall _ReentrantBlockingLock__Release(_ReentrantBlockingLock *this) __WINE_RELEASE(&this->cs)
 {
     TRACE("(%p)\n", this);
     LeaveCriticalSection(&this->cs);
@@ -3571,7 +3571,7 @@ void __thiscall _ReentrantBlockingLock__Release(_ReentrantBlockingLock *this)
 /* ?_TryAcquire@_ReentrantBlockingLock@details@Concurrency@@QAE_NXZ */
 /* ?_TryAcquire@_ReentrantBlockingLock@details@Concurrency@@QEAA_NXZ */
 DEFINE_THISCALL_WRAPPER(_ReentrantBlockingLock__TryAcquire, 4)
-bool __thiscall _ReentrantBlockingLock__TryAcquire(_ReentrantBlockingLock *this)
+bool __thiscall _ReentrantBlockingLock__TryAcquire(_ReentrantBlockingLock *this) __WINE_TRY_ACQUIRE(TRUE, &this->cs)
 {
     TRACE("(%p)\n", this);
     return TryEnterCriticalSection(&this->cs);
