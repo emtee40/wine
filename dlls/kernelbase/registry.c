@@ -2873,7 +2873,9 @@ static void reg_mui_cache_put(const WCHAR *file_name, UINT index, const WCHAR *b
     return;
 }
 
-static LONG load_mui_string(const WCHAR *file_name, UINT res_id, WCHAR *buffer, INT max_chars, INT *req_chars, DWORD flags)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS LONG load_mui_string( const WCHAR *file_name, UINT res_id,
+                                                              WCHAR *buffer, INT max_chars,
+                                                              INT *req_chars, DWORD flags )
 {
     HMODULE hModule = NULL;
     WCHAR *string = NULL, *full_name;
