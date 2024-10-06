@@ -283,7 +283,7 @@ void __thiscall mutex_dtor(mutex *this)
 /* ?_Lock@_Mutex@std@@QAEXXZ */
 /* ?_Lock@_Mutex@std@@QEAAXXZ */
 DEFINE_THISCALL_WRAPPER(mutex_lock, 4)
-void __thiscall mutex_lock(mutex *this)
+__WINE_NO_THREAD_SAFETY_ANALYSIS void __thiscall mutex_lock(mutex *this)
 {
     EnterCriticalSection(this->mutex);
 }
@@ -291,21 +291,21 @@ void __thiscall mutex_lock(mutex *this)
 /* ?_Unlock@_Mutex@std@@QAEXXZ */
 /* ?_Unlock@_Mutex@std@@QEAAXXZ */
 DEFINE_THISCALL_WRAPPER(mutex_unlock, 4)
-void __thiscall mutex_unlock(mutex *this)
+__WINE_NO_THREAD_SAFETY_ANALYSIS void __thiscall mutex_unlock(mutex *this)
 {
     LeaveCriticalSection(this->mutex);
 }
 
 /* ?_Mutex_Lock@_Mutex@std@@CAXPAV12@@Z */
 /* ?_Mutex_Lock@_Mutex@std@@CAXPEAV12@@Z */
-void CDECL mutex_mutex_lock(mutex *m)
+void CDECL mutex_mutex_lock(mutex *m) __WINE_ACQUIRE(*m)
 {
     mutex_lock(m);
 }
 
 /* ?_Mutex_Unlock@_Mutex@std@@CAXPAV12@@Z */
 /* ?_Mutex_Unlock@_Mutex@std@@CAXPEAV12@@Z */
-void CDECL mutex_mutex_unlock(mutex *m)
+void CDECL mutex_mutex_unlock(mutex *m) __WINE_RELEASE(*m)
 {
     mutex_unlock(m);
 }
@@ -400,14 +400,14 @@ static inline void set_locktype( _Lockit *lockit, int type ) { }
 #endif
 
 /* ?_Lockit_ctor@_Lockit@std@@SAXH@Z */
-void __cdecl _Lockit__Lockit_ctor_lock(int locktype)
+void __cdecl _Lockit__Lockit_ctor_lock(int locktype) __WINE_ACQUIRE(&lockit_cs[locktype])
 {
     EnterCriticalSection(&lockit_cs[locktype]);
 }
 
 /* ?_Lockit_ctor@_Lockit@std@@CAXPAV12@H@Z */
 /* ?_Lockit_ctor@_Lockit@std@@CAXPEAV12@H@Z */
-void __cdecl _Lockit__Lockit_ctor_locktype(_Lockit *lockit, int locktype)
+void __cdecl _Lockit__Lockit_ctor_locktype(_Lockit *lockit, int locktype) __WINE_ACQUIRE(&lockit_cs[locktype])
 {
     set_locktype( lockit, locktype );
     _Lockit__Lockit_ctor_lock(locktype);
@@ -415,7 +415,7 @@ void __cdecl _Lockit__Lockit_ctor_locktype(_Lockit *lockit, int locktype)
 
 /* ?_Lockit_ctor@_Lockit@std@@CAXPAV12@@Z */
 /* ?_Lockit_ctor@_Lockit@std@@CAXPEAV12@@Z */
-void __cdecl _Lockit__Lockit_ctor(_Lockit *lockit)
+void __cdecl _Lockit__Lockit_ctor(_Lockit *lockit) __WINE_ACQUIRE(&lockit_cs[0])
 {
     _Lockit__Lockit_ctor_locktype(lockit, 0);
 }
@@ -423,7 +423,7 @@ void __cdecl _Lockit__Lockit_ctor(_Lockit *lockit)
 /* ??0_Lockit@std@@QAE@H@Z */
 /* ??0_Lockit@std@@QEAA@H@Z */
 DEFINE_THISCALL_WRAPPER(_Lockit_ctor_locktype, 8)
-_Lockit* __thiscall _Lockit_ctor_locktype(_Lockit *this, int locktype)
+_Lockit* __thiscall _Lockit_ctor_locktype(_Lockit *this, int locktype) __WINE_ACQUIRE(&lockit_cs[locktype])
 {
     _Lockit__Lockit_ctor_locktype(this, locktype);
     return this;
@@ -432,21 +432,21 @@ _Lockit* __thiscall _Lockit_ctor_locktype(_Lockit *this, int locktype)
 /* ??0_Lockit@std@@QAE@XZ */
 /* ??0_Lockit@std@@QEAA@XZ */
 DEFINE_THISCALL_WRAPPER(_Lockit_ctor, 4)
-_Lockit* __thiscall _Lockit_ctor(_Lockit *this)
+_Lockit* __thiscall _Lockit_ctor(_Lockit *this) __WINE_ACQUIRE(&lockit_cs[0])
 {
     _Lockit__Lockit_ctor_locktype(this, 0);
     return this;
 }
 
 /* ?_Lockit_dtor@_Lockit@std@@SAXH@Z */
-void __cdecl _Lockit__Lockit_dtor_unlock(int locktype)
+void __cdecl _Lockit__Lockit_dtor_unlock(int locktype) __WINE_RELEASE(&lockit_cs[locktype])
 {
     LeaveCriticalSection(&lockit_cs[locktype]);
 }
 
 /* ?_Lockit_dtor@_Lockit@std@@CAXPAV12@@Z */
 /* ?_Lockit_dtor@_Lockit@std@@CAXPEAV12@@Z */
-void __cdecl _Lockit__Lockit_dtor(_Lockit *lockit)
+void __cdecl _Lockit__Lockit_dtor(_Lockit *lockit) __WINE_RELEASE(&lockit_cs[get_locktype(lockit)])
 {
     _Lockit__Lockit_dtor_unlock(get_locktype( lockit ));
 }
@@ -454,7 +454,7 @@ void __cdecl _Lockit__Lockit_dtor(_Lockit *lockit)
 /* ??1_Lockit@std@@QAE@XZ */
 /* ??1_Lockit@std@@QEAA@XZ */
 DEFINE_THISCALL_WRAPPER(_Lockit_dtor, 4)
-void __thiscall _Lockit_dtor(_Lockit *this)
+void __thiscall _Lockit_dtor(_Lockit *this) __WINE_RELEASE(&lockit_cs[get_locktype(this)])
 {
     _Lockit__Lockit_dtor(this);
 }
@@ -1641,12 +1641,12 @@ void __cdecl threads__Mtx_delete(void *mtx)
     DeleteCriticalSection(mtx);
 }
 
-void __cdecl threads__Mtx_lock(void *mtx)
+void __cdecl threads__Mtx_lock(void *mtx) __WINE_ACQUIRE((CRITICAL_SECTION *)mtx)
 {
     EnterCriticalSection(mtx);
 }
 
-void __cdecl threads__Mtx_unlock(void *mtx)
+void __cdecl threads__Mtx_unlock(void *mtx) __WINE_RELEASE((CRITICAL_SECTION *)mtx)
 {
     LeaveCriticalSection(mtx);
 }

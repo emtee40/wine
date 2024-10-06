@@ -362,14 +362,14 @@ _Lockit* __thiscall _Lockit_ctor_locktype(_Lockit*, int);
 void __thiscall _Lockit_dtor(_Lockit*);
 
 /* class mutex */
-typedef struct {
+typedef __WINE_LOCKABLE("mutex") struct {
     void *mutex;
 } mutex;
 
 mutex* __thiscall mutex_ctor(mutex*);
 void __thiscall mutex_dtor(mutex*);
-void __thiscall mutex_lock(mutex*);
-void __thiscall mutex_unlock(mutex*);
+void __thiscall mutex_lock(mutex* this) __WINE_ACQUIRE(*this);
+void __thiscall mutex_unlock(mutex* this) __WINE_RELEASE(*this);
 
 typedef enum {
     FMTFLAG_skipws      = 0x0001,
