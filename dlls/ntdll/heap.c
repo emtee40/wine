@@ -580,13 +580,13 @@ static inline ULONG heap_get_flags( const struct heap *heap, ULONG flags )
     return heap->flags | flags;
 }
 
-static inline void heap_lock( struct heap *heap, ULONG flags )
+static inline void __WINE_NO_THREAD_SAFETY_ANALYSIS heap_lock( struct heap *heap, ULONG flags ) __WINE_ACQUIRE(&heap->cs)
 {
     if (flags & HEAP_NO_SERIALIZE) return;
     RtlEnterCriticalSection( &heap->cs );
 }
 
-static inline void heap_unlock( struct heap *heap, ULONG flags )
+static inline void __WINE_NO_THREAD_SAFETY_ANALYSIS heap_unlock( struct heap *heap, ULONG flags ) __WINE_RELEASE(&heap->cs)
 {
     if (flags & HEAP_NO_SERIALIZE) return;
     RtlLeaveCriticalSection( &heap->cs );
@@ -2291,7 +2291,7 @@ ULONG WINAPI RtlCompactHeap( HANDLE handle, ULONG flags )
  *  Success: TRUE. The Heap is locked.
  *  Failure: FALSE, if heap is invalid.
  */
-BOOLEAN WINAPI RtlLockHeap( HANDLE handle )
+BOOLEAN __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI RtlLockHeap( HANDLE handle )
 {
     struct heap *heap;
     ULONG heap_flags;
@@ -2313,7 +2313,7 @@ BOOLEAN WINAPI RtlLockHeap( HANDLE handle )
  *  Success: TRUE. The Heap is unlocked.
  *  Failure: FALSE, if heap is invalid.
  */
-BOOLEAN WINAPI RtlUnlockHeap( HANDLE handle )
+BOOLEAN __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI RtlUnlockHeap( HANDLE handle )
 {
     struct heap *heap;
     ULONG heap_flags;

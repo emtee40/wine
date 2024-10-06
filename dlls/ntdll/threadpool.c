@@ -82,15 +82,17 @@ struct queue_timer
     HANDLE event;               /* removal event */
 };
 
+WINE_DECLARE_LOCK_FIELD_STUB(timer_queue, RTL_CRITICAL_SECTION, cs);
 struct timer_queue
 {
     DWORD magic;
     RTL_CRITICAL_SECTION cs;
-    struct list timers;         /* sorted by expiration time */
+    struct list timers __WINE_FIELD_GUARDED_BY(timer_queue, cs);         /* sorted by expiration time */
     BOOL quit;                  /* queue should be deleted; once set, never unset */
     HANDLE event;
     HANDLE thread;
 };
+WINE_DEFINE_LOCK_FIELD_STUB(timer_queue, RTL_CRITICAL_SECTION, cs);
 
 /*
  * Object-oriented thread pooling API
@@ -99,6 +101,7 @@ struct timer_queue
 #define THREADPOOL_WORKER_TIMEOUT 5000
 #define MAXIMUM_WAITQUEUE_OBJECTS (MAXIMUM_WAIT_OBJECTS - 1)
 
+WINE_DECLARE_LOCK_FIELD_STUB(threadpool, CRITICAL_SECTION, cs);
 /* internal threadpool representation */
 struct threadpool
 {
@@ -107,7 +110,7 @@ struct threadpool
     BOOL                    shutdown;
     CRITICAL_SECTION        cs;
     /* Pools of work items, locked via .cs, order matches TP_CALLBACK_PRIORITY - high, normal, low. */
-    struct list             pools[3];
+    struct list             pools[3] __WINE_FIELD_GUARDED_BY(threadpool, cs);
     RTL_CONDITION_VARIABLE  update_event;
     /* information about worker threads, locked via .cs */
     int                     max_workers;
@@ -117,6 +120,7 @@ struct threadpool
     HANDLE                  compl_port;
     TP_POOL_STACK_INFORMATION stack_info;
 };
+WINE_DEFINE_LOCK_FIELD_STUB(threadpool, CRITICAL_SECTION, cs);
 
 enum threadpool_objtype
 {
@@ -227,14 +231,16 @@ struct threadpool_instance
 };
 
 /* internal threadpool group representation */
+WINE_DECLARE_LOCK_FIELD_STUB(threadpool_group, CRITICAL_SECTION, cs);
 struct threadpool_group
 {
     LONG                    refcount;
     BOOL                    shutdown;
     CRITICAL_SECTION        cs;
     /* list of group members, locked via .cs */
-    struct list             members;
+    struct list             members __WINE_FIELD_GUARDED_BY(threadpool_group, cs);
 };
+WINE_DEFINE_LOCK_FIELD_STUB(threadpool_group, CRITICAL_SECTION, cs);
 
 /* global timerqueue object */
 static RTL_CRITICAL_SECTION_DEBUG timerqueue_debug;
@@ -1053,7 +1059,7 @@ NTSTATUS WINAPI RtlDeleteTimer(HANDLE TimerQueue, HANDLE Timer,
 /***********************************************************************
  *           timerqueue_thread_proc    (internal)
  */
-static void CALLBACK timerqueue_thread_proc( void *param )
+static void CALLBACK timerqueue_thread_proc( void *param ) __WINE_EXCLUDES(&timerqueue.cs)
 {
     ULONGLONG timeout_lower, timeout_upper, new_timeout;
     struct threadpool_object *other_timer;
@@ -1170,7 +1176,7 @@ static NTSTATUS tp_new_worker_thread( struct threadpool *pool )
  * Acquires a lock on the global timerqueue. When the lock is acquired
  * successfully, it is guaranteed that the timer thread is running.
  */
-static NTSTATUS tp_timerqueue_lock( struct threadpool_object *timer )
+static NTSTATUS tp_timerqueue_lock( struct threadpool_object *timer ) __WINE_EXCLUDES(&timerqueue.cs)
 {
     NTSTATUS status = STATUS_SUCCESS;
     assert( timer->type == TP_OBJECT_TYPE_TIMER );
@@ -1212,7 +1218,7 @@ static NTSTATUS tp_timerqueue_lock( struct threadpool_object *timer )
  *
  * Releases a lock on the global timerqueue.
  */
-static void tp_timerqueue_unlock( struct threadpool_object *timer )
+static void tp_timerqueue_unlock( struct threadpool_object *timer ) __WINE_EXCLUDES(&timerqueue.cs)
 {
     assert( timer->type == TP_OBJECT_TYPE_TIMER );
 
@@ -1424,7 +1430,7 @@ static void CALLBACK waitqueue_thread_proc( void *param )
 /***********************************************************************
  *           tp_waitqueue_lock    (internal)
  */
-static NTSTATUS tp_waitqueue_lock( struct threadpool_object *wait )
+static NTSTATUS tp_waitqueue_lock( struct threadpool_object *wait ) __WINE_EXCLUDES(&waitqueue.cs)
 {
     struct waitqueue_bucket *bucket;
     NTSTATUS status;
@@ -1502,7 +1508,7 @@ out:
 /***********************************************************************
  *           tp_waitqueue_unlock    (internal)
  */
-static void tp_waitqueue_unlock( struct threadpool_object *wait )
+static void tp_waitqueue_unlock( struct threadpool_object *wait ) __WINE_EXCLUDES(&waitqueue.cs)
 {
     assert( wait->type == TP_OBJECT_TYPE_WAIT );
 
@@ -1521,7 +1527,7 @@ static void tp_waitqueue_unlock( struct threadpool_object *wait )
     RtlLeaveCriticalSection( &waitqueue.cs );
 }
 
-static void CALLBACK ioqueue_thread_proc( void *param )
+static void CALLBACK ioqueue_thread_proc( void *param ) __WINE_EXCLUDES(&ioqueue.cs)
 {
     struct io_completion *completion;
     struct threadpool_object *io;
@@ -1617,7 +1623,7 @@ static void CALLBACK ioqueue_thread_proc( void *param )
     RtlExitUserThread( 0 );
 }
 
-static NTSTATUS tp_ioqueue_lock( struct threadpool_object *io, HANDLE file )
+static NTSTATUS tp_ioqueue_lock( struct threadpool_object *io, HANDLE file ) __WINE_EXCLUDES(&ioqueue.cs)
 {
     NTSTATUS status = STATUS_SUCCESS;
 
@@ -1824,7 +1830,7 @@ static NTSTATUS tp_threadpool_lock( struct threadpool **out, TP_CALLBACK_ENVIRON
  *
  * Releases a lock on a threadpool.
  */
-static void tp_threadpool_unlock( struct threadpool *pool )
+static void tp_threadpool_unlock( struct threadpool *pool ) __WINE_EXCLUDES(&pool->cs)
 {
     RtlEnterCriticalSection( &pool->cs );
     pool->objcount--;
@@ -1990,6 +1996,7 @@ static void tp_object_prio_queue( struct threadpool_object *object )
  * function has to be VOID because TpPostWork can never fail on Windows.
  */
 static void tp_object_submit( struct threadpool_object *object, BOOL signaled )
+    __WINE_EXCLUDES( &object->pool->cs )
 {
     struct threadpool *pool = object->pool;
     NTSTATUS status = STATUS_UNSUCCESSFUL;
@@ -2028,7 +2035,7 @@ static void tp_object_submit( struct threadpool_object *object, BOOL signaled )
  *
  * Cancels all currently pending callbacks for a specific object.
  */
-static void tp_object_cancel( struct threadpool_object *object )
+static void tp_object_cancel( struct threadpool_object *object ) __WINE_EXCLUDES(&object->pool->cs)
 {
     struct threadpool *pool = object->pool;
     LONG pending_callbacks = 0;
@@ -2073,7 +2080,7 @@ static BOOL object_is_finished( struct threadpool_object *object, BOOL group )
  * Waits until all pending and running callbacks of a specific object
  * have been processed.
  */
-static void tp_object_wait( struct threadpool_object *object, BOOL group_wait )
+static void tp_object_wait( struct threadpool_object *object, BOOL group_wait ) __WINE_EXCLUDES(&object->pool->cs)
 {
     struct threadpool *pool = object->pool;
 
@@ -2088,7 +2095,7 @@ static void tp_object_wait( struct threadpool_object *object, BOOL group_wait )
     RtlLeaveCriticalSection( &pool->cs );
 }
 
-static void tp_ioqueue_unlock( struct threadpool_object *io )
+static void tp_ioqueue_unlock( struct threadpool_object *io ) __WINE_EXCLUDES(&ioqueue.cs)
 {
     assert( io->type == TP_OBJECT_TYPE_IO );
 
@@ -2182,7 +2189,9 @@ static struct list *threadpool_get_next_item( const struct threadpool *pool )
  * Executes a threadpool object callback, object->pool->cs has to be
  * held.
  */
-static void tp_object_execute( struct threadpool_object *object, BOOL wait_thread )
+static void __WINE_NO_THREAD_SAFETY_ANALYSIS tp_object_execute( struct threadpool_object *object,
+                                                                BOOL wait_thread )
+    __WINE_RELEASE(&object->pool->cs)
 {
     TP_CALLBACK_INSTANCE *callback_instance;
     struct threadpool_instance instance;
@@ -2338,7 +2347,8 @@ skip_cleanup:
 /***********************************************************************
  *           threadpool_worker_proc    (internal)
  */
-static void CALLBACK threadpool_worker_proc( void *param )
+static void CALLBACK __WINE_NO_THREAD_SAFETY_ANALYSIS threadpool_worker_proc( void *param )
+    __WINE_EXCLUDES(((struct threadpool *)param )->cs)
 {
     struct threadpool *pool = param;
     LARGE_INTEGER timeout;

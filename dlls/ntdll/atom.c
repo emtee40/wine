@@ -49,7 +49,7 @@ struct atom_handle
 };
 
 
-static NTSTATUS lock_atom_table( RTL_ATOM_TABLE table )
+static NTSTATUS lock_atom_table( RTL_ATOM_TABLE table ) __WINE_TRY_ACQUIRE(STATUS_SUCCESS, &table->CriticalSection)
 {
     if (!table) return STATUS_INVALID_PARAMETER;
     if (table->Signature != TABLE_SIGNATURE) return STATUS_INVALID_PARAMETER;
@@ -57,7 +57,7 @@ static NTSTATUS lock_atom_table( RTL_ATOM_TABLE table )
     return STATUS_SUCCESS;
 }
 
-static void unlock_atom_table( RTL_ATOM_TABLE table )
+static void unlock_atom_table( RTL_ATOM_TABLE table ) __WINE_RELEASE(&table->CriticalSection)
 {
     RtlLeaveCriticalSection( &table->CriticalSection );
 }
@@ -155,7 +155,7 @@ done:
 /******************************************************************
  *		RtlDeleteAtomFromAtomTable (NTDLL.@)
  */
-NTSTATUS WINAPI RtlDeleteAtomFromAtomTable( RTL_ATOM_TABLE table, RTL_ATOM atom )
+NTSTATUS __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI RtlDeleteAtomFromAtomTable( RTL_ATOM_TABLE table, RTL_ATOM atom )
 {
     NTSTATUS status;
     struct atom_handle *handle;
@@ -205,8 +205,10 @@ static ULONG integral_atom_name(WCHAR* buffer, ULONG len, RTL_ATOM atom)
 /******************************************************************
  *		RtlQueryAtomInAtomTable (NTDLL.@)
  */
-NTSTATUS WINAPI RtlQueryAtomInAtomTable( RTL_ATOM_TABLE table, RTL_ATOM atom, ULONG* ref,
-                                         ULONG* pin, WCHAR* name, ULONG* len )
+NTSTATUS __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI RtlQueryAtomInAtomTable( RTL_ATOM_TABLE table,
+                                                                          RTL_ATOM atom, ULONG *ref,
+                                                                          ULONG *pin, WCHAR *name,
+                                                                          ULONG *len )
 {
     NTSTATUS status;
     struct atom_handle *handle;
@@ -290,7 +292,9 @@ NTSTATUS WINAPI RtlDestroyAtomTable( RTL_ATOM_TABLE table )
 /******************************************************************
  *		RtlAddAtomToAtomTable (NTDLL.@)
  */
-NTSTATUS WINAPI RtlAddAtomToAtomTable( RTL_ATOM_TABLE table, const WCHAR* name, RTL_ATOM* atom )
+NTSTATUS __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI RtlAddAtomToAtomTable( RTL_ATOM_TABLE table,
+                                                                        const WCHAR *name,
+                                                                        RTL_ATOM *atom )
 {
     NTSTATUS status;
     size_t len;
@@ -308,7 +312,9 @@ NTSTATUS WINAPI RtlAddAtomToAtomTable( RTL_ATOM_TABLE table, const WCHAR* name, 
 /******************************************************************
  *		RtlLookupAtomInAtomTable (NTDLL.@)
  */
-NTSTATUS WINAPI RtlLookupAtomInAtomTable( RTL_ATOM_TABLE table, const WCHAR* name, RTL_ATOM* atom )
+NTSTATUS __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI RtlLookupAtomInAtomTable( RTL_ATOM_TABLE table,
+                                                                           const WCHAR *name,
+                                                                           RTL_ATOM *atom )
 {
     RTL_ATOM_TABLE_ENTRY *entry;
     NTSTATUS status;
@@ -336,7 +342,8 @@ NTSTATUS WINAPI RtlLookupAtomInAtomTable( RTL_ATOM_TABLE table, const WCHAR* nam
 /******************************************************************
  *		RtlEmptyAtomTable (NTDLL.@)
  */
-NTSTATUS WINAPI RtlEmptyAtomTable( RTL_ATOM_TABLE table, BOOLEAN delete_pinned )
+NTSTATUS __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI RtlEmptyAtomTable( RTL_ATOM_TABLE table,
+                                                                    BOOLEAN delete_pinned )
 {
     struct atom_handle *handle;
     NTSTATUS status;
@@ -368,7 +375,7 @@ NTSTATUS WINAPI RtlEmptyAtomTable( RTL_ATOM_TABLE table, BOOLEAN delete_pinned )
 /******************************************************************
  *		RtlPinAtomInAtomTable (NTDLL.@)
  */
-NTSTATUS WINAPI RtlPinAtomInAtomTable( RTL_ATOM_TABLE table, RTL_ATOM atom )
+NTSTATUS __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI RtlPinAtomInAtomTable( RTL_ATOM_TABLE table, RTL_ATOM atom )
 {
     struct atom_handle *handle;
     NTSTATUS status;
