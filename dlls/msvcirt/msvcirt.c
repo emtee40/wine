@@ -145,11 +145,11 @@ typedef struct {
 
 ios* __thiscall ios_assign(ios*, const ios*);
 int __thiscall ios_fail(const ios*);
-void __cdecl ios_lock(ios*);
-void __cdecl ios_lockc(void);
+void __cdecl ios_lock(ios*this) __WINE_ACQUIRE(&this->lock);
+void __cdecl ios_lockc(void) __WINE_ACQUIRE(&ios_static_lock);
 LONG __thiscall ios_setf_mask(ios*, LONG, LONG);
-void __cdecl ios_unlock(ios*);
-void __cdecl ios_unlockc(void);
+void __cdecl ios_unlock(ios* this) __WINE_RELEASE(&this->lock);
+void __cdecl ios_unlockc(void) __WINE_RELEASE(&ios_static_lock);
 
 /* class ostream */
 typedef struct _ostream {
@@ -564,7 +564,8 @@ void __thiscall streambuf_clrlock(streambuf *this)
 /* ?lock@streambuf@@QAEXXZ */
 /* ?lock@streambuf@@QEAAXXZ */
 DEFINE_THISCALL_WRAPPER(streambuf_lock, 4)
-void __thiscall streambuf_lock(streambuf *this)
+void __WINE_NO_THREAD_SAFETY_ANALYSIS __thiscall streambuf_lock(streambuf *this)
+    __WINE_ACQUIRE(&this->lock)
 {
     TRACE("(%p)\n", this);
     if (this->do_lock < 0)
@@ -766,7 +767,8 @@ int __thiscall streambuf_underflow(streambuf *this)
 /* ?unlock@streambuf@@QAEXXZ */
 /* ?unlock@streambuf@@QEAAXXZ */
 DEFINE_THISCALL_WRAPPER(streambuf_unlock, 4)
-void __thiscall streambuf_unlock(streambuf *this)
+void __WINE_NO_THREAD_SAFETY_ANALYSIS __thiscall streambuf_unlock(streambuf *this)
+    __WINE_RELEASE(&this->lock)
 {
     TRACE("(%p)\n", this);
     if (this->do_lock < 0)
@@ -1962,7 +1964,7 @@ int __thiscall ios_bad(const ios *this)
 }
 
 /* ?bitalloc@ios@@SAJXZ */
-LONG __cdecl ios_bitalloc(void)
+LONG __cdecl ios_bitalloc(void) __WINE_EXCLUDES(&ios_static_lock)
 {
     TRACE("()\n");
     ios_lockc();
@@ -1974,7 +1976,7 @@ LONG __cdecl ios_bitalloc(void)
 /* ?clear@ios@@QAEXH@Z */
 /* ?clear@ios@@QEAAXH@Z */
 DEFINE_THISCALL_WRAPPER(ios_clear, 8)
-void __thiscall ios_clear(ios *this, int state)
+void __thiscall ios_clear(ios *this, int state) __WINE_EXCLUDES(&this->lock)
 {
     TRACE("(%p %d)\n", this, state);
     ios_lock(this);
@@ -2126,7 +2128,7 @@ LONG* __thiscall ios_iword(const ios *this, int index)
 
 /* ?lock@ios@@QAAXXZ */
 /* ?lock@ios@@QEAAXXZ */
-void __cdecl ios_lock(ios *this)
+void __WINE_NO_THREAD_SAFETY_ANALYSIS __cdecl ios_lock(ios *this)
 {
     TRACE("(%p)\n", this);
     if (this->do_lock < 0)
@@ -2135,7 +2137,7 @@ void __cdecl ios_lock(ios *this)
 
 /* ?lockbuf@ios@@QAAXXZ */
 /* ?lockbuf@ios@@QEAAXXZ */
-void __cdecl ios_lockbuf(ios *this)
+void __cdecl ios_lockbuf(ios *this) __WINE_ACQUIRE(&this->sb->lock)
 {
     TRACE("(%p)\n", this);
     streambuf_lock(this->sb);
@@ -2151,7 +2153,7 @@ void __cdecl ios_lockc(void)
 /* ?lockptr@ios@@IAEPAU_CRT_CRITICAL_SECTION@@XZ */
 /* ?lockptr@ios@@IEAAPEAU_CRT_CRITICAL_SECTION@@XZ */
 DEFINE_THISCALL_WRAPPER(ios_lockptr, 4)
-CRITICAL_SECTION* __thiscall ios_lockptr(ios *this)
+CRITICAL_SECTION* __thiscall ios_lockptr(ios *this) __WINE_LOCK_RETURNED(&this->lock)
 {
     TRACE("(%p)\n", this);
     return &this->lock;
@@ -2218,7 +2220,7 @@ int __thiscall ios_rdstate(const ios *this)
 /* ?setf@ios@@QAEJJ@Z */
 /* ?setf@ios@@QEAAJJ@Z */
 DEFINE_THISCALL_WRAPPER(ios_setf, 8)
-LONG __thiscall ios_setf(ios *this, LONG flags)
+LONG __thiscall ios_setf(ios *this, LONG flags) __WINE_EXCLUDES(&this->lock)
 {
     LONG prev = this->flags;
 
@@ -2233,7 +2235,7 @@ LONG __thiscall ios_setf(ios *this, LONG flags)
 /* ?setf@ios@@QAEJJJ@Z */
 /* ?setf@ios@@QEAAJJJ@Z */
 DEFINE_THISCALL_WRAPPER(ios_setf_mask, 12)
-LONG __thiscall ios_setf_mask(ios *this, LONG flags, LONG mask)
+LONG __thiscall ios_setf_mask(ios *this, LONG flags, LONG mask) __WINE_EXCLUDES(&this->lock)
 {
     LONG prev = this->flags;
 
@@ -2279,7 +2281,7 @@ ostream* __thiscall ios_tie_get(const ios *this)
 
 /* ?unlock@ios@@QAAXXZ */
 /* ?unlock@ios@@QEAAXXZ */
-void __cdecl ios_unlock(ios *this)
+void __WINE_NO_THREAD_SAFETY_ANALYSIS __cdecl ios_unlock(ios *this)
 {
     TRACE("(%p)\n", this);
     if (this->do_lock < 0)
@@ -2288,7 +2290,7 @@ void __cdecl ios_unlock(ios *this)
 
 /* ?unlockbuf@ios@@QAAXXZ */
 /* ?unlockbuf@ios@@QEAAXXZ */
-void __cdecl ios_unlockbuf(ios *this)
+void __cdecl ios_unlockbuf(ios *this) __WINE_RELEASE(&this->sb->lock)
 {
     TRACE("(%p)\n", this);
     streambuf_unlock(this->sb);
@@ -2539,7 +2541,7 @@ ostream* __thiscall ostream_flush(ostream *this)
 /* ?opfx@ostream@@QAEHXZ */
 /* ?opfx@ostream@@QEAAHXZ */
 DEFINE_THISCALL_WRAPPER(ostream_opfx, 4)
-int __thiscall ostream_opfx(ostream *this)
+__WINE_NO_THREAD_SAFETY_ANALYSIS int __thiscall ostream_opfx(ostream *this)
 {
     ios *base = ostream_get_ios(this);
 
@@ -2559,7 +2561,7 @@ int __thiscall ostream_opfx(ostream *this)
 /* ?osfx@ostream@@QAEXXZ */
 /* ?osfx@ostream@@QEAAXXZ */
 DEFINE_THISCALL_WRAPPER(ostream_osfx, 4)
-void __thiscall ostream_osfx(ostream *this)
+__WINE_NO_THREAD_SAFETY_ANALYSIS  void __thiscall ostream_osfx(ostream *this)
 {
     ios *base = ostream_get_ios(this);
 
@@ -3490,7 +3492,7 @@ int __thiscall istream_gcount(const istream *this)
 /* ?ipfx@istream@@QAEHH@Z */
 /* ?ipfx@istream@@QEAAHH@Z */
 DEFINE_THISCALL_WRAPPER(istream_ipfx, 8)
-int __thiscall istream_ipfx(istream *this, int need)
+__WINE_NO_THREAD_SAFETY_ANALYSIS int __thiscall istream_ipfx(istream *this, int need)
 {
     ios *base = istream_get_ios(this);
 
@@ -3521,7 +3523,7 @@ int __thiscall istream_ipfx(istream *this, int need)
 /* ?isfx@istream@@QAEXXZ */
 /* ?isfx@istream@@QEAAXXZ */
 DEFINE_THISCALL_WRAPPER(istream_isfx, 4)
-void __thiscall istream_isfx(istream *this)
+__WINE_NO_THREAD_SAFETY_ANALYSIS void __thiscall istream_isfx(istream *this)
 {
     ios *base = istream_get_ios(this);
 
@@ -5117,13 +5119,13 @@ DEFINE_VTBL_WRAPPER(56);
 
 #endif
 
-void __cdecl _mtlock(CRITICAL_SECTION *crit)
+void __cdecl _mtlock(CRITICAL_SECTION *crit) __WINE_ACQUIRE(crit)
 {
     TRACE("(%p)\n", crit);
     EnterCriticalSection(crit);
 }
 
-void __cdecl _mtunlock(CRITICAL_SECTION *crit)
+void __cdecl _mtunlock(CRITICAL_SECTION *crit) __WINE_RELEASE(crit)
 {
     TRACE("(%p)\n", crit);
     LeaveCriticalSection(crit);
