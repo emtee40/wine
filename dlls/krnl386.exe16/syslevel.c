@@ -138,7 +138,7 @@ VOID WINAPI _LeaveSysLevel(SYSLEVEL *lock)
 /************************************************************************
  *		@ (KERNEL32.86)
  */
-VOID WINAPI _KERNEL32_86(SYSLEVEL *lock)
+VOID WINAPI _KERNEL32_86(SYSLEVEL *lock) __WINE_RELEASE(lock->crst)
 {
     _LeaveSysLevel(lock);
 }
@@ -173,7 +173,7 @@ VOID WINAPI _CheckNotSysLevel(SYSLEVEL *lock)
 /************************************************************************
  *           _EnterWin16Lock			[KERNEL.480]
  */
-VOID WINAPI _EnterWin16Lock(void)
+VOID WINAPI _EnterWin16Lock(void) __WINE_ACQUIRE(&Win16Mutex.crst)
 {
     _EnterSysLevel(&Win16Mutex);
 }
@@ -181,7 +181,7 @@ VOID WINAPI _EnterWin16Lock(void)
 /************************************************************************
  *           _LeaveWin16Lock		[KERNEL.481]
  */
-VOID WINAPI _LeaveWin16Lock(void)
+VOID WINAPI _LeaveWin16Lock(void) __WINE_RELEASE(&Win16Mutex.crst)
 {
     _LeaveSysLevel(&Win16Mutex);
 }
@@ -197,7 +197,7 @@ DWORD WINAPI _ConfirmWin16Lock(void)
 /************************************************************************
  *           ReleaseThunkLock    (KERNEL32.48)
  */
-VOID WINAPI ReleaseThunkLock(DWORD *mutex_count)
+VOID __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI ReleaseThunkLock(DWORD *mutex_count)
 {
     DWORD count = _ConfirmSysLevel(&Win16Mutex);
     *mutex_count = count;
@@ -209,7 +209,7 @@ VOID WINAPI ReleaseThunkLock(DWORD *mutex_count)
 /************************************************************************
  *           RestoreThunkLock    (KERNEL32.49)
  */
-VOID WINAPI RestoreThunkLock(DWORD mutex_count)
+VOID __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI RestoreThunkLock(DWORD mutex_count)
 {
     while (mutex_count-- > 0)
         _EnterSysLevel(&Win16Mutex);
