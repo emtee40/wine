@@ -408,7 +408,7 @@ static void destroy_object( struct object *obj )
     free( obj );
 }
 
-static struct object *lock_object( SQLHANDLE handle, UINT32 type )
+static __WINE_NO_THREAD_SAFETY_ANALYSIS struct object *lock_object( SQLHANDLE handle, UINT32 type )
 {
     struct object *obj = handle;
 
@@ -422,7 +422,7 @@ static struct object *lock_object( SQLHANDLE handle, UINT32 type )
     return obj;
 }
 
-static void unlock_object( struct object *obj )
+static __WINE_NO_THREAD_SAFETY_ANALYSIS void unlock_object( struct object *obj )
 {
     LeaveCriticalSection( &obj->cs );
 }
