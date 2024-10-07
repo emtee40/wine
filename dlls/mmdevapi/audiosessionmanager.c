@@ -38,12 +38,12 @@ static CRITICAL_SECTION_DEBUG g_sessions_lock_debug =
 };
 static CRITICAL_SECTION g_sessions_lock = { &g_sessions_lock_debug, -1, 0, 0, 0, 0 };
 
-void sessions_lock(void)
+void sessions_lock(void) __WINE_ACQUIRE(&g_sessions_lock)
 {
     EnterCriticalSection(&g_sessions_lock);
 }
 
-void sessions_unlock(void)
+void sessions_unlock(void) __WINE_RELEASE(&g_sessions_lock)
 {
     LeaveCriticalSection(&g_sessions_lock);
 }
