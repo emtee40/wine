@@ -1256,14 +1256,14 @@ static void test_streambuf(void)
     WaitForSingleObject(lock_arg.lock[0], INFINITE);
     locked = TryEnterCriticalSection(&sb.lock);
     ok(locked != 0, "could not lock the streambuf\n");
-    LeaveCriticalSection(&sb.lock);
+    if (locked) LeaveCriticalSection(&sb.lock);
 
     sb.do_lock = 1;
     SetEvent(lock_arg.test[0]);
     WaitForSingleObject(lock_arg.lock[1], INFINITE);
     locked = TryEnterCriticalSection(&sb.lock);
     ok(locked != 0, "could not lock the streambuf\n");
-    LeaveCriticalSection(&sb.lock);
+    if (locked) LeaveCriticalSection(&sb.lock);
 
     sb.do_lock = -1;
     SetEvent(lock_arg.test[1]);
