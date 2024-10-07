@@ -833,12 +833,12 @@ static void wined3d_bo_vk_unmap(struct wined3d_bo_vk *bo, struct wined3d_context
     adapter_adjust_mapped_memory(device_vk->d.adapter, -bo->size);
 }
 
-static void wined3d_bo_slab_vk_lock(struct wined3d_bo_slab_vk *slab_vk, struct wined3d_context_vk *context_vk)
+static void wined3d_bo_slab_vk_lock(struct wined3d_bo_slab_vk *slab_vk, struct wined3d_context_vk *context_vk) __WINE_ACQUIRE(&wined3d_device_vk(context_vk->c.device)->allocator_cs)
 {
     wined3d_device_vk_allocator_lock(wined3d_device_vk(context_vk->c.device));
 }
 
-static void wined3d_bo_slab_vk_unlock(struct wined3d_bo_slab_vk *slab_vk, struct wined3d_context_vk *context_vk)
+static void wined3d_bo_slab_vk_unlock(struct wined3d_bo_slab_vk *slab_vk, struct wined3d_context_vk *context_vk) __WINE_RELEASE(&wined3d_device_vk(context_vk->c.device)->allocator_cs)
 {
     wined3d_device_vk_allocator_unlock(wined3d_device_vk(context_vk->c.device));
 }
