@@ -228,12 +228,12 @@ void msiobj_addref( MSIOBJECTHDR *info )
     InterlockedIncrement(&info->refcount);
 }
 
-void msiobj_lock( MSIOBJECTHDR *info )
+void __WINE_NO_THREAD_SAFETY_ANALYSIS msiobj_lock( MSIOBJECTHDR *info )
 {
     EnterCriticalSection( &object_cs );
 }
 
-void msiobj_unlock( MSIOBJECTHDR *info )
+void __WINE_NO_THREAD_SAFETY_ANALYSIS msiobj_unlock( MSIOBJECTHDR *info )
 {
     LeaveCriticalSection( &object_cs );
 }

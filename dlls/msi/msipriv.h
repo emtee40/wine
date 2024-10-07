@@ -789,8 +789,9 @@ extern MSIHANDLE alloc_msi_remote_handle(MSIHANDLE remote);
 extern void *alloc_msiobject(UINT type, UINT size, msihandledestructor destroy );
 extern void msiobj_addref(MSIOBJECTHDR *);
 extern int msiobj_release(MSIOBJECTHDR *);
-extern void msiobj_lock(MSIOBJECTHDR *);
-extern void msiobj_unlock(MSIOBJECTHDR *);
+WINE_DECLARE_LOCKABLE_STUB(msiobj);
+extern void msiobj_lock(MSIOBJECTHDR *) __WINE_ACQUIRE(WINE_LOCKABLE_STUB(msiobj));
+extern void msiobj_unlock(MSIOBJECTHDR *) __WINE_RELEASE(WINE_LOCKABLE_STUB(msiobj));
 extern void msi_free_handle_table(void);
 
 extern void free_cached_tables( MSIDATABASE *db );
