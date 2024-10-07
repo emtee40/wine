@@ -1426,6 +1426,7 @@ static inline IPropDataImpl *impl_from_IPropData(IPropData *iface)
 
 /* Internal - Get a property value, assumes lock is held */
 static IPropDataItem *IMAPIPROP_GetValue(IPropDataImpl *This, ULONG ulPropTag)
+    __WINE_REQUIRES(&This->cs)
 {
     struct list *cursor;
 
@@ -1442,6 +1443,7 @@ static IPropDataItem *IMAPIPROP_GetValue(IPropDataImpl *This, ULONG ulPropTag)
 /* Internal - Add a new property value, assumes lock is held */
 static IPropDataItem *IMAPIPROP_AddValue(IPropDataImpl *This,
                                          LPSPropValue lpProp)
+    __WINE_REQUIRES(&This->cs)
 {
     LPVOID lpMem;
     LPIPropDataItem lpNew;
@@ -1476,13 +1478,13 @@ static IPropDataItem *IMAPIPROP_AddValue(IPropDataImpl *This,
 }
 
 /* Internal - Lock an IPropData object */
-static inline void IMAPIPROP_Lock(IPropDataImpl *This)
+static inline void IMAPIPROP_Lock(IPropDataImpl *This) __WINE_ACQUIRE(&This->cs)
 {
     EnterCriticalSection(&This->cs);
 }
 
 /* Internal - Unlock an IPropData object */
-static inline void IMAPIPROP_Unlock(IPropDataImpl *This)
+static inline void IMAPIPROP_Unlock(IPropDataImpl *This) __WINE_RELEASE(&This->cs)
 {
     LeaveCriticalSection(&This->cs);
 }
