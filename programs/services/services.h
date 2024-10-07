@@ -78,8 +78,8 @@ DWORD scmdatabase_add_service(struct scmdatabase *db, struct service_entry *entr
 BOOL scmdatabase_lock_startup(struct scmdatabase *db, int timeout);
 void scmdatabase_unlock_startup(struct scmdatabase *db);
 
-void scmdatabase_lock(struct scmdatabase *db);
-void scmdatabase_unlock(struct scmdatabase *db);
+void scmdatabase_lock(struct scmdatabase *db) __WINE_ACQUIRE(&db->cs);
+void scmdatabase_unlock(struct scmdatabase *db) __WINE_RELEASE(&db->cs);
 
 /* Service functions */
 
@@ -90,8 +90,8 @@ DWORD save_service_config(struct service_entry *entry);
 void free_service_entry(struct service_entry *entry);
 struct service_entry *grab_service(struct service_entry *service);
 void release_service(struct service_entry *service);
-void service_lock(struct service_entry *service);
-void service_unlock(struct service_entry *service);
+void service_lock(struct service_entry *service) __WINE_ACQUIRE(&service->db->cs);
+void service_unlock(struct service_entry *service) __WINE_RELEASE(&service->db->cs);
 DWORD service_start(struct service_entry *service, DWORD service_argc, LPCWSTR *service_argv);
 void notify_service_state(struct service_entry *service);
 
