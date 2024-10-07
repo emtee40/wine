@@ -139,7 +139,7 @@ static ULONG WINAPI allocator_Release(IMalloc *iface)
     return 1;
 }
 
-static void * WINAPI allocator_Alloc(IMalloc *iface, SIZE_T cb)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS void *WINAPI allocator_Alloc(IMalloc *iface, SIZE_T cb)
 {
     void *addr;
 
@@ -173,7 +173,8 @@ static void * WINAPI allocator_Alloc(IMalloc *iface, SIZE_T cb)
     return addr;
 }
 
-static void * WINAPI allocator_Realloc(IMalloc *iface, void *pv, SIZE_T cb)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS void *WINAPI allocator_Realloc(IMalloc *iface, void *pv,
+                                                                       SIZE_T cb)
 {
     void *addr;
 
@@ -227,7 +228,7 @@ static void * WINAPI allocator_Realloc(IMalloc *iface, void *pv, SIZE_T cb)
     return addr;
 }
 
-static void WINAPI allocator_Free(IMalloc *iface, void *mem)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS void WINAPI allocator_Free(IMalloc *iface, void *mem)
 {
     BOOL spyed_block = FALSE, spy_active = FALSE;
 
@@ -268,7 +269,7 @@ static void WINAPI allocator_Free(IMalloc *iface, void *mem)
  *      win95:  size allocated (4 byte boundaries)
  *      win2k:  size originally requested !!! (allocated on 8 byte boundaries)
  */
-static SIZE_T WINAPI allocator_GetSize(IMalloc *iface, void *mem)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS SIZE_T WINAPI allocator_GetSize(IMalloc *iface, void *mem)
 {
     BOOL spyed_block = FALSE, spy_active = FALSE;
     SIZE_T size;
@@ -297,7 +298,7 @@ static SIZE_T WINAPI allocator_GetSize(IMalloc *iface, void *mem)
     return size;
 }
 
-static INT WINAPI allocator_DidAlloc(IMalloc *iface, void *mem)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS INT WINAPI allocator_DidAlloc(IMalloc *iface, void *mem)
 {
     BOOL spyed_block = FALSE, spy_active = FALSE;
     int did_alloc;
@@ -326,7 +327,7 @@ static INT WINAPI allocator_DidAlloc(IMalloc *iface, void *mem)
     return did_alloc;
 }
 
-static void WINAPI allocator_HeapMinimize(IMalloc *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS void WINAPI allocator_HeapMinimize(IMalloc *iface)
 {
     BOOL spy_active = FALSE;
 
