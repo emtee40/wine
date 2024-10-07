@@ -1576,11 +1576,10 @@ static inline XA2VoiceImpl *create_voice(IXAudio2Impl *This)
     return voice;
 }
 
-static HRESULT WINAPI IXAudio2Impl_CreateSourceVoice(IXAudio2 *iface,
-        IXAudio2SourceVoice **ppSourceVoice, const WAVEFORMATEX *pSourceFormat,
-        UINT32 flags, float maxFrequencyRatio,
-        IXAudio2VoiceCallback *pCallback, const XAUDIO2_VOICE_SENDS *pSendList,
-        const XAUDIO2_EFFECT_CHAIN *pEffectChain)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI IXAudio2Impl_CreateSourceVoice(
+    IXAudio2 *iface, IXAudio2SourceVoice **ppSourceVoice, const WAVEFORMATEX *pSourceFormat,
+    UINT32 flags, float maxFrequencyRatio, IXAudio2VoiceCallback *pCallback,
+    const XAUDIO2_VOICE_SENDS *pSendList, const XAUDIO2_EFFECT_CHAIN *pEffectChain)
 {
     IXAudio2Impl *This = impl_from_IXAudio2(iface);
     XA2VoiceImpl *src;
