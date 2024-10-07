@@ -116,9 +116,11 @@ static void d2d_clip_stack_pop(struct d2d_clip_stack *stack)
     --stack->count;
 }
 
-static void d2d_device_context_draw(struct d2d_device_context *render_target, enum d2d_shape_type shape_type,
-        ID3D11Buffer *ib, unsigned int index_count, ID3D11Buffer *vb, unsigned int vb_stride,
-        struct d2d_brush *brush, struct d2d_brush *opacity_brush)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS void
+d2d_device_context_draw(struct d2d_device_context *render_target, enum d2d_shape_type shape_type,
+                        ID3D11Buffer *ib, unsigned int index_count, ID3D11Buffer *vb,
+                        unsigned int vb_stride, struct d2d_brush *brush,
+                        struct d2d_brush *opacity_brush) __WINE_EXCLUDES(&render_target->cs)
 {
     struct d2d_shape_resources *shape_resources = &render_target->shape_resources[shape_type];
     ID3DDeviceContextState *prev_state;
