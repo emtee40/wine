@@ -455,6 +455,8 @@ void RpcAssoc_ConnectionReleased(RpcAssoc *assoc)
 
 RPC_STATUS RpcServerAssoc_AllocateContextHandle(RpcAssoc *assoc, void *CtxGuard,
                                                 NDR_SCONTEXT *SContext)
+    __WINE_EXCLUDES(&assoc->cs)
+    __WINE_TRY_ACQUIRE(RPC_S_OK, &((RpcContextHandle *)SContext)->lock)
 {
     RpcContextHandle *context_handle;
 
@@ -487,6 +489,8 @@ BOOL RpcContextHandle_IsGuardCorrect(NDR_SCONTEXT SContext, void *CtxGuard)
 
 RPC_STATUS RpcServerAssoc_FindContextHandle(RpcAssoc *assoc, const UUID *uuid,
                                             void *CtxGuard, ULONG Flags, NDR_SCONTEXT *SContext)
+    __WINE_EXCLUDES(&assoc->cs)
+    __WINE_TRY_ACQUIRE(RPC_S_OK, &((RpcContextHandle *)SContext)->lock)
 {
     RpcContextHandle *context_handle;
 
@@ -562,7 +566,8 @@ static void RpcContextHandle_Destroy(RpcContextHandle *context_handle)
     free(context_handle);
 }
 
-unsigned int RpcServerAssoc_ReleaseContextHandle(RpcAssoc *assoc, NDR_SCONTEXT SContext, BOOL release_lock)
+__WINE_NO_THREAD_SAFETY_ANALYSIS unsigned int
+RpcServerAssoc_ReleaseContextHandle(RpcAssoc *assoc, NDR_SCONTEXT SContext, BOOL release_lock)
 {
     RpcContextHandle *context_handle = (RpcContextHandle *)SContext;
     unsigned int refs;
