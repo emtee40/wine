@@ -3035,11 +3035,13 @@ HRESULT wined3d_device_set_implicit_swapchain(struct wined3d_device *device,
 void wined3d_device_uninit_3d(struct wined3d_device *device);
 
 static inline void wined3d_device_bo_map_lock(struct wined3d_device *device)
+    __WINE_ACQUIRE(&device->bo_map_lock)
 {
     EnterCriticalSection(&device->bo_map_lock);
 }
 
 static inline void wined3d_device_bo_map_unlock(struct wined3d_device *device)
+    __WINE_RELEASE(&device->bo_map_lock)
 {
     LeaveCriticalSection(&device->bo_map_lock);
 }
