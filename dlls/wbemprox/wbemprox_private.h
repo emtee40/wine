@@ -218,8 +218,8 @@ struct table *get_view_table( const struct view *, UINT );
 void init_table_list( void );
 enum wbm_namespace get_namespace_from_string( const WCHAR *namespace );
 struct table *find_table( enum wbm_namespace, const WCHAR * );
-struct table *grab_table( struct table * );
-void release_table( struct table * );
+struct table *grab_table( struct table *tbl ) __WINE_TRY_ACQUIRE((UINT_PTR)tbl, &tbl->cs);
+void release_table( struct table *tbl );
 struct table *create_table( const WCHAR *, UINT, const struct column *, UINT, UINT, BYTE *,
                             enum fill_status (*)(struct table *, const struct expr *) );
 BOOL add_table( enum wbm_namespace, struct table * );

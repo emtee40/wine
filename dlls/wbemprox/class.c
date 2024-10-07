@@ -252,7 +252,7 @@ void destroy_array( struct array *array, CIMTYPE type )
     free( array );
 }
 
-static void destroy_record( struct record *record )
+static __WINE_NO_THREAD_SAFETY_ANALYSIS void destroy_record( struct record *record )
 {
     UINT i;
 
@@ -296,8 +296,7 @@ static ULONG WINAPI class_object_AddRef(
     return InterlockedIncrement( &co->refs );
 }
 
-static ULONG WINAPI class_object_Release(
-    IWbemClassObject *iface )
+static __WINE_NO_THREAD_SAFETY_ANALYSIS ULONG WINAPI class_object_Release( IWbemClassObject *iface )
 {
     struct class_object *co = impl_from_IWbemClassObject( iface );
     LONG refs = InterlockedDecrement( &co->refs );
