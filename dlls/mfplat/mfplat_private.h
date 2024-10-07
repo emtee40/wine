@@ -31,7 +31,7 @@ struct attribute
     PROPVARIANT value;
 };
 
-struct attributes
+struct __WINE_LOCKABLE("attributes") attributes
 {
     IMFAttributes IMFAttributes_iface;
     LONG ref;
@@ -78,8 +78,8 @@ extern HRESULT attributes_SetString(struct attributes *object, REFGUID key, cons
 extern HRESULT attributes_SetBlob(struct attributes *object, REFGUID key, const UINT8 *buf,
         UINT32 size);
 extern HRESULT attributes_SetUnknown(struct attributes *object, REFGUID key, IUnknown *unknown);
-extern HRESULT attributes_LockStore(struct attributes *object);
-extern HRESULT attributes_UnlockStore(struct attributes *object);
+extern HRESULT attributes_LockStore(struct attributes *object) __WINE_ACQUIRE(object);
+extern HRESULT attributes_UnlockStore(struct attributes *object) __WINE_RELEASE(object);
 extern HRESULT attributes_GetCount(struct attributes *object, UINT32 *items);
 extern HRESULT attributes_GetItemByIndex(struct attributes *object, UINT32 index, GUID *key,
         PROPVARIANT *value);

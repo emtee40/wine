@@ -436,7 +436,7 @@ static HRESULT WINAPI sample_SetUnknown(IMFSample *iface, REFGUID key, IUnknown 
     return attributes_SetUnknown(&sample->attributes, key, unknown);
 }
 
-static HRESULT WINAPI sample_LockStore(IMFSample *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI sample_LockStore(IMFSample *iface)
 {
     struct sample *sample = impl_from_IMFSample(iface);
 
@@ -445,7 +445,7 @@ static HRESULT WINAPI sample_LockStore(IMFSample *iface)
     return attributes_LockStore(&sample->attributes);
 }
 
-static HRESULT WINAPI sample_UnlockStore(IMFSample *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI sample_UnlockStore(IMFSample *iface)
 {
     struct sample *sample = impl_from_IMFSample(iface);
 

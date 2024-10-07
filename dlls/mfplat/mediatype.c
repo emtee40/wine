@@ -448,7 +448,7 @@ static HRESULT WINAPI mediatype_SetUnknown(IMFMediaType *iface, REFGUID key, IUn
     return attributes_SetUnknown(&media_type->attributes, key, unknown);
 }
 
-static HRESULT WINAPI mediatype_LockStore(IMFMediaType *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI mediatype_LockStore(IMFMediaType *iface)
 {
     struct media_type *media_type = impl_from_IMFMediaType(iface);
 
@@ -457,7 +457,7 @@ static HRESULT WINAPI mediatype_LockStore(IMFMediaType *iface)
     return attributes_LockStore(&media_type->attributes);
 }
 
-static HRESULT WINAPI mediatype_UnlockStore(IMFMediaType *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI mediatype_UnlockStore(IMFMediaType *iface)
 {
     struct media_type *media_type = impl_from_IMFMediaType(iface);
 
@@ -953,7 +953,7 @@ static HRESULT WINAPI video_mediatype_SetUnknown(IMFVideoMediaType *iface, REFGU
     return attributes_SetUnknown(&media_type->attributes, key, unknown);
 }
 
-static HRESULT WINAPI video_mediatype_LockStore(IMFVideoMediaType *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI video_mediatype_LockStore(IMFVideoMediaType *iface)
 {
     struct media_type *media_type = impl_from_IMFVideoMediaType(iface);
 
@@ -962,7 +962,7 @@ static HRESULT WINAPI video_mediatype_LockStore(IMFVideoMediaType *iface)
     return attributes_LockStore(&media_type->attributes);
 }
 
-static HRESULT WINAPI video_mediatype_UnlockStore(IMFVideoMediaType *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI video_mediatype_UnlockStore(IMFVideoMediaType *iface)
 {
     struct media_type *media_type = impl_from_IMFVideoMediaType(iface);
 
@@ -1356,7 +1356,7 @@ static HRESULT WINAPI audio_mediatype_SetUnknown(IMFAudioMediaType *iface, REFGU
     return attributes_SetUnknown(&media_type->attributes, key, unknown);
 }
 
-static HRESULT WINAPI audio_mediatype_LockStore(IMFAudioMediaType *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI audio_mediatype_LockStore(IMFAudioMediaType *iface)
 {
     struct media_type *media_type = impl_from_IMFAudioMediaType(iface);
 
@@ -1365,7 +1365,7 @@ static HRESULT WINAPI audio_mediatype_LockStore(IMFAudioMediaType *iface)
     return attributes_LockStore(&media_type->attributes);
 }
 
-static HRESULT WINAPI audio_mediatype_UnlockStore(IMFAudioMediaType *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI audio_mediatype_UnlockStore(IMFAudioMediaType *iface)
 {
     struct media_type *media_type = impl_from_IMFAudioMediaType(iface);
 
@@ -1837,7 +1837,7 @@ static HRESULT WINAPI stream_descriptor_SetUnknown(IMFStreamDescriptor *iface, R
     return attributes_SetUnknown(&stream_desc->attributes, key, unknown);
 }
 
-static HRESULT WINAPI stream_descriptor_LockStore(IMFStreamDescriptor *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI stream_descriptor_LockStore(IMFStreamDescriptor *iface)
 {
     struct stream_desc *stream_desc = impl_from_IMFStreamDescriptor(iface);
 
@@ -1846,7 +1846,7 @@ static HRESULT WINAPI stream_descriptor_LockStore(IMFStreamDescriptor *iface)
     return attributes_LockStore(&stream_desc->attributes);
 }
 
-static HRESULT WINAPI stream_descriptor_UnlockStore(IMFStreamDescriptor *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI stream_descriptor_UnlockStore(IMFStreamDescriptor *iface)
 {
     struct stream_desc *stream_desc = impl_from_IMFStreamDescriptor(iface);
 
@@ -2449,7 +2449,7 @@ static HRESULT WINAPI presentation_descriptor_SetUnknown(IMFPresentationDescript
     return attributes_SetUnknown(&presentation_desc->attributes, key, unknown);
 }
 
-static HRESULT WINAPI presentation_descriptor_LockStore(IMFPresentationDescriptor *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI presentation_descriptor_LockStore(IMFPresentationDescriptor *iface)
 {
     struct presentation_desc *presentation_desc = impl_from_IMFPresentationDescriptor(iface);
 
@@ -2458,7 +2458,7 @@ static HRESULT WINAPI presentation_descriptor_LockStore(IMFPresentationDescripto
     return attributes_LockStore(&presentation_desc->attributes);
 }
 
-static HRESULT WINAPI presentation_descriptor_UnlockStore(IMFPresentationDescriptor *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI presentation_descriptor_UnlockStore(IMFPresentationDescriptor *iface)
 {
     struct presentation_desc *presentation_desc = impl_from_IMFPresentationDescriptor(iface);
 
