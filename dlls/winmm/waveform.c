@@ -280,8 +280,9 @@ static inline WINMM_MMDevice *read_map(WINMM_MMDevice **map, UINT index)
  * IMPORTANT: it is the caller's responsibility to release the device's lock
  * on success
  */
-static WINMM_Device *WINMM_FindUnusedDevice(WINMM_Device **devices,
-        WINMM_MMDevice *parent, UINT internal_index, BOOL is_out)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS WINMM_Device *
+WINMM_FindUnusedDevice(WINMM_Device **devices, WINMM_MMDevice *parent, UINT internal_index,
+                       BOOL is_out)
 {
     UINT i;
 
@@ -314,7 +315,7 @@ static WINMM_Device *WINMM_FindUnusedDevice(WINMM_Device **devices,
     return NULL;
 }
 
-static inline BOOL WINMM_ValidateAndLock(WINMM_Device *device)
+static inline BOOL WINMM_ValidateAndLock(WINMM_Device *device) __WINE_TRY_ACQUIRE(TRUE, &device->lock)
 {
     if(!device)
         return FALSE;
@@ -1212,7 +1213,7 @@ error:
     return ret;
 }
 
-static LRESULT WOD_Open(WINMM_OpenInfo *info)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS LRESULT WOD_Open(WINMM_OpenInfo *info)
 {
     WINMM_Device *device;
     LRESULT ret = MMSYSERR_ERROR;
@@ -1316,7 +1317,7 @@ error:
     return ret;
 }
 
-static LRESULT WID_Open(WINMM_OpenInfo *info)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS LRESULT WID_Open(WINMM_OpenInfo *info)
 {
     WINMM_Device *device, **devices;
     WINMM_MMDevice *mmdevice;

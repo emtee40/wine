@@ -105,7 +105,7 @@ static    CONDITION_VARIABLE    TIME_cv;
 /**************************************************************************
  *           TIME_MMSysTimeCallback
  */
-static int TIME_MMSysTimeCallback(void)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS int TIME_MMSysTimeCallback(void)
 {
     WINE_TIMERENTRY *timer;
     int i, delta_time;
@@ -224,7 +224,7 @@ static void TIME_MMTimeStart(void)
 /**************************************************************************
  * 				TIME_MMTimeStop
  */
-void	TIME_MMTimeStop(void)
+__WINE_NO_THREAD_SAFETY_ANALYSIS void TIME_MMTimeStop(void)
 {
     if (TIME_hMMTimer) {
         EnterCriticalSection(&WINMM_cs);
