@@ -2747,7 +2747,7 @@ static LONG WINAPI bad_cs_handler( EXCEPTION_POINTERS *eptr )
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-static void test_crit_section(void)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS void test_crit_section(void)
 {
     void *vectored_handler;
     CRITICAL_SECTION cs;

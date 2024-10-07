@@ -2855,7 +2855,7 @@ static CRITICAL_SECTION cs_lock;
 static int test_dll_phase, inside_loader_lock, inside_peb_lock, inside_heap_lock, inside_cs_lock;
 static LONG fls_callback_count;
 
-static DWORD WINAPI mutex_thread_proc(void *param)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS DWORD WINAPI mutex_thread_proc(void *param)
 {
     HANDLE wait_list[5];
     DWORD ret;
@@ -2971,7 +2971,8 @@ static unsigned int check_linked_list(const LIST_ENTRY *le, const LIST_ENTRY *se
     return count;
 }
 
-static BOOL WINAPI dll_entry_point(HINSTANCE hinst, DWORD reason, LPVOID param)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS BOOL WINAPI dll_entry_point(HINSTANCE hinst, DWORD reason,
+                                                                    LPVOID param)
 {
     static LONG noop_thread_started;
     static DWORD fls_index = FLS_OUT_OF_INDEXES, fls_index2 = FLS_OUT_OF_INDEXES;
