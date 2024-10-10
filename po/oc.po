@@ -1,4 +1,4 @@
-# Occitan translations for Wine   ### revirat entà linha 2196
+# Occitan translations for Wine                          ### revirat entà linha 2246
 #
 msgid ""
 msgstr ""
@@ -2193,11 +2193,11 @@ msgstr "Deschifratge sol"
 
 #: dlls/crypt32/crypt32.rc:234
 msgid "SSL Client Authentication"
-msgstr "Autentificacion de client SSL" ### revirat entà linha 2196
+msgstr "Autentificacion de client SSL" 
 
 #: dlls/crypt32/crypt32.rc:235
 msgid "SSL Server Authentication"
-msgstr "Autentificacion de serveur SSL"
+msgstr "Autentificacion de servidor SSL"
 
 #: dlls/crypt32/crypt32.rc:236
 msgid "S/MIME"
@@ -2205,7 +2205,7 @@ msgstr "S/MIME"
 
 #: dlls/crypt32/crypt32.rc:237
 msgid "Signature"
-msgstr "Signature"
+msgstr "Signatura"
 
 #: dlls/crypt32/crypt32.rc:238
 msgid "SSL CA"
@@ -2217,35 +2217,35 @@ msgstr "AC S/MIME"
 
 #: dlls/crypt32/crypt32.rc:240
 msgid "Signature CA"
-msgstr "AC de signature"
+msgstr "AC de signatura"
 
 #: dlls/cryptdlg/cryptdlg.rc:30
 msgid "Certificate Policy"
-msgstr "Politique de certification"
+msgstr "Estrategia de certificacion"
 
 #: dlls/cryptdlg/cryptdlg.rc:31
 msgid "Policy Identifier: "
-msgstr "Identificant de politique : "
+msgstr "Identificant de estrategia :"
 
 #: dlls/cryptdlg/cryptdlg.rc:32
 msgid "Policy Qualifier Info"
-msgstr "Informacions sur le qualificateur de politique"
+msgstr "Informacions sur le qualificador de estrategia"
 
 #: dlls/cryptdlg/cryptdlg.rc:33
 msgid "Policy Qualifier Id="
-msgstr "Identificant de qualificateur de politique ="
+msgstr "Identificant de qualificador de estrategia ="
 
 #: dlls/cryptdlg/cryptdlg.rc:36
 msgid "Qualifier"
-msgstr "Qualificateur"
+msgstr "Qualificador"
 
 #: dlls/cryptdlg/cryptdlg.rc:37
 msgid "Notice Reference"
-msgstr "Référence de la notice"
+msgstr "Referéncia de la notícia"
 
-#: dlls/cryptdlg/cryptdlg.rc:38
+#: dlls/cryptdlg/cryptdlg.rc:38                 ### revirat entà linha 2246
 msgid "Organization="
-msgstr "Organisation ="
+msgstr "Organizacion ="
 
 #: dlls/cryptdlg/cryptdlg.rc:39
 msgid "Notice Number="
