@@ -2637,6 +2637,7 @@ BOOL WINAPI ImmSetCompositionStringW(
 BOOL WINAPI ImmSetCompositionWindow( HIMC himc, COMPOSITIONFORM *composition )
 {
     INPUTCONTEXT *ctx;
+    POINT point;
 
     TRACE( "himc %p, composition %s\n", himc, debugstr_composition( composition ) );
 
@@ -2648,6 +2649,21 @@ BOOL WINAPI ImmSetCompositionWindow( HIMC himc, COMPOSITIONFORM *composition )
 
     ImmNotifyIME( himc, NI_CONTEXTUPDATED, 0, IMC_SETCOMPOSITIONWINDOW );
     SendMessageW( ctx->hWnd, WM_IME_NOTIFY, IMN_SETCOMPOSITIONWINDOW, 0 );
+
+    if (composition->dwStyle & (CFS_RECT | CFS_POINT | CFS_FORCE_POSITION))
+    {
+        if (composition->dwStyle & CFS_RECT)
+        {
+            point.x = composition->rcArea.left;
+            point.y = composition->rcArea.top;
+        }
+        else
+        {
+            point = composition->ptCurrentPos;
+        }
+
+        NtUserCallTwoParam( (ULONG_PTR)ctx->hWnd, (ULONG_PTR)&point, NtUserCallTwoParam_SetIMECompositionWindowPos );
+    }
 
     ImmUnlockIMC( himc );
 
@@ -3321,4 +3337,14 @@ LRESULT WINAPI __wine_ime_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lp
         return DefWindowProcA(hwnd, msg, wparam, lparam);
     else
         return DefWindowProcW(hwnd, msg, wparam, lparam);
+}
+
+/***********************************************************************
+ *      CtfImmIsCiceroEnabled (IMM32.@)
+ */
+BOOL WINAPI CtfImmIsCiceroEnabled(void)
+{
+    FIXME("(): stub\n");
+    SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+    return FALSE;
 }

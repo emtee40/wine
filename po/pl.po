@@ -171,15 +171,16 @@ msgid ""
 "install it for you.\n"
 "\n"
 "Note: it is recommended to use your distribution's packages instead. See <a "
-"href=\"https://wiki.winehq.org/Gecko\">https://wiki.winehq.org/Gecko</a> for "
-"details."
+"href=\"https://gitlab.winehq.org/wine/wine/-/wikis/Gecko\">https://gitlab."
+"winehq.org/wine/wine/-/wikis/Gecko</a> for details."
 msgstr ""
 "Nie znaleziono paczki Gecko potrzebnej do prawidłowego działania aplikacji "
 "zawierających kod HTML. Wine może sam pobrać i zainstalować tą paczkę dla "
 "ciebie.\n"
 "\n"
 "Uwaga: Zalecamy użycie paczki z twojej dystrybucji. Po szczegóły zajrzyj na "
-"<a href=\"https://wiki.winehq.org/Gecko\">https://wiki.winehq.org/Gecko</a>."
+"<a href=\"https://gitlab.winehq.org/wine/wine/-/wikis/Gecko\">https://gitlab."
+"winehq.org/wine/wine/-/wikis/Gecko</a>."
 
 #: dlls/appwiz.cpl/appwiz.rc:110 dlls/appwiz.cpl/appwiz.rc:125
 msgid "&Install"
@@ -239,16 +240,16 @@ msgid ""
 "it for you.\n"
 "\n"
 "Note: it is recommended to use your distribution's packages instead. See <a "
-"href=\"https://wiki.winehq.org/Mono\">https://wiki.winehq.org/Mono</a> for "
-"details."
+"href=\"https://gitlab.winehq.org/wine/wine/-/wikis/Wine-Mono\">https://"
+"gitlab.winehq.org/wine/wine/-/wikis/Wine-Mono</a> for details."
 msgstr ""
 "Wine nie znalazło pakietu wine-mono, potrzebnego do poprawnego działania "
 "aplikacji .NET. Wine może samodzielnie pobrać i wgrać ten pakiet dla "
 "ciebie.\n"
 "\n"
 "Uwaga: zaleca się użycie pakietu z twojej dystrybucji. Po szczegóły zajrzyj "
-"na stronę <a href=\"https://wiki.winehq.org/Gecko\">https://wiki.winehq.org/"
-"Mono</a>."
+"na stronę <a href=\"https://gitlab.winehq.org/wine/wine/-/wikis/"
+"Gecko\">https://gitlab.winehq.org/wine/wine/-/wikis/Wine-Mono</a>."
 
 #: dlls/appwiz.cpl/appwiz.rc:31
 msgid "Add/Remove Programs"
@@ -416,6 +417,7 @@ msgid "Properties for %s"
 msgstr "Właściwości dla %s"
 
 #: dlls/comctl32/comctl32.rc:73 dlls/comdlg32/comdlg32.rc:265
+#: dlls/desk.cpl/desk.rc:41
 msgid "&Apply"
 msgstr "Z&astosuj"
 
@@ -3165,6 +3167,34 @@ msgstr "Wybierz certyfikat"
 msgid "Not yet implemented"
 msgstr "Jeszcze nie zaimplementowane"
 
+#: dlls/desk.cpl/desk.rc:35
+#, fuzzy
+#| msgctxt "display name"
+#| msgid "Desktop"
+msgid "Desktop"
+msgstr "Pulpit"
+
+#: dlls/desk.cpl/desk.rc:38
+#, fuzzy
+#| msgctxt "display name"
+#| msgid "Desktop"
+msgid "Virtual Desktop"
+msgstr "Pulpit"
+
+#: dlls/desk.cpl/desk.rc:40 dlls/joy.cpl/joy.rc:41
+msgid "&Reset"
+msgstr "Wyze&ruj"
+
+#: dlls/desk.cpl/desk.rc:29
+#, fuzzy
+#| msgid "Default Settings"
+msgid "Display Settings"
+msgstr "Ustawienia domyślne"
+
+#: dlls/desk.cpl/desk.rc:30
+msgid "Configure monitors and display devices."
+msgstr ""
+
 #: dlls/dinput/dinput.rc:34
 msgid "Configure Devices"
 msgstr "Ustawienia urządzeń"
@@ -3749,59 +3779,67 @@ msgstr "Dżojstiki"
 msgid "&Disable"
 msgstr "Wyłą&cz"
 
-#: dlls/joy.cpl/joy.rc:41
-msgid "&Reset"
-msgstr "Wyze&ruj"
-
 #: dlls/joy.cpl/joy.rc:42
-msgid "&Enable"
-msgstr "&Włącz"
-
-#: dlls/joy.cpl/joy.rc:43
 msgid "&Override"
 msgstr "&Zastąp"
 
+#: dlls/joy.cpl/joy.rc:43
+msgid "&Enable"
+msgstr "&Włącz"
+
 #: dlls/joy.cpl/joy.rc:44
-msgid "Connected"
-msgstr "Podłączony"
+#, fuzzy
+#| msgid "Connected (xinput device)"
+msgid "Connected (DirectInput devices)"
+msgstr "Podłączony (urządzenie xinput)"
 
 #: dlls/joy.cpl/joy.rc:46
-msgid "Connected (xinput device)"
+#, fuzzy
+#| msgid "Connected (xinput device)"
+msgid "Connected (XInput devices)"
 msgstr "Podłączony (urządzenie xinput)"
 
 #: dlls/joy.cpl/joy.rc:48
 msgid "Disabled"
 msgstr "Wyłączone"
 
-#: dlls/joy.cpl/joy.rc:50
-msgid ""
-"After disabling or enabling a device, the connected joysticks won't be "
-"updated here until you restart this applet."
+#: dlls/joy.cpl/joy.rc:51
+msgid "Advanced settings (restart prefix required to take effect)"
 msgstr ""
-"Po wyłączeniu lub włączeniu urządzenia, podłączone joysticki nie będą tutaj "
-"uaktualnione do momentu ponownego uruchomienia tego apletu."
 
-#: dlls/joy.cpl/joy.rc:55
+#: dlls/joy.cpl/joy.rc:52
+#, fuzzy
+#| msgid "&Enable"
+msgid "Enable SDL"
+msgstr "&Włącz"
+
+#: dlls/joy.cpl/joy.rc:53
+#, fuzzy
+#| msgid "Disabled"
+msgid "Disable hidraw"
+msgstr "Wyłączone"
+
+#: dlls/joy.cpl/joy.rc:58
 msgid "DInput"
 msgstr "DInput"
 
-#: dlls/joy.cpl/joy.rc:59
+#: dlls/joy.cpl/joy.rc:62
 msgid "Axes"
 msgstr "Osie"
 
-#: dlls/joy.cpl/joy.rc:60
+#: dlls/joy.cpl/joy.rc:63
 msgid "POVs"
 msgstr "POVs"
 
-#: dlls/joy.cpl/joy.rc:61
+#: dlls/joy.cpl/joy.rc:64
 msgid "Buttons"
 msgstr "Przyciski"
 
-#: dlls/joy.cpl/joy.rc:62
+#: dlls/joy.cpl/joy.rc:65
 msgid "Force Feedback Effect"
 msgstr "Efekt sprzężenia zwrotnego"
 
-#: dlls/joy.cpl/joy.rc:64
+#: dlls/joy.cpl/joy.rc:67
 msgid ""
 "Press any button in the controller to activate the chosen effect. The effect "
 "direction can be changed with the controller axis."
@@ -3809,27 +3847,27 @@ msgstr ""
 "Naciśnij jakikolwiek klawisz na kontrolerze, aby aktywować wybrany efekt. "
 "Kierunek efektu może być zmieniony przy użyciu osi kontrolera."
 
-#: dlls/joy.cpl/joy.rc:70
+#: dlls/joy.cpl/joy.rc:73
 msgid "XInput"
 msgstr "XInput"
 
-#: dlls/joy.cpl/joy.rc:73
+#: dlls/joy.cpl/joy.rc:76
 msgid "User #0"
 msgstr "Użytkownik #0"
 
-#: dlls/joy.cpl/joy.rc:74
+#: dlls/joy.cpl/joy.rc:77
 msgid "User #1"
 msgstr "Użytkownik #1"
 
-#: dlls/joy.cpl/joy.rc:75
+#: dlls/joy.cpl/joy.rc:78
 msgid "User #2"
 msgstr "Użytkownik #2"
 
-#: dlls/joy.cpl/joy.rc:76
+#: dlls/joy.cpl/joy.rc:79
 msgid "User #3"
 msgstr "Użytkownik #3"
 
-#: dlls/joy.cpl/joy.rc:78
+#: dlls/joy.cpl/joy.rc:81
 msgid ""
 "No user detected on slot #0, make sure your gamepad is plugged in, and not "
 "overridden for DInput in the Joysticks tab."
@@ -3837,7 +3875,7 @@ msgstr ""
 "Nie wykryto użytkownika na slocie #0. Upewnij się że twój pad jest "
 "podłączony i nie nadpisany dla DInput, w zakładce Dżojstiki."
 
-#: dlls/joy.cpl/joy.rc:82
+#: dlls/joy.cpl/joy.rc:85
 msgid ""
 "No user detected on slot #1, make sure your gamepad is plugged in, and not "
 "overridden for DInput in the Joysticks tab."
@@ -3845,7 +3883,7 @@ msgstr ""
 "Nie wykryto użytkownika na slocie #1. Upewnij się że twój pad jest "
 "podłączony i nie nadpisany dla DInput, w zakładce Dżojstiki."
 
-#: dlls/joy.cpl/joy.rc:86
+#: dlls/joy.cpl/joy.rc:89
 msgid ""
 "No user detected on slot #2, make sure your gamepad is plugged in, and not "
 "overridden for DInput in the Joysticks tab."
@@ -3853,7 +3891,7 @@ msgstr ""
 "Nie wykryto użytkownika na slocie #2. Upewnij się że twój pad jest "
 "podłączony i nie nadpisany dla DInput, w zakładce Dżojstiki."
 
-#: dlls/joy.cpl/joy.rc:90
+#: dlls/joy.cpl/joy.rc:93
 msgid ""
 "No user detected on slot #3, make sure your gamepad is plugged in, and not "
 "overridden for DInput in the Joysticks tab."
@@ -3861,8 +3899,8 @@ msgstr ""
 "Nie wykryto użytkownika na slocie #3. Upewnij się że twój pad jest "
 "podłączony i nie nadpisany dla DInput, w zakładce Dżojstiki."
 
-#: dlls/joy.cpl/joy.rc:95 dlls/joy.cpl/joy.rc:96 dlls/joy.cpl/joy.rc:97
-#: dlls/joy.cpl/joy.rc:98
+#: dlls/joy.cpl/joy.rc:98 dlls/joy.cpl/joy.rc:99 dlls/joy.cpl/joy.rc:100
+#: dlls/joy.cpl/joy.rc:101
 msgid "Rumble"
 msgstr "Rumble"
 
@@ -3910,167 +3948,171 @@ msgstr "Obiekt nie wspiera tej akcji"
 msgid "Argument not optional"
 msgstr "Argument nieopcjonalny"
 
-#: dlls/jscript/jscript.rc:37
+#: dlls/jscript/jscript.rc:37 dlls/vbscript/vbscript.rc:56
+msgid "Object not a collection"
+msgstr "Obiekt nie jest zbiorem"
+
+#: dlls/jscript/jscript.rc:38
 msgid "Syntax error"
 msgstr "Błąd składni"
 
-#: dlls/jscript/jscript.rc:38
+#: dlls/jscript/jscript.rc:39
 msgid "Expected ';'"
 msgstr "Oczekiwano ';'"
 
-#: dlls/jscript/jscript.rc:39
+#: dlls/jscript/jscript.rc:40
 msgid "Expected '('"
 msgstr "Oczekiwano '('"
 
-#: dlls/jscript/jscript.rc:40
+#: dlls/jscript/jscript.rc:41
 msgid "Expected ')'"
 msgstr "Oczekiwano ')'"
 
-#: dlls/jscript/jscript.rc:41
+#: dlls/jscript/jscript.rc:42
 msgid "Expected identifier"
 msgstr "Oczekiwano identyfikatora"
 
-#: dlls/jscript/jscript.rc:42
+#: dlls/jscript/jscript.rc:43
 msgid "Expected '='"
 msgstr "Oczekiwano ';'"
 
-#: dlls/jscript/jscript.rc:43
+#: dlls/jscript/jscript.rc:44
 msgid "Invalid character"
 msgstr "Nieprawidłowy znak"
 
-#: dlls/jscript/jscript.rc:44
+#: dlls/jscript/jscript.rc:45
 msgid "Unterminated string constant"
 msgstr "Niezakończona stała znakowa"
 
-#: dlls/jscript/jscript.rc:45
+#: dlls/jscript/jscript.rc:46
 msgid "'return' statement outside of function"
 msgstr "polecenie powrotu 'return' jest poza funkcją"
 
-#: dlls/jscript/jscript.rc:46
+#: dlls/jscript/jscript.rc:47
 msgid "Can't have 'break' outside of loop"
 msgstr "Nie można umieścić 'break' poza pętlą"
 
-#: dlls/jscript/jscript.rc:47
+#: dlls/jscript/jscript.rc:48
 msgid "Can't have 'continue' outside of loop"
 msgstr "Nie można umieścić 'continue' poza pętlą"
 
-#: dlls/jscript/jscript.rc:48
+#: dlls/jscript/jscript.rc:49
 msgid "Label redefined"
 msgstr "Etykieta zdefiniowana ponownie"
 
-#: dlls/jscript/jscript.rc:49
+#: dlls/jscript/jscript.rc:50
 msgid "Label not found"
 msgstr "Nie znaleziono etykiety"
 
-#: dlls/jscript/jscript.rc:50
+#: dlls/jscript/jscript.rc:51
 msgid "Expected '@end'"
 msgstr "Oczekiwano '@end'"
 
-#: dlls/jscript/jscript.rc:51
+#: dlls/jscript/jscript.rc:52
 msgid "Conditional compilation is turned off"
 msgstr "Warunkowa kompilacja jest wyłączona"
 
-#: dlls/jscript/jscript.rc:52
+#: dlls/jscript/jscript.rc:53
 msgid "Expected '@'"
 msgstr "Oczekiwano '@'"
 
-#: dlls/jscript/jscript.rc:89
+#: dlls/jscript/jscript.rc:90
 msgid "Microsoft JScript compilation error"
 msgstr "Błąd kompilacji Microsoft JScript"
 
-#: dlls/jscript/jscript.rc:90
+#: dlls/jscript/jscript.rc:91
 msgid "Microsoft JScript runtime error"
 msgstr "Błąd biblioteki uruchomieniowej Microsoft JScript"
 
-#: dlls/jscript/jscript.rc:91 dlls/vbscript/vbscript.rc:64
+#: dlls/jscript/jscript.rc:92 dlls/vbscript/vbscript.rc:64
 msgid "Unknown runtime error"
 msgstr "Nieznany błąd biblioteki uruchomieniowej"
 
-#: dlls/jscript/jscript.rc:55
+#: dlls/jscript/jscript.rc:56
 msgid "Number expected"
 msgstr "Oczekiwana liczba"
 
-#: dlls/jscript/jscript.rc:53
+#: dlls/jscript/jscript.rc:54
 msgid "Function expected"
 msgstr "Oczekiwana funkcja"
 
-#: dlls/jscript/jscript.rc:54
+#: dlls/jscript/jscript.rc:55
 msgid "'[object]' is not a date object"
 msgstr "'[obiekt]' nie jest obiektem daty"
 
-#: dlls/jscript/jscript.rc:56
+#: dlls/jscript/jscript.rc:57
 msgid "Object expected"
 msgstr "Oczekiwany obiekt"
 
-#: dlls/jscript/jscript.rc:57
+#: dlls/jscript/jscript.rc:58
 msgid "Illegal assignment"
 msgstr "Niepoprawne przypisanie"
 
-#: dlls/jscript/jscript.rc:58
+#: dlls/jscript/jscript.rc:59
 msgid "'|' is undefined"
 msgstr "'|' jest niezdefiniowany"
 
-#: dlls/jscript/jscript.rc:59
+#: dlls/jscript/jscript.rc:60
 msgid "Boolean object expected"
 msgstr "Oczekiwany obiekt boolean"
 
-#: dlls/jscript/jscript.rc:60
+#: dlls/jscript/jscript.rc:61
 msgid "Cannot delete '|'"
 msgstr "Nie można usunąć '|'"
 
-#: dlls/jscript/jscript.rc:61
+#: dlls/jscript/jscript.rc:62
 msgid "VBArray object expected"
 msgstr "Oczekiwany obiekt VBArray"
 
-#: dlls/jscript/jscript.rc:62
+#: dlls/jscript/jscript.rc:63
 msgid "JScript object expected"
 msgstr "Oczekiwany obiekt JScript"
 
-#: dlls/jscript/jscript.rc:63
+#: dlls/jscript/jscript.rc:64
 msgid "Enumerator object expected"
 msgstr "Oczekiwano obiekt wyliczenia"
 
-#: dlls/jscript/jscript.rc:64
+#: dlls/jscript/jscript.rc:65
 msgid "Regular Expression object expected"
 msgstr "Oczekiwano obiektu wyrażenia regularnego"
 
-#: dlls/jscript/jscript.rc:65
+#: dlls/jscript/jscript.rc:66
 msgid "Syntax error in regular expression"
 msgstr "Błąd składni w regularnym wyrażeniu"
 
-#: dlls/jscript/jscript.rc:66
+#: dlls/jscript/jscript.rc:67
 msgid "Unexpected quantifier"
 msgstr "Nieprawidłowy identyfikator"
 
-#: dlls/jscript/jscript.rc:67
+#: dlls/jscript/jscript.rc:68
 msgid "Exception thrown and not caught"
 msgstr "Rzucono wyjątek i go nie złapano"
 
-#: dlls/jscript/jscript.rc:69
+#: dlls/jscript/jscript.rc:70
 msgid "URI to be encoded contains invalid characters"
 msgstr "Kodowane URI zawiera niewłaściwe znaki"
 
-#: dlls/jscript/jscript.rc:68
+#: dlls/jscript/jscript.rc:69
 msgid "URI to be decoded is incorrect"
 msgstr "URI do dekodowania jest niepoprawny"
 
-#: dlls/jscript/jscript.rc:70
+#: dlls/jscript/jscript.rc:71
 msgid "Number of fraction digits is out of range"
 msgstr "Ilość cyfr znaczących jest poza zakresem"
 
-#: dlls/jscript/jscript.rc:71
+#: dlls/jscript/jscript.rc:72
 msgid "Precision is out of range"
 msgstr "Precyzja jest poza poza zakresem"
 
-#: dlls/jscript/jscript.rc:72
+#: dlls/jscript/jscript.rc:73
 msgid "Array length must be a finite positive integer"
 msgstr "Długość tablicy musi być skończoną dodatnią liczbą stałą"
 
-#: dlls/jscript/jscript.rc:73
+#: dlls/jscript/jscript.rc:74
 msgid "Array object expected"
 msgstr "Oczekiwany obiekt tablicowy"
 
-#: dlls/jscript/jscript.rc:74
+#: dlls/jscript/jscript.rc:75
 msgid ""
 "'writable' attribute on the property descriptor cannot be set to 'true' on "
 "this object"
@@ -4078,59 +4120,59 @@ msgstr ""
 "nie można ustawić atrybutu 'writable' na opisie własności na 'true' na tym "
 "obiekcie"
 
-#: dlls/jscript/jscript.rc:75
+#: dlls/jscript/jscript.rc:76
 msgid "Cyclic __proto__ value"
 msgstr ""
 
-#: dlls/jscript/jscript.rc:76
+#: dlls/jscript/jscript.rc:77
 msgid "Cannot create property for a non-extensible object"
 msgstr "Nie można stworzyć własności dla nierozszerzalnego obiektu"
 
-#: dlls/jscript/jscript.rc:77
+#: dlls/jscript/jscript.rc:78
 msgid "Cannot define property '|': object is not extensible"
 msgstr "Nie można określić własności '|': obiekt jest nierozciągalny"
 
-#: dlls/jscript/jscript.rc:78
+#: dlls/jscript/jscript.rc:79
 msgid "Cannot redefine non-configurable property '|'"
 msgstr "Nie można określić nieustawialnej własności '|'"
 
-#: dlls/jscript/jscript.rc:79
+#: dlls/jscript/jscript.rc:80
 msgid "Cannot modify non-writable property '|'"
 msgstr "Nie można zmienić niezapisywalnej własności '|'"
 
-#: dlls/jscript/jscript.rc:80
+#: dlls/jscript/jscript.rc:81
 #, fuzzy
 #| msgid "'this' is not a | object"
 msgid "'this' is not a DataView object"
 msgstr "'this' nie jest obiektem |"
 
-#: dlls/jscript/jscript.rc:81
+#: dlls/jscript/jscript.rc:82
 msgid "Required argument offset or value in DataView method is not specified"
 msgstr ""
 
-#: dlls/jscript/jscript.rc:82
+#: dlls/jscript/jscript.rc:83
 msgid "DataView operation access beyond specified buffer length"
 msgstr ""
 
-#: dlls/jscript/jscript.rc:83
+#: dlls/jscript/jscript.rc:84
 msgid "DataView constructor argument offset is invalid"
 msgstr ""
 
-#: dlls/jscript/jscript.rc:84
+#: dlls/jscript/jscript.rc:85
 msgid "'this' is not a | object"
 msgstr "'this' nie jest obiektem |"
 
-#: dlls/jscript/jscript.rc:85
+#: dlls/jscript/jscript.rc:86
 msgid "'key' is not an object"
 msgstr "'key' nie jest obiektem"
 
-#: dlls/jscript/jscript.rc:86
+#: dlls/jscript/jscript.rc:87
 #, fuzzy
 #| msgid "Array object expected"
 msgid "ArrayBuffer object expected"
 msgstr "Oczekiwany obiekt tablicowy"
 
-#: dlls/jscript/jscript.rc:87
+#: dlls/jscript/jscript.rc:88
 msgid "Property cannot have both accessors and a value"
 msgstr "Własność nie może mieć zarówno akcesorów i wartości"
 
@@ -4803,7 +4845,7 @@ msgstr "Nie znaleziono zmiennej środowiskowej.\n"
 msgid "No signal sent.\n"
 msgstr "Brak wysłanego sygnału.\n"
 
-#: dlls/kernelbase/winerror.mc:818 programs/cmd/cmd.rc:410
+#: dlls/kernelbase/winerror.mc:818 programs/cmd/cmd.rc:406
 msgid "File name is too long.\n"
 msgstr "Nazwa pliku zbyt długa.\n"
 
@@ -12606,10 +12648,6 @@ msgstr "Nie znaleziono nazwanego argumentu"
 msgid "Wrong number of arguments or invalid property assignment"
 msgstr "Zła liczba argumentów lub nieprawidłowe przypisanie własności"
 
-#: dlls/vbscript/vbscript.rc:56
-msgid "Object not a collection"
-msgstr "Obiekt nie jest zbiorem"
-
 #: dlls/vbscript/vbscript.rc:57
 msgid "Specified DLL function not found"
 msgstr "Nie odnaleziono danej funkcji DLL"
@@ -13675,7 +13713,7 @@ msgstr "Pętla przed obsługą odwołań"
 msgid "Referral hop limit exceeded"
 msgstr "Przekroczono limit skoków odwołań"
 
-#: programs/attrib/attrib.rc:30 programs/cmd/cmd.rc:373
+#: programs/attrib/attrib.rc:30 programs/cmd/cmd.rc:370
 msgid ""
 "Not Yet Implemented\n"
 "\n"
@@ -13683,7 +13721,7 @@ msgstr ""
 "Jeszcze niezaimplementowane\n"
 "\n"
 
-#: programs/attrib/attrib.rc:31 programs/cmd/cmd.rc:376
+#: programs/attrib/attrib.rc:31 programs/cmd/cmd.rc:373
 msgid "%1: File Not Found\n"
 msgstr "%1: Nie znaleziono pliku\n"
 
@@ -13827,22 +13865,18 @@ msgid "COPY <filename> copies a file.\n"
 msgstr "COPY <nazwapliku> kopiuje plik.\n"
 
 #: programs/cmd/cmd.rc:56
-msgid "CTTY changes the input/output device.\n"
-msgstr "CTTY zmienia urządzenie wejścia/wyjścia.\n"
-
-#: programs/cmd/cmd.rc:59
 msgid "DATE shows or changes the system date.\n"
 msgstr "DATE pokazuje lub zmienia datę systemową.\n"
 
-#: programs/cmd/cmd.rc:62
+#: programs/cmd/cmd.rc:59
 msgid "DEL <filename> deletes a file or set of files.\n"
 msgstr "DEL <nazwapliku> usuwa plik lub zestaw plików.\n"
 
-#: programs/cmd/cmd.rc:65
+#: programs/cmd/cmd.rc:62
 msgid "DIR lists the contents of a directory.\n"
 msgstr "DIR wyświetla wykaz zawartości katalogu.\n"
 
-#: programs/cmd/cmd.rc:75
+#: programs/cmd/cmd.rc:72
 msgid ""
 "ECHO <string> displays <string> on the current terminal device.\n"
 "\n"
@@ -13862,11 +13896,11 @@ msgstr ""
 "standardowo). Komenda ECHO OFF może zostać nie wyświetlona jeżeli zostanie\n"
 "poprzedzona znakiem @.\n"
 
-#: programs/cmd/cmd.rc:78
+#: programs/cmd/cmd.rc:75
 msgid "ERASE <filename> deletes a file or set of files.\n"
 msgstr "ERASE <nazwapliku> usuwa plik lub zestaw plików.\n"
 
-#: programs/cmd/cmd.rc:85
+#: programs/cmd/cmd.rc:82
 msgid ""
 "The FOR command is used to execute a command for each of a set of files.\n"
 "\n"
@@ -13879,7 +13913,7 @@ msgstr ""
 "Użycie: FOR %zmienna IN (zbiór) DO polecenie\n"
 "Należy podwoić znak % jeśli FOR jest używane w pliku wsadowym.\n"
 
-#: programs/cmd/cmd.rc:97
+#: programs/cmd/cmd.rc:94
 msgid ""
 "The GOTO command transfers execution to another statement within a batch\n"
 "file.\n"
@@ -13901,7 +13935,7 @@ msgstr ""
 "\n"
 "GOTO nie przynosi żadnego efektu, gdy jest używane interaktywnie.\n"
 
-#: programs/cmd/cmd.rc:101
+#: programs/cmd/cmd.rc:98
 msgid ""
 "HELP <command> shows brief help details on a topic.\n"
 "HELP without an argument shows all CMD built-in commands.\n"
@@ -13909,7 +13943,7 @@ msgstr ""
 "HELP <polecenie> pokazuje krótką pomoc na dany temat.\n"
 "HELP bez argumentu pokazuje wszystkie wbudowane polecenia CMD.\n"
 
-#: programs/cmd/cmd.rc:111
+#: programs/cmd/cmd.rc:108
 msgid ""
 "IF is used to conditionally execute a command.\n"
 "\n"
@@ -13930,7 +13964,7 @@ msgstr ""
 "zawarty w cudzysłowie\n"
 "Porównanie nie uwzględnia wielkości znaków.\n"
 
-#: programs/cmd/cmd.rc:118
+#: programs/cmd/cmd.rc:115
 msgid ""
 "LABEL is used to set a disk volume label.\n"
 "\n"
@@ -13944,15 +13978,15 @@ msgstr ""
 "Komenda poprosi o podanie nowej etykiety dysku.\n"
 "Możesz wyświetlić aktualną etykietę komendą VOL.\n"
 
-#: programs/cmd/cmd.rc:121
+#: programs/cmd/cmd.rc:118
 msgid "MD <name> is the short version of MKDIR. It creates a subdirectory.\n"
 msgstr "MD <nazwa> jest krótką wersją MKDIR. Tworzy podkatalog.\n"
 
-#: programs/cmd/cmd.rc:123
+#: programs/cmd/cmd.rc:120
 msgid "MKDIR <name> creates a subdirectory.\n"
 msgstr "MKDIR <nazwa> tworzy podkatalog.\n"
 
-#: programs/cmd/cmd.rc:131
+#: programs/cmd/cmd.rc:128
 msgid ""
 "MOVE relocates a file or directory to a new point within the file system.\n"
 "\n"
@@ -13968,7 +14002,7 @@ msgstr ""
 "\n"
 "MOVE działa tylko w obrębie jednego dysku.\n"
 
-#: programs/cmd/cmd.rc:142
+#: programs/cmd/cmd.rc:139
 msgid ""
 "PATH displays or changes the cmd search path.\n"
 "\n"
@@ -13990,7 +14024,7 @@ msgstr ""
 "wstawienie starej ścieżki, na przykład:\n"
 "PATH %PATH%;c:\\temp\n"
 
-#: programs/cmd/cmd.rc:148
+#: programs/cmd/cmd.rc:145
 msgid ""
 "PAUSE displays a message on the screen asking the user to press a key.\n"
 "\n"
@@ -14002,7 +14036,7 @@ msgstr ""
 "Jest to użyteczne w plikach wsadowych, bo pozwala użytkownikowi na odczyt\n"
 "wyjścia poprzedniego polecenia przed przewinięciem ekranu.\n"
 
-#: programs/cmd/cmd.rc:169
+#: programs/cmd/cmd.rc:166
 msgid ""
 "PROMPT sets the command-line prompt.\n"
 "\n"
@@ -14046,7 +14080,7 @@ msgstr ""
 "PROMPT, tak więc polecenie 'SET PROMPT=tekst' ma ten sam efekt co\n"
 "'PROMPT tekst'.\n"
 
-#: programs/cmd/cmd.rc:173
+#: programs/cmd/cmd.rc:170
 msgid ""
 "A command line beginning with REM (followed by a space) performs no action,\n"
 "and can therefore be used as a comment in a batch file.\n"
@@ -14055,23 +14089,23 @@ msgstr ""
 "żadnego działania i może przez to zostać wykorzystany jako komentarz w\n"
 "pliku wsadowym.\n"
 
-#: programs/cmd/cmd.rc:176
+#: programs/cmd/cmd.rc:173
 msgid "REN <filename> is the short version of RENAME. It renames a file.\n"
 msgstr "REN <filename> jest krótką wersją RENAME. Zmienia nazwę pliku.\n"
 
-#: programs/cmd/cmd.rc:178
+#: programs/cmd/cmd.rc:175
 msgid "RENAME <filename> renames a file.\n"
 msgstr "RENAME <nazwapliku> zmienia nazwę pliku.\n"
 
-#: programs/cmd/cmd.rc:181
+#: programs/cmd/cmd.rc:178
 msgid "RD <directory> is the short version of RMDIR. It deletes a directory.\n"
 msgstr "RD <katalog> jest krótką wersją RMDIR. Usuwa katalog.\n"
 
-#: programs/cmd/cmd.rc:183
+#: programs/cmd/cmd.rc:180
 msgid "RMDIR <directory> deletes a directory.\n"
 msgstr "RMDIR <katalog> usuwa katalog.\n"
 
-#: programs/cmd/cmd.rc:229
+#: programs/cmd/cmd.rc:226
 msgid ""
 "SET displays or changes the cmd environment variables.\n"
 "\n"
@@ -14104,7 +14138,7 @@ msgstr ""
 "zmiennych środowiskowych Win32, z tego powodu jest więcej zmiennych niż w\n"
 "implementacji Win32. Wine nie zmienia zmiennych środowiskowych systemu.\n"
 
-#: programs/cmd/cmd.rc:234
+#: programs/cmd/cmd.rc:231
 msgid ""
 "SHIFT is used in a batch file to remove one parameter from the head of the\n"
 "list, so parameter 2 becomes parameter 1 and so on. It has no effect if\n"
@@ -14114,7 +14148,7 @@ msgstr ""
 "parametrów, parametr 2 staje się 1 itd. Polecenie to nie ma efektu gdy jest\n"
 "wywoływane z linii komend.\n"
 
-#: programs/cmd/cmd.rc:212
+#: programs/cmd/cmd.rc:209
 msgid ""
 "Start a program, or open a document in the program normally used for files\n"
 "with that suffix.\n"
@@ -14172,15 +14206,15 @@ msgstr ""
 "/ProgIDOpen     Otwórz dokument używając podanego progID.\n"
 "/?              Wyświetl tę pomoc i wyjdź.\n"
 
-#: programs/cmd/cmd.rc:237
+#: programs/cmd/cmd.rc:234
 msgid "TIME sets or shows the current system time.\n"
 msgstr "TIME ustawia lub pokazuje aktualny czas systemowy.\n"
 
-#: programs/cmd/cmd.rc:240
+#: programs/cmd/cmd.rc:237
 msgid "TITLE <string> sets the window title for the cmd window.\n"
 msgstr "TITLE <ciąg znaków> ustawia tytuł okna dla okna wiersza poleceń.\n"
 
-#: programs/cmd/cmd.rc:244
+#: programs/cmd/cmd.rc:241
 msgid ""
 "TYPE <filename> copies <filename> to the console device (or elsewhere if\n"
 "redirected). No check is made that the file is readable text.\n"
@@ -14188,7 +14222,7 @@ msgstr ""
 "TYPE <nazwa pliku> wyświetla zawartość pliku, nie jest sprawdzane, czy jest\n"
 "on plikiem tekstowym.\n"
 
-#: programs/cmd/cmd.rc:253
+#: programs/cmd/cmd.rc:250
 msgid ""
 "VERIFY is used to set, clear or test the verify flag. Valid forms are:\n"
 "\n"
@@ -14207,15 +14241,15 @@ msgstr ""
 "\n"
 "Flaga verify nie ma funkcji w Wine.\n"
 
-#: programs/cmd/cmd.rc:256
+#: programs/cmd/cmd.rc:253
 msgid "VER displays the version of cmd you are running.\n"
 msgstr "VER wyświetla wersję uruchomionego wiersza poleceń.\n"
 
-#: programs/cmd/cmd.rc:259
+#: programs/cmd/cmd.rc:256
 msgid "VOL shows the volume label of a disk device.\n"
 msgstr "VOL pokazuje etykietę woluminu urządzenia dyskowego.\n"
 
-#: programs/cmd/cmd.rc:263
+#: programs/cmd/cmd.rc:260
 msgid ""
 "ENDLOCAL ends localization of environment changes in a batch file which\n"
 "were introduced by a preceding SETLOCAL.\n"
@@ -14223,7 +14257,7 @@ msgstr ""
 "ENDLOCAL kończy zmiany ustawień regionalnych środowiska w pliku wsadowym,\n"
 "które zostały wprowadzone przez poprzedzające SETLOCAL.\n"
 
-#: programs/cmd/cmd.rc:271
+#: programs/cmd/cmd.rc:268
 msgid ""
 "SETLOCAL starts localization of environment changes in a batch file.\n"
 "\n"
@@ -14240,7 +14274,7 @@ msgstr ""
 "pierwsze), przy którym zostają przywrócone poprzednie ustawienia\n"
 "środowiska.\n"
 
-#: programs/cmd/cmd.rc:275
+#: programs/cmd/cmd.rc:272
 msgid ""
 "PUSHD <directory> saves the current directory onto a stack, and then\n"
 "changes the current directory to the supplied one.\n"
@@ -14248,11 +14282,11 @@ msgstr ""
 "PUSHD <nazwakatalogu> zapamiętuje bieżący katalog na stosie, a następnie\n"
 "przechodzi do katalogu podanego jako parametr.\n"
 
-#: programs/cmd/cmd.rc:278
+#: programs/cmd/cmd.rc:275
 msgid "POPD changes current directory to the last one saved with PUSHD.\n"
 msgstr "POPD zmienia bieżący katalog na ostatni zachowany przez PUSHD.\n"
 
-#: programs/cmd/cmd.rc:288
+#: programs/cmd/cmd.rc:285
 msgid ""
 "ASSOC shows or modifies file extension associations.\n"
 "\n"
@@ -14273,7 +14307,7 @@ msgstr ""
 "Nie określanie rodzaju pliku po znaku równości usuwa obecne skojarzenie,\n"
 "jeśli jakiekolwiek istnieje.\n"
 
-#: programs/cmd/cmd.rc:300
+#: programs/cmd/cmd.rc:297
 msgid ""
 "FTYPE shows or modifies open commands associated with file types.\n"
 "\n"
@@ -14297,11 +14331,11 @@ msgstr ""
 "Nie określanie polecenia otwarcia po znaku równości usuwa ciąg znaków\n"
 "polecenia skojarzony z danym rodzajem pliku.\n"
 
-#: programs/cmd/cmd.rc:303
+#: programs/cmd/cmd.rc:300
 msgid "MORE displays output of files or piped input in pages.\n"
 msgstr "MORE wyświetla strona po stronie wyjście pliku lub potoku.\n"
 
-#: programs/cmd/cmd.rc:308
+#: programs/cmd/cmd.rc:305
 msgid ""
 "CHOICE displays a text and waits, until the User presses an allowed Key\n"
 "from a selectable list.\n"
@@ -14311,7 +14345,7 @@ msgstr ""
 "wybieralnej listy.\n"
 "CHOICE jest używany głównie do budowania menu wyboru w plikach rodzaju bat.\n"
 
-#: programs/cmd/cmd.rc:324
+#: programs/cmd/cmd.rc:321
 msgid ""
 "Create a symbolic link.\n"
 "\n"
@@ -14335,7 +14369,7 @@ msgstr ""
 "nazwa_dowiązania jest nazwą nowego dowiązania symbolicznego.\n"
 "cel_dowiązania jest ścieżką, na którą wskazuje nazwa_dowiązania.\n"
 
-#: programs/cmd/cmd.rc:312
+#: programs/cmd/cmd.rc:309
 msgid ""
 "EXIT terminates the current command session and returns to the operating\n"
 "system or shell from which you invoked cmd.\n"
@@ -14343,7 +14377,7 @@ msgstr ""
 "EXIT kończy bieżącą sesję cmd i powraca do systemu operacyjnego lub\n"
 "powłoki, w której uruchomiono cmd.\n"
 
-#: programs/cmd/cmd.rc:364
+#: programs/cmd/cmd.rc:361
 msgid ""
 "CMD built-in commands are:\n"
 "ASSOC\t\tShow or modify file extension associations\n"
@@ -14429,110 +14463,110 @@ msgstr ""
 "Wpisz HELP <polecenie> dla dalszych informacji o którymkolwiek z tych "
 "poleceń.\n"
 
-#: programs/cmd/cmd.rc:365
+#: programs/cmd/cmd.rc:362
 msgid "Are you sure?"
 msgstr "Czy jesteś pewien?"
 
-#: programs/cmd/cmd.rc:366 programs/reg/reg.rc:126 programs/xcopy/xcopy.rc:43
+#: programs/cmd/cmd.rc:363 programs/reg/reg.rc:126 programs/xcopy/xcopy.rc:43
 msgctxt "Yes key"
 msgid "Y"
 msgstr "T"
 
-#: programs/cmd/cmd.rc:367 programs/reg/reg.rc:127 programs/xcopy/xcopy.rc:44
+#: programs/cmd/cmd.rc:364 programs/reg/reg.rc:127 programs/xcopy/xcopy.rc:44
 msgctxt "No key"
 msgid "N"
 msgstr "N"
 
-#: programs/cmd/cmd.rc:368
+#: programs/cmd/cmd.rc:365
 msgid "File association missing for extension %1\n"
 msgstr "Brak skojarzenia pliku dla rozszerzenia %1\n"
 
-#: programs/cmd/cmd.rc:369
+#: programs/cmd/cmd.rc:366
 msgid "No open command associated with file type '%1'\n"
 msgstr "Brak skojarzenia polecenia otwórz z typem plików '%1'\n"
 
-#: programs/cmd/cmd.rc:370
+#: programs/cmd/cmd.rc:367
 msgid "Overwrite %1?"
 msgstr "Czy zastąpić %1?"
 
-#: programs/cmd/cmd.rc:371
+#: programs/cmd/cmd.rc:368
 msgid "More..."
 msgstr "Więcej..."
 
-#: programs/cmd/cmd.rc:372
+#: programs/cmd/cmd.rc:369
 msgid "Line in Batch processing possibly truncated. Using:\n"
 msgstr "Linia przy przetwarzaniu pliku bat prawdopodobnie obcięta. Używam:\n"
 
-#: programs/cmd/cmd.rc:374
+#: programs/cmd/cmd.rc:371
 msgid "Argument missing\n"
 msgstr "Brakuje argumentu\n"
 
-#: programs/cmd/cmd.rc:375
+#: programs/cmd/cmd.rc:372
 msgid "Syntax error\n"
 msgstr "Błąd składni\n"
 
-#: programs/cmd/cmd.rc:377
+#: programs/cmd/cmd.rc:374
 msgid "No help available for %1\n"
 msgstr "Brak pliku pomocy dla %1\n"
 
-#: programs/cmd/cmd.rc:378
+#: programs/cmd/cmd.rc:375
 msgid "Target to GOTO not found\n"
 msgstr "Nie znaleziono przeznaczenia dla GOTO\n"
 
-#: programs/cmd/cmd.rc:379
+#: programs/cmd/cmd.rc:376
 msgid "Current Date is %1\n"
 msgstr "Obecna data to %1\n"
 
-#: programs/cmd/cmd.rc:380
+#: programs/cmd/cmd.rc:377
 msgid "Current Time is %1\n"
 msgstr "Obecny czas to %1\n"
 
-#: programs/cmd/cmd.rc:381
+#: programs/cmd/cmd.rc:378
 msgid "Enter new date: "
 msgstr "Wpisz nową datę: "
 
-#: programs/cmd/cmd.rc:382
+#: programs/cmd/cmd.rc:379
 msgid "Enter new time: "
 msgstr "Wpisz nowy czas: "
 
-#: programs/cmd/cmd.rc:383
+#: programs/cmd/cmd.rc:380
 msgid "Environment variable %1 not defined\n"
 msgstr "Zmienna środowiskowa %1 jest niezdefiniowana\n"
 
-#: programs/cmd/cmd.rc:384 programs/xcopy/xcopy.rc:41
+#: programs/cmd/cmd.rc:381 programs/xcopy/xcopy.rc:41
 msgid "Failed to open '%1'\n"
 msgstr "Nieudane otwarcie '%1'\n"
 
-#: programs/cmd/cmd.rc:385
+#: programs/cmd/cmd.rc:382
 msgid "Cannot call batch label outside of a batch script\n"
 msgstr "Nie można wywołać etykiety bat poza skryptem bat\n"
 
-#: programs/cmd/cmd.rc:386 programs/reg/reg.rc:128 programs/xcopy/xcopy.rc:45
+#: programs/cmd/cmd.rc:383 programs/reg/reg.rc:128 programs/xcopy/xcopy.rc:45
 msgctxt "All key"
 msgid "A"
 msgstr "A"
 
-#: programs/cmd/cmd.rc:387
+#: programs/cmd/cmd.rc:384
 msgid "Delete %1?"
 msgstr "Czy usunąć %1?"
 
-#: programs/cmd/cmd.rc:388
+#: programs/cmd/cmd.rc:385
 msgid "Echo is %1\n"
 msgstr "Echo jest %1\n"
 
-#: programs/cmd/cmd.rc:389
+#: programs/cmd/cmd.rc:386
 msgid "Verify is %1\n"
 msgstr "Verify jest %1\n"
 
-#: programs/cmd/cmd.rc:390
+#: programs/cmd/cmd.rc:387
 msgid "Verify must be ON or OFF\n"
 msgstr "Verify musi być ON lub OFF\n"
 
-#: programs/cmd/cmd.rc:391
+#: programs/cmd/cmd.rc:388
 msgid "Parameter error\n"
 msgstr "Błąd parametru\n"
 
-#: programs/cmd/cmd.rc:392
+#: programs/cmd/cmd.rc:389
 msgid ""
 "Volume Serial Number is %1!04x!-%2!04x!\n"
 "\n"
@@ -14540,80 +14574,94 @@ msgstr ""
 "Numer seryny wolumenu to %1!04x!-%2!04x!\n"
 "\n"
 
-#: programs/cmd/cmd.rc:393
+#: programs/cmd/cmd.rc:390
 msgid "Volume label (11 characters, <Enter> for none)?"
 msgstr "Etykieta Wolumenu (11 znaków, <Enter> aby pominąć)?"
 
-#: programs/cmd/cmd.rc:394
-msgid "PATH not found\n"
-msgstr "Nie znaleziono PATH\n"
-
-#: programs/cmd/cmd.rc:395
+#: programs/cmd/cmd.rc:391
 msgid "Press any key to continue... "
 msgstr "Naciśnij jakikolwiek klawisz, aby kontynuować... "
 
-#: programs/cmd/cmd.rc:396
+#: programs/cmd/cmd.rc:392
 msgid "Wine Command Prompt"
 msgstr "Wiersz Poleceń Wine"
 
-#: programs/cmd/cmd.rc:397
+#: programs/cmd/cmd.rc:393
 msgid "Microsoft Windows %1!S!\n"
 msgstr "Microsoft Windows %1!S!\n"
 
-#: programs/cmd/cmd.rc:398
+#: programs/cmd/cmd.rc:394
 msgid "More? "
 msgstr "Więcej? "
 
-#: programs/cmd/cmd.rc:399
+#: programs/cmd/cmd.rc:395
 msgid "The input line is too long.\n"
 msgstr "Wpisany tekst jest zbyt długi.\n"
 
-#: programs/cmd/cmd.rc:400
+#: programs/cmd/cmd.rc:396
 msgid "Volume in drive %1!c! is %2\n"
 msgstr "Wolumen w napędzie %1!c! to %2\n"
 
-#: programs/cmd/cmd.rc:401
+#: programs/cmd/cmd.rc:397
 msgid "Volume in drive %1!c! has no label.\n"
 msgstr "Wolumen w napędzie %1!c! nie ma etykiety.\n"
 
-#: programs/cmd/cmd.rc:402 programs/reg/reg.rc:129
+#: programs/cmd/cmd.rc:398 programs/reg/reg.rc:129
 msgid " (Yes|No)"
 msgstr " (Tak|Nie)"
 
-#: programs/cmd/cmd.rc:403 programs/reg/reg.rc:130
+#: programs/cmd/cmd.rc:399 programs/reg/reg.rc:130
 msgid " (Yes|No|All)"
 msgstr " (Tak|Nie|Wszystkie)"
 
-#: programs/cmd/cmd.rc:404
+#: programs/cmd/cmd.rc:400
 msgid ""
 "Can't recognize '%1' as an internal or external command, or batch script.\n"
 msgstr ""
 "Nie można rozpoznać '%1' ani jako polecenia wewnętrznego, ani zewnętrznego, "
 "czy nawet skryptu wsadowego.\n"
 
-#: programs/cmd/cmd.rc:405
+#: programs/cmd/cmd.rc:401
 msgid "Division by zero error.\n"
 msgstr "Błąd dzielenia przez zero.\n"
 
-#: programs/cmd/cmd.rc:406
+#: programs/cmd/cmd.rc:402
 msgid "Expected an operand.\n"
 msgstr "Oczekiwano zmiennej niezależnej.\n"
 
-#: programs/cmd/cmd.rc:407
+#: programs/cmd/cmd.rc:403
 msgid "Expected an operator.\n"
 msgstr "Oczekiwano operatora.\n"
 
-#: programs/cmd/cmd.rc:408
+#: programs/cmd/cmd.rc:404
 msgid "Mismatch in parentheses.\n"
 msgstr "Nierówna liczba nawiasach.\n"
 
-#: programs/cmd/cmd.rc:409
+#: programs/cmd/cmd.rc:405
 msgid ""
 "Badly formed number - must be one of decimal (12),\n"
 " hexadecimal (0x34) or octal (056).\n"
 msgstr ""
 "Zły format liczbowy - musi on być jednym z formatów dziesiętnych (12),\n"
 " szesnastkowych (0x34) lub ósemkowych (056).\n"
+
+#: programs/cmd/cmd.rc:407
+#, fuzzy
+#| msgid "Syntax error\n"
+msgid "Syntax error: unexpected %1\n"
+msgstr "Błąd składni\n"
+
+#: programs/cmd/cmd.rc:408
+#, fuzzy
+#| msgid "End of file.\n"
+msgid "End of line"
+msgstr "Koniec pliku.\n"
+
+#: programs/cmd/cmd.rc:409
+#, fuzzy
+#| msgid "End of file.\n"
+msgid "End of file"
+msgstr "Koniec pliku.\n"
 
 #: programs/conhost/conhost.rc:54
 msgid "Cursor size"
@@ -14798,6 +14846,13 @@ msgid ""
 msgstr ""
 "Czy jesteś pewien, że chcesz zamknąć wszystkie programy i opuścić wirtualny "
 "pulpit?"
+
+#: programs/explorer/explorer.rc:38
+#, fuzzy
+#| msgctxt "display name"
+#| msgid "Desktop"
+msgid "Wine Desktop"
+msgstr "Pulpit"
 
 #: programs/findstr/findstr.rc:28
 msgid "Usage: findstr /options string\n"
@@ -19018,13 +19073,14 @@ msgstr "Szczegóły błędu programu"
 msgid ""
 "If this problem is not present under Windows and has not been reported yet, "
 "you can save the detailed information to a file using the \"Save As\" "
-"button, then <a href=\"https://wiki.winehq.org/Bugs\">file a bug report</a> "
-"and attach that file to the report."
+"button, then <a href=\"https://gitlab.winehq.org/wine/wine/-/wikis/"
+"Bugs\">file a bug report</a> and attach that file to the report."
 msgstr ""
 "Jeżeli problem ten nie występuje w systemie Windows i nie został jeszcze "
 "zgłoszony, to możesz zapisać szczegółowe informacje do pliku używając "
-"przycisku \"Zapisz jako\", a następnie <a href=\"https://wiki.winehq.org/"
-"Bugs\">wypełnić zgłoszenie o błędzie</a> i dołączyć ten plik do zgłoszenia."
+"przycisku \"Zapisz jako\", a następnie <a href=\"https://gitlab.winehq.org/"
+"wine/wine/-/wikis/Bugs\">wypełnić zgłoszenie o błędzie</a> i dołączyć ten "
+"plik do zgłoszenia."
 
 #: programs/winedbg/winedbg.rc:40
 msgid ""
@@ -19422,7 +19478,9 @@ msgid "Help topics: "
 msgstr "Tematy pomocy: "
 
 #: programs/wmic/wmic.rc:28
-msgid "Error: Command line not supported\n"
+#, fuzzy
+#| msgid "Error: Command line not supported\n"
+msgid "Error: Command not supported\n"
 msgstr "Błąd: Wiersz poleceń jest nieobsługiwany\n"
 
 #: programs/wmic/wmic.rc:29
@@ -19436,6 +19494,12 @@ msgstr "Błąd: Nieprawidłowe zapytanie\n"
 #: programs/wmic/wmic.rc:31
 msgid "Error: Invalid syntax for PATH\n"
 msgstr "Błąd: Nieprawidłowa składnia dla PATH\n"
+
+#: programs/wmic/wmic.rc:32
+#, fuzzy
+#| msgid "Bad command.\n"
+msgid "Supply a command\n"
+msgstr "Złe polecenie.\n"
 
 #: programs/wordpad/wordpad.rc:31
 msgid "&New...\tCtrl+N"

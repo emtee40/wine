@@ -303,28 +303,33 @@ static enum dbg_start minidump_do_reload(struct tgt_process_minidump_data* data)
 
     if (MiniDumpReadDumpStream(data->mapping, SystemInfoStream, &dir, &stream, NULL))
     {
-        MINIDUMP_SYSTEM_INFO*   msi = stream;
-        const char *str;
-        char tmp[128];
+        MINIDUMP_SYSTEM_INFO *msi = stream;
+        USHORT                machine = IMAGE_FILE_MACHINE_UNKNOWN;
+        const char           *str;
+        char                  tmp[128];
 
-        dbg_printf("WineDbg starting on minidump on pid %04lx\n", pid);
+        dbg_printf("WineDbg starting minidump on pid %04lx\n", pid);
         switch (msi->ProcessorArchitecture)
         {
         case PROCESSOR_ARCHITECTURE_UNKNOWN:
             str = "Unknown";
             break;
         case PROCESSOR_ARCHITECTURE_INTEL:
-            strcpy(tmp, "Intel ");
+            machine = IMAGE_FILE_MACHINE_I386;
+            strcpy(tmp, "x86 [");
             switch (msi->ProcessorLevel)
             {
             case  3: str = "80386"; break;
             case  4: str = "80486"; break;
             case  5: str = "Pentium"; break;
-            case  6: str = "Pentium Pro/II or AMD Athlon"; break;
+            case  6: str = "Pentium Pro/II, III, Core, Atom or AMD Athlon"; break;
             case 15: str = "Pentium 4 or AMD Athlon64"; break;
-            default: str = "???"; break;
+            case 23: str = "AMD Zen 1 or 2"; break;
+            case 25: str = "AMD Zen 3 or 4"; break;
+            case 26: str = "AMD Zen 5"; break;
+            default: sprintf(tmp + strlen(tmp), "Proc-level #%x", msi->ProcessorLevel); str = NULL; break;
             }
-            strcat(tmp, str);
+            if (str) strcat(tmp, str);
             if (msi->ProcessorLevel == 3 || msi->ProcessorLevel == 4)
             {
                 if (HIBYTE(msi->ProcessorRevision) == 0xFF)
@@ -339,6 +344,7 @@ static enum dbg_start minidump_do_reload(struct tgt_process_minidump_data* data)
             else sprintf(tmp + strlen(tmp), " (%d.%d)",
                          HIBYTE(msi->ProcessorRevision),
                          LOBYTE(msi->ProcessorRevision));
+            strcat(tmp, "]");
             str = tmp;
             break;
         case PROCESSOR_ARCHITECTURE_MIPS:
@@ -351,6 +357,7 @@ static enum dbg_start minidump_do_reload(struct tgt_process_minidump_data* data)
             str = "PowerPC";
             break;
         case PROCESSOR_ARCHITECTURE_AMD64:
+            machine = IMAGE_FILE_MACHINE_AMD64;
             str = "X86_64";
             break;
         case PROCESSOR_ARCHITECTURE_ARM:
@@ -458,6 +465,15 @@ static enum dbg_start minidump_do_reload(struct tgt_process_minidump_data* data)
                            code + wes[1], code + wes[2], code + wes[3]);
             }
         }
+        if (machine == IMAGE_FILE_MACHINE_UNKNOWN
+#ifdef __x86_64__
+                                                  || machine == IMAGE_FILE_MACHINE_I386
+#endif
+            )
+        {
+            dbg_printf("Cannot reload this minidump because of incompatible/unsupported machine %x\n", machine);
+            return FALSE;
+        }
     }
 
     dbg_curr_process = dbg_add_process(&be_process_minidump_io, pid, hProc);
@@ -564,23 +580,23 @@ static void cleanup(struct tgt_process_minidump_data* data)
 
 static struct be_process_io be_process_minidump_io;
 
-enum dbg_start minidump_reload(int argc, char* argv[])
+enum dbg_start minidump_reload(const char* filename)
 {
     struct tgt_process_minidump_data*   data;
     enum dbg_start                      ret = start_error_parse;
 
-    /* try the form <myself> minidump-file */
-    if (argc != 1) return start_error_parse;
-    
-    WINE_TRACE("Processing Minidump file %s\n", argv[0]);
-
+    if (dbg_curr_process)
+    {
+        dbg_printf("Already attached to a process. Use 'detach' or 'kill' before loading a minidump file'\n");
+        return start_error_init;
+    }
     data = malloc(sizeof(struct tgt_process_minidump_data));
     if (!data) return start_error_init;
     data->mapping = NULL;
     data->hMap    = NULL;
     data->hFile   = INVALID_HANDLE_VALUE;
 
-    if ((data->hFile = CreateFileA(argv[0], GENERIC_READ, FILE_SHARE_READ, NULL, 
+    if ((data->hFile = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, NULL,
                                    OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL)) != INVALID_HANDLE_VALUE &&
         ((data->hMap = CreateFileMappingA(data->hFile, NULL, PAGE_READONLY, 0, 0, NULL)) != 0) &&
         ((data->mapping = MapViewOfFile(data->hMap, FILE_MAP_READ, 0, 0, 0)) != NULL))
@@ -594,13 +610,23 @@ enum dbg_start minidump_reload(int argc, char* argv[])
         }
         __EXCEPT_PAGE_FAULT
         {
-            dbg_printf("Unexpected fault while reading minidump %s\n", argv[0]);
+            dbg_printf("Unexpected fault while reading minidump %s\n", filename);
             dbg_curr_pid = 0;
         }
         __ENDTRY;
     }
     if (ret != start_ok) cleanup(data);
     return ret;
+}
+
+enum dbg_start minidump_start(int argc, char* argv[])
+{
+    /* try the form <myself> minidump-file */
+    if (argc != 1) return start_error_parse;
+
+    WINE_TRACE("Processing Minidump file %s\n", argv[0]);
+
+    return minidump_reload(argv[0]);
 }
 
 static BOOL tgt_process_minidump_close_process(struct dbg_process* pcs, BOOL kill)

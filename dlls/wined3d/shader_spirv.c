@@ -116,28 +116,6 @@ struct wined3d_shader_spirv_shader_interface
     struct vkd3d_shader_transform_feedback_info xfb_info;
 };
 
-static enum vkd3d_shader_visibility vkd3d_shader_visibility_from_wined3d(enum wined3d_shader_type shader_type)
-{
-    switch (shader_type)
-    {
-        case WINED3D_SHADER_TYPE_VERTEX:
-            return VKD3D_SHADER_VISIBILITY_VERTEX;
-        case WINED3D_SHADER_TYPE_HULL:
-            return VKD3D_SHADER_VISIBILITY_HULL;
-        case WINED3D_SHADER_TYPE_DOMAIN:
-            return VKD3D_SHADER_VISIBILITY_DOMAIN;
-        case WINED3D_SHADER_TYPE_GEOMETRY:
-            return VKD3D_SHADER_VISIBILITY_GEOMETRY;
-        case WINED3D_SHADER_TYPE_PIXEL:
-            return VKD3D_SHADER_VISIBILITY_PIXEL;
-        case WINED3D_SHADER_TYPE_COMPUTE:
-            return VKD3D_SHADER_VISIBILITY_COMPUTE;
-        default:
-            ERR("Invalid shader type %s.\n", debug_shader_type(shader_type));
-            return VKD3D_SHADER_VISIBILITY_ALL;
-    }
-}
-
 static void shader_spirv_handle_instruction(const struct wined3d_shader_instruction *ins)
 {
 }
@@ -1098,9 +1076,7 @@ static void shader_spirv_get_caps(const struct wined3d_adapter *adapter, struct 
     caps->ps_uniform_count = WINED3D_MAX_PS_CONSTS_F;
     caps->ps_1x_max_value = FLT_MAX;
     caps->varying_count = 0;
-    caps->wined3d_caps = WINED3D_SHADER_CAP_VS_CLIPPING
-            | WINED3D_SHADER_CAP_SRGB_WRITE
-            | WINED3D_SHADER_CAP_FULL_FFP_VARYINGS;
+    caps->wined3d_caps = WINED3D_SHADER_CAP_FULL_FFP_VARYINGS;
 }
 
 static BOOL shader_spirv_color_fixup_supported(struct color_fixup_desc fixup)
@@ -1156,8 +1132,6 @@ static void spirv_vertex_pipe_vk_vp_disable(const struct wined3d_context *contex
 static void spirv_vertex_pipe_vk_vp_get_caps(const struct wined3d_adapter *adapter, struct wined3d_vertex_caps *caps)
 {
     memset(caps, 0, sizeof(*caps));
-    caps->xyzrhw = TRUE;
-    caps->ffp_generic_attributes = TRUE;
 }
 
 static unsigned int spirv_vertex_pipe_vk_vp_get_emul_mask(const struct wined3d_adapter *adapter)
@@ -1183,29 +1157,12 @@ static void spirv_vertex_pipe_vk_vp_free(struct wined3d_device *device, struct w
 
 static const struct wined3d_state_entry_template spirv_vertex_pipe_vk_vp_states[] =
 {
-    {STATE_RENDER(WINED3D_RS_RANGEFOGENABLE),           {STATE_RENDER(WINED3D_RS_RANGEFOGENABLE),           state_nop}},
     {STATE_RENDER(WINED3D_RS_CLIPPING),                 {STATE_RENDER(WINED3D_RS_CLIPPING),                 state_nop}},
-    {STATE_RENDER(WINED3D_RS_LIGHTING),                 {STATE_RENDER(WINED3D_RS_LIGHTING),                 state_nop}},
-    {STATE_RENDER(WINED3D_RS_AMBIENT),                  {STATE_RENDER(WINED3D_RS_AMBIENT),                  state_nop}},
-    {STATE_RENDER(WINED3D_RS_COLORVERTEX),              {STATE_RENDER(WINED3D_RS_COLORVERTEX),              state_nop}},
-    {STATE_RENDER(WINED3D_RS_LOCALVIEWER),              {STATE_RENDER(WINED3D_RS_LOCALVIEWER),              state_nop}},
-    {STATE_RENDER(WINED3D_RS_NORMALIZENORMALS),         {STATE_RENDER(WINED3D_RS_NORMALIZENORMALS),         state_nop}},
-    {STATE_RENDER(WINED3D_RS_DIFFUSEMATERIALSOURCE),    {STATE_RENDER(WINED3D_RS_DIFFUSEMATERIALSOURCE),    state_nop}},
-    {STATE_RENDER(WINED3D_RS_SPECULARMATERIALSOURCE),   {STATE_RENDER(WINED3D_RS_SPECULARMATERIALSOURCE),   state_nop}},
-    {STATE_RENDER(WINED3D_RS_AMBIENTMATERIALSOURCE),    {STATE_RENDER(WINED3D_RS_AMBIENTMATERIALSOURCE),    state_nop}},
-    {STATE_RENDER(WINED3D_RS_EMISSIVEMATERIALSOURCE),   {STATE_RENDER(WINED3D_RS_EMISSIVEMATERIALSOURCE),   state_nop}},
-    {STATE_RENDER(WINED3D_RS_VERTEXBLEND),              {STATE_RENDER(WINED3D_RS_VERTEXBLEND),              state_nop}},
     {STATE_RENDER(WINED3D_RS_CLIPPLANEENABLE),          {STATE_RENDER(WINED3D_RS_CLIPPLANEENABLE),          state_nop}},
     {STATE_RENDER(WINED3D_RS_POINTSIZE),                {STATE_RENDER(WINED3D_RS_POINTSIZE),                state_nop}},
     {STATE_RENDER(WINED3D_RS_POINTSIZE_MIN),            {STATE_RENDER(WINED3D_RS_POINTSIZE_MIN),            state_nop}},
-    {STATE_RENDER(WINED3D_RS_POINTSCALEENABLE),         {STATE_RENDER(WINED3D_RS_POINTSCALEENABLE),         state_nop}},
-    {STATE_RENDER(WINED3D_RS_POINTSCALE_A),             {STATE_RENDER(WINED3D_RS_POINTSCALE_A),             state_nop}},
-    {STATE_RENDER(WINED3D_RS_POINTSCALE_B),             {STATE_RENDER(WINED3D_RS_POINTSCALE_B),             state_nop}},
-    {STATE_RENDER(WINED3D_RS_POINTSCALE_C),             {STATE_RENDER(WINED3D_RS_POINTSCALE_C),             state_nop}},
     {STATE_RENDER(WINED3D_RS_POINTSIZE_MAX),            {STATE_RENDER(WINED3D_RS_POINTSIZE_MAX),            state_nop}},
-    {STATE_MATERIAL,                                    {STATE_MATERIAL,                                    state_nop}},
     {STATE_SHADER(WINED3D_SHADER_TYPE_VERTEX),          {STATE_SHADER(WINED3D_SHADER_TYPE_VERTEX),          state_nop}},
-    {STATE_LIGHT_TYPE,                                  {STATE_LIGHT_TYPE,                                  state_nop}},
     {0}, /* Terminate */
 };
 
@@ -1279,19 +1236,14 @@ static const struct wined3d_state_entry_template spirv_fragment_pipe_vk_fp_state
     {STATE_RENDER(WINED3D_RS_ALPHAREF),          {STATE_RENDER(WINED3D_RS_ALPHAREF),          state_nop}},
     {STATE_RENDER(WINED3D_RS_ALPHAFUNC),         {STATE_RENDER(WINED3D_RS_ALPHAFUNC),         state_nop}},
     {STATE_RENDER(WINED3D_RS_FOGENABLE),         {STATE_RENDER(WINED3D_RS_FOGENABLE),         state_nop}},
-    {STATE_RENDER(WINED3D_RS_SPECULARENABLE),    {STATE_RENDER(WINED3D_RS_SPECULARENABLE),    state_nop}},
     {STATE_RENDER(WINED3D_RS_FOGCOLOR),          {STATE_RENDER(WINED3D_RS_FOGCOLOR),          state_nop}},
     {STATE_RENDER(WINED3D_RS_FOGTABLEMODE),      {STATE_RENDER(WINED3D_RS_FOGTABLEMODE),      state_nop}},
     {STATE_RENDER(WINED3D_RS_FOGSTART),          {STATE_RENDER(WINED3D_RS_FOGSTART),          state_nop}},
     {STATE_RENDER(WINED3D_RS_FOGEND),            {STATE_RENDER(WINED3D_RS_FOGEND),            state_nop}},
     {STATE_RENDER(WINED3D_RS_FOGDENSITY),        {STATE_RENDER(WINED3D_RS_FOGDENSITY),        state_nop}},
-    {STATE_RENDER(WINED3D_RS_COLORKEYENABLE),    {STATE_RENDER(WINED3D_RS_COLORKEYENABLE),    state_nop}},
-    {STATE_RENDER(WINED3D_RS_TEXTUREFACTOR),     {STATE_RENDER(WINED3D_RS_TEXTUREFACTOR),     state_nop}},
     {STATE_RENDER(WINED3D_RS_FOGVERTEXMODE),     {STATE_RENDER(WINED3D_RS_FOGVERTEXMODE),     state_nop}},
     {STATE_RENDER(WINED3D_RS_POINTSPRITEENABLE), {STATE_RENDER(WINED3D_RS_POINTSPRITEENABLE), state_nop}},
     {STATE_RENDER(WINED3D_RS_SRGBWRITEENABLE),   {STATE_RENDER(WINED3D_RS_SRGBWRITEENABLE),   state_nop}},
-    {STATE_POINT_ENABLE,                         {STATE_POINT_ENABLE,                         state_nop}},
-    {STATE_COLOR_KEY,                            {STATE_COLOR_KEY,                            state_nop}},
     {0}, /* Terminate */
 };
 

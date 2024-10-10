@@ -249,7 +249,7 @@ NTSTATUS WINAPI RtlWow64GetThreadSelectorEntry( HANDLE handle, THREAD_DESCRIPTOR
     {
         /* hardcoded values */
 #ifdef __arm64ec__
-        context.SegCs = 0x33;
+        context.SegCs = 0x23;
         context.SegSs = 0x2b;
         context.SegFs = 0x53;
 #elif defined(__x86_64__)
@@ -314,17 +314,32 @@ void WINAPI RtlOpenCrossProcessEmulatorWorkConnection( HANDLE process, HANDLE *s
 {
     WOW64INFO wow64info;
     BOOLEAN is_wow64;
+    HANDLE handle = 0;
     SIZE_T size = 0;
 
     *addr = NULL;
     *section = 0;
 
+    if (RtlIsCurrentProcess( process )) return;
     if (RtlWow64GetSharedInfoProcess( process, &is_wow64, &wow64info )) return;
-    if (!is_wow64) return;
-    if (!wow64info.SectionHandle) return;
 
-    if (NtDuplicateObject( process, (HANDLE)(ULONG_PTR)wow64info.SectionHandle,
-                           GetCurrentProcess(), section, 0, 0, DUPLICATE_SAME_ACCESS ))
+    if (is_wow64) handle = (HANDLE)(ULONG_PTR)wow64info.SectionHandle;
+#if defined __aarch64__ || defined __arm64ec__
+    else
+    {
+        PROCESS_BASIC_INFORMATION basic;
+        CHPEV2_PROCESS_INFO info, *info_ptr;
+
+        if (!NtQueryInformationProcess( process, ProcessBasicInformation, &basic, sizeof(basic), NULL ) &&
+            !NtReadVirtualMemory( process, (char *)basic.PebBaseAddress + offsetof(PEB, ChpeV2ProcessInfo),
+                                  &info_ptr, sizeof(info_ptr), NULL ) &&
+            !NtReadVirtualMemory( process, info_ptr, &info, sizeof(info), NULL ))
+            handle = info.SectionHandle;
+    }
+#endif
+
+    if (!handle) return;
+    if (NtDuplicateObject( process, handle, GetCurrentProcess(), section, 0, 0, DUPLICATE_SAME_ACCESS ))
         return;
 
     if (!NtMapViewOfSection( *section, GetCurrentProcess(), addr, 0, 0, NULL,

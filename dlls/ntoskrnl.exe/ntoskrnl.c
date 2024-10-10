@@ -1793,7 +1793,7 @@ NTSTATUS WINAPI IoDeleteSymbolicLink( UNICODE_STRING *name )
     attr.SecurityDescriptor       = NULL;
     attr.SecurityQualityOfService = NULL;
 
-    if (!(status = NtOpenSymbolicLinkObject( &handle, 0, &attr )))
+    if (!(status = NtOpenSymbolicLinkObject( &handle, DELETE, &attr )))
     {
         NtMakeTemporaryObject( handle );
         NtClose( handle );
@@ -3487,6 +3487,15 @@ ULONG WINAPI KeGetCurrentProcessorNumberEx(PPROCESSOR_NUMBER process_number)
     }
 
     return cur_number;
+}
+
+/***********************************************************************
+ *          KeQueryGroupAffinity   (NTOSKRNL.EXE.@)
+ */
+KAFFINITY WINAPI KeQueryGroupAffinity(USHORT group_number)
+{
+    FIXME("%u stub\n", group_number);
+    return 0;
 }
 
 /***********************************************************************

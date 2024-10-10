@@ -139,6 +139,8 @@ struct wait_queue_entry
     struct thread_wait *wait;
 };
 
+extern void mark_block_noaccess( void *ptr, size_t size );
+extern void mark_block_uninitialized( void *ptr, size_t size );
 extern void *mem_alloc( size_t size ) __WINE_ALLOC_SIZE(1) __WINE_DEALLOC(free) __WINE_MALLOC;
 extern void *memdup( const void *data, size_t len ) __WINE_ALLOC_SIZE(2) __WINE_DEALLOC(free);
 extern void *alloc_object( const struct object_ops *ops );
@@ -198,6 +200,13 @@ static inline unsigned int map_access( unsigned int access, const generic_map_t 
     if (access & GENERIC_EXECUTE) access |= mapping->exec;
     if (access & GENERIC_ALL)     access |= mapping->all;
     return access & ~(GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE | GENERIC_ALL);
+}
+
+static inline void *mem_append( void *ptr, const void *src, data_size_t len )
+{
+    if (!len) return ptr;
+    memcpy( ptr, src, len );
+    return (char *)ptr + len;
 }
 
 /* event functions */

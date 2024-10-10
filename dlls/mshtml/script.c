@@ -199,6 +199,32 @@ static BOOL init_script_engine(ScriptHost *script_host, IActiveScript *script)
         return FALSE;
     }
 
+    if(compat_mode >= COMPAT_MODE_IE9 && IsEqualGUID(&CLSID_JScript, &script_host->guid)) {
+        IWineJScript *jscript;
+        hres = IActiveScript_QueryInterface(script, &IID_IWineJScript, (void **)&jscript);
+        if(SUCCEEDED(hres)) {
+            DispatchEx *prototype;
+
+            assert(!script_host->window->jscript);
+            assert(!script_host->window->event_target.dispex.jsdisp);
+            script_host->window->jscript = jscript;
+
+            hres = get_prototype(script_host->window, PROT_Window, &prototype);
+            if(SUCCEEDED(hres))
+                hres = IWineJScript_InitHostObject(jscript,
+                                                   &script_host->window->event_target.dispex.IWineJSDispatchHost_iface,
+                                                   prototype->jsdisp, object_descriptors[PROT_Window]->js_flags,
+                                                   &script_host->window->event_target.dispex.jsdisp);
+            if(FAILED(hres))
+                ERR("Could not initialize script global: %08lx\n", hres);
+
+            /* make sure that script global is fully initialized */
+            dispex_compat_mode(&script_host->window->event_target.dispex);
+        }else {
+            ERR("Could not get IWineJScript, don't use native jscript.dll\n");
+        }
+    }
+
     hres = IActiveScript_AddNamedItem(script, L"window",
             SCRIPTITEM_ISVISIBLE|SCRIPTITEM_ISSOURCE|SCRIPTITEM_GLOBALMEMBERS);
     if(SUCCEEDED(hres)) {
@@ -381,8 +407,10 @@ static HRESULT WINAPI ActiveScriptSite_GetItemInfo(IActiveScriptSite *iface, LPC
     if(!This->window || !This->window->base.outer_window)
         return E_FAIL;
 
-    /* FIXME: Return proxy object */
-    *ppiunkItem = (IUnknown*)&This->window->base.outer_window->base.IHTMLWindow2_iface;
+    if(dispex_compat_mode(&This->window->event_target.dispex) >= COMPAT_MODE_IE9)
+        *ppiunkItem = (IUnknown*)This->window->event_target.dispex.jsdisp;
+    else
+        *ppiunkItem = (IUnknown*)&This->window->base.outer_window->base.IHTMLWindow2_iface;
     IUnknown_AddRef(*ppiunkItem);
 
     return S_OK;
@@ -1388,6 +1416,13 @@ static ScriptHost *get_script_host(HTMLInnerWindow *window, const GUID *guid)
     return create_script_host(window, guid);
 }
 
+void initialize_script_global(HTMLInnerWindow *script_global)
+{
+    if(!script_global->base.outer_window)
+        return;
+    get_script_host(script_global, &CLSID_JScript);
+}
+
 static ScriptHost *get_elem_script_host(HTMLInnerWindow *window, HTMLScriptElement *script_elem)
 {
     GUID guid;
@@ -1573,7 +1608,7 @@ static EventTarget *find_event_target(HTMLDocumentNode *doc, HTMLScriptElement *
     }else if(!wcscmp(target_id, L"window")) {
         if(doc->window) {
             event_target = &doc->window->event_target;
-            IDispatchEx_AddRef(&event_target->dispex.IDispatchEx_iface);
+            IWineJSDispatchHost_AddRef(&event_target->dispex.IWineJSDispatchHost_iface);
         }
     }else {
         HTMLElement *target_elem;
@@ -1731,14 +1766,14 @@ void bind_event_scripts(HTMLDocumentNode *doc)
         if(event_disp) {
             event_target = find_event_target(doc, script_elem);
             if(event_target) {
-                hres = IDispatchEx_QueryInterface(&event_target->dispex.IDispatchEx_iface, &IID_HTMLPluginContainer,
+                hres = IWineJSDispatchHost_QueryInterface(&event_target->dispex.IWineJSDispatchHost_iface, &IID_HTMLPluginContainer,
                         (void**)&plugin_container);
                 if(SUCCEEDED(hres))
                     bind_activex_event(doc, plugin_container, event, event_disp);
                 else
                     bind_target_event(doc, event_target, event, event_disp);
 
-                IDispatchEx_Release(&event_target->dispex.IDispatchEx_iface);
+                IWineJSDispatchHost_Release(&event_target->dispex.IWineJSDispatchHost_iface);
                 if(plugin_container)
                     node_release(&plugin_container->element.node);
             }
@@ -1753,12 +1788,16 @@ void bind_event_scripts(HTMLDocumentNode *doc)
     nsIDOMNodeList_Release(node_list);
 }
 
-BOOL find_global_prop(HTMLInnerWindow *window, BSTR name, DWORD flags, ScriptHost **ret_host, DISPID *ret_id)
+BOOL find_global_prop(HTMLInnerWindow *window, const WCHAR *name, DWORD flags, ScriptHost **ret_host, DISPID *ret_id)
 {
     IDispatchEx *dispex;
     IDispatch *disp;
     ScriptHost *iter;
+    BSTR str;
     HRESULT hres;
+
+    if(!(str = SysAllocString(name)))
+        return E_OUTOFMEMORY;
 
     LIST_FOR_EACH_ENTRY(iter, &window->script_hosts, ScriptHost, entry) {
         disp = get_script_disp(iter);
@@ -1767,7 +1806,7 @@ BOOL find_global_prop(HTMLInnerWindow *window, BSTR name, DWORD flags, ScriptHos
 
         hres = IDispatch_QueryInterface(disp, &IID_IDispatchEx, (void**)&dispex);
         if(SUCCEEDED(hres)) {
-            hres = IDispatchEx_GetDispID(dispex, name, flags & (~fdexNameEnsure), ret_id);
+            hres = IDispatchEx_GetDispID(dispex, str, flags & (~fdexNameEnsure), ret_id);
             IDispatchEx_Release(dispex);
         }else {
             FIXME("No IDispatchEx\n");
@@ -1776,11 +1815,13 @@ BOOL find_global_prop(HTMLInnerWindow *window, BSTR name, DWORD flags, ScriptHos
 
         IDispatch_Release(disp);
         if(SUCCEEDED(hres)) {
+            SysFreeString(str);
             *ret_host = iter;
             return TRUE;
         }
     }
 
+    SysFreeString(str);
     return FALSE;
 }
 

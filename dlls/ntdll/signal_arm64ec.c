@@ -28,6 +28,7 @@
 #define WIN32_NO_STATUS
 #include "windef.h"
 #include "winternl.h"
+#include "ddk/wdm.h"
 #include "wine/exception.h"
 #include "wine/list.h"
 #include "ntdll_misc.h"
@@ -38,6 +39,28 @@
 WINE_DEFAULT_DEBUG_CHANNEL(seh);
 WINE_DECLARE_DEBUG_CHANNEL(relay);
 
+/* xtajit64.dll functions */
+static void     (WINAPI *pBTCpu64FlushInstructionCache)(const void*,SIZE_T);
+static BOOLEAN  (WINAPI *pBTCpu64IsProcessorFeaturePresent)(UINT);
+static void     (WINAPI *pBTCpu64NotifyMemoryDirty)(void*,SIZE_T);
+static void     (WINAPI *pBTCpu64NotifyReadFile)(HANDLE,void*,SIZE_T,BOOL,NTSTATUS);
+static void     (WINAPI *pBeginSimulation)(void);
+static void     (WINAPI *pFlushInstructionCacheHeavy)(const void*,SIZE_T);
+static NTSTATUS (WINAPI *pNotifyMapViewOfSection)(void*,void*,void*,SIZE_T,ULONG,ULONG);
+static void     (WINAPI *pNotifyMemoryAlloc)(void*,SIZE_T,ULONG,ULONG,BOOL,NTSTATUS);
+static void     (WINAPI *pNotifyMemoryFree)(void*,SIZE_T,ULONG,BOOL,NTSTATUS);
+static void     (WINAPI *pNotifyMemoryProtect)(void*,SIZE_T,ULONG,BOOL,NTSTATUS);
+static void     (WINAPI *pNotifyUnmapViewOfSection)(void*,BOOL,NTSTATUS);
+static NTSTATUS (WINAPI *pProcessInit)(void);
+static void     (WINAPI *pProcessTerm)(HANDLE,BOOL,NTSTATUS);
+static void     (WINAPI *pResetToConsistentState)(EXCEPTION_RECORD*,CONTEXT*,ARM64_NT_CONTEXT*);
+static NTSTATUS (WINAPI *pThreadInit)(void);
+static void     (WINAPI *pThreadTerm)(HANDLE,LONG);
+static void     (WINAPI *pUpdateProcessorInformation)(SYSTEM_CPU_INFORMATION*);
+
+static BOOLEAN emulated_processor_features[PROCESSOR_FEATURE_MAX];
+static BYTE KiUserExceptionDispatcher_orig[16]; /* to detect patching */
+extern void KiUserExceptionDispatcher_thunk(void) asm("EXP+#KiUserExceptionDispatcher");
 
 static inline CHPE_V2_CPU_AREA_INFO *get_arm64ec_cpu_area(void)
 {
@@ -52,6 +75,151 @@ static inline BOOL is_valid_arm64ec_frame( ULONG_PTR frame )
             frame <= get_arm64ec_cpu_area()->EmulatorStackBase);
 }
 
+static inline BOOL enter_syscall_callback(void)
+{
+    if (get_arm64ec_cpu_area()->InSyscallCallback) return FALSE;
+    get_arm64ec_cpu_area()->InSyscallCallback = 1;
+    return TRUE;
+}
+
+static inline void leave_syscall_callback(void)
+{
+    get_arm64ec_cpu_area()->InSyscallCallback = 0;
+}
+
+/**********************************************************************
+ *           create_cross_process_work_list
+ */
+static NTSTATUS create_cross_process_work_list( CHPEV2_PROCESS_INFO *info )
+{
+    SIZE_T map_size = 0x4000;
+    LARGE_INTEGER size;
+    NTSTATUS status;
+    HANDLE section;
+    CROSS_PROCESS_WORK_LIST *list = NULL;
+    CROSS_PROCESS_WORK_ENTRY *end;
+    UINT i;
+
+    size.QuadPart = map_size;
+    status = NtCreateSection( &section, SECTION_ALL_ACCESS, NULL, &size, PAGE_READWRITE, SEC_COMMIT, 0 );
+    if (status) return status;
+    status = NtMapViewOfSection( section, GetCurrentProcess(), (void **)&list, 0, 0, NULL,
+                                 &map_size, ViewShare, MEM_TOP_DOWN, PAGE_READWRITE );
+    if (status)
+    {
+        NtClose( section );
+        return status;
+    }
+
+    end = (CROSS_PROCESS_WORK_ENTRY *)((char *)list + map_size);
+    for (i = 0; list->entries + i + 1 <= end; i++)
+        RtlWow64PushCrossProcessWorkOntoFreeList( &list->free_list, &list->entries[i] );
+
+    info->SectionHandle = section;
+    info->CrossProcessWorkList = list;
+    return STATUS_SUCCESS;
+}
+
+
+/**********************************************************************
+ *           send_cross_process_notification
+ */
+static BOOL send_cross_process_notification( HANDLE process, UINT id, const void *addr, SIZE_T size,
+                                             int nb_args, ... )
+{
+    CROSS_PROCESS_WORK_LIST *list;
+    CROSS_PROCESS_WORK_ENTRY *entry;
+    void *unused;
+    HANDLE section;
+    va_list args;
+    int i;
+
+    RtlOpenCrossProcessEmulatorWorkConnection( process, &section, (void **)&list );
+    if (!list) return FALSE;
+    if ((entry = RtlWow64PopCrossProcessWorkFromFreeList( &list->free_list )))
+    {
+        entry->id = id;
+        entry->addr = (ULONG_PTR)addr;
+        entry->size = size;
+        if (nb_args)
+        {
+            va_start( args, nb_args );
+            for (i = 0; i < nb_args; i++) entry->args[i] = va_arg( args, int );
+            va_end( args );
+        }
+        RtlWow64PushCrossProcessWorkOntoWorkList( &list->work_list, entry, &unused );
+    }
+    NtUnmapViewOfSection( GetCurrentProcess(), list );
+    NtClose( section );
+    return TRUE;
+}
+
+
+/*******************************************************************
+ *         arm64ec_process_init
+ */
+NTSTATUS arm64ec_process_init( HMODULE module )
+{
+    NTSTATUS status = STATUS_SUCCESS;
+    CHPEV2_PROCESS_INFO *info = (CHPEV2_PROCESS_INFO *)(RtlGetCurrentPeb() + 1);
+
+    __os_arm64x_dispatch_call_no_redirect = RtlFindExportedRoutineByName( module, "ExitToX64" );
+    __os_arm64x_dispatch_fptr = RtlFindExportedRoutineByName( module, "DispatchJump" );
+    __os_arm64x_dispatch_ret = RtlFindExportedRoutineByName( module, "RetToEntryThunk" );
+
+#define GET_PTR(name) p ## name = RtlFindExportedRoutineByName( module, #name )
+    GET_PTR( BTCpu64FlushInstructionCache );
+    GET_PTR( BTCpu64IsProcessorFeaturePresent );
+    GET_PTR( BTCpu64NotifyMemoryDirty );
+    GET_PTR( BTCpu64NotifyReadFile );
+    GET_PTR( BeginSimulation );
+    GET_PTR( FlushInstructionCacheHeavy );
+    GET_PTR( NotifyMapViewOfSection );
+    GET_PTR( NotifyMemoryAlloc );
+    GET_PTR( NotifyMemoryFree );
+    GET_PTR( NotifyMemoryProtect );
+    GET_PTR( NotifyUnmapViewOfSection );
+    GET_PTR( ProcessInit );
+    GET_PTR( ProcessTerm );
+    GET_PTR( ResetToConsistentState );
+    GET_PTR( ThreadInit );
+    GET_PTR( ThreadTerm );
+    GET_PTR( UpdateProcessorInformation );
+#undef GET_PTR
+
+    RtlGetCurrentPeb()->ChpeV2ProcessInfo = info;
+    info->NativeMachineType = IMAGE_FILE_MACHINE_ARM64;
+    info->EmulatedMachineType = IMAGE_FILE_MACHINE_AMD64;
+    memcpy( KiUserExceptionDispatcher_orig, KiUserExceptionDispatcher_thunk, sizeof(KiUserExceptionDispatcher_orig) );
+
+    enter_syscall_callback();
+    if (pProcessInit) status = pProcessInit();
+    if (!status)
+    {
+        for (unsigned int i = 0; i < PROCESSOR_FEATURE_MAX; i++)
+            emulated_processor_features[i] = pBTCpu64IsProcessorFeaturePresent( i );
+        status = create_cross_process_work_list( info );
+    }
+    if (!status && pThreadInit) status = pThreadInit();
+    leave_syscall_callback();
+    return status;
+}
+
+
+/*******************************************************************
+ *         arm64ec_thread_init
+ */
+NTSTATUS arm64ec_thread_init(void)
+{
+    NTSTATUS status = STATUS_SUCCESS;
+
+    enter_syscall_callback();
+    if (pThreadInit) status = pThreadInit();
+    leave_syscall_callback();
+    return status;
+}
+
+
 /*******************************************************************
  *         syscalls
  */
@@ -60,168 +228,308 @@ enum syscall_ids
 #define SYSCALL_ENTRY(id,name,args) __id_##name = id,
 ALL_SYSCALLS64
 #undef SYSCALL_ENTRY
+    __nb_syscalls
 };
 
-#define SYSCALL_API __attribute__((naked))
-#define SYSCALL_FUNC(name) __ASM_SYSCALL_FUNC( __id_##name, name )
+#define DEFINE_SYSCALL_(ret,name,args) \
+    ret __attribute__((naked, hybrid_patchable)) name args { __ASM_SYSCALL_FUNC( __id_##name, name ); }
 
-NTSTATUS SYSCALL_API NtAcceptConnectPort( HANDLE *handle, ULONG id, LPC_MESSAGE *msg, BOOLEAN accept,
-                                          LPC_SECTION_WRITE *write, LPC_SECTION_READ *read )
-{
-    SYSCALL_FUNC( NtAcceptConnectPort );
-}
+#define DEFINE_SYSCALL(name,args) DEFINE_SYSCALL_(NTSTATUS,name,args)
 
-NTSTATUS SYSCALL_API NtAccessCheck( PSECURITY_DESCRIPTOR descr, HANDLE token, ACCESS_MASK access,
-                                    GENERIC_MAPPING *mapping, PRIVILEGE_SET *privs, ULONG *retlen,
-                                    ULONG *access_granted, NTSTATUS *access_status )
-{
-    SYSCALL_FUNC( NtAccessCheck );
-}
+#define DEFINE_WRAPPED_SYSCALL(name,args) \
+    static NTSTATUS __attribute__((naked)) syscall_##name args { __ASM_SYSCALL_FUNC( __id_##name, syscall_##name ); }
 
-NTSTATUS SYSCALL_API NtAccessCheckAndAuditAlarm( UNICODE_STRING *subsystem, HANDLE handle,
-                                                 UNICODE_STRING *typename, UNICODE_STRING *objectname,
-                                                 PSECURITY_DESCRIPTOR descr, ACCESS_MASK access,
-                                                 GENERIC_MAPPING *mapping, BOOLEAN creation,
-                                                 ACCESS_MASK *access_granted, BOOLEAN *access_status,
-                                                 BOOLEAN *onclose )
-{
-    SYSCALL_FUNC( NtAccessCheckAndAuditAlarm );
-}
+#define SYSCALL_API __attribute__((hybrid_patchable))
 
-NTSTATUS SYSCALL_API NtAddAtom( const WCHAR *name, ULONG length, RTL_ATOM *atom )
-{
-    SYSCALL_FUNC( NtAddAtom );
-}
-
-NTSTATUS SYSCALL_API NtAdjustGroupsToken( HANDLE token, BOOLEAN reset, TOKEN_GROUPS *groups,
-                                          ULONG length, TOKEN_GROUPS *prev, ULONG *retlen )
-{
-    SYSCALL_FUNC( NtAdjustGroupsToken );
-}
-
-NTSTATUS SYSCALL_API NtAdjustPrivilegesToken( HANDLE token, BOOLEAN disable, TOKEN_PRIVILEGES *privs,
-                                              DWORD length, TOKEN_PRIVILEGES *prev, DWORD *retlen )
-{
-    SYSCALL_FUNC( NtAdjustPrivilegesToken );
-}
-
-NTSTATUS SYSCALL_API NtAlertResumeThread( HANDLE handle, ULONG *count )
-{
-    SYSCALL_FUNC( NtAlertResumeThread );
-}
-
-NTSTATUS SYSCALL_API NtAlertThread( HANDLE handle )
-{
-    SYSCALL_FUNC( NtAlertThread );
-}
-
-NTSTATUS SYSCALL_API NtAlertThreadByThreadId( HANDLE tid )
-{
-    SYSCALL_FUNC( NtAlertThreadByThreadId );
-}
-
-NTSTATUS SYSCALL_API NtAllocateLocallyUniqueId( LUID *luid )
-{
-    SYSCALL_FUNC( NtAllocateLocallyUniqueId );
-}
-
-NTSTATUS SYSCALL_API NtAllocateUuids( ULARGE_INTEGER *time, ULONG *delta, ULONG *sequence, UCHAR *seed )
-{
-    SYSCALL_FUNC( NtAllocateUuids );
-}
+DEFINE_SYSCALL(NtAcceptConnectPort, (HANDLE *handle, ULONG id, LPC_MESSAGE *msg, BOOLEAN accept, LPC_SECTION_WRITE *write, LPC_SECTION_READ *read))
+DEFINE_SYSCALL(NtAccessCheck, (PSECURITY_DESCRIPTOR descr, HANDLE token, ACCESS_MASK access, GENERIC_MAPPING *mapping, PRIVILEGE_SET *privs, ULONG *retlen, ULONG *access_granted, NTSTATUS *access_status))
+DEFINE_SYSCALL(NtAccessCheckAndAuditAlarm, (UNICODE_STRING *subsystem, HANDLE handle, UNICODE_STRING *typename, UNICODE_STRING *objectname, PSECURITY_DESCRIPTOR descr, ACCESS_MASK access, GENERIC_MAPPING *mapping, BOOLEAN creation, ACCESS_MASK *access_granted, BOOLEAN *access_status, BOOLEAN *onclose))
+DEFINE_SYSCALL(NtAddAtom, (const WCHAR *name, ULONG length, RTL_ATOM *atom))
+DEFINE_SYSCALL(NtAdjustGroupsToken, (HANDLE token, BOOLEAN reset, TOKEN_GROUPS *groups, ULONG length, TOKEN_GROUPS *prev, ULONG *retlen))
+DEFINE_SYSCALL(NtAdjustPrivilegesToken, (HANDLE token, BOOLEAN disable, TOKEN_PRIVILEGES *privs, DWORD length, TOKEN_PRIVILEGES *prev, DWORD *retlen))
+DEFINE_SYSCALL(NtAlertResumeThread, (HANDLE handle, ULONG *count))
+DEFINE_SYSCALL(NtAlertThread, (HANDLE handle))
+DEFINE_SYSCALL(NtAlertThreadByThreadId, (HANDLE tid))
+DEFINE_SYSCALL(NtAllocateLocallyUniqueId, (LUID *luid))
+DEFINE_SYSCALL(NtAllocateUuids, (ULARGE_INTEGER *time, ULONG *delta, ULONG *sequence, UCHAR *seed))
+DEFINE_WRAPPED_SYSCALL(NtAllocateVirtualMemory, (HANDLE process, PVOID *ret, ULONG_PTR zero_bits, SIZE_T *size_ptr, ULONG type, ULONG protect))
+DEFINE_WRAPPED_SYSCALL(NtAllocateVirtualMemoryEx, (HANDLE process, PVOID *ret, SIZE_T *size_ptr, ULONG type, ULONG protect, MEM_EXTENDED_PARAMETER *parameters, ULONG count))
+DEFINE_SYSCALL(NtAreMappedFilesTheSame, (PVOID addr1, PVOID addr2))
+DEFINE_SYSCALL(NtAssignProcessToJobObject, (HANDLE job, HANDLE process))
+DEFINE_SYSCALL(NtCallbackReturn, (void *ret_ptr, ULONG ret_len, NTSTATUS status))
+DEFINE_SYSCALL(NtCancelIoFile, (HANDLE handle, IO_STATUS_BLOCK *io_status))
+DEFINE_SYSCALL(NtCancelIoFileEx, (HANDLE handle, IO_STATUS_BLOCK *io, IO_STATUS_BLOCK *io_status))
+DEFINE_SYSCALL(NtCancelSynchronousIoFile, (HANDLE handle, IO_STATUS_BLOCK *io, IO_STATUS_BLOCK *io_status))
+DEFINE_SYSCALL(NtCancelTimer, (HANDLE handle, BOOLEAN *state))
+DEFINE_SYSCALL(NtClearEvent, (HANDLE handle))
+DEFINE_SYSCALL(NtClose, (HANDLE handle))
+DEFINE_SYSCALL(NtCommitTransaction, (HANDLE transaction, BOOLEAN wait))
+DEFINE_SYSCALL(NtCompareObjects, (HANDLE first, HANDLE second))
+DEFINE_SYSCALL(NtCompareTokens, (HANDLE first, HANDLE second, BOOLEAN *equal))
+DEFINE_SYSCALL(NtCompleteConnectPort, (HANDLE handle))
+DEFINE_SYSCALL(NtConnectPort, (HANDLE *handle, UNICODE_STRING *name, SECURITY_QUALITY_OF_SERVICE *qos, LPC_SECTION_WRITE *write, LPC_SECTION_READ *read, ULONG *max_len, void *info, ULONG *info_len))
+DEFINE_WRAPPED_SYSCALL(NtContinue, (ARM64_NT_CONTEXT *context, BOOLEAN alertable))
+DEFINE_SYSCALL(NtCreateDebugObject, (HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr, ULONG flags))
+DEFINE_SYSCALL(NtCreateDirectoryObject, (HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr))
+DEFINE_SYSCALL(NtCreateEvent, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr, EVENT_TYPE type, BOOLEAN state))
+DEFINE_SYSCALL(NtCreateFile, (HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr, IO_STATUS_BLOCK *io, LARGE_INTEGER *alloc_size, ULONG attributes, ULONG sharing, ULONG disposition, ULONG options, void *ea_buffer, ULONG ea_length))
+DEFINE_SYSCALL(NtCreateIoCompletion, (HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr, ULONG threads))
+DEFINE_SYSCALL(NtCreateJobObject, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr))
+DEFINE_SYSCALL(NtCreateKey, (HANDLE *key, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr, ULONG index, const UNICODE_STRING *class, ULONG options, ULONG *dispos))
+DEFINE_SYSCALL(NtCreateKeyTransacted, (HANDLE *key, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr, ULONG index, const UNICODE_STRING *class, ULONG options, HANDLE transacted, ULONG *dispos))
+DEFINE_SYSCALL(NtCreateKeyedEvent, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr, ULONG flags))
+DEFINE_SYSCALL(NtCreateLowBoxToken, (HANDLE *token_handle, HANDLE token, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr, SID *sid, ULONG count, SID_AND_ATTRIBUTES *capabilities, ULONG handle_count, HANDLE *handle))
+DEFINE_SYSCALL(NtCreateMailslotFile, (HANDLE *handle, ULONG access, OBJECT_ATTRIBUTES *attr, IO_STATUS_BLOCK *io, ULONG options, ULONG quota, ULONG msg_size, LARGE_INTEGER *timeout))
+DEFINE_SYSCALL(NtCreateMutant, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr, BOOLEAN owned))
+DEFINE_SYSCALL(NtCreateNamedPipeFile, (HANDLE *handle, ULONG access, OBJECT_ATTRIBUTES *attr, IO_STATUS_BLOCK *io, ULONG sharing, ULONG dispo, ULONG options, ULONG pipe_type, ULONG read_mode, ULONG completion_mode, ULONG max_inst, ULONG inbound_quota, ULONG outbound_quota, LARGE_INTEGER *timeout))
+DEFINE_SYSCALL(NtCreatePagingFile, (UNICODE_STRING *name, LARGE_INTEGER *min_size, LARGE_INTEGER *max_size, LARGE_INTEGER *actual_size))
+DEFINE_SYSCALL(NtCreatePort, (HANDLE *handle, OBJECT_ATTRIBUTES *attr, ULONG info_len, ULONG data_len, ULONG *reserved))
+DEFINE_SYSCALL(NtCreateSection, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr, const LARGE_INTEGER *size, ULONG protect, ULONG sec_flags, HANDLE file))
+DEFINE_SYSCALL(NtCreateSemaphore, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr, LONG initial, LONG max))
+DEFINE_SYSCALL(NtCreateSymbolicLinkObject, (HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr, UNICODE_STRING *target))
+DEFINE_SYSCALL(NtCreateThread, (HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr, HANDLE process, CLIENT_ID *id, CONTEXT *ctx, INITIAL_TEB *teb, BOOLEAN suspended))
+DEFINE_SYSCALL(NtCreateThreadEx, (HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr, HANDLE process, PRTL_THREAD_START_ROUTINE start, void *param, ULONG flags, ULONG_PTR zero_bits, SIZE_T stack_commit, SIZE_T stack_reserve, PS_ATTRIBUTE_LIST *attr_list))
+DEFINE_SYSCALL(NtCreateTimer, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr, TIMER_TYPE type))
+DEFINE_SYSCALL(NtCreateToken, (HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr, TOKEN_TYPE type, LUID *token_id, LARGE_INTEGER *expire, TOKEN_USER *user, TOKEN_GROUPS *groups, TOKEN_PRIVILEGES *privs, TOKEN_OWNER *owner, TOKEN_PRIMARY_GROUP *group, TOKEN_DEFAULT_DACL *dacl, TOKEN_SOURCE *source))
+DEFINE_SYSCALL(NtCreateTransaction, (HANDLE *handle, ACCESS_MASK mask, OBJECT_ATTRIBUTES *obj_attr, GUID *guid, HANDLE tm, ULONG options, ULONG isol_level, ULONG isol_flags, PLARGE_INTEGER timeout, UNICODE_STRING *description))
+DEFINE_SYSCALL(NtCreateUserProcess, (HANDLE *process_handle_ptr, HANDLE *thread_handle_ptr, ACCESS_MASK process_access, ACCESS_MASK thread_access, OBJECT_ATTRIBUTES *process_attr, OBJECT_ATTRIBUTES *thread_attr, ULONG process_flags, ULONG thread_flags, RTL_USER_PROCESS_PARAMETERS *params, PS_CREATE_INFO *info, PS_ATTRIBUTE_LIST *ps_attr))
+DEFINE_SYSCALL(NtDebugActiveProcess, (HANDLE process, HANDLE debug))
+DEFINE_SYSCALL(NtDebugContinue, (HANDLE handle, CLIENT_ID *client, NTSTATUS status))
+DEFINE_SYSCALL(NtDelayExecution, (BOOLEAN alertable, const LARGE_INTEGER *timeout))
+DEFINE_SYSCALL(NtDeleteAtom, (RTL_ATOM atom))
+DEFINE_SYSCALL(NtDeleteFile, (OBJECT_ATTRIBUTES *attr))
+DEFINE_SYSCALL(NtDeleteKey, (HANDLE key))
+DEFINE_SYSCALL(NtDeleteValueKey, (HANDLE key, const UNICODE_STRING *name))
+DEFINE_SYSCALL(NtDeviceIoControlFile, (HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc_context, IO_STATUS_BLOCK *io, ULONG code, void *in_buffer, ULONG in_size, void *out_buffer, ULONG out_size))
+DEFINE_SYSCALL(NtDisplayString, (UNICODE_STRING *string))
+DEFINE_SYSCALL(NtDuplicateObject, (HANDLE source_process, HANDLE source, HANDLE dest_process, HANDLE *dest, ACCESS_MASK access, ULONG attributes, ULONG options))
+DEFINE_SYSCALL(NtDuplicateToken, (HANDLE token, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr, BOOLEAN effective_only, TOKEN_TYPE type, HANDLE *handle))
+DEFINE_SYSCALL(NtEnumerateKey, (HANDLE handle, ULONG index, KEY_INFORMATION_CLASS info_class, void *info, DWORD length, DWORD *result_len))
+DEFINE_SYSCALL(NtEnumerateValueKey, (HANDLE handle, ULONG index, KEY_VALUE_INFORMATION_CLASS info_class, void *info, DWORD length, DWORD *result_len))
+DEFINE_SYSCALL(NtFilterToken, (HANDLE token, ULONG flags, TOKEN_GROUPS *disable_sids, TOKEN_PRIVILEGES *privileges, TOKEN_GROUPS *restrict_sids, HANDLE *new_token))
+DEFINE_SYSCALL(NtFindAtom, (const WCHAR *name, ULONG length, RTL_ATOM *atom))
+DEFINE_SYSCALL(NtFlushBuffersFile, (HANDLE handle, IO_STATUS_BLOCK *io))
+DEFINE_WRAPPED_SYSCALL(NtFlushInstructionCache, (HANDLE handle, const void *addr, SIZE_T size))
+DEFINE_SYSCALL(NtFlushKey, (HANDLE key))
+DEFINE_SYSCALL(NtFlushProcessWriteBuffers, (void))
+DEFINE_SYSCALL(NtFlushVirtualMemory, (HANDLE process, LPCVOID *addr_ptr, SIZE_T *size_ptr, ULONG unknown))
+DEFINE_WRAPPED_SYSCALL(NtFreeVirtualMemory, (HANDLE process, PVOID *addr_ptr, SIZE_T *size_ptr, ULONG type))
+DEFINE_SYSCALL(NtFsControlFile, (HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc_context, IO_STATUS_BLOCK *io, ULONG code, void *in_buffer, ULONG in_size, void *out_buffer, ULONG out_size))
+DEFINE_WRAPPED_SYSCALL(NtGetContextThread, (HANDLE handle, ARM64_NT_CONTEXT *context))
+DEFINE_SYSCALL_(ULONG, NtGetCurrentProcessorNumber, (void))
+DEFINE_SYSCALL(NtGetNextThread, (HANDLE process, HANDLE thread, ACCESS_MASK access, ULONG attributes, ULONG flags, HANDLE *handle))
+DEFINE_SYSCALL(NtGetNlsSectionPtr, (ULONG type, ULONG id, void *unknown, void **ptr, SIZE_T *size))
+DEFINE_SYSCALL(NtGetWriteWatch, (HANDLE process, ULONG flags, PVOID base, SIZE_T size, PVOID *addresses, ULONG_PTR *count, ULONG *granularity))
+DEFINE_SYSCALL(NtImpersonateAnonymousToken, (HANDLE thread))
+DEFINE_SYSCALL(NtInitializeNlsFiles, (void **ptr, LCID *lcid, LARGE_INTEGER *size))
+DEFINE_SYSCALL(NtInitiatePowerAction, (POWER_ACTION action, SYSTEM_POWER_STATE state, ULONG flags, BOOLEAN async))
+DEFINE_SYSCALL(NtIsProcessInJob, (HANDLE process, HANDLE job))
+DEFINE_SYSCALL(NtListenPort, (HANDLE handle, LPC_MESSAGE *msg))
+DEFINE_SYSCALL(NtLoadDriver, (const UNICODE_STRING *name))
+DEFINE_SYSCALL(NtLoadKey, (const OBJECT_ATTRIBUTES *attr, OBJECT_ATTRIBUTES *file))
+DEFINE_SYSCALL(NtLoadKey2, (const OBJECT_ATTRIBUTES *attr, OBJECT_ATTRIBUTES *file, ULONG flags))
+DEFINE_SYSCALL(NtLoadKeyEx, (const OBJECT_ATTRIBUTES *attr, OBJECT_ATTRIBUTES *file, ULONG flags, HANDLE trustkey, HANDLE event, ACCESS_MASK access, HANDLE *roothandle, IO_STATUS_BLOCK *iostatus))
+DEFINE_SYSCALL(NtLockFile, (HANDLE file, HANDLE event, PIO_APC_ROUTINE apc, void* apc_user, IO_STATUS_BLOCK *io_status, LARGE_INTEGER *offset, LARGE_INTEGER *count, ULONG *key, BOOLEAN dont_wait, BOOLEAN exclusive))
+DEFINE_SYSCALL(NtLockVirtualMemory, (HANDLE process, PVOID *addr, SIZE_T *size, ULONG unknown))
+DEFINE_SYSCALL(NtMakePermanentObject, (HANDLE handle))
+DEFINE_SYSCALL(NtMakeTemporaryObject, (HANDLE handle))
+DEFINE_WRAPPED_SYSCALL(NtMapViewOfSection, (HANDLE handle, HANDLE process, PVOID *addr_ptr, ULONG_PTR zero_bits, SIZE_T commit_size, const LARGE_INTEGER *offset_ptr, SIZE_T *size_ptr, SECTION_INHERIT inherit, ULONG alloc_type, ULONG protect))
+DEFINE_WRAPPED_SYSCALL(NtMapViewOfSectionEx, (HANDLE handle, HANDLE process, PVOID *addr_ptr, const LARGE_INTEGER *offset_ptr, SIZE_T *size_ptr, ULONG alloc_type, ULONG protect, MEM_EXTENDED_PARAMETER *parameters, ULONG count))
+DEFINE_SYSCALL(NtNotifyChangeDirectoryFile, (HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc_context, IO_STATUS_BLOCK *iosb, void *buffer, ULONG buffer_size, ULONG filter, BOOLEAN subtree))
+DEFINE_SYSCALL(NtNotifyChangeKey, (HANDLE key, HANDLE event, PIO_APC_ROUTINE apc, void *apc_context, IO_STATUS_BLOCK *io, ULONG filter, BOOLEAN subtree, void *buffer, ULONG length, BOOLEAN async))
+DEFINE_SYSCALL(NtNotifyChangeMultipleKeys, (HANDLE key, ULONG count, OBJECT_ATTRIBUTES *attr, HANDLE event, PIO_APC_ROUTINE apc, void *apc_context, IO_STATUS_BLOCK *io, ULONG filter, BOOLEAN subtree, void *buffer, ULONG length, BOOLEAN async))
+DEFINE_SYSCALL(NtOpenDirectoryObject, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr))
+DEFINE_SYSCALL(NtOpenEvent, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr))
+DEFINE_SYSCALL(NtOpenFile, (HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr, IO_STATUS_BLOCK *io, ULONG sharing, ULONG options))
+DEFINE_SYSCALL(NtOpenIoCompletion, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr))
+DEFINE_SYSCALL(NtOpenJobObject, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr))
+DEFINE_SYSCALL(NtOpenKey, (HANDLE *key, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr))
+DEFINE_SYSCALL(NtOpenKeyEx, (HANDLE *key, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr, ULONG options))
+DEFINE_SYSCALL(NtOpenKeyTransacted, (HANDLE *key, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr, HANDLE transaction))
+DEFINE_SYSCALL(NtOpenKeyTransactedEx, (HANDLE *key, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr, ULONG options, HANDLE transaction))
+DEFINE_SYSCALL(NtOpenKeyedEvent, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr))
+DEFINE_SYSCALL(NtOpenMutant, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr))
+DEFINE_SYSCALL(NtOpenProcess, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr, const CLIENT_ID *id))
+DEFINE_SYSCALL(NtOpenProcessToken, (HANDLE process, DWORD access, HANDLE *handle))
+DEFINE_SYSCALL(NtOpenProcessTokenEx, (HANDLE process, DWORD access, DWORD attributes, HANDLE *handle))
+DEFINE_SYSCALL(NtOpenSection, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr))
+DEFINE_SYSCALL(NtOpenSemaphore, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr))
+DEFINE_SYSCALL(NtOpenSymbolicLinkObject, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr))
+DEFINE_SYSCALL(NtOpenThread, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr, const CLIENT_ID *id))
+DEFINE_SYSCALL(NtOpenThreadToken, (HANDLE thread, DWORD access, BOOLEAN self, HANDLE *handle))
+DEFINE_SYSCALL(NtOpenThreadTokenEx, (HANDLE thread, DWORD access, BOOLEAN self, DWORD attributes, HANDLE *handle))
+DEFINE_SYSCALL(NtOpenTimer, (HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr))
+DEFINE_SYSCALL(NtPowerInformation, (POWER_INFORMATION_LEVEL level, void *input, ULONG in_size, void *output, ULONG out_size))
+DEFINE_SYSCALL(NtPrivilegeCheck, (HANDLE token, PRIVILEGE_SET *privs, BOOLEAN *res))
+DEFINE_WRAPPED_SYSCALL(NtProtectVirtualMemory, (HANDLE process, PVOID *addr_ptr, SIZE_T *size_ptr, ULONG new_prot, ULONG *old_prot))
+DEFINE_SYSCALL(NtPulseEvent, (HANDLE handle, LONG *prev_state))
+DEFINE_SYSCALL(NtQueryAttributesFile, (const OBJECT_ATTRIBUTES *attr, FILE_BASIC_INFORMATION *info))
+DEFINE_SYSCALL(NtQueryDefaultLocale, (BOOLEAN user, LCID *lcid))
+DEFINE_SYSCALL(NtQueryDefaultUILanguage, (LANGID *lang))
+DEFINE_SYSCALL(NtQueryDirectoryFile, (HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc_routine, void *apc_context, IO_STATUS_BLOCK *io, void *buffer, ULONG length, FILE_INFORMATION_CLASS info_class, BOOLEAN single_entry, UNICODE_STRING *mask, BOOLEAN restart_scan))
+DEFINE_SYSCALL(NtQueryDirectoryObject, (HANDLE handle, DIRECTORY_BASIC_INFORMATION *buffer, ULONG size, BOOLEAN single_entry, BOOLEAN restart, ULONG *context, ULONG *ret_size))
+DEFINE_SYSCALL(NtQueryEaFile, (HANDLE handle, IO_STATUS_BLOCK *io, void *buffer, ULONG length, BOOLEAN single_entry, void *list, ULONG list_len, ULONG *index, BOOLEAN restart))
+DEFINE_SYSCALL(NtQueryEvent, (HANDLE handle, EVENT_INFORMATION_CLASS class, void *info, ULONG len, ULONG *ret_len))
+DEFINE_SYSCALL(NtQueryFullAttributesFile, (const OBJECT_ATTRIBUTES *attr, FILE_NETWORK_OPEN_INFORMATION *info))
+DEFINE_SYSCALL(NtQueryInformationAtom, (RTL_ATOM atom, ATOM_INFORMATION_CLASS class, void *ptr, ULONG size, ULONG *retsize))
+DEFINE_SYSCALL(NtQueryInformationFile, (HANDLE handle, IO_STATUS_BLOCK *io, void *ptr, ULONG len, FILE_INFORMATION_CLASS class))
+DEFINE_SYSCALL(NtQueryInformationJobObject, (HANDLE handle, JOBOBJECTINFOCLASS class, void *info, ULONG len, ULONG *ret_len))
+DEFINE_SYSCALL(NtQueryInformationProcess, (HANDLE handle, PROCESSINFOCLASS class, void *info, ULONG size, ULONG *ret_len))
+DEFINE_SYSCALL(NtQueryInformationThread, (HANDLE handle, THREADINFOCLASS class, void *data, ULONG length, ULONG *ret_len))
+DEFINE_SYSCALL(NtQueryInformationToken, (HANDLE token, TOKEN_INFORMATION_CLASS class, void *info, ULONG length, ULONG *retlen))
+DEFINE_SYSCALL(NtQueryInstallUILanguage, (LANGID *lang))
+DEFINE_SYSCALL(NtQueryIoCompletion, (HANDLE handle, IO_COMPLETION_INFORMATION_CLASS class, void *buffer, ULONG len, ULONG *ret_len))
+DEFINE_SYSCALL(NtQueryKey, (HANDLE handle, KEY_INFORMATION_CLASS info_class, void *info, DWORD length, DWORD *result_len))
+DEFINE_SYSCALL(NtQueryLicenseValue, (const UNICODE_STRING *name, ULONG *type, void *data, ULONG length, ULONG *retlen))
+DEFINE_SYSCALL(NtQueryMultipleValueKey, (HANDLE key, KEY_MULTIPLE_VALUE_INFORMATION *info, ULONG count, void *buffer, ULONG length, ULONG *retlen))
+DEFINE_SYSCALL(NtQueryMutant, (HANDLE handle, MUTANT_INFORMATION_CLASS class, void *info, ULONG len, ULONG *ret_len))
+DEFINE_SYSCALL(NtQueryObject, (HANDLE handle, OBJECT_INFORMATION_CLASS info_class, void *ptr, ULONG len, ULONG *used_len))
+DEFINE_SYSCALL(NtQueryPerformanceCounter, (LARGE_INTEGER *counter, LARGE_INTEGER *frequency))
+DEFINE_SYSCALL(NtQuerySection, (HANDLE handle, SECTION_INFORMATION_CLASS class, void *ptr, SIZE_T size, SIZE_T *ret_size))
+DEFINE_SYSCALL(NtQuerySecurityObject, (HANDLE handle, SECURITY_INFORMATION info, PSECURITY_DESCRIPTOR descr, ULONG length, ULONG *retlen))
+DEFINE_SYSCALL(NtQuerySemaphore, (HANDLE handle, SEMAPHORE_INFORMATION_CLASS class, void *info, ULONG len, ULONG *ret_len))
+DEFINE_SYSCALL(NtQuerySymbolicLinkObject, (HANDLE handle, UNICODE_STRING *target, ULONG *length))
+DEFINE_SYSCALL(NtQuerySystemEnvironmentValue, (UNICODE_STRING *name, WCHAR *buffer, ULONG length, ULONG *retlen))
+DEFINE_SYSCALL(NtQuerySystemEnvironmentValueEx, (UNICODE_STRING *name, GUID *vendor, void *buffer, ULONG *retlen, ULONG *attrib))
+DEFINE_WRAPPED_SYSCALL(NtQuerySystemInformation, (SYSTEM_INFORMATION_CLASS class, void *info, ULONG size, ULONG *ret_size))
+DEFINE_SYSCALL(NtQuerySystemInformationEx, (SYSTEM_INFORMATION_CLASS class, void *query, ULONG query_len, void *info, ULONG size, ULONG *ret_size))
+DEFINE_SYSCALL(NtQuerySystemTime, (LARGE_INTEGER *time))
+DEFINE_SYSCALL(NtQueryTimer, (HANDLE handle, TIMER_INFORMATION_CLASS class, void *info, ULONG len, ULONG *ret_len))
+DEFINE_SYSCALL(NtQueryTimerResolution, (ULONG *min_res, ULONG *max_res, ULONG *current_res))
+DEFINE_SYSCALL(NtQueryValueKey, (HANDLE handle, const UNICODE_STRING *name, KEY_VALUE_INFORMATION_CLASS info_class, void *info, DWORD length, DWORD *result_len))
+DEFINE_SYSCALL(NtQueryVirtualMemory, (HANDLE process, LPCVOID addr, MEMORY_INFORMATION_CLASS info_class, PVOID buffer, SIZE_T len, SIZE_T *res_len))
+DEFINE_SYSCALL(NtQueryVolumeInformationFile, (HANDLE handle, IO_STATUS_BLOCK *io, void *buffer, ULONG length, FS_INFORMATION_CLASS info_class))
+DEFINE_SYSCALL(NtQueueApcThread, (HANDLE handle, PNTAPCFUNC func, ULONG_PTR arg1, ULONG_PTR arg2, ULONG_PTR arg3))
+DEFINE_SYSCALL(NtQueueApcThreadEx, (HANDLE handle, HANDLE reserve_handle, PNTAPCFUNC func, ULONG_PTR arg1, ULONG_PTR arg2, ULONG_PTR arg3))
+DEFINE_WRAPPED_SYSCALL(NtRaiseException, (EXCEPTION_RECORD *rec, ARM64_NT_CONTEXT *context, BOOL first_chance))
+DEFINE_SYSCALL(NtRaiseHardError, (NTSTATUS status, ULONG count, ULONG params_mask, void **params, HARDERROR_RESPONSE_OPTION option, HARDERROR_RESPONSE *response))
+DEFINE_WRAPPED_SYSCALL(NtReadFile, (HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc_user, IO_STATUS_BLOCK *io, void *buffer, ULONG length, LARGE_INTEGER *offset, ULONG *key))
+DEFINE_SYSCALL(NtReadFileScatter, (HANDLE file, HANDLE event, PIO_APC_ROUTINE apc, void *apc_user, IO_STATUS_BLOCK *io, FILE_SEGMENT_ELEMENT *segments, ULONG length, LARGE_INTEGER *offset, ULONG *key))
+DEFINE_SYSCALL(NtReadVirtualMemory, (HANDLE process, const void *addr, void *buffer, SIZE_T size, SIZE_T *bytes_read))
+DEFINE_SYSCALL(NtRegisterThreadTerminatePort, (HANDLE handle))
+DEFINE_SYSCALL(NtReleaseKeyedEvent, (HANDLE handle, const void *key, BOOLEAN alertable, const LARGE_INTEGER *timeout))
+DEFINE_SYSCALL(NtReleaseMutant, (HANDLE handle, LONG *prev_count))
+DEFINE_SYSCALL(NtReleaseSemaphore, (HANDLE handle, ULONG count, ULONG *previous))
+DEFINE_SYSCALL(NtRemoveIoCompletion, (HANDLE handle, ULONG_PTR *key, ULONG_PTR *value, IO_STATUS_BLOCK *io, LARGE_INTEGER *timeout))
+DEFINE_SYSCALL(NtRemoveIoCompletionEx, (HANDLE handle, FILE_IO_COMPLETION_INFORMATION *info, ULONG count, ULONG *written, LARGE_INTEGER *timeout, BOOLEAN alertable))
+DEFINE_SYSCALL(NtRemoveProcessDebug, (HANDLE process, HANDLE debug))
+DEFINE_SYSCALL(NtRenameKey, (HANDLE key, UNICODE_STRING *name))
+DEFINE_SYSCALL(NtReplaceKey, (OBJECT_ATTRIBUTES *attr, HANDLE key, OBJECT_ATTRIBUTES *replace))
+DEFINE_SYSCALL(NtReplyWaitReceivePort, (HANDLE handle, ULONG *id, LPC_MESSAGE *reply, LPC_MESSAGE *msg))
+DEFINE_SYSCALL(NtRequestWaitReplyPort, (HANDLE handle, LPC_MESSAGE *msg_in, LPC_MESSAGE *msg_out))
+DEFINE_SYSCALL(NtResetEvent, (HANDLE handle, LONG *prev_state))
+DEFINE_SYSCALL(NtResetWriteWatch, (HANDLE process, PVOID base, SIZE_T size))
+DEFINE_SYSCALL(NtRestoreKey, (HANDLE key, HANDLE file, ULONG flags))
+DEFINE_SYSCALL(NtResumeProcess, (HANDLE handle))
+DEFINE_SYSCALL(NtResumeThread, (HANDLE handle, ULONG *count))
+DEFINE_SYSCALL(NtRollbackTransaction, (HANDLE transaction, BOOLEAN wait))
+DEFINE_SYSCALL(NtSaveKey, (HANDLE key, HANDLE file))
+DEFINE_SYSCALL(NtSecureConnectPort, (HANDLE *handle, UNICODE_STRING *name, SECURITY_QUALITY_OF_SERVICE *qos, LPC_SECTION_WRITE *write, PSID sid, LPC_SECTION_READ *read, ULONG *max_len, void *info, ULONG *info_len))
+DEFINE_WRAPPED_SYSCALL(NtSetContextThread, (HANDLE handle, const ARM64_NT_CONTEXT *context))
+DEFINE_SYSCALL(NtSetDebugFilterState, (ULONG component_id, ULONG level, BOOLEAN state))
+DEFINE_SYSCALL(NtSetDefaultLocale, (BOOLEAN user, LCID lcid))
+DEFINE_SYSCALL(NtSetDefaultUILanguage, (LANGID lang))
+DEFINE_SYSCALL(NtSetEaFile, (HANDLE handle, IO_STATUS_BLOCK *io, void *buffer, ULONG length))
+DEFINE_SYSCALL(NtSetEvent, (HANDLE handle, LONG *prev_state))
+DEFINE_SYSCALL(NtSetInformationDebugObject, (HANDLE handle, DEBUGOBJECTINFOCLASS class, void *info, ULONG len, ULONG *ret_len))
+DEFINE_SYSCALL(NtSetInformationFile, (HANDLE handle, IO_STATUS_BLOCK *io, void *ptr, ULONG len, FILE_INFORMATION_CLASS class))
+DEFINE_SYSCALL(NtSetInformationJobObject, (HANDLE handle, JOBOBJECTINFOCLASS class, void *info, ULONG len))
+DEFINE_SYSCALL(NtSetInformationKey, (HANDLE key, int class, void *info, ULONG length))
+DEFINE_SYSCALL(NtSetInformationObject, (HANDLE handle, OBJECT_INFORMATION_CLASS info_class, void *ptr, ULONG len))
+DEFINE_SYSCALL(NtSetInformationProcess, (HANDLE handle, PROCESSINFOCLASS class, void *info, ULONG size))
+DEFINE_SYSCALL(NtSetInformationThread, (HANDLE handle, THREADINFOCLASS class, const void *data, ULONG length))
+DEFINE_SYSCALL(NtSetInformationToken, (HANDLE token, TOKEN_INFORMATION_CLASS class, void *info, ULONG length))
+DEFINE_SYSCALL(NtSetInformationVirtualMemory, (HANDLE process, VIRTUAL_MEMORY_INFORMATION_CLASS info_class, ULONG_PTR count, PMEMORY_RANGE_ENTRY addresses, PVOID ptr, ULONG size))
+DEFINE_SYSCALL(NtSetIntervalProfile, (ULONG interval, KPROFILE_SOURCE source))
+DEFINE_SYSCALL(NtSetIoCompletion, (HANDLE handle, ULONG_PTR key, ULONG_PTR value, NTSTATUS status, SIZE_T count))
+DEFINE_SYSCALL(NtSetLdtEntries, (ULONG sel1, LDT_ENTRY entry1, ULONG sel2, LDT_ENTRY entry2))
+DEFINE_SYSCALL(NtSetSecurityObject, (HANDLE handle, SECURITY_INFORMATION info, PSECURITY_DESCRIPTOR descr))
+DEFINE_SYSCALL(NtSetSystemInformation, (SYSTEM_INFORMATION_CLASS class, void *info, ULONG length))
+DEFINE_SYSCALL(NtSetSystemTime, (const LARGE_INTEGER *new, LARGE_INTEGER *old))
+DEFINE_SYSCALL(NtSetThreadExecutionState, (EXECUTION_STATE new_state, EXECUTION_STATE *old_state))
+DEFINE_SYSCALL(NtSetTimer, (HANDLE handle, const LARGE_INTEGER *when, PTIMER_APC_ROUTINE callback, void *arg, BOOLEAN resume, ULONG period, BOOLEAN *state))
+DEFINE_SYSCALL(NtSetTimerResolution, (ULONG res, BOOLEAN set, ULONG *current_res))
+DEFINE_SYSCALL(NtSetValueKey, (HANDLE key, const UNICODE_STRING *name, ULONG index, ULONG type, const void *data, ULONG count))
+DEFINE_SYSCALL(NtSetVolumeInformationFile, (HANDLE handle, IO_STATUS_BLOCK *io, void *info, ULONG length, FS_INFORMATION_CLASS class))
+DEFINE_SYSCALL(NtShutdownSystem, (SHUTDOWN_ACTION action))
+DEFINE_SYSCALL(NtSignalAndWaitForSingleObject, (HANDLE signal, HANDLE wait, BOOLEAN alertable, const LARGE_INTEGER *timeout))
+DEFINE_SYSCALL(NtSuspendProcess, (HANDLE handle))
+DEFINE_SYSCALL(NtSuspendThread, (HANDLE handle, ULONG *count))
+DEFINE_SYSCALL(NtSystemDebugControl, (SYSDBG_COMMAND command, void *in_buff, ULONG in_len, void *out_buff, ULONG out_len, ULONG *retlen))
+DEFINE_SYSCALL(NtTerminateJobObject, (HANDLE handle, NTSTATUS status))
+DEFINE_WRAPPED_SYSCALL(NtTerminateProcess, (HANDLE handle, LONG exit_code))
+DEFINE_WRAPPED_SYSCALL(NtTerminateThread, (HANDLE handle, LONG exit_code))
+DEFINE_SYSCALL(NtTestAlert, (void))
+DEFINE_SYSCALL(NtTraceControl, (ULONG code, void *inbuf, ULONG inbuf_len, void *outbuf, ULONG outbuf_len, ULONG *size))
+DEFINE_SYSCALL(NtUnloadDriver, (const UNICODE_STRING *name))
+DEFINE_SYSCALL(NtUnloadKey, (OBJECT_ATTRIBUTES *attr))
+DEFINE_SYSCALL(NtUnlockFile, (HANDLE handle, IO_STATUS_BLOCK *io_status, LARGE_INTEGER *offset, LARGE_INTEGER *count, ULONG *key))
+DEFINE_SYSCALL(NtUnlockVirtualMemory, (HANDLE process, PVOID *addr, SIZE_T *size, ULONG unknown))
+DEFINE_WRAPPED_SYSCALL(NtUnmapViewOfSection, (HANDLE process, PVOID addr))
+DEFINE_WRAPPED_SYSCALL(NtUnmapViewOfSectionEx, (HANDLE process, PVOID addr, ULONG flags))
+DEFINE_SYSCALL(NtWaitForAlertByThreadId, (const void *address, const LARGE_INTEGER *timeout))
+DEFINE_SYSCALL(NtWaitForDebugEvent, (HANDLE handle, BOOLEAN alertable, LARGE_INTEGER *timeout, DBGUI_WAIT_STATE_CHANGE *state))
+DEFINE_SYSCALL(NtWaitForKeyedEvent, (HANDLE handle, const void *key, BOOLEAN alertable, const LARGE_INTEGER *timeout))
+DEFINE_SYSCALL(NtWaitForMultipleObjects, (DWORD count, const HANDLE *handles, BOOLEAN wait_any, BOOLEAN alertable, const LARGE_INTEGER *timeout))
+DEFINE_SYSCALL(NtWaitForSingleObject, (HANDLE handle, BOOLEAN alertable, const LARGE_INTEGER *timeout))
+DEFINE_SYSCALL(NtWriteFile, (HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc_user, IO_STATUS_BLOCK *io, const void *buffer, ULONG length, LARGE_INTEGER *offset, ULONG *key))
+DEFINE_SYSCALL(NtWriteFileGather, (HANDLE file, HANDLE event, PIO_APC_ROUTINE apc, void *apc_user, IO_STATUS_BLOCK *io, FILE_SEGMENT_ELEMENT *segments, ULONG length, LARGE_INTEGER *offset, ULONG *key))
+DEFINE_SYSCALL(NtWriteVirtualMemory, (HANDLE process, void *addr, const void *buffer, SIZE_T size, SIZE_T *bytes_written))
+DEFINE_SYSCALL(NtYieldExecution, (void))
+DEFINE_SYSCALL(wine_nt_to_unix_file_name, (const OBJECT_ATTRIBUTES *attr, char *nameA, ULONG *size, UINT disposition))
+DEFINE_SYSCALL(wine_unix_to_nt_file_name, (const char *name, WCHAR *buffer, ULONG *size))
 
 NTSTATUS SYSCALL_API NtAllocateVirtualMemory( HANDLE process, PVOID *ret, ULONG_PTR zero_bits,
                                               SIZE_T *size_ptr, ULONG type, ULONG protect )
 {
-    SYSCALL_FUNC( NtAllocateVirtualMemory );
+    BOOL is_current = RtlIsCurrentProcess( process );
+    NTSTATUS status;
+
+    if (!enter_syscall_callback())
+        return syscall_NtAllocateVirtualMemory( process, ret, zero_bits, size_ptr, type, protect );
+
+    if (!*ret && (type & MEM_COMMIT)) type |= MEM_RESERVE;
+
+    if (!is_current) send_cross_process_notification( process, CrossProcessPreVirtualAlloc,
+                                                      *ret, *size_ptr, 3, type, protect, 0 );
+    else if (pNotifyMemoryAlloc) pNotifyMemoryAlloc( *ret, *size_ptr, type, protect, FALSE, 0 );
+
+    status = syscall_NtAllocateVirtualMemory( process, ret, zero_bits, size_ptr, type, protect );
+
+    if (!is_current) send_cross_process_notification( process, CrossProcessPostVirtualAlloc,
+                                                      *ret, *size_ptr, 3, type, protect, status );
+    else if (pNotifyMemoryAlloc) pNotifyMemoryAlloc( *ret, *size_ptr, type, protect, TRUE, status );
+
+    leave_syscall_callback();
+    return status;
 }
 
 NTSTATUS SYSCALL_API NtAllocateVirtualMemoryEx( HANDLE process, PVOID *ret, SIZE_T *size_ptr, ULONG type,
-                                                ULONG protect, MEM_EXTENDED_PARAMETER *parameters,
-                                                ULONG count )
+                                                ULONG protect, MEM_EXTENDED_PARAMETER *parameters, ULONG count )
 {
-    SYSCALL_FUNC( NtAllocateVirtualMemoryEx );
+    BOOL is_current = RtlIsCurrentProcess( process );
+    NTSTATUS status;
+
+    if (!enter_syscall_callback())
+        return syscall_NtAllocateVirtualMemoryEx( process, ret, size_ptr, type, protect, parameters, count );
+
+    if (!*ret && (type & MEM_COMMIT)) type |= MEM_RESERVE;
+
+    if (!is_current) send_cross_process_notification( process, CrossProcessPreVirtualAlloc,
+                                                      *ret, *size_ptr, 3, type, protect, 0 );
+    else if (pNotifyMemoryAlloc) pNotifyMemoryAlloc( *ret, *size_ptr, type, protect, FALSE, 0 );
+
+    status = syscall_NtAllocateVirtualMemoryEx( process, ret, size_ptr, type, protect, parameters, count );
+
+    if (!is_current) send_cross_process_notification( process, CrossProcessPostVirtualAlloc,
+                                                      *ret, *size_ptr, 3, type, protect, status );
+    else if (pNotifyMemoryAlloc) pNotifyMemoryAlloc( *ret, *size_ptr, type, protect, TRUE, status );
+
+    leave_syscall_callback();
+    return status;
 }
 
-NTSTATUS SYSCALL_API NtAreMappedFilesTheSame(PVOID addr1, PVOID addr2)
-{
-    SYSCALL_FUNC( NtAreMappedFilesTheSame );
-}
-
-NTSTATUS SYSCALL_API NtAssignProcessToJobObject( HANDLE job, HANDLE process )
-{
-    SYSCALL_FUNC( NtAssignProcessToJobObject );
-}
-
-NTSTATUS SYSCALL_API NtCallbackReturn( void *ret_ptr, ULONG ret_len, NTSTATUS status )
-{
-    SYSCALL_FUNC( NtCallbackReturn );
-}
-
-NTSTATUS SYSCALL_API NtCancelIoFile( HANDLE handle, IO_STATUS_BLOCK *io_status )
-{
-    SYSCALL_FUNC( NtCancelIoFile );
-}
-
-NTSTATUS SYSCALL_API NtCancelIoFileEx( HANDLE handle, IO_STATUS_BLOCK *io, IO_STATUS_BLOCK *io_status )
-{
-    SYSCALL_FUNC( NtCancelIoFileEx );
-}
-
-NTSTATUS SYSCALL_API NtCancelSynchronousIoFile( HANDLE handle, IO_STATUS_BLOCK *io,
-                                                IO_STATUS_BLOCK *io_status )
-{
-    SYSCALL_FUNC( NtCancelSynchronousIoFile );
-}
-
-NTSTATUS SYSCALL_API NtCancelTimer( HANDLE handle, BOOLEAN *state )
-{
-    SYSCALL_FUNC( NtCancelTimer );
-}
-
-NTSTATUS SYSCALL_API NtClearEvent( HANDLE handle )
-{
-    SYSCALL_FUNC( NtClearEvent );
-}
-
-NTSTATUS SYSCALL_API NtClose( HANDLE handle )
-{
-    SYSCALL_FUNC( NtClose );
-}
-
-NTSTATUS SYSCALL_API NtCommitTransaction( HANDLE transaction, BOOLEAN wait )
-{
-    SYSCALL_FUNC( NtCommitTransaction );
-}
-
-NTSTATUS SYSCALL_API NtCompareObjects( HANDLE first, HANDLE second )
-{
-    SYSCALL_FUNC( NtCompareObjects );
-}
-
-NTSTATUS SYSCALL_API NtCompareTokens( HANDLE first, HANDLE second, BOOLEAN *equal )
-{
-    SYSCALL_FUNC( NtCompareTokens );
-}
-
-NTSTATUS SYSCALL_API NtCompleteConnectPort( HANDLE handle )
-{
-    SYSCALL_FUNC( NtCompleteConnectPort );
-}
-
-NTSTATUS SYSCALL_API NtConnectPort( HANDLE *handle, UNICODE_STRING *name, SECURITY_QUALITY_OF_SERVICE *qos,
-                                    LPC_SECTION_WRITE *write, LPC_SECTION_READ *read, ULONG *max_len,
-                                    void *info, ULONG *info_len )
-{
-    SYSCALL_FUNC( NtConnectPort );
-}
-
-static NTSTATUS SYSCALL_API syscall_NtContinue( ARM64_NT_CONTEXT *context, BOOLEAN alertable )
-{
-    __ASM_SYSCALL_FUNC( __id_NtContinue, syscall_NtContinue );
-}
-
-NTSTATUS WINAPI NtContinue( CONTEXT *context, BOOLEAN alertable )
+NTSTATUS SYSCALL_API NtContinue( CONTEXT *context, BOOLEAN alertable )
 {
     ARM64_NT_CONTEXT arm_ctx;
 
@@ -229,298 +537,44 @@ NTSTATUS WINAPI NtContinue( CONTEXT *context, BOOLEAN alertable )
     return syscall_NtContinue( &arm_ctx, alertable );
 }
 
-NTSTATUS SYSCALL_API NtCreateDebugObject( HANDLE *handle, ACCESS_MASK access,
-                                          OBJECT_ATTRIBUTES *attr, ULONG flags )
+NTSTATUS SYSCALL_API NtFlushInstructionCache( HANDLE process, const void *addr, SIZE_T size )
 {
-    SYSCALL_FUNC( NtCreateDebugObject );
-}
+    NTSTATUS status = syscall_NtFlushInstructionCache( process, addr, size );
 
-NTSTATUS SYSCALL_API NtCreateDirectoryObject( HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr )
-{
-    SYSCALL_FUNC( NtCreateDirectoryObject );
-}
-
-NTSTATUS SYSCALL_API NtCreateEvent( HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr,
-                                    EVENT_TYPE type, BOOLEAN state )
-{
-    SYSCALL_FUNC( NtCreateEvent );
-}
-
-NTSTATUS SYSCALL_API NtCreateFile( HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr,
-                                   IO_STATUS_BLOCK *io, LARGE_INTEGER *alloc_size,
-                                   ULONG attributes, ULONG sharing, ULONG disposition,
-                                   ULONG options, void *ea_buffer, ULONG ea_length )
-{
-    SYSCALL_FUNC( NtCreateFile );
-}
-
-NTSTATUS SYSCALL_API NtCreateIoCompletion( HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr,
-                                           ULONG threads )
-{
-    SYSCALL_FUNC( NtCreateIoCompletion );
-}
-
-NTSTATUS SYSCALL_API NtCreateJobObject( HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr )
-{
-    SYSCALL_FUNC( NtCreateJobObject );
-}
-
-NTSTATUS SYSCALL_API NtCreateKey( HANDLE *key, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr,
-                                  ULONG index, const UNICODE_STRING *class, ULONG options, ULONG *dispos )
-{
-    SYSCALL_FUNC( NtCreateKey );
-}
-
-NTSTATUS SYSCALL_API NtCreateKeyTransacted( HANDLE *key, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr,
-                                            ULONG index, const UNICODE_STRING *class, ULONG options,
-                                            HANDLE transacted, ULONG *dispos )
-{
-    SYSCALL_FUNC( NtCreateKeyTransacted );
-}
-
-NTSTATUS SYSCALL_API NtCreateKeyedEvent( HANDLE *handle, ACCESS_MASK access,
-                                         const OBJECT_ATTRIBUTES *attr, ULONG flags )
-{
-    SYSCALL_FUNC( NtCreateKeyedEvent );
-}
-
-NTSTATUS SYSCALL_API NtCreateLowBoxToken( HANDLE *token_handle, HANDLE token, ACCESS_MASK access,
-                                          OBJECT_ATTRIBUTES *attr, SID *sid, ULONG count,
-                                          SID_AND_ATTRIBUTES *capabilities, ULONG handle_count,
-                                          HANDLE *handle )
-{
-    SYSCALL_FUNC( NtCreateLowBoxToken );
-}
-
-NTSTATUS SYSCALL_API NtCreateMailslotFile( HANDLE *handle, ULONG access, OBJECT_ATTRIBUTES *attr,
-                                           IO_STATUS_BLOCK *io, ULONG options, ULONG quota, ULONG msg_size,
-                                           LARGE_INTEGER *timeout )
-{
-    SYSCALL_FUNC( NtCreateMailslotFile );
-}
-
-NTSTATUS SYSCALL_API NtCreateMutant( HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr,
-                                     BOOLEAN owned )
-{
-    SYSCALL_FUNC( NtCreateMutant );
-}
-
-NTSTATUS SYSCALL_API NtCreateNamedPipeFile( HANDLE *handle, ULONG access, OBJECT_ATTRIBUTES *attr,
-                                            IO_STATUS_BLOCK *io, ULONG sharing, ULONG dispo, ULONG options,
-                                            ULONG pipe_type, ULONG read_mode, ULONG completion_mode,
-                                            ULONG max_inst, ULONG inbound_quota, ULONG outbound_quota,
-                                            LARGE_INTEGER *timeout )
-{
-    SYSCALL_FUNC( NtCreateNamedPipeFile );
-}
-
-NTSTATUS SYSCALL_API NtCreatePagingFile( UNICODE_STRING *name, LARGE_INTEGER *min_size,
-                                         LARGE_INTEGER *max_size, LARGE_INTEGER *actual_size )
-{
-    SYSCALL_FUNC( NtCreatePagingFile );
-}
-
-NTSTATUS SYSCALL_API NtCreatePort( HANDLE *handle, OBJECT_ATTRIBUTES *attr, ULONG info_len,
-                                   ULONG data_len, ULONG *reserved )
-{
-    SYSCALL_FUNC( NtCreatePort );
-}
-
-NTSTATUS SYSCALL_API NtCreateSection( HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr,
-                                      const LARGE_INTEGER *size, ULONG protect,
-                                      ULONG sec_flags, HANDLE file )
-{
-    SYSCALL_FUNC( NtCreateSection );
-}
-
-NTSTATUS SYSCALL_API NtCreateSemaphore( HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr,
-                                        LONG initial, LONG max )
-{
-    SYSCALL_FUNC( NtCreateSemaphore );
-}
-
-NTSTATUS SYSCALL_API NtCreateSymbolicLinkObject( HANDLE *handle, ACCESS_MASK access,
-                                                 OBJECT_ATTRIBUTES *attr, UNICODE_STRING *target )
-{
-    SYSCALL_FUNC( NtCreateSymbolicLinkObject );
-}
-
-NTSTATUS SYSCALL_API NtCreateThread( HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr,
-                                     HANDLE process, CLIENT_ID *id, CONTEXT *ctx, INITIAL_TEB *teb,
-                                     BOOLEAN suspended )
-{
-    SYSCALL_FUNC( NtCreateThread );
-}
-
-NTSTATUS SYSCALL_API NtCreateThreadEx( HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr,
-                                       HANDLE process, PRTL_THREAD_START_ROUTINE start, void *param,
-                                       ULONG flags, ULONG_PTR zero_bits, SIZE_T stack_commit,
-                                       SIZE_T stack_reserve, PS_ATTRIBUTE_LIST *attr_list )
-{
-    SYSCALL_FUNC( NtCreateThreadEx );
-}
-
-NTSTATUS SYSCALL_API NtCreateTimer( HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr,
-                                    TIMER_TYPE type )
-{
-    SYSCALL_FUNC( NtCreateTimer );
-}
-
-NTSTATUS SYSCALL_API NtCreateToken( HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr,
-                                    TOKEN_TYPE type, LUID *token_id, LARGE_INTEGER *expire,
-                                    TOKEN_USER *user, TOKEN_GROUPS *groups, TOKEN_PRIVILEGES *privs,
-                                    TOKEN_OWNER *owner, TOKEN_PRIMARY_GROUP *group,
-                                    TOKEN_DEFAULT_DACL *dacl, TOKEN_SOURCE *source )
-{
-    SYSCALL_FUNC( NtCreateToken );
-}
-
-NTSTATUS SYSCALL_API NtCreateTransaction( HANDLE *handle, ACCESS_MASK mask, OBJECT_ATTRIBUTES *obj_attr,
-                                          GUID *guid, HANDLE tm, ULONG options, ULONG isol_level,
-                                          ULONG isol_flags, PLARGE_INTEGER timeout,
-                                          UNICODE_STRING *description )
-{
-    SYSCALL_FUNC( NtCreateTransaction );
-}
-
-NTSTATUS SYSCALL_API NtCreateUserProcess( HANDLE *process_handle_ptr, HANDLE *thread_handle_ptr,
-                                          ACCESS_MASK process_access, ACCESS_MASK thread_access,
-                                          OBJECT_ATTRIBUTES *process_attr, OBJECT_ATTRIBUTES *thread_attr,
-                                          ULONG process_flags, ULONG thread_flags,
-                                          RTL_USER_PROCESS_PARAMETERS *params, PS_CREATE_INFO *info,
-                                          PS_ATTRIBUTE_LIST *ps_attr )
-{
-    SYSCALL_FUNC( NtCreateUserProcess );
-}
-
-NTSTATUS SYSCALL_API NtDebugActiveProcess( HANDLE process, HANDLE debug )
-{
-    SYSCALL_FUNC( NtDebugActiveProcess );
-}
-
-NTSTATUS SYSCALL_API NtDebugContinue( HANDLE handle, CLIENT_ID *client, NTSTATUS status )
-{
-    SYSCALL_FUNC( NtDebugContinue );
-}
-
-NTSTATUS SYSCALL_API NtDelayExecution( BOOLEAN alertable, const LARGE_INTEGER *timeout )
-{
-    SYSCALL_FUNC( NtDelayExecution );
-}
-
-NTSTATUS SYSCALL_API NtDeleteAtom( RTL_ATOM atom )
-{
-    SYSCALL_FUNC( NtDeleteAtom );
-}
-
-NTSTATUS SYSCALL_API NtDeleteFile( OBJECT_ATTRIBUTES *attr )
-{
-    SYSCALL_FUNC( NtDeleteFile );
-}
-
-NTSTATUS SYSCALL_API NtDeleteKey( HANDLE key )
-{
-    SYSCALL_FUNC( NtDeleteKey );
-}
-
-NTSTATUS SYSCALL_API NtDeleteValueKey( HANDLE key, const UNICODE_STRING *name )
-{
-    SYSCALL_FUNC( NtDeleteValueKey );
-}
-
-NTSTATUS SYSCALL_API NtDeviceIoControlFile( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc,
-                                            void *apc_context, IO_STATUS_BLOCK *io, ULONG code,
-                                            void *in_buffer, ULONG in_size,
-                                            void *out_buffer, ULONG out_size )
-{
-    SYSCALL_FUNC( NtDeviceIoControlFile );
-}
-
-NTSTATUS SYSCALL_API NtDisplayString( UNICODE_STRING *string )
-{
-    SYSCALL_FUNC( NtDisplayString );
-}
-
-NTSTATUS SYSCALL_API NtDuplicateObject( HANDLE source_process, HANDLE source, HANDLE dest_process,
-                                        HANDLE *dest, ACCESS_MASK access, ULONG attributes, ULONG options )
-{
-    SYSCALL_FUNC( NtDuplicateObject );
-}
-
-NTSTATUS SYSCALL_API NtDuplicateToken( HANDLE token, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr,
-                                       BOOLEAN effective_only, TOKEN_TYPE type, HANDLE *handle )
-{
-    SYSCALL_FUNC( NtDuplicateToken );
-}
-
-NTSTATUS SYSCALL_API NtEnumerateKey( HANDLE handle, ULONG index, KEY_INFORMATION_CLASS info_class,
-                                     void *info, DWORD length, DWORD *result_len )
-{
-    SYSCALL_FUNC( NtEnumerateKey );
-}
-
-NTSTATUS SYSCALL_API NtEnumerateValueKey( HANDLE handle, ULONG index, KEY_VALUE_INFORMATION_CLASS info_class,
-                                          void *info, DWORD length, DWORD *result_len )
-{
-    SYSCALL_FUNC( NtEnumerateValueKey );
-}
-
-NTSTATUS SYSCALL_API NtFilterToken( HANDLE token, ULONG flags, TOKEN_GROUPS *disable_sids,
-                                    TOKEN_PRIVILEGES *privileges, TOKEN_GROUPS *restrict_sids,
-                                    HANDLE *new_token )
-{
-    SYSCALL_FUNC( NtFilterToken );
-}
-
-NTSTATUS SYSCALL_API NtFindAtom( const WCHAR *name, ULONG length, RTL_ATOM *atom )
-{
-    SYSCALL_FUNC( NtFindAtom );
-}
-
-NTSTATUS SYSCALL_API NtFlushBuffersFile( HANDLE handle, IO_STATUS_BLOCK *io )
-{
-    SYSCALL_FUNC( NtFlushBuffersFile );
-}
-
-NTSTATUS SYSCALL_API NtFlushInstructionCache( HANDLE handle, const void *addr, SIZE_T size )
-{
-    SYSCALL_FUNC( NtFlushInstructionCache );
-}
-
-NTSTATUS SYSCALL_API NtFlushKey( HANDLE key )
-{
-    SYSCALL_FUNC( NtFlushKey );
-}
-
-NTSTATUS SYSCALL_API NtFlushProcessWriteBuffers(void)
-{
-    SYSCALL_FUNC( NtFlushProcessWriteBuffers );
-}
-
-NTSTATUS SYSCALL_API NtFlushVirtualMemory( HANDLE process, LPCVOID *addr_ptr,
-                                           SIZE_T *size_ptr, ULONG unknown )
-{
-    SYSCALL_FUNC( NtFlushVirtualMemory );
+    if (!status && enter_syscall_callback())
+    {
+        if (!RtlIsCurrentProcess( process ))
+            send_cross_process_notification( process, CrossProcessFlushCache, addr, size, 0 );
+        else if (pBTCpu64FlushInstructionCache)
+            pBTCpu64FlushInstructionCache( addr, size );
+        leave_syscall_callback();
+    }
+    return status;
 }
 
 NTSTATUS SYSCALL_API NtFreeVirtualMemory( HANDLE process, PVOID *addr_ptr, SIZE_T *size_ptr, ULONG type )
 {
-    SYSCALL_FUNC( NtFreeVirtualMemory );
+    BOOL is_current = RtlIsCurrentProcess( process );
+    NTSTATUS status;
+
+    if (!enter_syscall_callback())
+        return syscall_NtFreeVirtualMemory( process, addr_ptr, size_ptr, type );
+
+    if (!is_current) send_cross_process_notification( process, CrossProcessPreVirtualFree,
+                                                      *addr_ptr, *size_ptr, 2, type, 0 );
+    else if (pNotifyMemoryFree) pNotifyMemoryFree( *addr_ptr, *size_ptr, type, FALSE, 0 );
+
+    status = syscall_NtFreeVirtualMemory( process, addr_ptr, size_ptr, type );
+
+    if (!is_current) send_cross_process_notification( process, CrossProcessPostVirtualFree,
+                                                      *addr_ptr, *size_ptr, 2, type, status );
+    else if (pNotifyMemoryFree) pNotifyMemoryFree( *addr_ptr, *size_ptr, type, TRUE, status );
+
+    leave_syscall_callback();
+    return status;
 }
 
-NTSTATUS SYSCALL_API NtFsControlFile( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc_context,
-                                      IO_STATUS_BLOCK *io, ULONG code, void *in_buffer, ULONG in_size,
-                                      void *out_buffer, ULONG out_size )
-{
-    SYSCALL_FUNC( NtFsControlFile );
-}
-
-static NTSTATUS SYSCALL_API syscall_NtGetContextThread( HANDLE handle, ARM64_NT_CONTEXT *context )
-{
-    __ASM_SYSCALL_FUNC( __id_NtGetContextThread, syscall_NtGetContextThread );
-}
-
-NTSTATUS WINAPI NtGetContextThread( HANDLE handle, CONTEXT *context )
+NTSTATUS SYSCALL_API NtGetContextThread( HANDLE handle, CONTEXT *context )
 {
     ARM64_NT_CONTEXT arm_ctx = { .ContextFlags = ctx_flags_x64_to_arm( context->ContextFlags ) };
     NTSTATUS status = syscall_NtGetContextThread( handle, &arm_ctx );
@@ -529,496 +583,84 @@ NTSTATUS WINAPI NtGetContextThread( HANDLE handle, CONTEXT *context )
     return status;
 }
 
-ULONG SYSCALL_API NtGetCurrentProcessorNumber(void)
+static void notify_map_view_of_section( HANDLE handle, void *addr, SIZE_T size, ULONG alloc,
+                                        ULONG protect, NTSTATUS *ret_status )
 {
-    SYSCALL_FUNC( NtGetCurrentProcessorNumber );
-}
+    SECTION_IMAGE_INFORMATION info;
+    NTSTATUS status;
 
-NTSTATUS SYSCALL_API NtGetNextThread( HANDLE process, HANDLE thread, ACCESS_MASK access, ULONG attributes,
-                                      ULONG flags, HANDLE *handle )
-{
-    SYSCALL_FUNC( NtGetNextThread );
-}
-
-NTSTATUS SYSCALL_API NtGetNlsSectionPtr( ULONG type, ULONG id, void *unknown, void **ptr, SIZE_T *size )
-{
-    SYSCALL_FUNC( NtGetNlsSectionPtr );
-}
-
-NTSTATUS SYSCALL_API NtGetWriteWatch( HANDLE process, ULONG flags, PVOID base, SIZE_T size,
-                                      PVOID *addresses, ULONG_PTR *count, ULONG *granularity )
-{
-    SYSCALL_FUNC( NtGetWriteWatch );
-}
-
-NTSTATUS SYSCALL_API NtImpersonateAnonymousToken( HANDLE thread )
-{
-    SYSCALL_FUNC( NtImpersonateAnonymousToken );
-}
-
-NTSTATUS SYSCALL_API NtInitializeNlsFiles( void **ptr, LCID *lcid, LARGE_INTEGER *size )
-{
-    SYSCALL_FUNC( NtInitializeNlsFiles );
-}
-
-NTSTATUS SYSCALL_API NtInitiatePowerAction( POWER_ACTION action, SYSTEM_POWER_STATE state,
-                                            ULONG flags, BOOLEAN async )
-{
-    SYSCALL_FUNC( NtInitiatePowerAction );
-}
-
-NTSTATUS SYSCALL_API NtIsProcessInJob( HANDLE process, HANDLE job )
-{
-    SYSCALL_FUNC( NtIsProcessInJob );
-}
-
-NTSTATUS SYSCALL_API NtListenPort( HANDLE handle, LPC_MESSAGE *msg )
-{
-    SYSCALL_FUNC( NtListenPort );
-}
-
-NTSTATUS SYSCALL_API NtLoadDriver( const UNICODE_STRING *name )
-{
-    SYSCALL_FUNC( NtLoadDriver );
-}
-
-NTSTATUS SYSCALL_API NtLoadKey( const OBJECT_ATTRIBUTES *attr, OBJECT_ATTRIBUTES *file )
-{
-    SYSCALL_FUNC( NtLoadKey );
-}
-
-NTSTATUS SYSCALL_API NtLoadKey2( const OBJECT_ATTRIBUTES *attr, OBJECT_ATTRIBUTES *file, ULONG flags )
-{
-    SYSCALL_FUNC( NtLoadKey2 );
-}
-
-NTSTATUS SYSCALL_API NtLoadKeyEx( const OBJECT_ATTRIBUTES *attr, OBJECT_ATTRIBUTES *file, ULONG flags,
-                                  HANDLE trustkey, HANDLE event, ACCESS_MASK access,
-                                  HANDLE *roothandle, IO_STATUS_BLOCK *iostatus )
-{
-    SYSCALL_FUNC( NtLoadKeyEx );
-}
-
-NTSTATUS SYSCALL_API NtLockFile( HANDLE file, HANDLE event, PIO_APC_ROUTINE apc, void* apc_user,
-                                 IO_STATUS_BLOCK *io_status, LARGE_INTEGER *offset,
-                                 LARGE_INTEGER *count, ULONG *key, BOOLEAN dont_wait, BOOLEAN exclusive )
-{
-    SYSCALL_FUNC( NtLockFile );
-}
-
-NTSTATUS SYSCALL_API NtLockVirtualMemory( HANDLE process, PVOID *addr, SIZE_T *size, ULONG unknown )
-{
-    SYSCALL_FUNC( NtLockVirtualMemory );
-}
-
-NTSTATUS SYSCALL_API NtMakePermanentObject( HANDLE handle )
-{
-    SYSCALL_FUNC( NtMakePermanentObject );
-}
-
-NTSTATUS SYSCALL_API NtMakeTemporaryObject( HANDLE handle )
-{
-    SYSCALL_FUNC( NtMakeTemporaryObject );
+    if (!pNotifyMapViewOfSection) return;
+    if (!NtCurrentTeb()->Tib.ArbitraryUserPointer) return;
+    if (NtQuerySection( handle, SectionImageInformation, &info, sizeof(info), NULL )) return;
+    status = pNotifyMapViewOfSection( NULL, addr, NULL, size, alloc, protect );
+    if (NT_SUCCESS(status)) return;
+    NtUnmapViewOfSection( GetCurrentProcess(), addr );
+    *ret_status = status;
 }
 
 NTSTATUS SYSCALL_API NtMapViewOfSection( HANDLE handle, HANDLE process, PVOID *addr_ptr,
                                          ULONG_PTR zero_bits, SIZE_T commit_size,
-                                         const LARGE_INTEGER *offset_ptr, SIZE_T *size_ptr,
+                                         const LARGE_INTEGER *offset, SIZE_T *size_ptr,
                                          SECTION_INHERIT inherit, ULONG alloc_type, ULONG protect )
 {
-    SYSCALL_FUNC( NtMapViewOfSection );
+    NTSTATUS status = syscall_NtMapViewOfSection( handle, process, addr_ptr, zero_bits, commit_size,
+                                                  offset, size_ptr, inherit, alloc_type, protect );
+
+    if (NT_SUCCESS(status) && RtlIsCurrentProcess( process ) && enter_syscall_callback())
+    {
+        notify_map_view_of_section( handle, *addr_ptr, *size_ptr, alloc_type, protect, &status );
+        leave_syscall_callback();
+    }
+    return status;
 }
 
 NTSTATUS SYSCALL_API NtMapViewOfSectionEx( HANDLE handle, HANDLE process, PVOID *addr_ptr,
-                                           const LARGE_INTEGER *offset_ptr, SIZE_T *size_ptr,
-                                           ULONG alloc_type, ULONG protect,
-                                           MEM_EXTENDED_PARAMETER *parameters, ULONG count )
+                                           const LARGE_INTEGER *offset, SIZE_T *size_ptr, ULONG alloc_type,
+                                           ULONG protect, MEM_EXTENDED_PARAMETER *parameters, ULONG count )
 {
-    SYSCALL_FUNC( NtMapViewOfSectionEx );
-}
+    NTSTATUS status = syscall_NtMapViewOfSectionEx( handle, process, addr_ptr, offset, size_ptr,
+                                                    alloc_type, protect, parameters, count );
 
-NTSTATUS SYSCALL_API NtNotifyChangeDirectoryFile( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc,
-                                                  void *apc_context, IO_STATUS_BLOCK *iosb, void *buffer,
-                                                  ULONG buffer_size, ULONG filter, BOOLEAN subtree )
-{
-    SYSCALL_FUNC( NtNotifyChangeDirectoryFile );
-}
-
-NTSTATUS SYSCALL_API NtNotifyChangeKey( HANDLE key, HANDLE event, PIO_APC_ROUTINE apc, void *apc_context,
-                                        IO_STATUS_BLOCK *io, ULONG filter, BOOLEAN subtree,
-                                        void *buffer, ULONG length, BOOLEAN async )
-{
-    SYSCALL_FUNC( NtNotifyChangeKey );
-}
-
-NTSTATUS SYSCALL_API NtNotifyChangeMultipleKeys( HANDLE key, ULONG count, OBJECT_ATTRIBUTES *attr,
-                                                 HANDLE event, PIO_APC_ROUTINE apc, void *apc_context,
-                                                 IO_STATUS_BLOCK *io, ULONG filter, BOOLEAN subtree,
-                                                 void *buffer, ULONG length, BOOLEAN async )
-{
-    SYSCALL_FUNC( NtNotifyChangeMultipleKeys );
-}
-
-NTSTATUS SYSCALL_API NtOpenDirectoryObject( HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr )
-{
-    SYSCALL_FUNC( NtOpenDirectoryObject );
-}
-
-NTSTATUS SYSCALL_API NtOpenEvent( HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr )
-{
-    SYSCALL_FUNC( NtOpenEvent );
-}
-
-NTSTATUS SYSCALL_API NtOpenFile( HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr,
-                                 IO_STATUS_BLOCK *io, ULONG sharing, ULONG options )
-{
-    SYSCALL_FUNC( NtOpenFile );
-}
-
-NTSTATUS SYSCALL_API NtOpenIoCompletion( HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr )
-{
-    SYSCALL_FUNC( NtOpenIoCompletion );
-}
-
-NTSTATUS SYSCALL_API NtOpenJobObject( HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr )
-{
-    SYSCALL_FUNC( NtOpenJobObject );
-}
-
-NTSTATUS SYSCALL_API NtOpenKey( HANDLE *key, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr )
-{
-    SYSCALL_FUNC( NtOpenKey );
-}
-
-NTSTATUS SYSCALL_API NtOpenKeyEx( HANDLE *key, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr, ULONG options )
-{
-    SYSCALL_FUNC( NtOpenKeyEx );
-}
-
-NTSTATUS SYSCALL_API NtOpenKeyTransacted( HANDLE *key, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr,
-                                          HANDLE transaction )
-{
-    SYSCALL_FUNC( NtOpenKeyTransacted );
-}
-
-NTSTATUS SYSCALL_API NtOpenKeyTransactedEx( HANDLE *key, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr,
-                                            ULONG options, HANDLE transaction )
-{
-    SYSCALL_FUNC( NtOpenKeyTransactedEx );
-}
-
-NTSTATUS SYSCALL_API NtOpenKeyedEvent( HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr )
-{
-    SYSCALL_FUNC( NtOpenKeyedEvent );
-}
-
-NTSTATUS SYSCALL_API NtOpenMutant( HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr )
-{
-    SYSCALL_FUNC( NtOpenMutant );
-}
-
-NTSTATUS SYSCALL_API NtOpenProcess( HANDLE *handle, ACCESS_MASK access,
-                                    const OBJECT_ATTRIBUTES *attr, const CLIENT_ID *id )
-{
-    SYSCALL_FUNC( NtOpenProcess );
-}
-
-NTSTATUS SYSCALL_API NtOpenProcessToken( HANDLE process, DWORD access, HANDLE *handle )
-{
-    SYSCALL_FUNC( NtOpenProcessToken );
-}
-
-NTSTATUS SYSCALL_API NtOpenProcessTokenEx( HANDLE process, DWORD access, DWORD attributes, HANDLE *handle )
-{
-    SYSCALL_FUNC( NtOpenProcessTokenEx );
-}
-
-NTSTATUS SYSCALL_API NtOpenSection( HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr )
-{
-    SYSCALL_FUNC( NtOpenSection );
-}
-
-NTSTATUS SYSCALL_API NtOpenSemaphore( HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr )
-{
-    SYSCALL_FUNC( NtOpenSemaphore );
-}
-
-NTSTATUS SYSCALL_API NtOpenSymbolicLinkObject( HANDLE *handle, ACCESS_MASK access,
-                                               const OBJECT_ATTRIBUTES *attr )
-{
-    SYSCALL_FUNC( NtOpenSymbolicLinkObject );
-}
-
-NTSTATUS SYSCALL_API NtOpenThread( HANDLE *handle, ACCESS_MASK access,
-                                   const OBJECT_ATTRIBUTES *attr, const CLIENT_ID *id )
-{
-    SYSCALL_FUNC( NtOpenThread );
-}
-
-NTSTATUS SYSCALL_API NtOpenThreadToken( HANDLE thread, DWORD access, BOOLEAN self, HANDLE *handle )
-{
-    SYSCALL_FUNC( NtOpenThreadToken );
-}
-
-NTSTATUS SYSCALL_API NtOpenThreadTokenEx( HANDLE thread, DWORD access, BOOLEAN self, DWORD attributes,
-                                          HANDLE *handle )
-{
-    SYSCALL_FUNC( NtOpenThreadTokenEx );
-}
-
-NTSTATUS SYSCALL_API NtOpenTimer( HANDLE *handle, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr )
-{
-    SYSCALL_FUNC( NtOpenTimer );
-}
-
-NTSTATUS SYSCALL_API NtPowerInformation( POWER_INFORMATION_LEVEL level, void *input, ULONG in_size,
-                                         void *output, ULONG out_size )
-{
-    SYSCALL_FUNC( NtPowerInformation );
-}
-
-NTSTATUS SYSCALL_API NtPrivilegeCheck( HANDLE token, PRIVILEGE_SET *privs, BOOLEAN *res )
-{
-    SYSCALL_FUNC( NtPrivilegeCheck );
+    if (NT_SUCCESS(status) && RtlIsCurrentProcess( process ) && enter_syscall_callback())
+    {
+        notify_map_view_of_section( handle, *addr_ptr, *size_ptr, alloc_type, protect, &status );
+        leave_syscall_callback();
+    }
+    return status;
 }
 
 NTSTATUS SYSCALL_API NtProtectVirtualMemory( HANDLE process, PVOID *addr_ptr, SIZE_T *size_ptr,
                                              ULONG new_prot, ULONG *old_prot )
 {
-    SYSCALL_FUNC( NtProtectVirtualMemory );
+    BOOL is_current = RtlIsCurrentProcess( process );
+    NTSTATUS status;
+
+    if (!enter_syscall_callback())
+        return syscall_NtProtectVirtualMemory( process, addr_ptr, size_ptr, new_prot, old_prot );
+
+    if (!is_current) send_cross_process_notification( process, CrossProcessPreVirtualProtect,
+                                                      *addr_ptr, *size_ptr, 2, new_prot, 0 );
+    else if (pNotifyMemoryProtect) pNotifyMemoryProtect( *addr_ptr, *size_ptr, new_prot, FALSE, 0 );
+
+    status = syscall_NtProtectVirtualMemory( process, addr_ptr, size_ptr, new_prot, old_prot );
+
+    if (!is_current) send_cross_process_notification( process, CrossProcessPostVirtualProtect,
+                                                      *addr_ptr, *size_ptr, 2, new_prot, status );
+    else if (pNotifyMemoryProtect) pNotifyMemoryProtect( *addr_ptr, *size_ptr, new_prot, TRUE, status );
+
+    leave_syscall_callback();
+    return status;
 }
 
-NTSTATUS SYSCALL_API NtPulseEvent( HANDLE handle, LONG *prev_state )
+NTSTATUS SYSCALL_API NtQuerySystemInformation( SYSTEM_INFORMATION_CLASS class, void *info, ULONG size, ULONG *ret_size )
 {
-    SYSCALL_FUNC( NtPulseEvent );
+    NTSTATUS status = syscall_NtQuerySystemInformation( class, info, size, ret_size );
+
+    if (!status && class == SystemCpuInformation && pUpdateProcessorInformation) pUpdateProcessorInformation( info );
+    return status;
 }
 
-NTSTATUS SYSCALL_API NtQueryAttributesFile( const OBJECT_ATTRIBUTES *attr, FILE_BASIC_INFORMATION *info )
-{
-    SYSCALL_FUNC( NtQueryAttributesFile );
-}
-
-NTSTATUS SYSCALL_API NtQueryDefaultLocale( BOOLEAN user, LCID *lcid )
-{
-    SYSCALL_FUNC( NtQueryDefaultLocale );
-}
-
-NTSTATUS SYSCALL_API NtQueryDefaultUILanguage( LANGID *lang )
-{
-    SYSCALL_FUNC( NtQueryDefaultUILanguage );
-}
-
-NTSTATUS SYSCALL_API NtQueryDirectoryFile( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc_routine,
-                                           void *apc_context, IO_STATUS_BLOCK *io, void *buffer,
-                                           ULONG length, FILE_INFORMATION_CLASS info_class,
-                                           BOOLEAN single_entry, UNICODE_STRING *mask,
-                                           BOOLEAN restart_scan )
-{
-    SYSCALL_FUNC( NtQueryDirectoryFile );
-}
-
-NTSTATUS SYSCALL_API NtQueryDirectoryObject( HANDLE handle, DIRECTORY_BASIC_INFORMATION *buffer,
-                                             ULONG size, BOOLEAN single_entry, BOOLEAN restart,
-                                             ULONG *context, ULONG *ret_size )
-{
-    SYSCALL_FUNC( NtQueryDirectoryObject );
-}
-
-NTSTATUS SYSCALL_API NtQueryEaFile( HANDLE handle, IO_STATUS_BLOCK *io, void *buffer, ULONG length,
-                                    BOOLEAN single_entry, void *list, ULONG list_len,
-                                    ULONG *index, BOOLEAN restart )
-{
-    SYSCALL_FUNC( NtQueryEaFile );
-}
-
-NTSTATUS SYSCALL_API NtQueryEvent( HANDLE handle, EVENT_INFORMATION_CLASS class,
-                                   void *info, ULONG len, ULONG *ret_len )
-{
-    SYSCALL_FUNC( NtQueryEvent );
-}
-
-NTSTATUS SYSCALL_API NtQueryFullAttributesFile( const OBJECT_ATTRIBUTES *attr,
-                                                FILE_NETWORK_OPEN_INFORMATION *info )
-{
-    SYSCALL_FUNC( NtQueryFullAttributesFile );
-}
-
-NTSTATUS SYSCALL_API NtQueryInformationAtom( RTL_ATOM atom, ATOM_INFORMATION_CLASS class,
-                                             void *ptr, ULONG size, ULONG *retsize )
-{
-    SYSCALL_FUNC( NtQueryInformationAtom );
-}
-
-NTSTATUS SYSCALL_API NtQueryInformationFile( HANDLE handle, IO_STATUS_BLOCK *io,
-                                             void *ptr, ULONG len, FILE_INFORMATION_CLASS class )
-{
-    SYSCALL_FUNC( NtQueryInformationFile );
-}
-
-NTSTATUS SYSCALL_API NtQueryInformationJobObject( HANDLE handle, JOBOBJECTINFOCLASS class, void *info,
-                                                  ULONG len, ULONG *ret_len )
-{
-    SYSCALL_FUNC( NtQueryInformationJobObject );
-}
-
-NTSTATUS SYSCALL_API NtQueryInformationProcess( HANDLE handle, PROCESSINFOCLASS class, void *info,
-                                                ULONG size, ULONG *ret_len )
-{
-    SYSCALL_FUNC( NtQueryInformationProcess );
-}
-
-NTSTATUS SYSCALL_API NtQueryInformationThread( HANDLE handle, THREADINFOCLASS class,
-                                               void *data, ULONG length, ULONG *ret_len )
-{
-    SYSCALL_FUNC( NtQueryInformationThread );
-}
-
-NTSTATUS SYSCALL_API NtQueryInformationToken( HANDLE token, TOKEN_INFORMATION_CLASS class,
-                                              void *info, ULONG length, ULONG *retlen )
-{
-    SYSCALL_FUNC( NtQueryInformationToken );
-}
-
-NTSTATUS SYSCALL_API NtQueryInstallUILanguage( LANGID *lang )
-{
-    SYSCALL_FUNC( NtQueryInstallUILanguage );
-}
-
-NTSTATUS SYSCALL_API NtQueryIoCompletion( HANDLE handle, IO_COMPLETION_INFORMATION_CLASS class,
-                                          void *buffer, ULONG len, ULONG *ret_len )
-{
-    SYSCALL_FUNC( NtQueryIoCompletion );
-}
-
-NTSTATUS SYSCALL_API NtQueryKey( HANDLE handle, KEY_INFORMATION_CLASS info_class,
-                                 void *info, DWORD length, DWORD *result_len )
-{
-    SYSCALL_FUNC( NtQueryKey );
-}
-
-NTSTATUS SYSCALL_API NtQueryLicenseValue( const UNICODE_STRING *name, ULONG *type,
-                                          void *data, ULONG length, ULONG *retlen )
-{
-    SYSCALL_FUNC( NtQueryLicenseValue );
-}
-
-NTSTATUS SYSCALL_API NtQueryMultipleValueKey( HANDLE key, KEY_MULTIPLE_VALUE_INFORMATION *info,
-                                              ULONG count, void *buffer, ULONG length, ULONG *retlen )
-{
-    SYSCALL_FUNC( NtQueryMultipleValueKey );
-}
-
-NTSTATUS SYSCALL_API NtQueryMutant( HANDLE handle, MUTANT_INFORMATION_CLASS class,
-                                    void *info, ULONG len, ULONG *ret_len )
-{
-    SYSCALL_FUNC( NtQueryMutant );
-}
-
-NTSTATUS SYSCALL_API NtQueryObject( HANDLE handle, OBJECT_INFORMATION_CLASS info_class,
-                                    void *ptr, ULONG len, ULONG *used_len )
-{
-    SYSCALL_FUNC( NtQueryObject );
-}
-
-NTSTATUS SYSCALL_API NtQueryPerformanceCounter( LARGE_INTEGER *counter, LARGE_INTEGER *frequency )
-{
-    SYSCALL_FUNC( NtQueryPerformanceCounter );
-}
-
-NTSTATUS SYSCALL_API NtQuerySection( HANDLE handle, SECTION_INFORMATION_CLASS class, void *ptr,
-                                     SIZE_T size, SIZE_T *ret_size )
-{
-    SYSCALL_FUNC( NtQuerySection );
-}
-
-NTSTATUS SYSCALL_API NtQuerySecurityObject( HANDLE handle, SECURITY_INFORMATION info,
-                                            PSECURITY_DESCRIPTOR descr, ULONG length, ULONG *retlen )
-{
-    SYSCALL_FUNC( NtQuerySecurityObject );
-}
-
-NTSTATUS SYSCALL_API NtQuerySemaphore( HANDLE handle, SEMAPHORE_INFORMATION_CLASS class,
-                                       void *info, ULONG len, ULONG *ret_len )
-{
-    SYSCALL_FUNC( NtQuerySemaphore );
-}
-
-NTSTATUS SYSCALL_API NtQuerySymbolicLinkObject( HANDLE handle, UNICODE_STRING *target, ULONG *length )
-{
-    SYSCALL_FUNC( NtQuerySymbolicLinkObject );
-}
-
-NTSTATUS SYSCALL_API NtQuerySystemEnvironmentValue( UNICODE_STRING *name, WCHAR *buffer, ULONG length,
-                                                    ULONG *retlen )
-{
-    SYSCALL_FUNC( NtQuerySystemEnvironmentValue );
-}
-
-NTSTATUS SYSCALL_API NtQuerySystemEnvironmentValueEx( UNICODE_STRING *name, GUID *vendor, void *buffer,
-                                                      ULONG *retlen, ULONG *attrib )
-{
-    SYSCALL_FUNC( NtQuerySystemEnvironmentValueEx );
-}
-
-NTSTATUS SYSCALL_API NtQuerySystemInformation( SYSTEM_INFORMATION_CLASS class,
-                                               void *info, ULONG size, ULONG *ret_size )
-{
-    SYSCALL_FUNC( NtQuerySystemInformation );
-}
-
-NTSTATUS SYSCALL_API NtQuerySystemInformationEx( SYSTEM_INFORMATION_CLASS class, void *query,
-                                                 ULONG query_len, void *info, ULONG size, ULONG *ret_size )
-{
-    SYSCALL_FUNC( NtQuerySystemInformationEx );
-}
-
-NTSTATUS SYSCALL_API NtQuerySystemTime( LARGE_INTEGER *time )
-{
-    SYSCALL_FUNC( NtQuerySystemTime );
-}
-
-NTSTATUS SYSCALL_API NtQueryTimer( HANDLE handle, TIMER_INFORMATION_CLASS class,
-                                   void *info, ULONG len, ULONG *ret_len )
-{
-    SYSCALL_FUNC( NtQueryTimer );
-}
-
-NTSTATUS SYSCALL_API NtQueryTimerResolution( ULONG *min_res, ULONG *max_res, ULONG *current_res )
-{
-    SYSCALL_FUNC( NtQueryTimerResolution );
-}
-
-NTSTATUS SYSCALL_API NtQueryValueKey( HANDLE handle, const UNICODE_STRING *name,
-                                      KEY_VALUE_INFORMATION_CLASS info_class,
-                                      void *info, DWORD length, DWORD *result_len )
-{
-    SYSCALL_FUNC( NtQueryValueKey );
-}
-
-NTSTATUS SYSCALL_API NtQueryVirtualMemory( HANDLE process, LPCVOID addr, MEMORY_INFORMATION_CLASS info_class,
-                                           PVOID buffer, SIZE_T len, SIZE_T *res_len )
-{
-    SYSCALL_FUNC( NtQueryVirtualMemory );
-}
-
-NTSTATUS SYSCALL_API NtQueryVolumeInformationFile( HANDLE handle, IO_STATUS_BLOCK *io, void *buffer,
-                                                   ULONG length, FS_INFORMATION_CLASS info_class )
-{
-    SYSCALL_FUNC( NtQueryVolumeInformationFile );
-}
-
-NTSTATUS SYSCALL_API NtQueueApcThread( HANDLE handle, PNTAPCFUNC func, ULONG_PTR arg1,
-                                       ULONG_PTR arg2, ULONG_PTR arg3 )
-{
-    SYSCALL_FUNC( NtQueueApcThread );
-}
-
-static NTSTATUS SYSCALL_API syscall_NtRaiseException( EXCEPTION_RECORD *rec, ARM64_NT_CONTEXT *context, BOOL first_chance )
-{
-    __ASM_SYSCALL_FUNC( __id_NtRaiseException, syscall_NtRaiseException );
-}
-
-NTSTATUS WINAPI NtRaiseException( EXCEPTION_RECORD *rec, CONTEXT *context, BOOL first_chance )
+NTSTATUS SYSCALL_API NtRaiseException( EXCEPTION_RECORD *rec, CONTEXT *context, BOOL first_chance )
 {
     ARM64_NT_CONTEXT arm_ctx;
 
@@ -1026,141 +668,24 @@ NTSTATUS WINAPI NtRaiseException( EXCEPTION_RECORD *rec, CONTEXT *context, BOOL 
     return syscall_NtRaiseException( rec, &arm_ctx, first_chance );
 }
 
-NTSTATUS SYSCALL_API NtRaiseHardError( NTSTATUS status, ULONG count, UNICODE_STRING *params_mask,
-                                       void **params, HARDERROR_RESPONSE_OPTION option,
-                                       HARDERROR_RESPONSE *response )
-{
-    SYSCALL_FUNC( NtRaiseHardError );
-}
-
 NTSTATUS SYSCALL_API NtReadFile( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc_user,
                                  IO_STATUS_BLOCK *io, void *buffer, ULONG length,
                                  LARGE_INTEGER *offset, ULONG *key )
 {
-    SYSCALL_FUNC( NtReadFile );
+    NTSTATUS status;
+
+    if (pBTCpu64NotifyReadFile && enter_syscall_callback())
+    {
+        pBTCpu64NotifyReadFile( handle, buffer, length, FALSE, 0 );
+        status = syscall_NtReadFile( handle, event, apc, apc_user, io, buffer, length, offset, key );
+        if (pBTCpu64NotifyReadFile) pBTCpu64NotifyReadFile( handle, buffer, length, TRUE, status );
+        leave_syscall_callback();
+        return status;
+    }
+    return syscall_NtReadFile( handle, event, apc, apc_user, io, buffer, length, offset, key );
 }
 
-NTSTATUS SYSCALL_API NtReadFileScatter( HANDLE file, HANDLE event, PIO_APC_ROUTINE apc, void *apc_user,
-                                        IO_STATUS_BLOCK *io, FILE_SEGMENT_ELEMENT *segments,
-                                        ULONG length, LARGE_INTEGER *offset, ULONG *key )
-{
-    SYSCALL_FUNC( NtReadFileScatter );
-}
-
-NTSTATUS SYSCALL_API NtReadVirtualMemory( HANDLE process, const void *addr, void *buffer,
-                                          SIZE_T size, SIZE_T *bytes_read )
-{
-    SYSCALL_FUNC( NtReadVirtualMemory );
-}
-
-NTSTATUS SYSCALL_API NtRegisterThreadTerminatePort( HANDLE handle )
-{
-    SYSCALL_FUNC( NtRegisterThreadTerminatePort );
-}
-
-NTSTATUS SYSCALL_API NtReleaseKeyedEvent( HANDLE handle, const void *key,
-                                          BOOLEAN alertable, const LARGE_INTEGER *timeout )
-{
-    SYSCALL_FUNC( NtReleaseKeyedEvent );
-}
-
-NTSTATUS SYSCALL_API NtReleaseMutant( HANDLE handle, LONG *prev_count )
-{
-    SYSCALL_FUNC( NtReleaseMutant );
-}
-
-NTSTATUS SYSCALL_API NtReleaseSemaphore( HANDLE handle, ULONG count, ULONG *previous )
-{
-    SYSCALL_FUNC( NtReleaseSemaphore );
-}
-
-NTSTATUS SYSCALL_API NtRemoveIoCompletion( HANDLE handle, ULONG_PTR *key, ULONG_PTR *value,
-                                           IO_STATUS_BLOCK *io, LARGE_INTEGER *timeout )
-{
-    SYSCALL_FUNC( NtRemoveIoCompletion );
-}
-
-NTSTATUS SYSCALL_API NtRemoveIoCompletionEx( HANDLE handle, FILE_IO_COMPLETION_INFORMATION *info,
-                                             ULONG count, ULONG *written, LARGE_INTEGER *timeout,
-                                             BOOLEAN alertable )
-{
-    SYSCALL_FUNC( NtRemoveIoCompletionEx );
-}
-
-NTSTATUS SYSCALL_API NtRemoveProcessDebug( HANDLE process, HANDLE debug )
-{
-    SYSCALL_FUNC( NtRemoveProcessDebug );
-}
-
-NTSTATUS SYSCALL_API NtRenameKey( HANDLE key, UNICODE_STRING *name )
-{
-    SYSCALL_FUNC( NtRenameKey );
-}
-
-NTSTATUS SYSCALL_API NtReplaceKey( OBJECT_ATTRIBUTES *attr, HANDLE key, OBJECT_ATTRIBUTES *replace )
-{
-    SYSCALL_FUNC( NtReplaceKey );
-}
-
-NTSTATUS SYSCALL_API NtReplyWaitReceivePort( HANDLE handle, ULONG *id, LPC_MESSAGE *reply, LPC_MESSAGE *msg )
-{
-    SYSCALL_FUNC( NtReplyWaitReceivePort );
-}
-
-NTSTATUS SYSCALL_API NtRequestWaitReplyPort( HANDLE handle, LPC_MESSAGE *msg_in, LPC_MESSAGE *msg_out )
-{
-    SYSCALL_FUNC( NtRequestWaitReplyPort );
-}
-
-NTSTATUS SYSCALL_API NtResetEvent( HANDLE handle, LONG *prev_state )
-{
-    SYSCALL_FUNC( NtResetEvent );
-}
-
-NTSTATUS SYSCALL_API NtResetWriteWatch( HANDLE process, PVOID base, SIZE_T size )
-{
-    SYSCALL_FUNC( NtResetWriteWatch );
-}
-
-NTSTATUS SYSCALL_API NtRestoreKey( HANDLE key, HANDLE file, ULONG flags )
-{
-    SYSCALL_FUNC( NtRestoreKey );
-}
-
-NTSTATUS SYSCALL_API NtResumeProcess( HANDLE handle )
-{
-    SYSCALL_FUNC( NtResumeProcess );
-}
-
-NTSTATUS SYSCALL_API NtResumeThread( HANDLE handle, ULONG *count )
-{
-    SYSCALL_FUNC( NtResumeThread );
-}
-
-NTSTATUS SYSCALL_API NtRollbackTransaction( HANDLE transaction, BOOLEAN wait )
-{
-    SYSCALL_FUNC( NtRollbackTransaction );
-}
-
-NTSTATUS SYSCALL_API NtSaveKey( HANDLE key, HANDLE file )
-{
-    SYSCALL_FUNC( NtSaveKey );
-}
-
-NTSTATUS SYSCALL_API NtSecureConnectPort( HANDLE *handle, UNICODE_STRING *name,
-                                          SECURITY_QUALITY_OF_SERVICE *qos, LPC_SECTION_WRITE *write,
-                                          PSID sid, LPC_SECTION_READ *read, ULONG *max_len,
-                                          void *info, ULONG *info_len )
-{
-    SYSCALL_FUNC( NtSecureConnectPort );
-}
-
-static NTSTATUS SYSCALL_API syscall_NtSetContextThread( HANDLE handle, const ARM64_NT_CONTEXT *context )
-{
-    __ASM_SYSCALL_FUNC( __id_NtSetContextThread, syscall_NtSetContextThread );
-}
-
-NTSTATUS WINAPI NtSetContextThread( HANDLE handle, const CONTEXT *context )
+NTSTATUS SYSCALL_API NtSetContextThread( HANDLE handle, const CONTEXT *context )
 {
     ARM64_NT_CONTEXT arm_ctx;
 
@@ -1168,300 +693,76 @@ NTSTATUS WINAPI NtSetContextThread( HANDLE handle, const CONTEXT *context )
     return syscall_NtSetContextThread( handle, &arm_ctx );
 }
 
-NTSTATUS SYSCALL_API NtSetDebugFilterState( ULONG component_id, ULONG level, BOOLEAN state )
-{
-    SYSCALL_FUNC( NtSetDebugFilterState );
-}
-
-NTSTATUS SYSCALL_API NtSetDefaultLocale( BOOLEAN user, LCID lcid )
-{
-    SYSCALL_FUNC( NtSetDefaultLocale );
-}
-
-NTSTATUS SYSCALL_API NtSetDefaultUILanguage( LANGID lang )
-{
-    SYSCALL_FUNC( NtSetDefaultUILanguage );
-}
-
-NTSTATUS SYSCALL_API NtSetEaFile( HANDLE handle, IO_STATUS_BLOCK *io, void *buffer, ULONG length )
-{
-    SYSCALL_FUNC( NtSetEaFile );
-}
-
-NTSTATUS SYSCALL_API NtSetEvent( HANDLE handle, LONG *prev_state )
-{
-    SYSCALL_FUNC( NtSetEvent );
-}
-
-NTSTATUS SYSCALL_API NtSetInformationDebugObject( HANDLE handle, DEBUGOBJECTINFOCLASS class,
-                                                  void *info, ULONG len, ULONG *ret_len )
-{
-    SYSCALL_FUNC( NtSetInformationDebugObject );
-}
-
-NTSTATUS SYSCALL_API NtSetInformationFile( HANDLE handle, IO_STATUS_BLOCK *io,
-                                           void *ptr, ULONG len, FILE_INFORMATION_CLASS class )
-{
-    SYSCALL_FUNC( NtSetInformationFile );
-}
-
-NTSTATUS SYSCALL_API NtSetInformationJobObject( HANDLE handle, JOBOBJECTINFOCLASS class,
-                                                void *info, ULONG len )
-{
-    SYSCALL_FUNC( NtSetInformationJobObject );
-}
-
-NTSTATUS SYSCALL_API NtSetInformationKey( HANDLE key, int class, void *info, ULONG length )
-{
-    SYSCALL_FUNC( NtSetInformationKey );
-}
-
-NTSTATUS SYSCALL_API NtSetInformationObject( HANDLE handle, OBJECT_INFORMATION_CLASS info_class,
-                                             void *ptr, ULONG len )
-{
-    SYSCALL_FUNC( NtSetInformationObject );
-}
-
-NTSTATUS SYSCALL_API NtSetInformationProcess( HANDLE handle, PROCESSINFOCLASS class,
-                                              void *info, ULONG size )
-{
-    SYSCALL_FUNC( NtSetInformationProcess );
-}
-
-NTSTATUS SYSCALL_API NtSetInformationThread( HANDLE handle, THREADINFOCLASS class,
-                                             const void *data, ULONG length )
-{
-    SYSCALL_FUNC( NtSetInformationThread );
-}
-
-NTSTATUS SYSCALL_API NtSetInformationToken( HANDLE token, TOKEN_INFORMATION_CLASS class,
-                                            void *info, ULONG length )
-{
-    SYSCALL_FUNC( NtSetInformationToken );
-}
-
-NTSTATUS SYSCALL_API NtSetInformationVirtualMemory( HANDLE process,
-                                                    VIRTUAL_MEMORY_INFORMATION_CLASS info_class,
-                                                    ULONG_PTR count, PMEMORY_RANGE_ENTRY addresses,
-                                                    PVOID ptr, ULONG size )
-{
-    SYSCALL_FUNC( NtSetInformationVirtualMemory );
-}
-
-NTSTATUS SYSCALL_API NtSetIntervalProfile( ULONG interval, KPROFILE_SOURCE source )
-{
-    SYSCALL_FUNC( NtSetIntervalProfile );
-}
-
-NTSTATUS SYSCALL_API NtSetIoCompletion( HANDLE handle, ULONG_PTR key, ULONG_PTR value,
-                                        NTSTATUS status, SIZE_T count )
-{
-    SYSCALL_FUNC( NtSetIoCompletion );
-}
-
-NTSTATUS SYSCALL_API NtSetLdtEntries( ULONG sel1, LDT_ENTRY entry1, ULONG sel2, LDT_ENTRY entry2 )
-{
-    SYSCALL_FUNC( NtSetLdtEntries );
-}
-
-NTSTATUS SYSCALL_API NtSetSecurityObject( HANDLE handle, SECURITY_INFORMATION info,
-                                          PSECURITY_DESCRIPTOR descr )
-{
-    SYSCALL_FUNC( NtSetSecurityObject );
-}
-
-NTSTATUS SYSCALL_API NtSetSystemInformation( SYSTEM_INFORMATION_CLASS class, void *info, ULONG length )
-{
-    SYSCALL_FUNC( NtSetSystemInformation );
-}
-
-NTSTATUS SYSCALL_API NtSetSystemTime( const LARGE_INTEGER *new, LARGE_INTEGER *old )
-{
-    SYSCALL_FUNC( NtSetSystemTime );
-}
-
-NTSTATUS SYSCALL_API NtSetThreadExecutionState( EXECUTION_STATE new_state, EXECUTION_STATE *old_state )
-{
-    SYSCALL_FUNC( NtSetThreadExecutionState );
-}
-
-NTSTATUS SYSCALL_API NtSetTimer( HANDLE handle, const LARGE_INTEGER *when, PTIMER_APC_ROUTINE callback,
-                                 void *arg, BOOLEAN resume, ULONG period, BOOLEAN *state )
-{
-    SYSCALL_FUNC( NtSetTimer );
-}
-
-NTSTATUS SYSCALL_API NtSetTimerResolution( ULONG res, BOOLEAN set, ULONG *current_res )
-{
-    SYSCALL_FUNC( NtSetTimerResolution );
-}
-
-NTSTATUS SYSCALL_API NtSetValueKey( HANDLE key, const UNICODE_STRING *name, ULONG index,
-                                    ULONG type, const void *data, ULONG count )
-{
-    SYSCALL_FUNC( NtSetValueKey );
-}
-
-NTSTATUS SYSCALL_API NtSetVolumeInformationFile( HANDLE handle, IO_STATUS_BLOCK *io, void *info,
-                                                 ULONG length, FS_INFORMATION_CLASS class )
-{
-    SYSCALL_FUNC( NtSetVolumeInformationFile );
-}
-
-NTSTATUS SYSCALL_API NtShutdownSystem( SHUTDOWN_ACTION action )
-{
-    SYSCALL_FUNC( NtShutdownSystem );
-}
-
-NTSTATUS SYSCALL_API NtSignalAndWaitForSingleObject( HANDLE signal, HANDLE wait,
-                                                     BOOLEAN alertable, const LARGE_INTEGER *timeout )
-{
-    SYSCALL_FUNC( NtSignalAndWaitForSingleObject );
-}
-
-NTSTATUS SYSCALL_API NtSuspendProcess( HANDLE handle )
-{
-    SYSCALL_FUNC( NtSuspendProcess );
-}
-
-NTSTATUS SYSCALL_API NtSuspendThread( HANDLE handle, ULONG *count )
-{
-    SYSCALL_FUNC( NtSuspendThread );
-}
-
-NTSTATUS SYSCALL_API NtSystemDebugControl( SYSDBG_COMMAND command, void *in_buff, ULONG in_len,
-                                           void *out_buff, ULONG out_len, ULONG *retlen )
-{
-    SYSCALL_FUNC( NtSystemDebugControl );
-}
-
-NTSTATUS SYSCALL_API NtTerminateJobObject( HANDLE handle, NTSTATUS status )
-{
-    SYSCALL_FUNC( NtTerminateJobObject );
-}
-
 NTSTATUS SYSCALL_API NtTerminateProcess( HANDLE handle, LONG exit_code )
 {
-    SYSCALL_FUNC( NtTerminateProcess );
+    NTSTATUS status;
+
+    if (!handle && pProcessTerm && enter_syscall_callback())
+    {
+        pProcessTerm( handle, FALSE, 0 );
+        status = syscall_NtTerminateProcess( handle, exit_code );
+        pProcessTerm( handle, TRUE, status );
+        leave_syscall_callback();
+        return status;
+    }
+    return syscall_NtTerminateProcess( handle, exit_code );
 }
 
 NTSTATUS SYSCALL_API NtTerminateThread( HANDLE handle, LONG exit_code )
 {
-    SYSCALL_FUNC( NtTerminateThread );
+    NTSTATUS status;
+
+    if (pThreadTerm && enter_syscall_callback())
+    {
+        pThreadTerm( handle, exit_code );
+        status = syscall_NtTerminateThread( handle, exit_code );
+        leave_syscall_callback();
+        return status;
+    }
+    return syscall_NtTerminateThread( handle, exit_code );
 }
 
-NTSTATUS SYSCALL_API NtTestAlert(void)
+NTSTATUS SYSCALL_API NtUnmapViewOfSection( HANDLE process, void *addr )
 {
-    SYSCALL_FUNC( NtTestAlert );
+    BOOL is_current = RtlIsCurrentProcess( process );
+    NTSTATUS status;
+
+    if (is_current && pNotifyUnmapViewOfSection && enter_syscall_callback())
+    {
+        pNotifyUnmapViewOfSection( addr, FALSE, 0 );
+        status = syscall_NtUnmapViewOfSection( process, addr );
+        pNotifyUnmapViewOfSection( addr, TRUE, status );
+        leave_syscall_callback();
+        return status;
+    }
+    return syscall_NtUnmapViewOfSection( process, addr );
 }
 
-NTSTATUS SYSCALL_API NtTraceControl( ULONG code, void *inbuf, ULONG inbuf_len,
-                                     void *outbuf, ULONG outbuf_len, ULONG *size )
+NTSTATUS SYSCALL_API NtUnmapViewOfSectionEx( HANDLE process, void *addr, ULONG flags )
 {
-    SYSCALL_FUNC( NtTraceControl );
+    BOOL is_current = RtlIsCurrentProcess( process );
+    NTSTATUS status;
+
+    if (is_current && pNotifyUnmapViewOfSection && enter_syscall_callback())
+    {
+        pNotifyUnmapViewOfSection( addr, FALSE, 0 );
+        status = syscall_NtUnmapViewOfSectionEx( process, addr, flags );
+        pNotifyUnmapViewOfSection( addr, TRUE, status );
+        leave_syscall_callback();
+        return status;
+    }
+    return syscall_NtUnmapViewOfSectionEx( process, addr, flags );
 }
 
-NTSTATUS SYSCALL_API NtUnloadDriver( const UNICODE_STRING *name )
-{
-    SYSCALL_FUNC( NtUnloadDriver );
-}
 
-NTSTATUS SYSCALL_API NtUnloadKey( OBJECT_ATTRIBUTES *attr )
-{
-    SYSCALL_FUNC( NtUnloadKey );
-}
-
-NTSTATUS SYSCALL_API NtUnlockFile( HANDLE handle, IO_STATUS_BLOCK *io_status, LARGE_INTEGER *offset,
-                                   LARGE_INTEGER *count, ULONG *key )
-{
-    SYSCALL_FUNC( NtUnlockFile );
-}
-
-NTSTATUS SYSCALL_API NtUnlockVirtualMemory( HANDLE process, PVOID *addr, SIZE_T *size, ULONG unknown )
-{
-    SYSCALL_FUNC( NtUnlockVirtualMemory );
-}
-
-NTSTATUS SYSCALL_API NtUnmapViewOfSection( HANDLE process, PVOID addr )
-{
-    SYSCALL_FUNC( NtUnmapViewOfSection );
-}
-
-NTSTATUS SYSCALL_API NtUnmapViewOfSectionEx( HANDLE process, PVOID addr, ULONG flags )
-{
-    SYSCALL_FUNC( NtUnmapViewOfSectionEx );
-}
-
-NTSTATUS SYSCALL_API NtWaitForAlertByThreadId( const void *address, const LARGE_INTEGER *timeout )
-{
-    SYSCALL_FUNC( NtWaitForAlertByThreadId );
-}
-
-NTSTATUS SYSCALL_API NtWaitForDebugEvent( HANDLE handle, BOOLEAN alertable, LARGE_INTEGER *timeout,
-                                          DBGUI_WAIT_STATE_CHANGE *state )
-{
-    SYSCALL_FUNC( NtWaitForDebugEvent );
-}
-
-NTSTATUS SYSCALL_API NtWaitForKeyedEvent( HANDLE handle, const void *key,
-                                          BOOLEAN alertable, const LARGE_INTEGER *timeout )
-{
-    SYSCALL_FUNC( NtWaitForKeyedEvent );
-}
-
-NTSTATUS SYSCALL_API NtWaitForMultipleObjects( DWORD count, const HANDLE *handles, BOOLEAN wait_any,
-                                               BOOLEAN alertable, const LARGE_INTEGER *timeout )
-{
-    SYSCALL_FUNC( NtWaitForMultipleObjects );
-}
-
-NTSTATUS SYSCALL_API NtWaitForSingleObject( HANDLE handle, BOOLEAN alertable, const LARGE_INTEGER *timeout )
-{
-    SYSCALL_FUNC( NtWaitForSingleObject );
-}
-
-NTSTATUS SYSCALL_API NtWriteFile( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc_user,
-                                  IO_STATUS_BLOCK *io, const void *buffer, ULONG length,
-                                  LARGE_INTEGER *offset, ULONG *key )
-{
-    SYSCALL_FUNC( NtWriteFile );
-}
-
-NTSTATUS SYSCALL_API NtWriteFileGather( HANDLE file, HANDLE event, PIO_APC_ROUTINE apc, void *apc_user,
-                                        IO_STATUS_BLOCK *io, FILE_SEGMENT_ELEMENT *segments,
-                                        ULONG length, LARGE_INTEGER *offset, ULONG *key )
-{
-    SYSCALL_FUNC( NtWriteFileGather );
-}
-
-NTSTATUS SYSCALL_API NtWriteVirtualMemory( HANDLE process, void *addr, const void *buffer,
-                                           SIZE_T size, SIZE_T *bytes_written )
-{
-    SYSCALL_FUNC( NtWriteVirtualMemory );
-}
-
-NTSTATUS SYSCALL_API NtYieldExecution(void)
-{
-    SYSCALL_FUNC( NtYieldExecution );
-}
-
-NTSTATUS SYSCALL_API wine_nt_to_unix_file_name( const OBJECT_ATTRIBUTES *attr, char *nameA, ULONG *size,
-                                                UINT disposition )
-{
-    SYSCALL_FUNC( wine_nt_to_unix_file_name );
-}
-
-NTSTATUS SYSCALL_API wine_unix_to_nt_file_name( const char *name, WCHAR *buffer, ULONG *size )
-{
-    SYSCALL_FUNC( wine_unix_to_nt_file_name );
-}
-
-static void * const arm64ec_syscalls[] =
-{
-#define SYSCALL_ENTRY(id,name,args) name,
-    ALL_SYSCALLS64
+asm( ".section .rdata, \"dr\"\n\t"
+     ".balign 8\n\t"
+     ".globl arm64ec_syscalls\n"
+     "arm64ec_syscalls:\n\t"
+#define SYSCALL_ENTRY(id,name,args) ".quad \"#" #name "$hp_target\"\n\t"
+     ALL_SYSCALLS64
 #undef SYSCALL_ENTRY
-};
+     ".text" );
 
 
 /***********************************************************************
@@ -1479,6 +780,9 @@ static NTSTATUS WINAPI LdrpGetX64Information( ULONG type, void *output, void *ex
         *(UINT *)output = fpcsr_to_mxcsr( fpcr, fpsr );
         return STATUS_SUCCESS;
     }
+    case 2:
+        *(UINT *)output = 0x27f;  /* hard-coded x87 control word */
+        return STATUS_SUCCESS;
     default:
         FIXME( "not implemented type %u\n", type );
         return STATUS_INVALID_PARAMETER;
@@ -1501,6 +805,74 @@ static NTSTATUS WINAPI LdrpSetX64Information( ULONG type, ULONG_PTR input, void 
     default:
         FIXME( "not implemented type %u\n", type );
         return STATUS_INVALID_PARAMETER;
+    }
+}
+
+
+/**********************************************************************
+ *           ProcessPendingCrossProcessEmulatorWork  (ntdll.@)
+ */
+void WINAPI ProcessPendingCrossProcessEmulatorWork(void)
+{
+    CHPEV2_PROCESS_INFO *info = RtlGetCurrentPeb()->ChpeV2ProcessInfo;
+    CROSS_PROCESS_WORK_LIST *list = (void *)info->CrossProcessWorkList;
+    CROSS_PROCESS_WORK_ENTRY *entry;
+    BOOLEAN flush = FALSE;
+    UINT next;
+
+    if (!list) return;
+    entry = RtlWow64PopAllCrossProcessWorkFromWorkList( &list->work_list, &flush );
+
+    if (flush)
+    {
+        if (pFlushInstructionCacheHeavy) pFlushInstructionCacheHeavy( NULL, 0 );
+        while (entry)
+        {
+            next = entry->next;
+            RtlWow64PushCrossProcessWorkOntoFreeList( &list->free_list, entry );
+            entry = next ? CROSS_PROCESS_LIST_ENTRY( &list->work_list, next ) : NULL;
+        }
+        return;
+    }
+
+    while (entry)
+    {
+        switch (entry->id)
+        {
+        case CrossProcessPreVirtualAlloc:
+        case CrossProcessPostVirtualAlloc:
+            if (!pNotifyMemoryAlloc) break;
+            pNotifyMemoryAlloc( (void *)entry->addr, entry->size, entry->args[0], entry->args[1],
+                                entry->id == CrossProcessPostVirtualAlloc, entry->args[2] );
+            break;
+        case CrossProcessPreVirtualFree:
+        case CrossProcessPostVirtualFree:
+            if (!pNotifyMemoryFree) break;
+            pNotifyMemoryFree( (void *)entry->addr, entry->size, entry->args[0],
+                               entry->id == CrossProcessPostVirtualFree, entry->args[1] );
+            break;
+        case CrossProcessPreVirtualProtect:
+        case CrossProcessPostVirtualProtect:
+            if (!pNotifyMemoryProtect) break;
+            pNotifyMemoryProtect( (void *)entry->addr, entry->size, entry->args[0],
+                                  entry->id == CrossProcessPostVirtualProtect, entry->args[1] );
+            break;
+        case CrossProcessFlushCache:
+            if (!pBTCpu64FlushInstructionCache) break;
+            pBTCpu64FlushInstructionCache( (void *)entry->addr, entry->size );
+            break;
+        case CrossProcessFlushCacheHeavy:
+            if (!pFlushInstructionCacheHeavy) break;
+            pFlushInstructionCacheHeavy( (void *)entry->addr, entry->size );
+            break;
+        case CrossProcessMemoryWrite:
+            if (!pBTCpu64NotifyMemoryDirty) break;
+            pBTCpu64NotifyMemoryDirty( (void *)entry->addr, entry->size );
+            break;
+        }
+        next = entry->next;
+        RtlWow64PushCrossProcessWorkOntoFreeList( &list->free_list, entry );
+        entry = next ? CROSS_PROCESS_LIST_ENTRY( &list->work_list, next ) : NULL;
     }
 }
 
@@ -1731,22 +1103,78 @@ NTSTATUS call_seh_handlers( EXCEPTION_RECORD *rec, CONTEXT *orig_context )
 
 
 /*******************************************************************
- *		KiUserExceptionDispatcher (NTDLL.@)
+ *		KiUserEmulationDispatcher (NTDLL.@)
  */
-static NTSTATUS __attribute__((used)) dispatch_exception_arm64ec( EXCEPTION_RECORD *rec, ARM64_NT_CONTEXT *arm_ctx )
+void dispatch_emulation( ARM64_NT_CONTEXT *arm_ctx )
 {
-    ARM64EC_NT_CONTEXT context;
-
-    context_arm_to_x64( &context, arm_ctx );
-    return dispatch_exception( rec, &context.AMD64_Context );
+    context_arm_to_x64( get_arm64ec_cpu_area()->ContextAmd64, arm_ctx );
+    get_arm64ec_cpu_area()->InSimulation = 1;
+    pBeginSimulation();
 }
-__ASM_GLOBAL_FUNC( "#KiUserExceptionDispatcher",
+__ASM_GLOBAL_FUNC( "#KiUserEmulationDispatcher",
                    ".seh_context\n\t"
                    ".seh_endprologue\n\t"
-                   "add x0, sp, #0x390\n\t"       /* rec (context + 1) */
-                   "mov x1, sp\n\t"               /* context */
-                   "bl dispatch_exception_arm64ec\n\t"
+                   "mov x0, sp\n\t"   /* context */
+                   "bl dispatch_emulation\n\t"
                    "brk #1" )
+
+
+/*******************************************************************
+ *		dispatch_syscall
+ */
+static void dispatch_syscall( ARM64_NT_CONTEXT *context )
+{
+    if (context->X8 < __nb_syscalls)  /* syscall number in rax */
+    {
+        context->X0 = context->X4;  /* get first param from r10 */
+        context->X4 = context->Pc;  /* and save return address to syscall thunk */
+        context->Pc = (ULONG_PTR)invoke_arm64ec_syscall;
+    }
+    else context->X8 = STATUS_INVALID_PARAMETER;  /* set return value in rax */
+
+    /* return to x64 code so that the syscall entry thunk is invoked properly */
+    dispatch_emulation( context );
+}
+
+
+static void * __attribute__((used)) prepare_exception_arm64ec( EXCEPTION_RECORD *rec, ARM64EC_NT_CONTEXT *context, ARM64_NT_CONTEXT *arm_ctx )
+{
+    if (rec->ExceptionCode == STATUS_EMULATION_SYSCALL) dispatch_syscall( arm_ctx );
+    context_arm_to_x64( context, arm_ctx );
+    if (pResetToConsistentState) pResetToConsistentState( rec, &context->AMD64_Context, arm_ctx );
+    /* call x64 dispatcher if the thunk or the function pointer was modified */
+    if (pWow64PrepareForException || memcmp( KiUserExceptionDispatcher_thunk, KiUserExceptionDispatcher_orig,
+                                             sizeof(KiUserExceptionDispatcher_orig) ))
+        return KiUserExceptionDispatcher_thunk;
+    return NULL;
+}
+
+/*******************************************************************
+ *		KiUserExceptionDispatcher (NTDLL.@)
+ */
+void __attribute__((naked)) KiUserExceptionDispatcher( EXCEPTION_RECORD *rec, CONTEXT *context )
+{
+    asm( ".seh_proc \"#KiUserExceptionDispatcher\"\n\t"
+         ".seh_context\n\t"
+         "sub sp, sp, #0x4d0\n\t"       /* sizeof(ARM64EC_NT_CONTEXT) */
+         ".seh_stackalloc 0x4d0\n\t"
+         ".seh_endprologue\n\t"
+         "add x0, sp, #0x3b0+0x4d0\n\t" /* rec */
+         "mov x1, sp\n\t"               /* context */
+         "add x2, sp, #0x4d0\n\t"       /* arm_ctx (context + 1) */
+         "bl \"#prepare_exception_arm64ec\"\n\t"
+         "cbz x0, 1f\n\t"
+         /* bypass exit thunk to avoid messing up the stack */
+         "adrp x16, __os_arm64x_dispatch_call_no_redirect\n\t"
+         "ldr x16, [x16, #:lo12:__os_arm64x_dispatch_call_no_redirect]\n\t"
+         "mov x9, x0\n\t"
+         "blr x16\n"
+         "1:\tadd x0, sp, #0x3b0+0x4d0\n\t" /* rec */
+         "mov x1, sp\n\t"                   /* context */
+         "bl #dispatch_exception\n\t"
+         "brk #1\n\t"
+         ".seh_endproc" );
+}
 
 
 /*******************************************************************
@@ -1771,7 +1199,7 @@ __ASM_GLOBAL_FUNC( "#KiUserApcDispatcher",
                    "ldp x2, x3, [sp, #0x10]\n\t"  /* arg2, arg3 */
                    "ldr w4, [sp, #0x20]\n\t"      /* alertable */
                    "add x5, sp, #0x30\n\t"        /* context */
-                   "bl " __ASM_NAME("dispatch_apc") "\n\t"
+                   "bl \"#dispatch_apc\"\n\t"
                    "brk #1" )
 
 
@@ -1785,7 +1213,7 @@ __ASM_GLOBAL_FUNC( "#KiUserCallbackDispatcher",
                    "nop\n\t"
                    ".seh_save_reg lr, 0x18\n\t"
                    ".seh_endprologue\n\t"
-                   ".seh_handler " __ASM_NAME("user_callback_handler") ", @except\n\t"
+                   ".seh_handler user_callback_handler, @except\n\t"
                    "ldr x0, [sp]\n\t"             /* args */
                    "ldp w1, w2, [sp, #0x08]\n\t"  /* len, id */
                    "ldr x3, [x18, 0x60]\n\t"      /* peb */
@@ -1797,8 +1225,8 @@ __ASM_GLOBAL_FUNC( "#KiUserCallbackDispatcher",
                    "mov x2, x0\n\t"               /* status */
                    "mov x1, #0\n\t"               /* ret_len */
                    "mov x0, x1\n\t"               /* ret_ptr */
-                   "bl " __ASM_NAME("NtCallbackReturn") "\n\t"
-                   "bl " __ASM_NAME("RtlRaiseStatus") "\n\t"
+                   "bl \"#NtCallbackReturn\"\n\t"
+                   "bl \"#RtlRaiseStatus\"\n\t"
                    "brk #1" )
 
 
@@ -1846,7 +1274,7 @@ static void __attribute__((used)) capture_context( CONTEXT *context, UINT cpsr, 
  */
 void __attribute__((naked)) RtlCaptureContext( CONTEXT *context )
 {
-    asm( ".seh_proc RtlCaptureContext\n\t"
+    asm( ".seh_proc \"#RtlCaptureContext\"\n\t"
          ".seh_endprologue\n\t"
          "stp x8, x0,   [x0, #0x78]\n\t"    /* context->Rax,Rcx */
          "stp x1, x27,  [x0, #0x88]\n\t"    /* context->Rdx,Rbx */
@@ -1885,7 +1313,7 @@ void __attribute__((naked)) RtlCaptureContext( CONTEXT *context )
          "mrs x1, nzcv\n\t"
          "mrs x2, fpcr\n\t"
          "mrs x3, fpsr\n\t"
-         "b capture_context\n\t"
+         "b \"#capture_context\"\n\t"
          ".seh_endproc" );
 }
 
@@ -1931,7 +1359,7 @@ static int __attribute__((used)) do_setjmpex( _JUMP_BUFFER *buf, UINT fpcr, UINT
  */
 int __attribute__((naked)) NTDLL__setjmpex( _JUMP_BUFFER *buf, void *frame )
 {
-    asm( ".seh_proc NTDLL__setjmpex\n\t"
+    asm( ".seh_proc \"#NTDLL__setjmpex\"\n\t"
          ".seh_endprologue\n\t"
          "stp x1, x27,  [x0]\n\t"          /* jmp_buf->Frame,Rbx */
          "mov x1, sp\n\t"
@@ -1946,7 +1374,7 @@ int __attribute__((naked)) NTDLL__setjmpex( _JUMP_BUFFER *buf, void *frame )
          "stp d14, d15, [x0, #0xe0]\n\t"   /* jmp_buf->Xmm14,Xmm15 */
          "mrs x1, fpcr\n\t"
          "mrs x2, fpsr\n\t"
-         "b do_setjmpex\n\t"
+         "b \"#do_setjmpex\"\n\t"
          ".seh_endproc" );
 }
 
@@ -2189,6 +1617,46 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
 
 
 /*************************************************************************
+ *		RtlGetNativeSystemInformation (NTDLL.@)
+ */
+NTSTATUS WINAPI RtlGetNativeSystemInformation( SYSTEM_INFORMATION_CLASS class,
+                                               void *info, ULONG size, ULONG *ret_size )
+{
+    return syscall_NtQuerySystemInformation( class, info, size, ret_size );
+}
+
+
+/***********************************************************************
+ *           RtlIsProcessorFeaturePresent [NTDLL.@]
+ */
+BOOLEAN WINAPI RtlIsProcessorFeaturePresent( UINT feature )
+{
+    static const ULONGLONG arm64_features =
+        (1ull << PF_COMPARE_EXCHANGE_DOUBLE) |
+        (1ull << PF_NX_ENABLED) |
+        (1ull << PF_ARM_VFP_32_REGISTERS_AVAILABLE) |
+        (1ull << PF_ARM_NEON_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_SECOND_LEVEL_ADDRESS_TRANSLATION) |
+        (1ull << PF_FASTFAIL_AVAILABLE) |
+        (1ull << PF_ARM_DIVIDE_INSTRUCTION_AVAILABLE) |
+        (1ull << PF_ARM_64BIT_LOADSTORE_ATOMIC) |
+        (1ull << PF_ARM_EXTERNAL_CACHE_AVAILABLE) |
+        (1ull << PF_ARM_FMAC_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_V8_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_V83_JSCVT_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE);
+
+    if (feature >= PROCESSOR_FEATURE_MAX) return FALSE;
+    if (arm64_features & (1ull << feature)) return user_shared_data->ProcessorFeatures[feature];
+    return emulated_processor_features[feature];
+}
+
+
+/*************************************************************************
  *		RtlWalkFrameChain (NTDLL.@)
  */
 ULONG WINAPI RtlWalkFrameChain( void **buffer, ULONG count, ULONG flags )
@@ -2220,110 +1688,114 @@ ULONG WINAPI RtlWalkFrameChain( void **buffer, ULONG count, ULONG flags )
 }
 
 
-static int code_match( BYTE *code, const BYTE *seq, size_t len )
+/*************************************************************************
+ *		__wine_unix_call_arm64ec
+ */
+NTSTATUS __attribute__((naked)) __wine_unix_call_arm64ec( unixlib_handle_t handle, unsigned int code, void *args )
 {
-    for ( ; len; len--, code++, seq++) if (*seq && *code != *seq) return 0;
-    return 1;
+    asm( ".seh_proc \"#__wine_unix_call_arm64ec\"\n\t"
+         ".seh_endprologue\n\t"
+         "adrp x16, __wine_unix_call_dispatcher_arm64ec\n\t"
+         "ldr x16, [x16, #:lo12:__wine_unix_call_dispatcher_arm64ec]\n\t"
+         "br x16\n\t"
+         ".seh_endproc" );
 }
 
-void *check_call( void **target, void *exit_thunk, void *dest )
-{
-    static const BYTE jmp_sequence[] =
-    {
-        0xff, 0x25              /* jmp *xxx(%rip) */
-    };
-    static const BYTE fast_forward_sequence[] =
-    {
-        0x48, 0x8b, 0xc4,       /* mov  %rsp,%rax */
-        0x48, 0x89, 0x58, 0x20, /* mov  %rbx,0x20(%rax) */
-        0x55,                   /* push %rbp */
-        0x5d,                   /* pop  %rbp */
-        0xe9                    /* jmp  arm_code */
-    };
-    static const BYTE syscall_sequence[] =
-    {
-        0x4c, 0x8b, 0xd1,       /* mov  %rcx,%r10 */
-        0xb8, 0, 0, 0, 0,       /* mov  $xxx,%eax */
-        0xf6, 0x04, 0x25, 0x08, /* testb $0x1,0x7ffe0308 */
-        0x03, 0xfe, 0x7f, 0x01,
-        0x75, 0x03,             /* jne 1f */
-        0x0f, 0x05,             /* syscall */
-        0xc3,                   /* ret */
-        0xcd, 0x2e,             /* 1: int $0x2e */
-        0xc3                    /* ret */
-    };
-
-    for (;;)
-    {
-        if (dest == __wine_unix_call_dispatcher) return dest;
-        if (RtlIsEcCode( (ULONG_PTR)dest )) return dest;
-        if (code_match( dest, jmp_sequence, sizeof(jmp_sequence) ))
-        {
-            int *off_ptr = (int *)((char *)dest + sizeof(jmp_sequence));
-            void **addr_ptr = (void **)((char *)(off_ptr + 1) + *off_ptr);
-            dest = *addr_ptr;
-            continue;
-        }
-        if (!((ULONG_PTR)dest & 15))  /* fast-forward and syscall thunks are always aligned */
-        {
-            if (code_match( dest, fast_forward_sequence, sizeof(fast_forward_sequence) ))
-            {
-                int *off_ptr = (int *)((char *)dest + sizeof(fast_forward_sequence));
-                return (char *)(off_ptr + 1) + *off_ptr;
-            }
-            if (code_match( dest, syscall_sequence, sizeof(syscall_sequence) ))
-            {
-                ULONG id = ((ULONG *)dest)[1];
-                if (id < ARRAY_SIZE(arm64ec_syscalls)) return arm64ec_syscalls[id];
-            }
-        }
-        *target = dest;
-        return exit_thunk;
-    }
-}
-
-static void __attribute__((naked)) arm64x_check_call(void)
-{
-    asm( "stp x29, x30, [sp,#-0xb0]!\n\t"
-         "mov x29, sp\n\t"
-         "stp x0, x1,   [sp, #0x10]\n\t"
-         "stp x2, x3,   [sp, #0x20]\n\t"
-         "stp x4, x5,   [sp, #0x30]\n\t"
-         "stp x6, x7,   [sp, #0x40]\n\t"
-         "stp x8, x9,   [sp, #0x50]\n\t"
-         "stp x10, x15, [sp, #0x60]\n\t"
-         "stp d0, d1,   [sp, #0x70]\n\t"
-         "stp d2, d3,   [sp, #0x80]\n\t"
-         "stp d4, d5,   [sp, #0x90]\n\t"
-         "stp d6, d7,   [sp, #0xa0]\n\t"
-         "add x0, sp, #0x58\n\t"  /* x9 = &target */
-         "mov x1, x10\n\t"        /* x10 = exit_thunk */
-         "mov x2, x11\n\t"        /* x11 = dest */
-         "bl " __ASM_NAME("check_call") "\n\t"
-         "mov x11, x0\n\t"
-         "ldp x0, x1,   [sp, #0x10]\n\t"
-         "ldp x2, x3,   [sp, #0x20]\n\t"
-         "ldp x4, x5,   [sp, #0x30]\n\t"
-         "ldp x6, x7,   [sp, #0x40]\n\t"
-         "ldp x8, x9,   [sp, #0x50]\n\t"
-         "ldp x10, x15, [sp, #0x60]\n\t"
-         "ldp d0, d1,   [sp, #0x70]\n\t"
-         "ldp d2, d3,   [sp, #0x80]\n\t"
-         "ldp d4, d5,   [sp, #0x90]\n\t"
-         "ldp d6, d7,   [sp, #0xa0]\n\t"
-         "ldp x29, x30, [sp], #0xb0\n\t"
-         "ret" );
-}
+NTSTATUS (WINAPI *__wine_unix_call_dispatcher_arm64ec)( unixlib_handle_t, unsigned int, void * ) = __wine_unix_call_arm64ec;
 
 
 /**************************************************************************
- *		__chkstk (NTDLL.@)
+ *		arm64x_check_call
  *
- * Supposed to touch all the stack pages, but we shouldn't need that.
+ * Implementation of __os_arm64x_check_call.
  */
-void __attribute__((naked)) __chkstk(void)
+static void __attribute__((naked)) arm64x_check_call(void)
 {
-    asm( "ret" );
+    asm( ".seh_proc \"#arm64x_check_call\"\n\t"
+         ".seh_endprologue\n\t"
+         /* check for EC code */
+         "ldr x16, [x18, #0x60]\n\t"        /* peb */
+         "lsr x17, x11, #18\n\t"            /* dest / page_size / 64 */
+         "ldr x16, [x16, #0x368]\n\t"       /* peb->EcCodeBitMap */
+         "lsr x9, x11, #12\n\t"             /* dest / page_size */
+         "ldr x16, [x16, x17, lsl #3]\n\t"
+         "lsr x16, x16, x9\n\t"
+         "tbnz x16, #0, .Ldone\n\t"
+         /* check if dest is aligned */
+         "tst x11, #15\n\t"                 /* dest & 15 */
+         "b.ne .Ljmp\n\t"
+         "ldr x16, [x11]\n\t"               /* dest code */
+         /* check for fast-forward sequence */
+         "ldr x17, .Lffwd_seq\n\t"
+         "cmp x16, x17\n\t"
+         "b.ne .Lsyscall\n\t"
+         "ldr x16, [x11, #8]\n\t"
+         "ldr x17, .Lffwd_seq + 8\n\t"
+         "eor x17, x16, x17\n\t"            /* compare only first two bytes */
+         "tst x17, #0xffff\n\t"
+         "b.ne .Lexit\n\t"
+         "add x11, x11, #14\n\t"            /* address after jump */
+         "lsr x9, x16, #16\n\t"
+         "add x11, x11, w9, sxtw\n\t"       /* add offset */
+         "ret\n"
+         /* check for syscall sequence */
+         ".Lsyscall:\n\t"
+         "ldr w17, .Lsyscall_seq\n\t"
+         "cmp w16, w17\n\t"
+         "b.ne .Ljmp\n\t"
+         "ubfx x9, x16, #32, #12\n\t"       /* syscall number */
+         "ldr x16, [x11, #8]\n\t"
+         "ldr x17, .Lsyscall_seq + 8\n\t"
+         "cmp x16, x17\n\t"
+         "b.ne .Lexit\n\t"
+         "ldr x16, [x11, #16]\n\t"
+         "ldr x17, .Lsyscall_seq + 16\n\t"
+         "cmp x16, x17\n\t"
+         "b.ne .Lexit\n\t"
+         "cmp x9, #%0\n\t"
+         "b.hs .Lexit\n\t"
+         "adr x11, arm64ec_syscalls\n\t"
+         "ldr x11, [x11, x9, lsl #3]\n\t"
+         "ret\n"
+         /* check for jmp sequence */
+         ".Ljmp:\n\t"
+         "ldrb w16, [x11]\n\t"
+         "cmp w16, #0xff\n\t"
+         "b.ne .Lexit\n\t"
+         "ldrb w16, [x11, #1]\n\t"
+         "cmp w16, #0x25\n\t"               /* ff 25 jmp *xxx(%rip) */
+         "b.ne .Lexit\n\t"
+         "ldr w9, [x11, #2]\n\t"
+         "add x16, x11, #6\n\t"             /* address after jump */
+         "ldr x11, [x16, w9, sxtw]\n\t"
+         "b \"#arm64x_check_call\"\n"       /* restart checks with jump destination */
+         /* not a special sequence, call the exit thunk */
+         ".Lexit:\n\t"
+         "mov x9, x11\n\t"
+         "mov x11, x10\n\t"
+         ".Ldone:\n\t"
+         "ret\n"
+         ".seh_endproc\n\t"
+
+         ".Lffwd_seq:\n\t"
+         ".byte 0x48, 0x8b, 0xc4\n\t"       /* mov  %rsp,%rax */
+         ".byte 0x48, 0x89, 0x58, 0x20\n\t" /* mov  %rbx,0x20(%rax) */
+         ".byte 0x55\n"                     /* push %rbp */
+         ".byte 0x5d\n\t"                   /* pop  %rbp */
+         ".byte 0xe9\n\t"                   /* jmp  arm_code */
+         ".byte 0, 0, 0, 0, 0, 0\n"
+
+         ".Lsyscall_seq:\n\t"
+         ".byte 0x4c, 0x8b, 0xd1\n\t"       /* mov  %rcx,%r10 */
+         ".byte 0xb8, 0, 0, 0, 0\n\t"       /* mov  $xxx,%eax */
+         ".byte 0xf6, 0x04, 0x25, 0x08\n\t" /* testb $0x1,0x7ffe0308 */
+         ".byte 0x03, 0xfe, 0x7f, 0x01\n\t"
+         ".byte 0x75, 0x03\n\t"             /* jne 1f */
+         ".byte 0x0f, 0x05\n\t"             /* syscall */
+         ".byte 0xc3\n\t"                   /* ret */
+         ".byte 0xcd, 0x2e\n\t"             /* 1: int $0x2e */
+         ".byte 0xc3"                       /* ret */
+         :: "i" (__nb_syscalls) );
 }
 
 
@@ -2377,7 +1849,7 @@ LONG __attribute__((naked)) __C_ExecuteExceptionFilter( EXCEPTION_POINTERS *ptrs
  */
 void __attribute((naked)) RtlRaiseException( EXCEPTION_RECORD *rec )
 {
-    asm( ".seh_proc RtlRaiseException\n\t"
+    asm( ".seh_proc \"#RtlRaiseException\"\n\t"
          "sub sp, sp, #0x4d0\n\t"     /* sizeof(context) */
          ".seh_stackalloc 0x4d0\n\t"
          "stp x29, x30, [sp, #-0x20]!\n\t"
@@ -2386,7 +1858,7 @@ void __attribute((naked)) RtlRaiseException( EXCEPTION_RECORD *rec )
          ".seh_save_any_reg x0, 0x10\n\t"
          ".seh_endprologue\n\t"
          "add x0, sp, #0x20\n\t"
-         "bl RtlCaptureContext\n\t"
+         "bl \"#RtlCaptureContext\"\n\t"
          "add x1, sp, #0x20\n\t"       /* context pointer */
          "ldr x0, [sp, #0x10]\n\t"     /* rec */
          "ldr x2, [x1, #0xf8]\n\t"     /* context->Rip */
@@ -2397,10 +1869,10 @@ void __attribute((naked)) RtlRaiseException( EXCEPTION_RECORD *rec )
          "ldr x3, [x18, #0x60]\n\t"    /* peb */
          "ldrb w2, [x3, #2]\n\t"       /* peb->BeingDebugged */
          "cbnz w2, 1f\n\t"
-         "bl dispatch_exception\n"
+         "bl \"#dispatch_exception\"\n"
          "1:\tmov w2, #1\n\t"
-         "bl NtRaiseException\n\t"
-         "b RtlRaiseStatus\n\t" /* does not return */
+         "bl \"#NtRaiseException\"\n\t"
+         "b \"#RtlRaiseStatus\"\n\t" /* does not return */
          ".seh_endproc" );
 }
 
@@ -2429,7 +1901,7 @@ void __cdecl NTDLL_longjmp( _JUMP_BUFFER *buf, int retval )
  */
 void __attribute__((naked)) RtlUserThreadStart( PRTL_THREAD_START_ROUTINE entry, void *arg )
 {
-    asm( ".seh_proc RtlUserThreadStart\n\t"
+    asm( ".seh_proc \"#RtlUserThreadStart\"\n\t"
          "stp x29, x30, [sp, #-16]!\n\t"
          ".seh_save_fplr_x 16\n\t"
          ".seh_endprologue\n\t"
@@ -2493,7 +1965,7 @@ __ASM_GLOBAL_FUNC( "#process_breakpoint",
  */
 void __attribute__((naked)) DbgUiRemoteBreakin( void *arg )
 {
-    asm( ".seh_proc DbgUiRemoteBreakin\n\t"
+    asm( ".seh_proc \"#DbgUiRemoteBreakin\"\n\t"
          "stp x29, x30, [sp, #-16]!\n\t"
          ".seh_save_fplr_x 16\n\t"
          ".seh_endprologue\n\t"
@@ -2501,9 +1973,9 @@ void __attribute__((naked)) DbgUiRemoteBreakin( void *arg )
          "ldr x0, [x18, #0x60]\n\t"  /* NtCurrentTeb()->Peb */
          "ldrb w0, [x0, 0x02]\n\t"   /* peb->BeingDebugged */
          "cbz w0, 1f\n\t"
-         "bl DbgBreakPoint\n"
+         "bl \"#DbgBreakPoint\"\n"
          "1:\tmov w0, #0\n\t"
-         "bl RtlExitUserThread\n"
+         "bl \"#RtlExitUserThread\"\n"
          "DbgUiRemoteBreakin_handler:\n\t"
          "mov sp, x1\n\t"            /* frame */
          "b 1b\n\t"
@@ -2516,7 +1988,7 @@ void __attribute__((naked)) DbgUiRemoteBreakin( void *arg )
  */
 void __attribute__((naked)) DbgBreakPoint(void)
 {
-    asm( ".seh_proc DbgBreakPoint\n\t"
+    asm( ".seh_proc \"#DbgBreakPoint\"\n\t"
          ".seh_endprologue\n\t"
          "brk #0xf000\n\t"
          "ret\n\t"
@@ -2529,7 +2001,7 @@ void __attribute__((naked)) DbgBreakPoint(void)
  */
 void __attribute__((naked)) DbgUserBreakPoint(void)
 {
-    asm( ".seh_proc DbgUserBreakPoint\n\t"
+    asm( ".seh_proc \"#DbgUserBreakPoint\"\n\t"
          ".seh_endprologue\n\t"
          "brk #0xf000\n\t"
          "ret\n\t"

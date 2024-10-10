@@ -128,12 +128,15 @@ static DWORD64 get_fault_esr( ucontext_t *sigcontext )
 struct exc_stack_layout
 {
     CONTEXT              context;        /* 000 */
-    EXCEPTION_RECORD     rec;            /* 390 */
-    ULONG64              align;          /* 428 */
-    ULONG64              redzone[2];     /* 430 */
+    CONTEXT_EX           context_ex;     /* 390 */
+    EXCEPTION_RECORD     rec;            /* 3b0 */
+    ULONG64              align;          /* 448 */
+    ULONG64              sp;             /* 450 */
+    ULONG64              pc;             /* 458 */
+    ULONG64              redzone[2];     /* 460 */
 };
-C_ASSERT( offsetof(struct exc_stack_layout, rec) == 0x390 );
-C_ASSERT( sizeof(struct exc_stack_layout) == 0x440 );
+C_ASSERT( offsetof(struct exc_stack_layout, rec) == 0x3b0 );
+C_ASSERT( sizeof(struct exc_stack_layout) == 0x470 );
 
 /* stack layout when calling KiUserApcDispatcher */
 struct apc_stack_layout
@@ -201,6 +204,29 @@ static BOOL is_inside_syscall( ucontext_t *sigcontext )
 {
     return ((char *)SP_sig(sigcontext) >= (char *)ntdll_get_thread_data()->kernel_stack &&
             (char *)SP_sig(sigcontext) <= (char *)arm64_thread_data()->syscall_frame);
+}
+
+/***********************************************************************
+ *           context_init_empty_xstate
+ *
+ * Initializes a context's CONTEXT_EX structure to point to an empty xstate buffer
+ */
+static inline void context_init_empty_xstate( CONTEXT *context, void *xstate_buffer )
+{
+    CONTEXT_EX *xctx;
+
+    xctx = (CONTEXT_EX *)(context + 1);
+    xctx->Legacy.Length = sizeof(CONTEXT);
+    xctx->Legacy.Offset = -(LONG)sizeof(CONTEXT);
+    xctx->XState.Length = 0;
+    xctx->XState.Offset = (BYTE *)xstate_buffer - (BYTE *)xctx;
+    xctx->All.Length = sizeof(CONTEXT) + xctx->XState.Offset + xctx->XState.Length;
+    xctx->All.Offset = -(LONG)sizeof(CONTEXT);
+}
+
+void set_process_instrumentation_callback( void *callback )
+{
+    if (callback) FIXME( "Not supported.\n" );
 }
 
 
@@ -320,10 +346,21 @@ static void restore_context( const CONTEXT *context, ucontext_t *sigcontext )
  */
 NTSTATUS signal_set_full_context( CONTEXT *context )
 {
+    struct syscall_frame *frame = arm64_thread_data()->syscall_frame;
     NTSTATUS status = NtSetContextThread( GetCurrentThread(), context );
 
     if (!status && (context->ContextFlags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
-        arm64_thread_data()->syscall_frame->restore_flags |= CONTEXT_INTEGER;
+        frame->restore_flags |= CONTEXT_INTEGER;
+
+    if (is_arm64ec() && !is_ec_code( frame->pc ))
+    {
+        CONTEXT *user_context = (CONTEXT *)((frame->sp - sizeof(CONTEXT)) & ~15);
+
+        user_context->ContextFlags = CONTEXT_FULL;
+        NtGetContextThread( GetCurrentThread(), user_context );
+        frame->sp = (ULONG_PTR)user_context;
+        frame->pc = (ULONG_PTR)pKiUserEmulationDispatcher;
+    }
     return status;
 }
 
@@ -433,6 +470,7 @@ NTSTATUS WINAPI NtGetContextThread( HANDLE handle, CONTEXT *context )
         context->ContextFlags |= CONTEXT_FLOATING_POINT;
     }
     if (needed_flags & CONTEXT_DEBUG_REGISTERS) FIXME( "debug registers not supported\n" );
+    set_context_exception_reporting_flags( &context->ContextFlags, CONTEXT_SERVICE_ACTIVE );
     return STATUS_SUCCESS;
 }
 
@@ -640,6 +678,7 @@ NTSTATUS get_thread_wow64_context( HANDLE handle, void *ctx, ULONG size )
             context->Dr7 = wow_frame->Dr7;
         }
         /* FIXME: CONTEXT_I386_XSTATE */
+        set_context_exception_reporting_flags( &context->ContextFlags, CONTEXT_SERVICE_ACTIVE );
         break;
     }
 
@@ -679,6 +718,7 @@ NTSTATUS get_thread_wow64_context( HANDLE handle, void *ctx, ULONG size )
             memcpy( context->D, wow_frame->D, sizeof(wow_frame->D) );
             context->ContextFlags |= CONTEXT_FLOATING_POINT;
         }
+        set_context_exception_reporting_flags( &context->ContextFlags, CONTEXT_SERVICE_ACTIVE );
         break;
     }
 
@@ -696,7 +736,7 @@ static void setup_raise_exception( ucontext_t *sigcontext, EXCEPTION_RECORD *rec
     void *stack_ptr = (void *)(SP_sig(sigcontext) & ~15);
     NTSTATUS status;
 
-    status = send_debug_event( rec, context, TRUE );
+    status = send_debug_event( rec, context, TRUE, TRUE );
     if (status == DBG_CONTINUE || status == DBG_EXCEPTION_HANDLED)
     {
         restore_context( context, sigcontext );
@@ -709,6 +749,9 @@ static void setup_raise_exception( ucontext_t *sigcontext, EXCEPTION_RECORD *rec
     stack = virtual_setup_exception( stack_ptr, sizeof(*stack), rec );
     stack->rec = *rec;
     stack->context = *context;
+    context_init_empty_xstate( &stack->context, stack->redzone );
+    stack->sp = stack->context.Sp;
+    stack->pc = stack->context.Pc;
 
     SP_sig(sigcontext) = (ULONG_PTR)stack;
     PC_sig(sigcontext) = (ULONG_PTR)pKiUserExceptionDispatcher;
@@ -790,6 +833,10 @@ NTSTATUS call_user_exception_dispatcher( EXCEPTION_RECORD *rec, CONTEXT *context
     stack = (struct exc_stack_layout *)(context->Sp & ~15) - 1;
     memmove( &stack->context, context, sizeof(*context) );
     memmove( &stack->rec, rec, sizeof(*rec) );
+    context_init_empty_xstate( &stack->context, stack->redzone );
+    stack->sp = stack->context.Sp;
+    stack->pc = stack->context.Pc;
+
     frame->pc = (ULONG64)pKiUserExceptionDispatcher;
     frame->sp = (ULONG64)stack;
     frame->restore_flags |= CONTEXT_CONTROL;
@@ -1036,9 +1083,7 @@ static void segv_handler( int signal, siginfo_t *siginfo, void *sigcontext )
     rec.NumberParameters = 2;
     rec.ExceptionInformation[0] = (get_fault_esr( context ) & 0x40) != 0;
     rec.ExceptionInformation[1] = (ULONG_PTR)siginfo->si_addr;
-    rec.ExceptionCode = virtual_handle_fault( siginfo->si_addr, rec.ExceptionInformation[0],
-                                              (void *)SP_sig(context) );
-    if (!rec.ExceptionCode) return;
+    if (!virtual_handle_fault( &rec, (void *)SP_sig(context) )) return;
     if (handle_syscall_fault( context, &rec )) return;
     setup_exception( context, &rec );
 }
@@ -1222,7 +1267,7 @@ static void usr1_handler( int signal, siginfo_t *siginfo, void *sigcontext )
 
     if (is_inside_syscall( sigcontext ))
     {
-        context.ContextFlags = CONTEXT_FULL;
+        context.ContextFlags = CONTEXT_FULL | CONTEXT_EXCEPTION_REQUEST;
         NtGetContextThread( GetCurrentThread(), &context );
         wait_suspend( &context );
         NtSetContextThread( GetCurrentThread(), &context );
@@ -1230,6 +1275,7 @@ static void usr1_handler( int signal, siginfo_t *siginfo, void *sigcontext )
     else
     {
         save_context( &context, sigcontext );
+        context.ContextFlags |= CONTEXT_EXCEPTION_REPORTING;
         wait_suspend( &context );
         restore_context( &context, sigcontext );
     }
@@ -1415,7 +1461,11 @@ void call_init_thunk( LPTHREAD_START_ROUTINE entry, void *arg, BOOL suspend, TEB
         if (arm_context->Pc & 1) arm_context->Cpsr |= 0x20; /* thumb mode */
     }
 
-    if (suspend) wait_suspend( &context );
+    if (suspend)
+    {
+        context.ContextFlags |= CONTEXT_EXCEPTION_REPORTING | CONTEXT_EXCEPTION_ACTIVE;
+        wait_suspend( &context );
+    }
 
     ctx = (CONTEXT *)((ULONG_PTR)context.Sp & ~15) - 1;
     *ctx = context;
@@ -1599,9 +1649,9 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                    "ret x16\n"
                    "4:\tmov x0, #0xc0000000\n\t" /* STATUS_INVALID_PARAMETER */
                    "movk x0, #0x000d\n\t"
-                   "b " __ASM_LOCAL_LABEL("__wine_syscall_dispatcher_return") "\n\t"
-                   ".globl " __ASM_NAME("__wine_syscall_dispatcher_return") "\n"
-                   __ASM_NAME("__wine_syscall_dispatcher_return") ":\n\t"
+                   "b " __ASM_LOCAL_LABEL("__wine_syscall_dispatcher_return") )
+
+__ASM_GLOBAL_FUNC( __wine_syscall_dispatcher_return,
                    "mov sp, x0\n\t"
                    "mov x0, x1\n\t"
                    "b " __ASM_LOCAL_LABEL("__wine_syscall_dispatcher_return") )

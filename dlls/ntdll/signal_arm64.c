@@ -31,6 +31,7 @@
 #define WIN32_NO_STATUS
 #include "windef.h"
 #include "winternl.h"
+#include "ddk/wdm.h"
 #include "wine/exception.h"
 #include "ntdll_misc.h"
 #include "wine/debug.h"
@@ -307,15 +308,15 @@ NTSTATUS call_seh_handlers( EXCEPTION_RECORD *rec, CONTEXT *orig_context )
 __ASM_GLOBAL_FUNC( KiUserExceptionDispatcher,
                    ".seh_context\n\t"
                    ".seh_endprologue\n\t"
-                   "adr x16, " __ASM_NAME("pWow64PrepareForException") "\n\t"
-                   "ldr x16, [x16]\n\t"
+                   "adrp x16, pWow64PrepareForException\n\t"
+                   "ldr x16, [x16, #:lo12:pWow64PrepareForException]\n\t"
                    "cbz x16, 1f\n\t"
-                   "add x0, sp, #0x390\n\t"     /* rec (context + 1) */
+                   "add x0, sp, #0x3b0\n\t"     /* rec */
                    "mov x1, sp\n\t"             /* context */
                    "blr x16\n"
-                   "1:\tadd x0, sp, #0x390\n\t" /* rec (context + 1) */
+                   "1:\tadd x0, sp, #0x3b0\n\t" /* rec */
                    "mov x1, sp\n\t"             /* context */
-                   "bl " __ASM_NAME("dispatch_exception") "\n\t"
+                   "bl dispatch_exception\n\t"
                    "brk #1" )
 
 
@@ -333,7 +334,7 @@ __ASM_GLOBAL_FUNC( KiUserApcDispatcher,
                    "blr x16\n\t"
                    "add x0, sp, #0x30\n\t"        /* context */
                    "ldr w1, [sp, #0x20]\n\t"      /* alertable */
-                   "bl " __ASM_NAME("NtContinue") "\n\t"
+                   "bl NtContinue\n\t"
                    "brk #1" )
 
 
@@ -347,20 +348,20 @@ __ASM_GLOBAL_FUNC( KiUserCallbackDispatcher,
                    "nop\n\t"
                    ".seh_save_reg lr, 0x18\n\t"
                    ".seh_endprologue\n\t"
-                   ".seh_handler " __ASM_NAME("user_callback_handler") ", @except\n\t"
+                   ".seh_handler user_callback_handler, @except\n\t"
                    "ldr x0, [sp]\n\t"             /* args */
                    "ldp w1, w2, [sp, #0x08]\n\t"  /* len, id */
                    "ldr x3, [x18, 0x60]\n\t"      /* peb */
                    "ldr x3, [x3, 0x58]\n\t"       /* peb->KernelCallbackTable */
                    "ldr x15, [x3, x2, lsl #3]\n\t"
                    "blr x15\n\t"
-                   ".globl " __ASM_NAME("KiUserCallbackDispatcherReturn") "\n"
-                   __ASM_NAME("KiUserCallbackDispatcherReturn") ":\n\t"
+                   ".globl KiUserCallbackDispatcherReturn\n"
+                   "KiUserCallbackDispatcherReturn:\n\t"
                    "mov x2, x0\n\t"               /* status */
                    "mov x1, #0\n\t"               /* ret_len */
                    "mov x0, x1\n\t"               /* ret_ptr */
-                   "bl " __ASM_NAME("NtCallbackReturn") "\n\t"
-                   "bl " __ASM_NAME("RtlRaiseStatus") "\n\t"
+                   "bl NtCallbackReturn\n\t"
+                   "bl RtlRaiseStatus\n\t"
                    "brk #1" )
 
 
@@ -591,6 +592,59 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
 
 
 /*************************************************************************
+ *		RtlGetNativeSystemInformation (NTDLL.@)
+ */
+NTSTATUS WINAPI RtlGetNativeSystemInformation( SYSTEM_INFORMATION_CLASS class,
+                                               void *info, ULONG size, ULONG *ret_size )
+{
+    return NtQuerySystemInformation( class, info, size, ret_size );
+}
+
+
+/***********************************************************************
+ *           RtlIsProcessorFeaturePresent [NTDLL.@]
+ */
+BOOLEAN WINAPI RtlIsProcessorFeaturePresent( UINT feature )
+{
+    static const ULONGLONG arm64_features =
+        (1ull << PF_COMPARE_EXCHANGE_DOUBLE) |
+        (1ull << PF_NX_ENABLED) |
+        (1ull << PF_ARM_VFP_32_REGISTERS_AVAILABLE) |
+        (1ull << PF_ARM_NEON_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_SECOND_LEVEL_ADDRESS_TRANSLATION) |
+        (1ull << PF_FASTFAIL_AVAILABLE) |
+        (1ull << PF_ARM_DIVIDE_INSTRUCTION_AVAILABLE) |
+        (1ull << PF_ARM_64BIT_LOADSTORE_ATOMIC) |
+        (1ull << PF_ARM_EXTERNAL_CACHE_AVAILABLE) |
+        (1ull << PF_ARM_FMAC_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_V8_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_V83_JSCVT_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_SVE_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_SVE2_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_SVE2_1_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_SVE_AES_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_SVE_PMULL128_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_SVE_BITPERM_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_SVE_BF16_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_SVE_EBF16_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_SVE_B16B16_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_SVE_SHA3_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_SVE_SM4_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_SVE_I8MM_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_SVE_F32MM_INSTRUCTIONS_AVAILABLE) |
+        (1ull << PF_ARM_SVE_F64MM_INSTRUCTIONS_AVAILABLE);
+
+    return (feature < PROCESSOR_FEATURE_MAX && (arm64_features & (1ull << feature)) &&
+            user_shared_data->ProcessorFeatures[feature]);
+}
+
+
+/*************************************************************************
  *		RtlWalkFrameChain (NTDLL.@)
  */
 ULONG WINAPI RtlWalkFrameChain( void **buffer, ULONG count, ULONG flags )
@@ -667,7 +721,7 @@ __ASM_GLOBAL_FUNC( RtlRaiseException,
                    "mov x29, sp\n\t"
                    "str x0,  [sp, #0x10]\n\t"
                    "add x0,  sp, #0x20\n\t"
-                   "bl " __ASM_NAME("RtlCaptureContext") "\n\t"
+                   "bl RtlCaptureContext\n\t"
                    "add x1,  sp, #0x20\n\t"      /* context pointer */
                    "add x2,  sp, #0x3b0\n\t"     /* orig stack pointer */
                    "str x2,  [x1, #0x100]\n\t"   /* context->Sp */
@@ -683,10 +737,11 @@ __ASM_GLOBAL_FUNC( RtlRaiseException,
                    "ldr x3, [x18, #0x60]\n\t"    /* peb */
                    "ldrb w2, [x3, #2]\n\t"       /* peb->BeingDebugged */
                    "cbnz w2, 1f\n\t"
-                   "bl " __ASM_NAME("dispatch_exception") "\n"
+                   "bl dispatch_exception\n"
                    "1:\tmov  x2, #1\n\t"
-                   "bl " __ASM_NAME("NtRaiseException") "\n\t"
-                   "bl " __ASM_NAME("RtlRaiseStatus") /* does not return */ );
+                   "bl NtRaiseException\n\t"
+                   "bl RtlRaiseStatus\n\t"
+                   "brk #1" )
 
 
 /***********************************************************************
@@ -740,12 +795,13 @@ __ASM_GLOBAL_FUNC( RtlUserThreadStart,
                    "stp x29, x30, [sp, #-16]!\n\t"
                    ".seh_save_fplr_x 16\n\t"
                    ".seh_endprologue\n\t"
-                   "adr x8, " __ASM_NAME("pBaseThreadInitThunk") "\n\t"
-                   "ldr x8, [x8]\n\t"
+                   "adrp x8, pBaseThreadInitThunk\n\t"
+                   "ldr x8, [x8, #:lo12:pBaseThreadInitThunk]\n\t"
                    "mov x2, x1\n\t"
                    "mov x1, x0\n\t"
                    "mov x0, #0\n\t"
                    "blr x8\n\t"
+                   "brk #1\n\t"
                    ".seh_handler call_unhandled_exception_handler, @except" )
 
 /******************************************************************
@@ -785,9 +841,9 @@ __ASM_GLOBAL_FUNC( DbgUiRemoteBreakin,
                    "ldr x0, [x18, #0x60]\n\t"       /* NtCurrentTeb()->Peb */
                    "ldrb w0, [x0, 0x02]\n\t"        /* peb->BeingDebugged */
                    "cbz w0, 1f\n\t"
-                   "bl " __ASM_NAME("DbgBreakPoint") "\n"
+                   "bl DbgBreakPoint\n"
                    "1:\tmov w0, #0\n\t"
-                   "bl " __ASM_NAME("RtlExitUserThread") "\n"
+                   "bl RtlExitUserThread\n"
                    "DbgUiRemoteBreakin_handler:\n\t"
                    "mov sp, x1\n\t"                 /* frame */
                    "b 1b" )

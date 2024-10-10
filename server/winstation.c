@@ -274,33 +274,62 @@ static struct desktop *create_desktop( const struct unicode_str *name, unsigned 
         {
             /* initialize it if it didn't already exist */
 
-            desktop->flags = flags;
-
             /* inherit DF_WINE_*_DESKTOP flags if none of them are specified */
             if (!(flags & (DF_WINE_ROOT_DESKTOP | DF_WINE_VIRTUAL_DESKTOP))
                 && (current_desktop = get_thread_desktop( current, 0 )))
             {
-                desktop->flags |= current_desktop->flags & (DF_WINE_VIRTUAL_DESKTOP | DF_WINE_ROOT_DESKTOP);
+                flags |= current_desktop->shared->flags & (DF_WINE_VIRTUAL_DESKTOP | DF_WINE_ROOT_DESKTOP);
                 release_object( current_desktop );
             }
 
             desktop->winstation = (struct winstation *)grab_object( winstation );
             desktop->top_window = NULL;
             desktop->msg_window = NULL;
+            desktop->shell_window = NULL;
+            desktop->shell_listview = NULL;
+            desktop->progman_window = NULL;
+            desktop->taskman_window = NULL;
             desktop->global_hooks = NULL;
             desktop->close_timeout = NULL;
             desktop->foreground_input = NULL;
             desktop->users = 0;
             list_init( &desktop->threads );
-            memset( &desktop->cursor, 0, sizeof(desktop->cursor) );
-            memset( desktop->keystate, 0, sizeof(desktop->keystate) );
+            desktop->clip_flags = 0;
+            desktop->cursor_win = 0;
+            desktop->alt_pressed = 0;
+            memset( &desktop->key_repeat, 0, sizeof(desktop->key_repeat) );
             list_add_tail( &winstation->desktops, &desktop->entry );
             list_init( &desktop->hotkeys );
             list_init( &desktop->pointers );
+
+            if (!(desktop->shared = alloc_shared_object()))
+            {
+                release_object( desktop );
+                return NULL;
+            }
+
+            SHARED_WRITE_BEGIN( desktop->shared, desktop_shm_t )
+            {
+                shared->flags = flags;
+                shared->cursor.x = 0;
+                shared->cursor.y = 0;
+                shared->cursor.last_change = 0;
+                shared->cursor.clip.left = 0;
+                shared->cursor.clip.top = 0;
+                shared->cursor.clip.right = 0;
+                shared->cursor.clip.bottom = 0;
+                memset( (void *)shared->keystate, 0, sizeof(shared->keystate) );
+            }
+            SHARED_WRITE_END;
         }
         else
         {
-            desktop->flags |= flags & (DF_WINE_VIRTUAL_DESKTOP | DF_WINE_ROOT_DESKTOP);
+            SHARED_WRITE_BEGIN( desktop->shared, desktop_shm_t )
+            {
+                shared->flags |= flags & (DF_WINE_VIRTUAL_DESKTOP | DF_WINE_ROOT_DESKTOP);
+            }
+            SHARED_WRITE_END;
+
             clear_error();
         }
     }
@@ -312,7 +341,7 @@ static void desktop_dump( struct object *obj, int verbose )
     struct desktop *desktop = (struct desktop *)obj;
 
     fprintf( stderr, "Desktop flags=%x winstation=%p top_win=%p hooks=%p\n",
-             desktop->flags, desktop->winstation, desktop->top_window, desktop->global_hooks );
+             desktop->shared->flags, desktop->winstation, desktop->top_window, desktop->global_hooks );
 }
 
 static int desktop_link_name( struct object *obj, struct object_name *name, struct object *parent )
@@ -365,7 +394,9 @@ static void desktop_destroy( struct object *obj )
     if (desktop->msg_window) free_window_handle( desktop->msg_window );
     if (desktop->global_hooks) release_object( desktop->global_hooks );
     if (desktop->close_timeout) remove_timeout_user( desktop->close_timeout );
+    if (desktop->key_repeat.timeout) remove_timeout_user( desktop->key_repeat.timeout );
     release_object( desktop->winstation );
+    if (desktop->shared) free_shared_object( desktop->shared );
 }
 
 /* retrieve the thread desktop, checking the handle access rights */
@@ -387,6 +418,7 @@ static void close_desktop_timeout( void *private )
 static void add_desktop_thread( struct desktop *desktop, struct thread *thread )
 {
     list_add_tail( &desktop->threads, &thread->desktop_entry );
+    add_desktop_hook_count( desktop, thread, 1 );
 
     if (!thread->process->is_system)
     {
@@ -403,21 +435,25 @@ static void add_desktop_thread( struct desktop *desktop, struct thread *thread )
 }
 
 /* remove a user of the desktop and start the close timeout if necessary */
-static void remove_desktop_thread( struct desktop *desktop, struct thread *thread )
+static void remove_desktop_user( struct desktop *desktop, struct thread *thread )
 {
     struct process *process;
 
+    assert( desktop->users > 0 );
+    desktop->users--;
+
+    /* if we have one remaining user, it has to be the manager of the desktop window */
+    if ((process = get_top_window_owner( desktop )) && desktop->users == process->running_threads && !desktop->close_timeout)
+        desktop->close_timeout = add_timeout_user( -TICKS_PER_SEC, close_desktop_timeout, desktop );
+}
+
+/* remove a thread from the list of threads attached to a desktop */
+static void remove_desktop_thread( struct desktop *desktop, struct thread *thread )
+{
+    add_desktop_hook_count( desktop, thread, -1 );
     list_remove( &thread->desktop_entry );
 
-    if (!thread->process->is_system)
-    {
-        assert( desktop->users > 0 );
-        desktop->users--;
-
-        /* if we have one remaining user, it has to be the manager of the desktop window */
-        if ((process = get_top_window_owner( desktop )) && desktop->users == process->running_threads && !desktop->close_timeout)
-            desktop->close_timeout = add_timeout_user( -TICKS_PER_SEC, close_desktop_timeout, desktop );
-    }
+    if (!thread->process->is_system) remove_desktop_user( desktop, thread );
 
     if (desktop == desktop->winstation->input_desktop)
     {
@@ -546,7 +582,8 @@ void release_thread_desktop( struct thread *thread, int close )
     if (!(desktop = get_desktop_obj( thread->process, handle, 0 ))) clear_error();  /* ignore errors */
     else
     {
-        remove_desktop_thread( desktop, thread );
+        if (close) remove_desktop_thread( desktop, thread );
+        else remove_desktop_user( desktop, thread );
         release_object( desktop );
     }
 
@@ -729,10 +766,19 @@ DECL_HANDLER(close_desktop)
 /* get the thread current desktop */
 DECL_HANDLER(get_thread_desktop)
 {
+    struct desktop *desktop;
     struct thread *thread;
 
     if (!(thread = get_thread_from_id( req->tid ))) return;
     reply->handle = thread->desktop;
+
+    if (!(desktop = get_thread_desktop( thread, 0 ))) clear_error();
+    else
+    {
+        if (desktop->shared) reply->locator = get_shared_object_locator( desktop->shared );
+        release_object( desktop );
+    }
+
     release_object( thread );
 }
 
@@ -775,6 +821,7 @@ DECL_HANDLER(set_thread_desktop)
             if (old_desktop) remove_desktop_thread( old_desktop, current );
             add_desktop_thread( new_desktop, current );
         }
+        reply->locator = get_shared_object_locator( new_desktop->shared );
     }
 
     if (!current->process->desktop)
@@ -800,8 +847,15 @@ DECL_HANDLER(set_user_object_info)
     {
         struct desktop *desktop = (struct desktop *)obj;
         reply->is_desktop = 1;
-        reply->old_obj_flags = desktop->flags;
-        if (req->flags & SET_USER_OBJECT_SET_FLAGS) desktop->flags = req->obj_flags;
+        reply->old_obj_flags = desktop->shared->flags;
+        if (req->flags & SET_USER_OBJECT_SET_FLAGS)
+        {
+            SHARED_WRITE_BEGIN( desktop->shared, desktop_shm_t )
+            {
+                shared->flags = req->obj_flags;
+            }
+            SHARED_WRITE_END;
+        }
     }
     else if (obj->ops == &winstation_ops)
     {
@@ -829,9 +883,9 @@ DECL_HANDLER(set_user_object_info)
         len = winstation_len + desktop_len + sizeof(WCHAR);
         if ((full_name = mem_alloc( len )))
         {
-            memcpy( full_name, winstation_name, winstation_len );
-            full_name[winstation_len / sizeof(WCHAR)] = '\\';
-            memcpy( full_name + winstation_len / sizeof(WCHAR) + 1, desktop_name, desktop_len );
+            WCHAR *ptr = mem_append( full_name, winstation_name, winstation_len );
+            *ptr++ = '\\';
+            mem_append( ptr, desktop_name, desktop_len );
             set_reply_data_ptr( full_name, min( len, get_reply_max_size() ));
         }
     }

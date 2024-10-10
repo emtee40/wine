@@ -47,6 +47,7 @@ typedef struct {
     IActiveScriptProperty        IActiveScriptProperty_iface;
     IObjectSafety                IObjectSafety_iface;
     IVariantChangeType           IVariantChangeType_iface;
+    IWineJScript                 IWineJScript_iface;
 
     LONG ref;
 
@@ -122,14 +123,7 @@ static inline BOOL is_started(script_ctx_t *ctx)
 
 HRESULT create_named_item_script_obj(script_ctx_t *ctx, named_item_t *item)
 {
-    static const builtin_info_t disp_info = {
-        JSCLASS_GLOBAL,
-        NULL,
-        0, NULL,
-        NULL,
-        NULL
-    };
-
+    static const builtin_info_t disp_info = { .class = JSCLASS_GLOBAL };
     return create_dispex(ctx, &disp_info, NULL, &item->script_obj);
 }
 
@@ -676,6 +670,9 @@ static HRESULT WINAPI JScript_QueryInterface(IActiveScript *iface, REFIID riid, 
     }else if(IsEqualGUID(riid, &IID_IVariantChangeType)) {
         TRACE("(%p)->(IID_IVariantChangeType %p)\n", This, ppv);
         *ppv = &This->IVariantChangeType_iface;
+    }else if(IsEqualGUID(riid, &IID_IWineJScript)) {
+        TRACE("(%p)->(IID_IWineJScript %p)\n", This, ppv);
+        *ppv = &This->IWineJScript_iface;
     }
 
     if(*ppv) {
@@ -1431,6 +1428,51 @@ static const IVariantChangeTypeVtbl VariantChangeTypeVtbl = {
     VariantChangeType_ChangeType
 };
 
+static inline JScript *impl_from_IWineJScript(IWineJScript *iface)
+{
+    return CONTAINING_RECORD(iface, JScript, IWineJScript_iface);
+}
+
+static HRESULT WINAPI WineJScript_QueryInterface(IWineJScript *iface, REFIID riid, void **ppv)
+{
+    JScript *This = impl_from_IWineJScript(iface);
+    return IActiveScript_QueryInterface(&This->IActiveScript_iface, riid, ppv);
+}
+
+static ULONG WINAPI WineJScript_AddRef(IWineJScript *iface)
+{
+    JScript *This = impl_from_IWineJScript(iface);
+    return IActiveScript_AddRef(&This->IActiveScript_iface);
+}
+
+static ULONG WINAPI WineJScript_Release(IWineJScript *iface)
+{
+    JScript *This = impl_from_IWineJScript(iface);
+    return IActiveScript_Release(&This->IActiveScript_iface);
+}
+
+static HRESULT WINAPI WineJScript_InitHostObject(IWineJScript *iface, IWineJSDispatchHost *host_obj,
+                                                 IWineJSDispatch *prototype, UINT32 flags, IWineJSDispatch **ret)
+{
+    JScript *This = impl_from_IWineJScript(iface);
+    return init_host_object(This->ctx, host_obj, prototype, flags, ret);
+}
+
+static HRESULT WINAPI WineJScript_InitHostConstructor(IWineJScript *iface, IWineJSDispatchHost *constr,
+                                                      IWineJSDispatch *prototype, IWineJSDispatch **ret)
+{
+    JScript *This = impl_from_IWineJScript(iface);
+    return init_host_constructor(This->ctx, constr, prototype, ret);
+}
+
+static const IWineJScriptVtbl WineJScriptVtbl = {
+    WineJScript_QueryInterface,
+    WineJScript_AddRef,
+    WineJScript_Release,
+    WineJScript_InitHostObject,
+    WineJScript_InitHostConstructor,
+};
+
 HRESULT create_jscript_object(BOOL is_encode, REFIID riid, void **ppv)
 {
     JScript *ret;
@@ -1448,6 +1490,7 @@ HRESULT create_jscript_object(BOOL is_encode, REFIID riid, void **ppv)
     ret->IActiveScriptProperty_iface.lpVtbl = &JScriptPropertyVtbl;
     ret->IObjectSafety_iface.lpVtbl = &JScriptSafetyVtbl;
     ret->IVariantChangeType_iface.lpVtbl = &VariantChangeTypeVtbl;
+    ret->IWineJScript_iface.lpVtbl = &WineJScriptVtbl;
     ret->ref = 1;
     ret->safeopt = INTERFACE_USES_DISPEX;
     ret->is_encode = is_encode;

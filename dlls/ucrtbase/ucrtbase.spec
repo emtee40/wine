@@ -673,8 +673,8 @@
 @ stub _mbsncoll_l
 @ cdecl _mbsncpy(ptr str long)
 @ cdecl _mbsncpy_l(ptr str long ptr)
-@ stub _mbsncpy_s
-@ stub _mbsncpy_s_l
+@ cdecl _mbsncpy_s(ptr long str long)
+@ cdecl _mbsncpy_s_l(ptr long str long ptr)
 @ cdecl _mbsnextc(str)
 @ cdecl _mbsnextc_l(str ptr)
 @ cdecl _mbsnicmp(str str long)
@@ -1242,8 +1242,8 @@
 @ stub _o__mbsncoll_l
 @ cdecl _o__mbsncpy(ptr str long) _mbsncpy
 @ cdecl _o__mbsncpy_l(ptr str long ptr) _mbsncpy_l
-@ stub _o__mbsncpy_s
-@ stub _o__mbsncpy_s_l
+@ cdecl _o__mbsncpy_s(ptr long str long) _mbsncpy_s
+@ cdecl _o__mbsncpy_s_l(ptr long str long ptr) _mbsncpy_s_l
 @ cdecl _o__mbsnextc(str) _mbsnextc
 @ cdecl _o__mbsnextc_l(str ptr) _mbsnextc_l
 @ cdecl _o__mbsnicmp(str str long) _mbsnicmp
@@ -1737,7 +1737,7 @@
 @ cdecl _o_nexttowardf(float double) __nexttowardf
 @ cdecl _o_nexttowardl(double double) __nexttoward
 @ cdecl _o_pow(double double) pow
-@ cdecl -arch=!i386 _o_powf(float float) powf
+@ cdecl _o_powf(float float) powf
 @ cdecl _o_putc(long ptr) putc
 @ cdecl _o_putchar(long) putchar
 @ cdecl _o_puts(str) puts
@@ -2293,7 +2293,7 @@
 @ cdecl fegetenv(ptr)
 @ cdecl fegetexceptflag(ptr long)
 @ cdecl fegetround()
-@ stub feholdexcept
+@ cdecl feholdexcept(ptr)
 @ cdecl feof(ptr)
 @ cdecl ferror(ptr)
 @ cdecl fesetenv(ptr)
@@ -2449,7 +2449,7 @@
 @ stub norml
 @ cdecl perror(str)
 @ cdecl pow(double double)
-@ cdecl -arch=!i386 powf(float float)
+@ cdecl powf(float float)
 @ cdecl putc(long ptr)
 @ cdecl putchar(long)
 @ cdecl puts(str)

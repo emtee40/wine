@@ -26,6 +26,7 @@
 #define COBJMACROS
 #include "initguid.h"
 #include "d3d11_4.h"
+#include "d3dcompiler.h"
 #include "winternl.h"
 #include "wine/wined3d.h"
 #include "wine/test.h"
@@ -129,6 +130,23 @@ struct swapchain_desc
     DXGI_SWAP_EFFECT swap_effect;
     DWORD flags;
 };
+
+static ID3D10Blob *compile_shader(const char *source, size_t len, const char *profile)
+{
+    ID3D10Blob *bytecode = NULL, *errors = NULL;
+    HRESULT hr;
+
+    hr = D3DCompile(source, len, NULL, NULL, NULL, "main", profile, 0, 0, &bytecode, &errors);
+    ok(hr == S_OK, "Cannot compile shader, hr %#lx.\n", hr);
+    ok(!!bytecode, "Compilation didn't produce any bytecode.\n");
+    if (errors)
+    {
+        trace("Compilation errors:\n%s\n", (char *)ID3D10Blob_GetBufferPointer(errors));
+        ID3D10Blob_Release(errors);
+    }
+
+    return bytecode;
+}
 
 static void queue_test_entry(const struct test_entry *t)
 {
@@ -1131,6 +1149,35 @@ static void check_readback_data_u8_(unsigned int line, struct resource_readback 
             {
                 value = get_readback_u8(rb, x, y, z);
                 if (!compare_uint(value, expected_value, max_diff))
+                    goto done;
+            }
+        }
+    }
+    all_match = TRUE;
+
+done:
+    ok_(__FILE__, line)(all_match,
+            "Got 0x%02x, expected 0x%02x at (%u, %u, %u), sub-resource %u.\n",
+            value, expected_value, x, y, z, rb->sub_resource_idx);
+}
+
+#define check_readback_data_u8_with_buffer(a, b, c, d) check_readback_data_u8_with_buffer_(__LINE__, a, b, c, d)
+static void check_readback_data_u8_with_buffer_(unsigned int line, struct resource_readback *rb,
+        const char *content, uint32_t depth_pitch, uint32_t slice_pitch)
+{
+    BYTE value = 0, expected_value = 0;
+    unsigned int x = 0, y = 0, z = 0;
+    BOOL all_match = FALSE;
+
+    for (z = 0; z < rb->depth; ++z)
+    {
+        for (y = 0; y < rb->height; ++y)
+        {
+            for (x = 0; x < rb->width; ++x)
+            {
+                value = get_readback_u8(rb, x, y, z);
+                expected_value = content[z * slice_pitch + y * depth_pitch + x];
+                if (value != expected_value)
                     goto done;
             }
         }
@@ -35619,15 +35666,18 @@ static void test_high_resource_count(void)
     D3D11_BUFFER_DESC buffer_desc = {0};
     ID3D11ShaderResourceView *srvs[100];
     ID3D11Texture2D *textures[50], *rt;
+    D3D11_MAPPED_SUBRESOURCE map_desc;
     ID3D11SamplerState *samplers[2];
     ID3D11DeviceContext *context;
     ID3D11RenderTargetView *rtv;
     ID3D11Buffer *buffers[50];
     ID3D11PixelShader *ps;
     ID3D11Device *device;
+    float *data_ptr;
     HRESULT hr;
 
     static const struct vec4 expect = {1274.0f, 637.0f, 1225.0f, 0.0f};
+    static const struct vec4 expect2 = {1274.0f, 637.0f, 1325.0f, 0.0f};
 
     static const DWORD ps_code[] =
     {
@@ -36097,7 +36147,8 @@ static void test_high_resource_count(void)
         D3D11_SHADER_RESOURCE_VIEW_DESC srv_desc;
 
         buffer_desc.ByteWidth = sizeof(data);
-        buffer_desc.Usage = D3D11_USAGE_DEFAULT;
+        buffer_desc.Usage = D3D11_USAGE_DYNAMIC;
+        buffer_desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
         buffer_desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
         hr = ID3D11Device_CreateBuffer(device, &buffer_desc, &data_desc, &buffers[i]);
         ok(hr == S_OK, "Got hr %#lx.\n", hr);
@@ -36134,6 +36185,18 @@ static void test_high_resource_count(void)
 
     check_texture_vec4(rt, &expect, 0);
 
+    /* Discard the data in one of the buffers and draw again. */
+
+    hr = ID3D11DeviceContext_Map(context, (ID3D11Resource *)buffers[1], 0, D3D11_MAP_WRITE_DISCARD, 0, &map_desc);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    data_ptr = map_desc.pData;
+    data_ptr[0] = 102.0f;
+    data_ptr[1] = 0.0f;
+    ID3D11DeviceContext_Unmap(context, (ID3D11Resource *)buffers[1], 0);
+    draw_quad(&test_context);
+
+    check_texture_vec4(rt, &expect2, 0);
+
     ID3D11Texture2D_Release(rt);
     ID3D11RenderTargetView_Release(rtv);
     for (unsigned int i = 0; i < ARRAY_SIZE(srvs); ++i)
@@ -36145,6 +36208,377 @@ static void test_high_resource_count(void)
     for (unsigned int i = 0; i < ARRAY_SIZE(samplers); ++i)
         ID3D11SamplerState_Release(samplers[i]);
     ID3D11PixelShader_Release(ps);
+    release_test_context(&test_context);
+}
+
+static void test_nv12(void)
+{
+    struct d3d11_test_context test_context;
+    ID3D11PixelShader *luma_ps, *chroma_ps;
+    ID3D11DeviceContext *device_context;
+    ID3D11ComputeShader *cs;
+    unsigned int test_idx;
+    ID3D10Blob *bytecode;
+    ID3D11Device *device;
+    UINT support;
+    HRESULT hr;
+
+    static const uint32_t clear_values[4] = {0xabcdef00, 0xabcdef00, 0xabcdef00, 0xabcdef00};
+    static const float clear_values_float[4] = {100.0, 100.0, 100.0, 100.0};
+
+    static const char cs_code[] =
+            "Texture2D<uint> luma : register(t0);\n"
+            "Texture2D<uint2> chroma : register(t1);\n"
+            "RWTexture2D<uint> check : register(u1);\n"
+            "\n"
+            "uint2 size;\n"
+            "\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(uint3 threadID : SV_DispatchThreadID)\n"
+            "{\n"
+            "    const uint2 coords = threadID.xy;\n"
+            "    check[coords] = luma[coords];\n"
+            "    if (any(coords % 2 != 0))\n"
+            "        return;\n"
+            "    const uint2 luma_coords = uint2(coords.x, size.y + coords.y / 2);\n"
+            "    check[luma_coords] = chroma[coords / 2].x;\n"
+            "    check[luma_coords + uint2(1, 0)] = chroma[coords / 2].y;\n"
+            "}\n";
+
+    static const char luma_ps_code[] =
+            "uint main(float4 pos : SV_Position) : SV_Target\n"
+            "{\n"
+            "    uint2 coords = pos.xy;\n"
+            "    return (coords.y & 7) << 3 | (coords.x & 7);\n"
+            "}\n";
+
+    static const char chroma_ps_code[] =
+            "uint2 main(float4 pos : SV_Position) : SV_Target\n"
+            "{\n"
+            "    uint2 coords = pos.xy;\n"
+            "    return uint2(1 << 6 | (coords.y & 7) << 3 | (coords.x & 7),\n"
+            "            1 << 7 | (coords.y & 7) << 3 | (coords.x & 7));\n"
+            "}\n";
+
+    static const struct
+    {
+        uint32_t width;
+        uint32_t height;
+        uint32_t copy_x;
+        uint32_t copy_y;
+        uint32_t copy_width;
+        uint32_t copy_height;
+    }
+    tests[] =
+    {
+        {640, 480, 10, 20, 4, 6},
+        {640, 480, 10, 20, 4, 7},
+        {640, 480, 10, 20, 5, 6},
+        {640, 480, 10, 20, 5, 7},
+
+        {640, 480, 10, 21, 4, 6},
+        {640, 480, 11, 20, 4, 6},
+        {640, 480, 11, 21, 4, 6},
+
+        {640, 481, 10, 20, 4, 6},
+        {641, 480, 10, 20, 4, 6},
+        {641, 481, 10, 20, 4, 6},
+        {642, 480, 10, 20, 4, 6},
+        {642, 481, 10, 20, 4, 6},
+        {642, 482, 10, 20, 4, 6},
+        {644, 482, 10, 20, 4, 6},
+        {644, 484, 10, 20, 4, 6},
+    };
+
+    if (!init_test_context(&test_context, NULL))
+        return;
+    device = test_context.device;
+    device_context = test_context.immediate_context;
+
+    hr = ID3D11Device_CheckFormatSupport(device, DXGI_FORMAT_NV12, &support);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+
+    if (!(support & D3D11_FORMAT_SUPPORT_TEXTURE2D))
+    {
+        skip("NV12 textures are not supported.\n");
+        release_test_context(&test_context);
+        return;
+    }
+
+    bytecode = compile_shader(cs_code, sizeof(cs_code) - 1, "cs_5_0");
+    hr = ID3D11Device_CreateComputeShader(device, ID3D10Blob_GetBufferPointer(bytecode),
+            ID3D10Blob_GetBufferSize(bytecode), NULL, &cs);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    ID3D10Blob_Release(bytecode);
+
+    bytecode = compile_shader(luma_ps_code, sizeof(luma_ps_code) - 1, "ps_4_0");
+    hr = ID3D11Device_CreatePixelShader(device, ID3D10Blob_GetBufferPointer(bytecode),
+            ID3D10Blob_GetBufferSize(bytecode), NULL, &luma_ps);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    ID3D10Blob_Release(bytecode);
+
+    bytecode = compile_shader(chroma_ps_code, sizeof(chroma_ps_code) - 1, "ps_4_0");
+    hr = ID3D11Device_CreatePixelShader(device, ID3D10Blob_GetBufferPointer(bytecode),
+            ID3D10Blob_GetBufferSize(bytecode), NULL, &chroma_ps);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    ID3D10Blob_Release(bytecode);
+
+    for (test_idx = 0; test_idx < ARRAY_SIZE(tests); ++test_idx)
+    {
+        /* I need only two uints in the cbuffer, but the size must be a multiple of 16. */
+        D3D11_UNORDERED_ACCESS_VIEW_DESC uav_desc = {0};
+        D3D11_SHADER_RESOURCE_VIEW_DESC srv_desc = {0};
+        D3D11_SUBRESOURCE_DATA subresource_data = {0};
+        D3D11_RENDER_TARGET_VIEW_DESC rtv_desc = {0};
+        ID3D11Texture2D *texture, *check_texture;
+        char *content, *content2, *copy_source;
+        ID3D11UnorderedAccessView *check_uav;
+        ID3D11RenderTargetView *rtv1, *rtv2;
+        ID3D11ShaderResourceView *srvs[2];
+        D3D11_TEXTURE2D_DESC desc = {0};
+        struct resource_readback rb;
+        uint32_t cbuffer_data[4];
+        ID3D11Buffer *cbuffer;
+        HRESULT expected_hr;
+        unsigned int i, j;
+        D3D11_BOX box;
+
+        const uint32_t width = tests[test_idx].width;
+        const uint32_t height = tests[test_idx].height;
+        const uint32_t copy_x = tests[test_idx].copy_x;
+        const uint32_t copy_y = tests[test_idx].copy_y;
+        const uint32_t copy_width = tests[test_idx].copy_width;
+        const uint32_t copy_height = tests[test_idx].copy_height;
+
+        winetest_push_context("test %u (%ux%u, %u,%u,%ux%u)", test_idx, width, height,
+                copy_x, copy_y, copy_width, copy_height);
+
+        /* Apparently no Vulkan implementation supports rendering to a NV12 texture, so here we do
+         * not request D3D11_BIND_RENDER_TARGET. We will recreate it later for render target usage. */
+        desc.Width = width;
+        desc.Height = height;
+        desc.MipLevels = 1;
+        desc.ArraySize = 1;
+        desc.Format = DXGI_FORMAT_NV12;
+        desc.SampleDesc.Count = 1;
+        desc.Usage = D3D11_USAGE_DEFAULT;
+        desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+        content = calloc(width * height * 3 / 2, 1);
+        content2 = calloc(width * height * 3 / 2, 1);
+        copy_source = calloc(copy_width * copy_height * 3 / 2, 1);
+        ok(content && content2 && copy_source, "Failed to allocate memory.\n");
+
+        for (i = 0; i < height; ++i)
+        {
+            for (j = 0; j < width; ++j)
+            {
+                unsigned int idx = i * width + j;
+
+                content[idx] = (i & 7) << 3 | (j & 7);
+            }
+        }
+
+        for (i = 0; i < height / 2; ++i)
+        {
+            for (j = 0; j < width / 2; ++j)
+            {
+                unsigned int idx = width * (height + i) + j * 2;
+
+                content[idx] = 1 << 6 | (i & 7) << 3 | (j & 7);
+                content[idx + 1] = 1 << 7 | (i & 7) << 3 | (j & 7);
+            }
+        }
+
+        subresource_data.pSysMem = content;
+        subresource_data.SysMemPitch = width;
+        subresource_data.SysMemSlicePitch = 0;
+
+        expected_hr = (width & 1 || height & 1) ? E_INVALIDARG : S_OK;
+        hr = ID3D11Device_CreateTexture2D(device, &desc, &subresource_data, &texture);
+        todo_wine_if(SUCCEEDED(expected_hr))
+        ok(hr == expected_hr, "Got hr %#lx, expected %#lx.\n", hr, expected_hr);
+
+        if (FAILED(hr))
+        {
+            winetest_pop_context();
+            continue;
+        }
+
+        desc.Height += height / 2;
+        desc.Format = DXGI_FORMAT_R8_UINT;
+        desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+
+        hr = ID3D11Device_CreateTexture2D(device, &desc, NULL, &check_texture);
+        ok(hr == S_OK, "Got hr %#lx.\n", hr);
+
+        srv_desc.Format = DXGI_FORMAT_R8_UINT;
+        srv_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+        srv_desc.Texture2D.MostDetailedMip = 0;
+        srv_desc.Texture2D.MipLevels = 1;
+
+        hr = ID3D11Device_CreateShaderResourceView(device, (ID3D11Resource *)texture, &srv_desc, &srvs[0]);
+        ok(hr == S_OK, "Got hr %#lx.\n", hr);
+
+        srv_desc.Format = DXGI_FORMAT_R8G8_UINT;
+
+        hr = ID3D11Device_CreateShaderResourceView(device, (ID3D11Resource *)texture, &srv_desc, &srvs[1]);
+        ok(hr == S_OK, "Got hr %#lx.\n", hr);
+
+        uav_desc.Format = DXGI_FORMAT_R8_UINT;
+        uav_desc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+        uav_desc.Texture2D.MipSlice = 0;
+
+        hr = ID3D11Device_CreateUnorderedAccessView(device,
+                (ID3D11Resource *)check_texture, &uav_desc, &check_uav);
+        ok(hr == S_OK, "Got hr %#lx.\n", hr);
+
+        cbuffer_data[0] = width;
+        cbuffer_data[1] = height;
+
+        cbuffer = create_buffer(device, D3D11_BIND_CONSTANT_BUFFER, sizeof(cbuffer_data), cbuffer_data);
+
+        ID3D11DeviceContext_ClearUnorderedAccessViewUint(device_context, check_uav, clear_values);
+        ID3D11DeviceContext_CSSetShader(device_context, cs, NULL, 0);
+        ID3D11DeviceContext_CSSetShaderResources(device_context, 0, ARRAY_SIZE(srvs), srvs);
+        ID3D11DeviceContext_CSSetUnorderedAccessViews(device_context, 1, 1, &check_uav, NULL);
+        ID3D11DeviceContext_CSSetConstantBuffers(device_context, 0, 1, &cbuffer);
+        ID3D11DeviceContext_Dispatch(device_context, width, height, 1);
+
+        get_texture_readback(check_texture, 0, &rb);
+        check_readback_data_u8_with_buffer(&rb, content, width, 0);
+        release_resource_readback(&rb);
+
+        memcpy(content2, content, width * height * 3 / 2);
+        if (copy_x % 2 == 0 && copy_y % 2 == 0 && copy_width % 2 == 0 && copy_height % 2 == 0)
+        {
+            for (i = copy_y; i < copy_y + copy_height; ++i)
+            {
+                for (j = copy_x; j < copy_x + copy_width; ++j)
+                {
+                    content2[i * width + j] = 0xab;
+                    if (i % 2 == 0 && j % 2 == 0)
+                    {
+                        content2[width * (height + i / 2) + j] = 0xcd;
+                        content2[width * (height + i / 2) + j + 1] = 0xef;
+                    }
+                }
+            }
+            for (i = 0; i < copy_height; ++i)
+            {
+                for (j = 0; j < copy_width; ++j)
+                {
+                    copy_source[i * copy_width + j] = 0xab;
+                    if (i % 2 == 0 && j % 2 == 0)
+                    {
+                        copy_source[copy_width * (copy_height + i / 2) + j] = 0xcd;
+                        copy_source[copy_width * (copy_height + i / 2) + j + 1] = 0xef;
+                    }
+                }
+            }
+        }
+
+        /* UpdateSubresource() copies the specified box on the luma plane and also the corresponding
+         * box on the chroma plane. It does nothing as soon as any coordinate of the box is not a
+         * multiple of 2. AMD seems to have a bug and copies data with the wrong pitch. */
+        if (!is_amd_device(device))
+        {
+            set_box(&box, copy_x, copy_y, 0, copy_x + copy_width, copy_y + copy_height, 1);
+            ID3D11DeviceContext_UpdateSubresource(device_context,
+                    (ID3D11Resource *)texture, 0, &box, copy_source, copy_width, 0);
+
+            ID3D11DeviceContext_ClearUnorderedAccessViewUint(device_context, check_uav, clear_values);
+            ID3D11DeviceContext_CSSetShader(device_context, cs, NULL, 0);
+            ID3D11DeviceContext_CSSetShaderResources(device_context, 0, ARRAY_SIZE(srvs), srvs);
+            ID3D11DeviceContext_CSSetUnorderedAccessViews(device_context, 1, 1, &check_uav, NULL);
+            ID3D11DeviceContext_CSSetConstantBuffers(device_context, 0, 1, &cbuffer);
+            ID3D11DeviceContext_Dispatch(device_context, width, height, 1);
+
+            get_texture_readback(check_texture, 0, &rb);
+            check_readback_data_u8_with_buffer(&rb, content2, width, 0);
+            release_resource_readback(&rb);
+        }
+
+        ID3D11ShaderResourceView_Release(srvs[0]);
+        ID3D11ShaderResourceView_Release(srvs[1]);
+        ID3D11Texture2D_Release(texture);
+
+        desc.Height = height;
+        desc.Format = DXGI_FORMAT_NV12;
+        desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+
+        hr = ID3D11Device_CreateTexture2D(device, &desc, NULL, &texture);
+        todo_wine
+        ok(hr == S_OK, "Got hr %#lx.\n", hr);
+
+        if (FAILED(hr))
+            goto no_render_target;
+
+        srv_desc.Format = DXGI_FORMAT_R8_UINT;
+
+        hr = ID3D11Device_CreateShaderResourceView(device, (ID3D11Resource *)texture, &srv_desc, &srvs[0]);
+        ok(hr == S_OK, "Got hr %#lx.\n", hr);
+
+        srv_desc.Format = DXGI_FORMAT_R8G8_UINT;
+
+        hr = ID3D11Device_CreateShaderResourceView(device, (ID3D11Resource *)texture, &srv_desc, &srvs[1]);
+        ok(hr == S_OK, "Got hr %#lx.\n", hr);
+
+        rtv_desc.Format = DXGI_FORMAT_R8_UINT;
+        rtv_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+        rtv_desc.Texture2D.MipSlice = 0;
+
+        hr = ID3D11Device_CreateRenderTargetView(device, (ID3D11Resource *)texture, &rtv_desc, &rtv1);
+        ok(hr == S_OK, "Got hr %#lx.\n", hr);
+
+        rtv_desc.Format = DXGI_FORMAT_R8G8_UINT;
+
+        hr = ID3D11Device_CreateRenderTargetView(device, (ID3D11Resource *)texture, &rtv_desc, &rtv2);
+        ok(hr == S_OK, "Got hr %#lx.\n", hr);
+
+        ID3D11DeviceContext_ClearRenderTargetView(device_context, rtv1, clear_values_float);
+        set_viewport(device_context, 0.0, 0.0, width, height, 0.0, 1.0);
+        ID3D11DeviceContext_OMSetRenderTargets(device_context, 1, &rtv1, NULL);
+        ID3D11DeviceContext_PSSetShader(device_context, luma_ps, NULL, 0);
+        draw_quad(&test_context);
+
+        ID3D11DeviceContext_ClearRenderTargetView(device_context, rtv2, clear_values_float);
+        set_viewport(device_context, 0.0, 0.0, width, height, 0.0, 1.0);
+        ID3D11DeviceContext_OMSetRenderTargets(device_context, 1, &rtv2, NULL);
+        ID3D11DeviceContext_PSSetShader(device_context, chroma_ps, NULL, 0);
+        draw_quad(&test_context);
+
+        ID3D11DeviceContext_OMSetRenderTargets(device_context, 0, NULL, NULL);
+
+        ID3D11DeviceContext_ClearUnorderedAccessViewUint(device_context, check_uav, clear_values);
+        ID3D11DeviceContext_CSSetShader(device_context, cs, NULL, 0);
+        ID3D11DeviceContext_CSSetShaderResources(device_context, 0, ARRAY_SIZE(srvs), srvs);
+        ID3D11DeviceContext_CSSetUnorderedAccessViews(device_context, 1, 1, &check_uav, NULL);
+        ID3D11DeviceContext_CSSetConstantBuffers(device_context, 0, 1, &cbuffer);
+        ID3D11DeviceContext_Dispatch(device_context, width, height, 1);
+
+        get_texture_readback(check_texture, 0, &rb);
+        check_readback_data_u8_with_buffer(&rb, content, width, 0);
+        release_resource_readback(&rb);
+
+        ID3D11RenderTargetView_Release(rtv2);
+        ID3D11RenderTargetView_Release(rtv1);
+
+    no_render_target:
+        ID3D11Buffer_Release(cbuffer);
+        ID3D11UnorderedAccessView_Release(check_uav);
+        ID3D11ShaderResourceView_Release(srvs[1]);
+        ID3D11ShaderResourceView_Release(srvs[0]);
+        ID3D11Texture2D_Release(check_texture);
+        ID3D11Texture2D_Release(texture);
+        free(content);
+
+        winetest_pop_context();
+    }
+
+    ID3D11PixelShader_Release(chroma_ps);
+    ID3D11PixelShader_Release(luma_ps);
+    ID3D11ComputeShader_Release(cs);
     release_test_context(&test_context);
 }
 
@@ -36347,6 +36781,7 @@ START_TEST(d3d11)
     queue_test(test_clear_during_render);
     queue_test(test_stencil_export);
     queue_test(test_high_resource_count);
+    queue_test(test_nv12);
 
     run_queued_tests();
 

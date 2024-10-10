@@ -19,14 +19,13 @@
 #ifndef __VKD3D_PRIVATE_H
 #define __VKD3D_PRIVATE_H
 
+#ifndef __MINGW32__
+#define WIDL_C_INLINE_WRAPPERS
+#endif
 #define COBJMACROS
 #define NONAMELESSUNION
 #define VK_NO_PROTOTYPES
 #define CONST_VTABLE
-
-#ifdef _WIN32
-# define _WIN32_WINNT 0x0600  /* for condition variables */
-#endif
 
 #include "vkd3d_common.h"
 #include "vkd3d_blob.h"
@@ -38,7 +37,6 @@
 #include "vkd3d.h"
 #include "vkd3d_shader.h"
 
-#include <assert.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <stdbool.h>
@@ -55,7 +53,7 @@
 
 #define VKD3D_MAX_COMPATIBLE_FORMAT_COUNT 6u
 #define VKD3D_MAX_QUEUE_FAMILY_COUNT      3u
-#define VKD3D_MAX_SHADER_EXTENSIONS       4u
+#define VKD3D_MAX_SHADER_EXTENSIONS       5u
 #define VKD3D_MAX_SHADER_STAGES           5u
 #define VKD3D_MAX_VK_SYNC_OBJECTS         4u
 #define VKD3D_MAX_DEVICE_BLOCKED_QUEUES  16u
@@ -124,15 +122,18 @@ struct vkd3d_vulkan_info
     bool KHR_image_format_list;
     bool KHR_maintenance2;
     bool KHR_maintenance3;
+    bool KHR_portability_subset;
     bool KHR_push_descriptor;
     bool KHR_sampler_mirror_clamp_to_edge;
     bool KHR_timeline_semaphore;
     /* EXT device extensions */
+    bool EXT_4444_formats;
     bool EXT_calibrated_timestamps;
     bool EXT_conditional_rendering;
     bool EXT_debug_marker;
     bool EXT_depth_clip_enable;
     bool EXT_descriptor_indexing;
+    bool EXT_fragment_shader_interlock;
     bool EXT_mutable_descriptor_type;
     bool EXT_robustness2;
     bool EXT_shader_demote_to_helper_invocation;
@@ -144,6 +145,8 @@ struct vkd3d_vulkan_info
 
     bool rasterization_stream;
     bool transform_feedback_queries;
+    bool geometry_shaders;
+    bool tessellation_shaders;
 
     bool uav_read_without_format;
 
@@ -184,6 +187,7 @@ struct vkd3d_instance
     struct vkd3d_vulkan_info vk_info;
     struct vkd3d_vk_global_procs vk_global_procs;
     void *libvulkan;
+    uint32_t vk_api_version;
 
     uint64_t config_flags;
     enum vkd3d_api_version api_version;
@@ -195,239 +199,13 @@ struct vkd3d_instance
     unsigned int refcount;
 };
 
-#ifdef _WIN32
-
 union vkd3d_thread_handle
 {
-    void *handle;
-};
-
-struct vkd3d_mutex
-{
-    CRITICAL_SECTION lock;
-};
-
-struct vkd3d_cond
-{
-    CONDITION_VARIABLE cond;
-};
-
-static inline void vkd3d_mutex_init(struct vkd3d_mutex *lock)
-{
-    InitializeCriticalSection(&lock->lock);
-}
-
-static inline void vkd3d_mutex_lock(struct vkd3d_mutex *lock)
-{
-    EnterCriticalSection(&lock->lock);
-}
-
-static inline void vkd3d_mutex_unlock(struct vkd3d_mutex *lock)
-{
-    LeaveCriticalSection(&lock->lock);
-}
-
-static inline void vkd3d_mutex_destroy(struct vkd3d_mutex *lock)
-{
-    DeleteCriticalSection(&lock->lock);
-}
-
-static inline void vkd3d_cond_init(struct vkd3d_cond *cond)
-{
-    InitializeConditionVariable(&cond->cond);
-}
-
-static inline void vkd3d_cond_signal(struct vkd3d_cond *cond)
-{
-    WakeConditionVariable(&cond->cond);
-}
-
-static inline void vkd3d_cond_broadcast(struct vkd3d_cond *cond)
-{
-    WakeAllConditionVariable(&cond->cond);
-}
-
-static inline void vkd3d_cond_wait(struct vkd3d_cond *cond, struct vkd3d_mutex *lock)
-{
-    if (!SleepConditionVariableCS(&cond->cond, &lock->lock, INFINITE))
-        ERR("Could not sleep on the condition variable, error %lu.\n", GetLastError());
-}
-
-static inline void vkd3d_cond_destroy(struct vkd3d_cond *cond)
-{
-}
-
-static inline bool vkd3d_atomic_compare_exchange(unsigned int volatile *x, unsigned int cmp, unsigned int xchg)
-{
-    return InterlockedCompareExchange((LONG volatile *)x, xchg, cmp) == cmp;
-}
-
-static inline unsigned int vkd3d_atomic_exchange(unsigned int volatile *x, unsigned int val)
-{
-    return InterlockedExchange((LONG volatile *)x, val);
-}
-
-static inline bool vkd3d_atomic_compare_exchange_pointer(void * volatile *x, void *cmp, void *xchg)
-{
-    return InterlockedCompareExchangePointer(x, xchg, cmp) == cmp;
-}
-
-static inline void *vkd3d_atomic_exchange_pointer(void * volatile *x, void *val)
-{
-    return InterlockedExchangePointer(x, val);
-}
-
-#else  /* _WIN32 */
-
-#include <pthread.h>
-
-union vkd3d_thread_handle
-{
+#ifndef _WIN32
     pthread_t pthread;
+#endif
     void *handle;
 };
-
-struct vkd3d_mutex
-{
-    pthread_mutex_t lock;
-};
-
-struct vkd3d_cond
-{
-    pthread_cond_t cond;
-};
-
-
-static inline void vkd3d_mutex_init(struct vkd3d_mutex *lock)
-{
-    int ret;
-
-    ret = pthread_mutex_init(&lock->lock, NULL);
-    if (ret)
-        ERR("Could not initialize the mutex, error %d.\n", ret);
-}
-
-static inline void vkd3d_mutex_lock(struct vkd3d_mutex *lock)
-{
-    int ret;
-
-    ret = pthread_mutex_lock(&lock->lock);
-    if (ret)
-        ERR("Could not lock the mutex, error %d.\n", ret);
-}
-
-static inline void vkd3d_mutex_unlock(struct vkd3d_mutex *lock)
-{
-    int ret;
-
-    ret = pthread_mutex_unlock(&lock->lock);
-    if (ret)
-        ERR("Could not unlock the mutex, error %d.\n", ret);
-}
-
-static inline void vkd3d_mutex_destroy(struct vkd3d_mutex *lock)
-{
-    int ret;
-
-    ret = pthread_mutex_destroy(&lock->lock);
-    if (ret)
-        ERR("Could not destroy the mutex, error %d.\n", ret);
-}
-
-static inline void vkd3d_cond_init(struct vkd3d_cond *cond)
-{
-    int ret;
-
-    ret = pthread_cond_init(&cond->cond, NULL);
-    if (ret)
-        ERR("Could not initialize the condition variable, error %d.\n", ret);
-}
-
-static inline void vkd3d_cond_signal(struct vkd3d_cond *cond)
-{
-    int ret;
-
-    ret = pthread_cond_signal(&cond->cond);
-    if (ret)
-        ERR("Could not signal the condition variable, error %d.\n", ret);
-}
-
-static inline void vkd3d_cond_broadcast(struct vkd3d_cond *cond)
-{
-    int ret;
-
-    ret = pthread_cond_broadcast(&cond->cond);
-    if (ret)
-        ERR("Could not broadcast the condition variable, error %d.\n", ret);
-}
-
-static inline void vkd3d_cond_wait(struct vkd3d_cond *cond, struct vkd3d_mutex *lock)
-{
-    int ret;
-
-    ret = pthread_cond_wait(&cond->cond, &lock->lock);
-    if (ret)
-        ERR("Could not wait on the condition variable, error %d.\n", ret);
-}
-
-static inline void vkd3d_cond_destroy(struct vkd3d_cond *cond)
-{
-    int ret;
-
-    ret = pthread_cond_destroy(&cond->cond);
-    if (ret)
-        ERR("Could not destroy the condition variable, error %d.\n", ret);
-}
-
-# if HAVE_SYNC_BOOL_COMPARE_AND_SWAP
-static inline bool vkd3d_atomic_compare_exchange(unsigned int volatile *x, unsigned int cmp, unsigned int xchg)
-{
-    return __sync_bool_compare_and_swap(x, cmp, xchg);
-}
-
-static inline bool vkd3d_atomic_compare_exchange_pointer(void * volatile *x, void *cmp, void *xchg)
-{
-    return __sync_bool_compare_and_swap(x, cmp, xchg);
-}
-# else
-#  error "vkd3d_atomic_compare_exchange() not implemented for this platform"
-# endif
-
-# if HAVE_ATOMIC_EXCHANGE_N
-static inline unsigned int vkd3d_atomic_exchange(unsigned int volatile *x, unsigned int val)
-{
-    return __atomic_exchange_n(x, val, __ATOMIC_SEQ_CST);
-}
-
-static inline void *vkd3d_atomic_exchange_pointer(void * volatile *x, void *val)
-{
-    return __atomic_exchange_n(x, val, __ATOMIC_SEQ_CST);
-}
-# elif HAVE_SYNC_BOOL_COMPARE_AND_SWAP
-static inline unsigned int vkd3d_atomic_exchange(unsigned int volatile *x, unsigned int val)
-{
-    unsigned int i;
-    do
-    {
-        i = *x;
-    } while (!__sync_bool_compare_and_swap(x, i, val));
-    return i;
-}
-
-static inline void *vkd3d_atomic_exchange_pointer(void * volatile *x, void *val)
-{
-    void *p;
-    do
-    {
-        p = *x;
-    } while (!__sync_bool_compare_and_swap(x, p, val));
-    return p;
-}
-# else
-#   error "vkd3d_atomic_exchange() not implemented for this platform"
-# endif
-
-#endif  /* _WIN32 */
 
 HRESULT vkd3d_create_thread(struct vkd3d_instance *instance,
         PFN_vkd3d_thread thread_main, void *data, union vkd3d_thread_handle *thread);
@@ -890,7 +668,7 @@ static inline bool vkd3d_view_incref(void *desc)
         if (refcount <= 0)
             return false;
     }
-    while (!vkd3d_atomic_compare_exchange(&h->refcount, refcount, refcount + 1));
+    while (!vkd3d_atomic_compare_exchange_u32(&h->refcount, refcount, refcount + 1));
 
     return true;
 }
@@ -900,7 +678,7 @@ static inline void *d3d12_desc_get_object_ref(const volatile struct d3d12_desc *
     void *view;
 
     /* Some games, e.g. Shadow of the Tomb Raider, GRID 2019, and Horizon Zero Dawn, write descriptors
-     * from multiple threads without syncronisation. This is apparently valid in Windows. */
+     * from multiple threads without synchronisation. This is apparently valid in Windows. */
     for (;;)
     {
         do
@@ -1008,8 +786,8 @@ extern const enum vkd3d_vk_descriptor_set_index vk_descriptor_set_index_table[];
 static inline enum vkd3d_vk_descriptor_set_index vkd3d_vk_descriptor_set_index_from_vk_descriptor_type(
         VkDescriptorType type)
 {
-    assert(type <= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    assert(vk_descriptor_set_index_table[type] < VKD3D_SET_INDEX_COUNT);
+    VKD3D_ASSERT(type <= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    VKD3D_ASSERT(vk_descriptor_set_index_table[type] < VKD3D_SET_INDEX_COUNT);
 
     return vk_descriptor_set_index_table[type];
 }
@@ -1279,6 +1057,7 @@ struct d3d12_pipeline_state
 
     struct d3d12_pipeline_uav_counter_state uav_counters;
 
+    ID3D12RootSignature *implicit_root_signature;
     struct d3d12_device *device;
 
     struct vkd3d_private_store private_store;
@@ -1452,7 +1231,7 @@ enum vkd3d_pipeline_bind_point
 /* ID3D12CommandList */
 struct d3d12_command_list
 {
-    ID3D12GraphicsCommandList5 ID3D12GraphicsCommandList5_iface;
+    ID3D12GraphicsCommandList6 ID3D12GraphicsCommandList6_iface;
     unsigned int refcount;
 
     D3D12_COMMAND_LIST_TYPE type;
@@ -1735,7 +1514,7 @@ struct vkd3d_desc_object_cache
 /* ID3D12Device */
 struct d3d12_device
 {
-    ID3D12Device7 ID3D12Device7_iface;
+    ID3D12Device9 ID3D12Device9_iface;
     unsigned int refcount;
 
     VkDevice vk_device;
@@ -1743,6 +1522,7 @@ struct d3d12_device
     struct vkd3d_vk_device_procs vk_procs;
     PFN_vkd3d_signal_event signal_event;
     size_t wchar_size;
+    enum vkd3d_shader_spirv_environment environment;
 
     struct vkd3d_gpu_va_allocator gpu_va_allocator;
 
@@ -1810,29 +1590,29 @@ struct vkd3d_queue *d3d12_device_get_vkd3d_queue(struct d3d12_device *device, D3
 bool d3d12_device_is_uma(struct d3d12_device *device, bool *coherent);
 void d3d12_device_mark_as_removed(struct d3d12_device *device, HRESULT reason,
         const char *message, ...) VKD3D_PRINTF_FUNC(3, 4);
-struct d3d12_device *unsafe_impl_from_ID3D12Device7(ID3D12Device7 *iface);
+struct d3d12_device *unsafe_impl_from_ID3D12Device9(ID3D12Device9 *iface);
 HRESULT d3d12_device_add_descriptor_heap(struct d3d12_device *device, struct d3d12_descriptor_heap *heap);
 void d3d12_device_remove_descriptor_heap(struct d3d12_device *device, struct d3d12_descriptor_heap *heap);
 
 static inline HRESULT d3d12_device_query_interface(struct d3d12_device *device, REFIID iid, void **object)
 {
-    return ID3D12Device7_QueryInterface(&device->ID3D12Device7_iface, iid, object);
+    return ID3D12Device9_QueryInterface(&device->ID3D12Device9_iface, iid, object);
 }
 
 static inline ULONG d3d12_device_add_ref(struct d3d12_device *device)
 {
-    return ID3D12Device7_AddRef(&device->ID3D12Device7_iface);
+    return ID3D12Device9_AddRef(&device->ID3D12Device9_iface);
 }
 
 static inline ULONG d3d12_device_release(struct d3d12_device *device)
 {
-    return ID3D12Device7_Release(&device->ID3D12Device7_iface);
+    return ID3D12Device9_Release(&device->ID3D12Device9_iface);
 }
 
 static inline unsigned int d3d12_device_get_descriptor_handle_increment_size(struct d3d12_device *device,
         D3D12_DESCRIPTOR_HEAP_TYPE descriptor_type)
 {
-    return ID3D12Device7_GetDescriptorHandleIncrementSize(&device->ID3D12Device7_iface, descriptor_type);
+    return ID3D12Device9_GetDescriptorHandleIncrementSize(&device->ID3D12Device9_iface, descriptor_type);
 }
 
 /* utils */
@@ -1975,7 +1755,6 @@ static inline void vk_prepend_struct(void *header, void *structure)
 {
     VkBaseOutStructure *vk_header = header, *vk_structure = structure;
 
-    assert(!vk_structure->pNext);
     vk_structure->pNext = vk_header->pNext;
     vk_header->pNext = vk_structure;
 }
@@ -1988,9 +1767,19 @@ static inline void vkd3d_prepend_struct(void *header, void *structure)
         const void *next;
     } *vkd3d_header = header, *vkd3d_structure = structure;
 
-    assert(!vkd3d_structure->next);
+    VKD3D_ASSERT(!vkd3d_structure->next);
     vkd3d_structure->next = vkd3d_header->next;
     vkd3d_header->next = vkd3d_structure;
 }
+
+struct vkd3d_shader_cache;
+
+int vkd3d_shader_open_cache(struct vkd3d_shader_cache **cache);
+unsigned int vkd3d_shader_cache_incref(struct vkd3d_shader_cache *cache);
+unsigned int vkd3d_shader_cache_decref(struct vkd3d_shader_cache *cache);
+int vkd3d_shader_cache_put(struct vkd3d_shader_cache *cache,
+        const void *key, size_t key_size, const void *value, size_t value_size);
+int vkd3d_shader_cache_get(struct vkd3d_shader_cache *cache,
+        const void *key, size_t key_size, void *value, size_t *value_size);
 
 #endif  /* __VKD3D_PRIVATE_H */

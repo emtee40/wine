@@ -413,9 +413,7 @@ static void set_stdio_fd( int stdin_fd, int stdout_fd )
  */
 static BOOL is_unix_console_handle( HANDLE handle )
 {
-    IO_STATUS_BLOCK io = {{0}};
-    return !NtDeviceIoControlFile( handle, NULL, NULL, NULL, &io, IOCTL_CONDRV_IS_UNIX,
-                                   NULL, 0, NULL, 0 );
+    return !sync_ioctl( handle, IOCTL_CONDRV_IS_UNIX, NULL, 0, NULL, 0 );
 }
 
 
@@ -1124,7 +1122,6 @@ NTSTATUS WINAPI NtQueryInformationProcess( HANDLE handle, PROCESSINFOCLASS class
 
     switch (class)
     {
-    UNIMPLEMENTED_INFO_CLASS(ProcessQuotaLimits);
     UNIMPLEMENTED_INFO_CLASS(ProcessBasePriority);
     UNIMPLEMENTED_INFO_CLASS(ProcessRaisePriority);
     UNIMPLEMENTED_INFO_CLASS(ProcessExceptionPort);
@@ -1580,6 +1577,35 @@ NTSTATUS WINAPI NtQueryInformationProcess( HANDLE handle, PROCESSINFOCLASS class
         else ret = STATUS_INVALID_PARAMETER;
         break;
 
+    case ProcessQuotaLimits:
+        {
+            QUOTA_LIMITS qlimits;
+
+            FIXME( "ProcessQuotaLimits (%p,%p,0x%08x,%p) stub\n", handle, info, (int)size, ret_len );
+
+            len = sizeof(QUOTA_LIMITS);
+            if (size == len)
+            {
+                if (!handle) ret = STATUS_INVALID_HANDLE;
+                else
+                {
+                    /* FIXME: SetProcessWorkingSetSize can also set the quota values.
+                                Quota Limits should be stored inside the process. */
+                    qlimits.PagedPoolLimit = (SIZE_T)-1;
+                    qlimits.NonPagedPoolLimit = (SIZE_T)-1;
+                    /* Default minimum working set size is 204800 bytes (50 Pages) */
+                    qlimits.MinimumWorkingSetSize = 204800;
+                    /* Default maximum working set size is 1413120 bytes (345 Pages) */
+                    qlimits.MaximumWorkingSetSize = 1413120;
+                    qlimits.PagefileLimit = (SIZE_T)-1;
+                    qlimits.TimeLimit.QuadPart = -1;
+                    memcpy(info, &qlimits, len);
+                }
+            }
+            else ret = STATUS_INFO_LENGTH_MISMATCH;
+            break;
+        }
+
     default:
         FIXME("(%p,info_class=%d,%p,0x%08x,%p) Unknown information class\n",
               handle, class, info, (int)size, ret_len );
@@ -1685,11 +1711,18 @@ NTSTATUS WINAPI NtSetInformationProcess( HANDLE handle, PROCESSINFOCLASS class, 
     case ProcessInstrumentationCallback:
     {
         PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION *instr = info;
+        void *callback;
 
-        FIXME( "ProcessInstrumentationCallback stub.\n" );
-
-        if (size < sizeof(*instr)) return STATUS_INFO_LENGTH_MISMATCH;
+        if (size < sizeof(callback)) return STATUS_INFO_LENGTH_MISMATCH;
+        if (size >= sizeof(PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION)) callback = instr->Callback;
+        else                                                              callback = *(void **)info;
         ret = STATUS_SUCCESS;
+        if (handle != GetCurrentProcess())
+        {
+            FIXME( "Setting ProcessInstrumentationCallback is not yet supported for other process.\n" );
+            break;
+        }
+        set_process_instrumentation_callback( callback );
         break;
     }
 
@@ -1715,6 +1748,22 @@ NTSTATUS WINAPI NtSetInformationProcess( HANDLE handle, PROCESSINFOCLASS class, 
         break;
     }
 
+    case ProcessManageWritesToExecutableMemory:
+    {
+#ifdef __aarch64__
+        const MANAGE_WRITES_TO_EXECUTABLE_MEMORY *mem = info;
+
+        if (size != sizeof(*mem)) return STATUS_INFO_LENGTH_MISMATCH;
+        if (handle != GetCurrentProcess()) return STATUS_NOT_SUPPORTED;
+        if (mem->Version != 2) return STATUS_REVISION_MISMATCH;
+        if (mem->ThreadAllowWrites) return STATUS_INVALID_PARAMETER;
+        virtual_enable_write_exceptions( mem->ProcessEnableWriteExceptions );
+        break;
+#else
+        return STATUS_NOT_SUPPORTED;
+#endif
+    }
+
     case ProcessWineMakeProcessSystem:
         if (size != sizeof(HANDLE *)) return STATUS_INFO_LENGTH_MISMATCH;
         SERVER_START_REQ( make_process_system )
@@ -1725,6 +1774,10 @@ NTSTATUS WINAPI NtSetInformationProcess( HANDLE handle, PROCESSINFOCLASS class, 
         }
         SERVER_END_REQ;
         return ret;
+
+    case ProcessPowerThrottlingState:
+        FIXME( "ProcessPowerThrottlingState - stub\n" );
+        return STATUS_SUCCESS;
 
     default:
         FIXME( "(%p,0x%08x,%p,0x%08x) stub\n", handle, class, info, (int)size );

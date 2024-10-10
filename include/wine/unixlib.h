@@ -72,7 +72,6 @@ NTSYSAPI void ntdll_set_exception_jmp_buf( jmp_buf jmp );
 
 NTSYSAPI BOOLEAN KeAddSystemServiceTable( ULONG_PTR *funcs, ULONG_PTR *counters, ULONG limit,
                                           BYTE *arguments, ULONG index );
-NTSYSAPI NTSTATUS KeUserModeCallback( ULONG id, const void *args, ULONG len, void **ret_ptr, ULONG *ret_len );
 
 /* wide char string functions */
 
@@ -258,12 +257,24 @@ static inline ULONG ntdll_wcstoul( const WCHAR *s, WCHAR **end, int base )
 
 #else /* WINE_UNIX_LIB */
 
-NTSYSAPI NTSTATUS WINAPI __wine_unix_call( unixlib_handle_t handle, unsigned int code, void *args );
 extern unixlib_handle_t __wine_unixlib_handle;
 extern NTSTATUS (WINAPI *__wine_unix_call_dispatcher)( unixlib_handle_t, unsigned int, void * );
 extern NTSTATUS WINAPI __wine_init_unix_call(void);
 
-#define WINE_UNIX_CALL(code,args) __wine_unix_call_dispatcher( __wine_unixlib_handle, (code), (args) )
+#ifdef __arm64ec__
+NTSTATUS __wine_unix_call_arm64ec( unixlib_handle_t handle, unsigned int code, void *args );
+static inline NTSTATUS __wine_unix_call( unixlib_handle_t handle, unsigned int code, void *args )
+{
+    return __wine_unix_call_arm64ec( handle, code, args );
+}
+#else
+static inline NTSTATUS __wine_unix_call( unixlib_handle_t handle, unsigned int code, void *args )
+{
+    return __wine_unix_call_dispatcher( handle, code, args );
+}
+#endif
+
+#define WINE_UNIX_CALL(code,args) __wine_unix_call( __wine_unixlib_handle, (code), (args) )
 
 #endif /* WINE_UNIX_LIB */
 

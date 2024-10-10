@@ -24,7 +24,6 @@
 #include "limits.h"
 #include "math.h"
 #include "mbctype.h"
-#include "stdio.h"
 #include "wchar.h"
 #include "wctype.h"
 #include "uchar.h"
@@ -7829,6 +7828,7 @@ static ostreambuf_iterator_char* num_put_char_fput(const num_put *this, ostreamb
     if((adjustfield & FMTFLAG_internal) && (buf[0]=='-' || buf[0]=='+')) {
         num_put_char__Putc(this, &dest, dest, buf, 1);
         buf++;
+        count--;
     }
     if(adjustfield != FMTFLAG_left) {
         num_put_char__Rep(this, ret, dest, fill, pad);
@@ -7914,9 +7914,11 @@ ostreambuf_iterator_char* __cdecl num_put_char__Iput(const num_put *this, ostrea
     if((adjustfield & FMTFLAG_internal) && (buf[0]=='-' || buf[0]=='+')) {
         num_put_char__Putc(this, &dest, dest, buf, 1);
         buf++;
+        count--;
     }else if((adjustfield & FMTFLAG_internal) && (buf[1]=='x' || buf[1]=='X')) {
         num_put_char__Putc(this, &dest, dest, buf, 2);
         buf += 2;
+        count -= 2;
     }
     if(adjustfield != FMTFLAG_left) {
         num_put_char__Rep(this, ret, dest, fill, pad);
@@ -8697,6 +8699,7 @@ static ostreambuf_iterator_wchar* num_put__fput(const num_put *this, ostreambuf_
     if((adjustfield & FMTFLAG_internal) && (buf[0]=='-' || buf[0]=='+')) {
         num_put_wchar_wide_put(this, &dest, base, buf, 1);
         buf++;
+        count--;
     }
     if(adjustfield != FMTFLAG_left) {
         num_put_wchar__Rep(this, ret, dest, fill, pad);
@@ -8790,9 +8793,11 @@ static ostreambuf_iterator_wchar* num_put__Iput(const num_put *this, ostreambuf_
     if((adjustfield & FMTFLAG_internal) && (buf[0]=='-' || buf[0]=='+')) {
         num_put_wchar_wide_put(this, &dest, base, buf, 1);
         buf++;
+        count--;
     }else if((adjustfield & FMTFLAG_internal) && (buf[1]=='x' || buf[1]=='X')) {
         num_put_wchar_wide_put(this, &dest, base, buf, 2);
         buf += 2;
+        count -= 2;
     }
     if(adjustfield != FMTFLAG_left) {
         num_put_wchar__Rep(this, ret, dest, fill, pad);
@@ -13336,7 +13341,7 @@ __ASM_BLOCK_END
 
 void init_locale(void *base)
 {
-#ifdef __x86_64__
+#ifdef RTTI_USE_RVA
     init__Facet_base_rtti(base);
     init_locale_facet_rtti(base);
     init_locale__Locimp_rtti(base);

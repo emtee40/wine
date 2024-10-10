@@ -1516,6 +1516,9 @@ static HRESULT WINAPI FilterGraph2_AddSourceFilter(IFilterGraph2 *iface,
     TRACE("graph %p, filename %s, filter_name %s, ret_filter %p.\n",
             graph, debugstr_w(filename), debugstr_w(filter_name), ret_filter);
 
+    if (!*filename)
+        return VFW_E_NOT_FOUND;
+
     if (!get_media_type(filename, NULL, NULL, &clsid))
         clsid = CLSID_AsyncReader;
     TRACE("Using source filter %s.\n", debugstr_guid(&clsid));
@@ -1539,6 +1542,7 @@ static HRESULT WINAPI FilterGraph2_AddSourceFilter(IFilterGraph2 *iface,
     if (FAILED(hr))
     {
         WARN("Failed to load file, hr %#lx.\n", hr);
+        IBaseFilter_Release(filter);
         return hr;
     }
 
@@ -1939,7 +1943,7 @@ static HRESULT WINAPI MediaControl_Run(IMediaControl *iface)
         }
         else
         {
-            graph_start(graph, 0);
+            hr = graph_start(graph, 0);
         }
     }
 
@@ -4500,6 +4504,11 @@ static HRESULT WINAPI VideoWindow_get_FullScreenMode(IVideoWindow *iface, LONG *
 
     if (hr == S_OK)
         hr = IVideoWindow_get_FullScreenMode(pVideoWindow, FullScreenMode);
+    if (hr == E_NOTIMPL)
+    {
+        *FullScreenMode = OAFALSE;
+        hr = S_OK;
+    }
 
     LeaveCriticalSection(&This->cs);
 
@@ -4520,6 +4529,8 @@ static HRESULT WINAPI VideoWindow_put_FullScreenMode(IVideoWindow *iface, LONG F
 
     if (hr == S_OK)
         hr = IVideoWindow_put_FullScreenMode(pVideoWindow, FullScreenMode);
+    if (hr == E_NOTIMPL && FullScreenMode == OAFALSE)
+        hr = S_FALSE;
 
     LeaveCriticalSection(&This->cs);
 

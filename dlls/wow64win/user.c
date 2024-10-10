@@ -355,7 +355,7 @@ struct win_proc_params32
     BOOL ansi;
     BOOL ansi_dst;
     enum wm_char_mapping mapping;
-    ULONG dpi_awareness;
+    ULONG dpi_context;
     ULONG procA;
     ULONG procW;
 };
@@ -471,7 +471,7 @@ static void win_proc_params_64to32( const struct win_proc_params *src, struct wi
     params.ansi = src->ansi;
     params.ansi_dst = src->ansi_dst;
     params.mapping = src->mapping;
-    params.dpi_awareness = HandleToUlong( src->dpi_awareness );
+    params.dpi_context = src->dpi_context;
     params.procA = PtrToUlong( src->procA );
     params.procW = PtrToUlong( src->procW );
     memcpy( dst, &params, sizeof(params) );
@@ -1445,87 +1445,15 @@ static NTSTATUS WINAPI wow64_NtUserUnpackDDEMessage( void *arg, ULONG size )
     return status;
 }
 
-static NTSTATUS WINAPI wow64_NtUserCallFreeIcon( void *arg, ULONG size )
+static NTSTATUS WINAPI wow64_NtUserCallDispatchCallback( void *arg, ULONG size )
 {
-    return dispatch_callback( NtUserCallFreeIcon, arg, size );
+    return dispatch_callback( NtUserCallDispatchCallback, arg, size );
 }
 
-static NTSTATUS WINAPI wow64_NtUserThunkLock( void *arg, ULONG size )
-{
-    return dispatch_callback( NtUserThunkLock, arg, size );
-}
-
-static NTSTATUS WINAPI wow64_NtUserCallVulkanDebugReportCallback( void *arg, ULONG size )
-{
-    FIXME( "\n" );
-    return 0;
-}
-
-static NTSTATUS WINAPI wow64_NtUserCallVulkanDebugUtilsCallback( void *arg, ULONG size )
-{
-    FIXME( "\n" );
-    return 0;
-}
-
-static NTSTATUS WINAPI wow64_NtUserCallOpenGLDebugMessageCallback( void *arg, ULONG size )
-{
-    FIXME( "\n" );
-    return 0;
-}
-
-static NTSTATUS WINAPI wow64_NtUserDriverCallbackFirst0( void *arg, ULONG size )
-{
-    return dispatch_callback( NtUserDriverCallbackFirst + 0, arg, size );
-}
-
-static NTSTATUS WINAPI wow64_NtUserDriverCallbackFirst1( void *arg, ULONG size )
-{
-    return dispatch_callback( NtUserDriverCallbackFirst + 1, arg, size );
-}
-
-static NTSTATUS WINAPI wow64_NtUserDriverCallbackFirst2( void *arg, ULONG size )
-{
-    return dispatch_callback( NtUserDriverCallbackFirst + 2, arg, size );
-}
-
-static NTSTATUS WINAPI wow64_NtUserDriverCallbackFirst3( void *arg, ULONG size )
-{
-    return dispatch_callback( NtUserDriverCallbackFirst + 3, arg, size );
-}
-
-static NTSTATUS WINAPI wow64_NtUserDriverCallbackFirst4( void *arg, ULONG size )
-{
-    return dispatch_callback( NtUserDriverCallbackFirst + 4, arg, size );
-}
-
-static NTSTATUS WINAPI wow64_NtUserDriverCallbackFirst5( void *arg, ULONG size )
-{
-    return dispatch_callback( NtUserDriverCallbackFirst + 5, arg, size );
-}
-
-static NTSTATUS WINAPI wow64_NtUserDriverCallbackFirst6( void *arg, ULONG size )
-{
-    return dispatch_callback( NtUserDriverCallbackFirst + 6, arg, size );
-}
-
-static NTSTATUS WINAPI wow64_NtUserDriverCallbackFirst7( void *arg, ULONG size )
-{
-    return dispatch_callback( NtUserDriverCallbackFirst + 7, arg, size );
-}
-
-static NTSTATUS WINAPI wow64_NtUserDriverCallbackFirst8( void *arg, ULONG size )
-{
-    return dispatch_callback( NtUserDriverCallbackFirst + 8, arg, size );
-}
-
-static NTSTATUS WINAPI wow64_NtUserDriverCallbackFirst9( void *arg, ULONG size )
-{
-    return dispatch_callback( NtUserDriverCallbackFirst + 9, arg, size );
-}
-
-user_callback user_callbacks[] =
+ntuser_callback user_callbacks[] =
 {
     /* user32 callbacks */
+    wow64_NtUserCallDispatchCallback,
     wow64_NtUserCallEnumDisplayMonitor,
     wow64_NtUserCallSendAsyncCallback,
     wow64_NtUserCallWinEventHook,
@@ -1545,25 +1473,6 @@ user_callback user_callbacks[] =
     wow64_NtUserPostDDEMessage,
     wow64_NtUserRenderSynthesizedFormat,
     wow64_NtUserUnpackDDEMessage,
-    /* win16 hooks */
-    wow64_NtUserCallFreeIcon,
-    wow64_NtUserThunkLock,
-    /* Vulkan support */
-    wow64_NtUserCallVulkanDebugReportCallback,
-    wow64_NtUserCallVulkanDebugUtilsCallback,
-    /* OpenGL support */
-    wow64_NtUserCallOpenGLDebugMessageCallback,
-    /* Driver-specific callbacks */
-    wow64_NtUserDriverCallbackFirst0,
-    wow64_NtUserDriverCallbackFirst1,
-    wow64_NtUserDriverCallbackFirst2,
-    wow64_NtUserDriverCallbackFirst3,
-    wow64_NtUserDriverCallbackFirst4,
-    wow64_NtUserDriverCallbackFirst5,
-    wow64_NtUserDriverCallbackFirst6,
-    wow64_NtUserDriverCallbackFirst7,
-    wow64_NtUserDriverCallbackFirst8,
-    wow64_NtUserDriverCallbackFirst9,
 };
 
 C_ASSERT( ARRAYSIZE(user_callbacks) == NtUserCallCount );
@@ -1694,6 +1603,22 @@ NTSTATUS WINAPI wow64_NtUserCallHwndParam( UINT *args )
             return NtUserCallHwndParam( hwnd, (UINT_PTR)&info, code );
         }
 
+    case NtUserCallHwndParam_GetWindowRects:
+        {
+            struct
+            {
+                ULONG rect;
+                BOOL client;
+                UINT dpi;
+            } *params32 = UlongToPtr( param );
+            struct get_window_rects_params params;
+
+            params.rect = UlongToPtr( params32->rect );
+            params.client = params32->client;
+            params.dpi = params32->dpi;
+            return NtUserCallHwndParam( hwnd, (UINT_PTR)&params, code );
+        }
+
     case NtUserCallHwndParam_MapWindowPoints:
         {
             struct
@@ -1701,12 +1626,14 @@ NTSTATUS WINAPI wow64_NtUserCallHwndParam( UINT *args )
                 ULONG hwnd_to;
                 ULONG points;
                 UINT count;
+                UINT dpi;
             } *params32 = UlongToPtr( param );
             struct map_window_points_params params;
 
             params.hwnd_to = LongToHandle( params32->hwnd_to );
             params.points = UlongToPtr( params32->points );
             params.count = params32->count;
+            params.dpi = params32->dpi;
             return NtUserCallHwndParam( hwnd, (UINT_PTR)&params, code );
         }
 

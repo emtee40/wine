@@ -57,6 +57,7 @@ static inline UINT eflags_to_cpsr( UINT eflags )
     if (eflags & 0x0001) ret |= 0x20000000;  /* carry */
     if (eflags & 0x0040) ret |= 0x40000000;  /* zero */
     if (eflags & 0x0080) ret |= 0x80000000;  /* negative */
+    if (eflags & 0x0100) ret |= 0x00200000;  /* trap */
     if (eflags & 0x0800) ret |= 0x10000000;  /* overflow */
     return ret;
 }
@@ -65,6 +66,7 @@ static inline UINT cpsr_to_eflags( UINT cpsr )
 {
     UINT ret = 0x202;
 
+    if (cpsr & 0x00200000) ret |= 0x0100;  /* trap */
     if (cpsr & 0x10000000) ret |= 0x0800;  /* overflow */
     if (cpsr & 0x20000000) ret |= 0x0001;  /* carry */
     if (cpsr & 0x40000000) ret |= 0x0040;  /* zero */
@@ -83,16 +85,16 @@ static inline UINT64 mxcsr_to_fpcsr( UINT mxcsr )
     if (mxcsr & 0x0010) fpsr |= 0x0008;    /* underflow */
     if (mxcsr & 0x0020) fpsr |= 0x0010;    /* precision */
 
-    if (mxcsr & 0x0040) fpcr |= 0x0001;    /* denormals are zero */
-    if (mxcsr & 0x0080) fpcr |= 0x0100;    /* invalid operation mask */
-    if (mxcsr & 0x0100) fpcr |= 0x8000;    /* denormal mask */
-    if (mxcsr & 0x0200) fpcr |= 0x0200;    /* zero-divide mask */
-    if (mxcsr & 0x0400) fpcr |= 0x0400;    /* overflow mask */
-    if (mxcsr & 0x0800) fpcr |= 0x0800;    /* underflow mask */
-    if (mxcsr & 0x1000) fpcr |= 0x1000;    /* precision mask */
-    if (mxcsr & 0x2000) fpcr |= 0x800000;  /* round down */
-    if (mxcsr & 0x4000) fpcr |= 0x400000;  /* round up */
-    if (mxcsr & 0x8000) fpcr |= 0x1000000; /* flush to zero */
+    if (mxcsr & 0x0040)    fpcr |= 0x80000;   /* denormals are zero */
+    if (!(mxcsr & 0x0080)) fpcr |= 0x0100;    /* invalid operation mask */
+    if (!(mxcsr & 0x0100)) fpcr |= 0x8000;    /* denormal mask */
+    if (!(mxcsr & 0x0200)) fpcr |= 0x0200;    /* zero-divide mask */
+    if (!(mxcsr & 0x0400)) fpcr |= 0x0400;    /* overflow mask */
+    if (!(mxcsr & 0x0800)) fpcr |= 0x0800;    /* underflow mask */
+    if (!(mxcsr & 0x1000)) fpcr |= 0x1000;    /* precision mask */
+    if (mxcsr & 0x2000)    fpcr |= 0x800000;  /* round down */
+    if (mxcsr & 0x4000)    fpcr |= 0x400000;  /* round up */
+    if (mxcsr & 0x8000)    fpcr |= 0x1000000; /* flush to zero */
     return fpcr | ((UINT64)fpsr << 32);
 }
 
@@ -107,16 +109,16 @@ static inline UINT fpcsr_to_mxcsr( UINT fpcr, UINT fpsr )
     if (fpsr & 0x0010) ret |= 0x0020;      /* precision */
     if (fpsr & 0x0080) ret |= 0x0002;      /* denormal */
 
-    if (fpcr & 0x0000001) ret |= 0x0040;   /* denormals are zero */
-    if (fpcr & 0x0000100) ret |= 0x0080;   /* invalid operation mask */
-    if (fpcr & 0x0000200) ret |= 0x0200;   /* zero-divide mask */
-    if (fpcr & 0x0000400) ret |= 0x0400;   /* overflow mask */
-    if (fpcr & 0x0000800) ret |= 0x0800;   /* underflow mask */
-    if (fpcr & 0x0001000) ret |= 0x1000;   /* precision mask */
-    if (fpcr & 0x0008000) ret |= 0x0100;   /* denormal mask */
-    if (fpcr & 0x0400000) ret |= 0x4000;   /* round up */
-    if (fpcr & 0x0800000) ret |= 0x2000;   /* round down */
-    if (fpcr & 0x1000000) ret |= 0x8000;   /* flush to zero */
+    if (fpcr & 0x0080000)    ret |= 0x0040;   /* denormals are zero */
+    if (!(fpcr & 0x0000100)) ret |= 0x0080;   /* invalid operation mask */
+    if (!(fpcr & 0x0000200)) ret |= 0x0200;   /* zero-divide mask */
+    if (!(fpcr & 0x0000400)) ret |= 0x0400;   /* overflow mask */
+    if (!(fpcr & 0x0000800)) ret |= 0x0800;   /* underflow mask */
+    if (!(fpcr & 0x0001000)) ret |= 0x1000;   /* precision mask */
+    if (!(fpcr & 0x0008000)) ret |= 0x0100;   /* denormal mask */
+    if (fpcr & 0x0400000)    ret |= 0x4000;   /* round up */
+    if (fpcr & 0x0800000)    ret |= 0x2000;   /* round down */
+    if (fpcr & 0x1000000)    ret |= 0x8000;   /* flush to zero */
     return ret;
 }
 

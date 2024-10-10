@@ -103,9 +103,8 @@ struct wine_debug_report_callback
     struct wine_instance *instance; /* parent */
     VkDebugReportCallbackEXT host_debug_callback;
 
-    /* application callback + data */
-    PFN_vkDebugReportCallbackEXT user_callback;
-    void *user_data;
+    UINT64 user_callback; /* client pointer */
+    UINT64 user_data; /* client pointer */
 
     struct wrapper_entry wrapper_entry;
 };
@@ -200,9 +199,8 @@ struct wine_debug_utils_messenger
     struct wine_instance *instance; /* parent */
     VkDebugUtilsMessengerEXT host_debug_messenger;
 
-    /* application callback + data */
-    PFN_vkDebugUtilsMessengerCallbackEXT user_callback;
-    void *user_data;
+    UINT64 user_callback; /* client pointer */
+    UINT64 user_data; /* client pointer */
 
     struct wrapper_entry wrapper_entry;
 };
@@ -253,7 +251,9 @@ static inline VkSurfaceKHR wine_surface_to_handle(struct wine_surface *surface)
 
 struct wine_swapchain
 {
+    struct wine_surface *surface;  /* parent */
     VkSwapchainKHR host_swapchain;
+    VkExtent2D extents;
 
     struct wrapper_entry wrapper_entry;
 };
@@ -270,6 +270,7 @@ static inline VkSwapchainKHR wine_swapchain_to_handle(struct wine_swapchain *sur
 
 BOOL wine_vk_device_extension_supported(const char *name);
 BOOL wine_vk_instance_extension_supported(const char *name);
+BOOL wine_vk_is_host_surface_extension(const char *name);
 
 BOOL wine_vk_is_type_wrapped(VkObjectType type);
 

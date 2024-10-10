@@ -376,6 +376,7 @@ NTSTATUS WINAPI wow64_NtQueryInformationToken( UINT *args )
     case TokenElevation: /* TOKEN_ELEVATION */
     case TokenSessionId:  /* ULONG */
     case TokenVirtualizationEnabled:  /* ULONG */
+    case TokenUIAccess:  /* ULONG */
     case TokenIsAppContainer:  /* ULONG */
         /* nothing to map */
         return NtQueryInformationToken( handle, class, info, len, retlen );
@@ -521,6 +522,18 @@ NTSTATUS WINAPI wow64_NtSetInformationToken( UINT *args )
 
     switch (class)
     {
+    case TokenIntegrityLevel: /* TOKEN_MANDATORY_LABEL */
+        if (len >= sizeof(TOKEN_MANDATORY_LABEL32))
+        {
+            TOKEN_MANDATORY_LABEL32 *label32 = ptr;
+            TOKEN_MANDATORY_LABEL label;
+
+            label.Label.Sid = ULongToPtr( label32->Label.Sid );
+            label.Label.Attributes = label32->Label.Attributes;
+            return NtSetInformationToken( handle, class, &label, sizeof(label) );
+        }
+        else return STATUS_INFO_LENGTH_MISMATCH;
+
     case TokenSessionId:   /* ULONG */
         return NtSetInformationToken( handle, class, ptr, len );
 

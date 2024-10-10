@@ -458,15 +458,14 @@ void ungrab_clipping_window(void)
 }
 
 /***********************************************************************
- *      retry_grab_clipping_window
- *
- * Restore the current clip rectangle.
+ *      reapply_cursor_clipping
  */
-void retry_grab_clipping_window(void)
+void reapply_cursor_clipping(void)
 {
     RECT rect;
-    NtUserGetClipCursor( &rect );
-    NtUserClipCursor( &rect );
+    UINT context = NtUserSetThreadDpiAwarenessContext( NTUSER_DPI_PER_MONITOR_AWARE );
+    if (NtUserGetClipCursor( &rect )) NtUserClipCursor( &rect );
+    NtUserSetThreadDpiAwarenessContext( context );
 }
 
 
@@ -514,13 +513,13 @@ static void map_event_coords( HWND hwnd, Window window, Window event_root, int x
         {
             if (window == data->whole_window)
             {
-                pt.x += data->whole_rect.left - data->client_rect.left;
-                pt.y += data->whole_rect.top - data->client_rect.top;
+                pt.x += data->rects.visible.left - data->rects.client.left;
+                pt.y += data->rects.visible.top - data->rects.client.top;
             }
 
             if (NtUserGetWindowLongW( hwnd, GWL_EXSTYLE ) & WS_EX_LAYOUTRTL)
-                pt.x = data->client_rect.right - data->client_rect.left - 1 - pt.x;
-            NtUserMapWindowPoints( hwnd, 0, &pt, 1 );
+                pt.x = data->rects.client.right - data->rects.client.left - 1 - pt.x;
+            NtUserMapWindowPoints( hwnd, 0, &pt, 1, 0 /* per-monitor DPI */ );
         }
         release_win_data( data );
     }
@@ -564,10 +563,7 @@ static void send_mouse_input( HWND hwnd, Window window, unsigned int state, INPU
         SERVER_START_REQ( update_window_zorder )
         {
             req->window      = wine_server_user_handle( hwnd );
-            req->rect.left   = rect.left;
-            req->rect.top    = rect.top;
-            req->rect.right  = rect.right;
-            req->rect.bottom = rect.bottom;
+            req->rect        = wine_server_rectangle( rect );
             wine_server_call( req );
         }
         SERVER_END_REQ;
@@ -1465,7 +1461,10 @@ void move_resize_window( HWND hwnd, int dir )
     if (!(win = X11DRV_get_whole_window( hwnd ))) return;
 
     pt = NtUserGetThreadInfo()->message_pos;
-    pos = virtual_screen_to_root( (short)LOWORD( pt ), (short)HIWORD( pt ) );
+    pos.x = (short)LOWORD( pt );
+    pos.y = (short)HIWORD( pt );
+    NtUserLogicalToPerMonitorDPIPhysicalPoint( hwnd, &pos );
+    pos = virtual_screen_to_root( pos.x, pos.y );
 
     if (NtUserGetKeyState( VK_LBUTTON ) & 0x8000) button = 1;
     else if (NtUserGetKeyState( VK_MBUTTON ) & 0x8000) button = 2;
@@ -1680,7 +1679,7 @@ static BOOL map_raw_event_coords( XIRawEvent *event, INPUT *input )
     if (!xinput2_available) return FALSE;
     if (event->deviceid != thread_data->xinput2_pointer) return FALSE;
 
-    virtual_rect = NtUserGetVirtualScreenRect();
+    virtual_rect = NtUserGetVirtualScreenRect( MDT_DEFAULT );
 
     if (x->max <= x->min) x_scale = 1;
     else x_scale = (virtual_rect.right - virtual_rect.left) / (x->max - x->min);
@@ -1750,7 +1749,7 @@ static BOOL X11DRV_RawMotion( XGenericEventCookie *xev )
 
 static BOOL X11DRV_TouchEvent( HWND hwnd, XGenericEventCookie *xev )
 {
-    RECT virtual = NtUserGetVirtualScreenRect();
+    RECT virtual = NtUserGetVirtualScreenRect( MDT_DEFAULT );
     INPUT input = {.type = INPUT_HARDWARE};
     XIDeviceEvent *event = xev->data;
     int flags = 0;

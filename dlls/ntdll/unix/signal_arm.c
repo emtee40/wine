@@ -257,6 +257,12 @@ static BOOL is_inside_syscall( ucontext_t *sigcontext )
 }
 
 
+void set_process_instrumentation_callback( void *callback )
+{
+    if (callback) FIXME( "Not supported.\n" );
+}
+
+
 /***********************************************************************
  *           unwind_builtin_dll
  */
@@ -513,6 +519,7 @@ NTSTATUS WINAPI NtGetContextThread( HANDLE handle, CONTEXT *context )
         memcpy( context->D, frame->d, sizeof(frame->d) );
         context->ContextFlags |= CONTEXT_FLOATING_POINT;
     }
+    set_context_exception_reporting_flags( &context->ContextFlags, CONTEXT_SERVICE_ACTIVE );
     return STATUS_SUCCESS;
 }
 
@@ -544,7 +551,7 @@ static void setup_raise_exception( ucontext_t *sigcontext, EXCEPTION_RECORD *rec
     void *stack_ptr = (void *)(SP_sig(sigcontext) & ~7);
     NTSTATUS status;
 
-    status = send_debug_event( rec, context, TRUE );
+    status = send_debug_event( rec, context, TRUE, TRUE );
     if (status == DBG_CONTINUE || status == DBG_EXCEPTION_HANDLED)
     {
         restore_context( context, sigcontext );
@@ -671,13 +678,11 @@ __ASM_GLOBAL_FUNC( call_user_mode_callback,
                    "ldr r4, [sp, #0x28]\n\t"  /* teb */
                    "ldr r5, [r4]\n\t"         /* teb->Tib.ExceptionList */
                    "push {r1,r2,r4,r5}\n\t"   /* ret_ptr, ret_len, teb, exception_list */
-#ifndef __SOFTFP__
                    "sub sp, sp, #0x90\n\t"
                    "mov r5, sp\n\t"
                    "vmrs r6, fpscr\n\t"
                    "vstm r5, {d8-d15}\n\t"
                    "str r6, [r5, #0x80]\n\t"
-#endif
                    "sub sp, sp, #0x160\n\t"   /* sizeof(struct syscall_frame) + registers */
                    "ldr r5, [r4, #0x1d8]\n\t" /* arm_thread_data()->syscall_frame */
                    "str r5, [sp, #0x4c]\n\t"  /* frame->prev_frame */
@@ -698,12 +703,10 @@ __ASM_GLOBAL_FUNC( user_mode_callback_return,
                    "ldr r5, [r4, #0x4c]\n\t"  /* frame->prev_frame */
                    "str r5, [r3, #0x1d8]\n\t" /* arm_thread_data()->syscall_frame */
                    "add r5, r4, #0x160\n\t"
-#ifndef __SOFTFP__
                    "vldm r5, {d8-d15}\n\t"
                    "ldr r6, [r5, #0x80]\n\t"
                    "vmsr fpscr, r6\n\t"
                    "add r5, r5, #0x90\n\t"
-#endif
                    "mov sp, r5\n\t"
                    "pop {r4-r7}\n\t"          /* ret_ptr, ret_len, teb, exception_list */
                    "str r7, [r3]\n\t"         /* teb->Tib.ExceptionList */
@@ -858,9 +861,7 @@ static void segv_handler( int signal, siginfo_t *siginfo, void *sigcontext )
         rec.NumberParameters = 2;
         rec.ExceptionInformation[0] = (get_error_code(context) & 0x800) != 0;
         rec.ExceptionInformation[1] = (ULONG_PTR)siginfo->si_addr;
-        rec.ExceptionCode = virtual_handle_fault( siginfo->si_addr, rec.ExceptionInformation[0],
-                                                  (void *)SP_sig(context) );
-        if (!rec.ExceptionCode) return;
+        if (!virtual_handle_fault( &rec, (void *)SP_sig(context) )) return;
         break;
     case TRAP_ARM_ALIGNFLT:  /* Alignment check exception */
         rec.ExceptionCode = EXCEPTION_DATATYPE_MISALIGNMENT;
@@ -1020,7 +1021,7 @@ static void usr1_handler( int signal, siginfo_t *siginfo, void *sigcontext )
 
     if (is_inside_syscall( sigcontext ))
     {
-        context.ContextFlags = CONTEXT_FULL;
+        context.ContextFlags = CONTEXT_FULL | CONTEXT_EXCEPTION_REQUEST;
         NtGetContextThread( GetCurrentThread(), &context );
         wait_suspend( &context );
         NtSetContextThread( GetCurrentThread(), &context );
@@ -1028,6 +1029,7 @@ static void usr1_handler( int signal, siginfo_t *siginfo, void *sigcontext )
     else
     {
         save_context( &context, sigcontext );
+        context.ContextFlags |= CONTEXT_EXCEPTION_REPORTING;
         wait_suspend( &context );
         restore_context( &context, sigcontext );
     }
@@ -1134,7 +1136,11 @@ void call_init_thunk( LPTHREAD_START_ROUTINE entry, void *arg, BOOL suspend, TEB
     if (context.Pc & 1) context.Cpsr |= 0x20; /* thumb mode */
     if ((ctx = get_cpu_area( IMAGE_FILE_MACHINE_ARMNT ))) *ctx = context;
 
-    if (suspend) wait_suspend( &context );
+    if (suspend)
+    {
+        context.ContextFlags |= CONTEXT_EXCEPTION_REPORTING | CONTEXT_EXCEPTION_ACTIVE;
+        wait_suspend( &context );
+    }
 
     ctx = (CONTEXT *)((ULONG_PTR)context.Sp & ~15) - 1;
     *ctx = context;
@@ -1188,12 +1194,10 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                    "str r0, [r1, #0x40]\n\t"
                    "mov r0, #0\n\t"
                    "str r0, [r1, #0x44]\n\t"        /* frame->restore_flags */
-#ifndef __SOFTFP__
                    "vmrs r0, fpscr\n\t"
                    "str r0, [r1, #0x48]\n\t"
                    "add r0, r1, #0x60\n\t"
                    "vstm r0, {d0-d15}\n\t"
-#endif
                    "mov r6, sp\n\t"
                    "mov r8, r1\n\t"
                    /* switch to kernel stack */
@@ -1234,7 +1238,6 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                    "blx ip\n"
                    __ASM_LOCAL_LABEL("__wine_syscall_dispatcher_return") ":\n\t"
                    "ldr ip, [r8, #0x44]\n\t"    /* frame->restore_flags */
-#ifndef __SOFTFP__
                    "tst ip, #4\n\t"                 /* CONTEXT_FLOATING_POINT */
                    "beq 3f\n\t"
                    "ldr r4, [r8, #0x48]\n\t"
@@ -1242,7 +1245,6 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                    "add r4, r8, #0x60\n\t"
                    "vldm r4, {d0-d15}\n"
                    "3:\n\t"
-#endif
                    "tst ip, #2\n\t"                 /* CONTEXT_INTEGER */
                    "it ne\n\t"
                    "ldmne r8, {r0-r3}\n\t"
@@ -1254,9 +1256,9 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
 
                    "5:\tmovw r0, #0x000d\n\t" /* STATUS_INVALID_PARAMETER */
                    "movt r0, #0xc000\n\t"
-                   "b " __ASM_LOCAL_LABEL("__wine_syscall_dispatcher_return") "\n\t"
-                   ".globl " __ASM_NAME("__wine_syscall_dispatcher_return") "\n"
-                   __ASM_NAME("__wine_syscall_dispatcher_return") ":\n\t"
+                   "b " __ASM_LOCAL_LABEL("__wine_syscall_dispatcher_return") )
+
+__ASM_GLOBAL_FUNC( __wine_syscall_dispatcher_return,
                    "mov r8, r0\n\t"
                    "mov r0, r1\n\t"
                    "b " __ASM_LOCAL_LABEL("__wine_syscall_dispatcher_return") )
@@ -1278,12 +1280,10 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
                    "str r4, [r1, #0x40]\n\t"
                    "mov r4, #0\n\t"
                    "str r4, [r1, #0x44]\n\t"        /* frame->restore_flags */
-#ifndef __SOFTFP__
                    "vmrs r4, fpscr\n\t"
                    "str r4, [r1, #0x48]\n\t"
                    "add r4, r1, #0x60\n\t"
                    "vstm r4, {d0-d15}\n\t"
-#endif
                    "ldr ip, [r0, r2, lsl #2]\n\t"
                    "mov r8, r1\n\t"
                    /* switch to kernel stack */

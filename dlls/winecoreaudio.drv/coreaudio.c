@@ -325,7 +325,12 @@ static NTSTATUS unix_get_endpoint_ids(void *args)
 
     for(i = 0; i < params->num; i++){
         const SIZE_T name_len = CFStringGetLength(info[i].name) + 1;
-        const SIZE_T device_len = CFStringGetLength(info[i].uid) + 1;
+        CFIndex device_len;
+
+        CFStringGetBytes(info[i].uid, CFRangeMake(0, CFStringGetLength(info[i].uid)), kCFStringEncodingUTF8,
+                         0, false, NULL, 0, &device_len);
+        device_len++;   /* for null terminator */
+
         needed += name_len * sizeof(WCHAR) + ((device_len + 1) & ~1);
 
         if(needed <= params->size){
@@ -336,7 +341,8 @@ static NTSTATUS unix_get_endpoint_ids(void *args)
             offset += name_len * sizeof(WCHAR);
 
             endpoint->device = offset;
-            CFStringGetCString(info[i].uid, (char *)params->endpoints + offset, params->size - offset, kCFStringEncodingUTF8);
+            CFStringGetBytes(info[i].uid, CFRangeMake(0, CFStringGetLength(info[i].uid)), kCFStringEncodingUTF8,
+                             0, false, (UInt8 *)params->endpoints + offset, params->size - offset, NULL);
             ((char *)params->endpoints)[offset + device_len - 1] = '\0';
             offset += (device_len + 1) & ~1;
 
@@ -718,37 +724,6 @@ static NTSTATUS unix_create_stream(void *args)
     SIZE_T size;
 
     params->result = S_OK;
-
-    if (params->share == AUDCLNT_SHAREMODE_SHARED) {
-        params->period = def_period;
-        if (params->duration < 3 * params->period)
-            params->duration = 3 * params->period;
-    } else {
-        const WAVEFORMATEXTENSIBLE *fmtex = (WAVEFORMATEXTENSIBLE *)params->fmt;
-        if (fmtex->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE &&
-           (fmtex->dwChannelMask == 0 || fmtex->dwChannelMask & SPEAKER_RESERVED))
-            params->result = AUDCLNT_E_UNSUPPORTED_FORMAT;
-        else {
-            if (!params->period)
-                params->period = def_period;
-            if (params->period < min_period || params->period > 5000000)
-                params->result = AUDCLNT_E_INVALID_DEVICE_PERIOD;
-            else if (params->duration > 20000000) /* The smaller the period, the lower this limit. */
-                params->result = AUDCLNT_E_BUFFER_SIZE_ERROR;
-            else if (params->flags & AUDCLNT_STREAMFLAGS_EVENTCALLBACK) {
-                if (params->duration != params->period)
-                    params->result = AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL;
-
-                FIXME("EXCLUSIVE mode with EVENTCALLBACK\n");
-
-                params->result = AUDCLNT_E_DEVICE_IN_USE;
-            } else if (params->duration < 8 * params->period)
-                params->duration = 8 * params->period; /* May grow above 2s. */
-        }
-    }
-
-    if (FAILED(params->result))
-        return STATUS_SUCCESS;
 
     if (!(stream = calloc(1, sizeof(*stream)))) {
         params->result = E_OUTOFMEMORY;
@@ -1862,6 +1837,7 @@ const unixlib_entry_t __wine_unix_call_funcs[] =
     unix_get_capture_buffer,
     unix_release_capture_buffer,
     unix_is_format_supported,
+    unix_not_implemented,
     unix_get_mix_format,
     unix_get_device_period,
     unix_get_buffer_size,
@@ -1872,6 +1848,7 @@ const unixlib_entry_t __wine_unix_call_funcs[] =
     unix_get_position,
     unix_set_volumes,
     unix_set_event_handle,
+    unix_not_implemented,
     unix_not_implemented,
     unix_is_started,
     unix_get_prop_value,
@@ -2317,6 +2294,7 @@ const unixlib_entry_t __wine_unix_call_wow64_funcs[] =
     unix_wow64_get_capture_buffer,
     unix_release_capture_buffer,
     unix_wow64_is_format_supported,
+    unix_not_implemented,
     unix_wow64_get_mix_format,
     unix_wow64_get_device_period,
     unix_wow64_get_buffer_size,
@@ -2327,6 +2305,7 @@ const unixlib_entry_t __wine_unix_call_wow64_funcs[] =
     unix_wow64_get_position,
     unix_wow64_set_volumes,
     unix_wow64_set_event_handle,
+    unix_not_implemented,
     unix_not_implemented,
     unix_is_started,
     unix_wow64_get_prop_value,

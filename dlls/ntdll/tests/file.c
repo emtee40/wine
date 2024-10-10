@@ -414,6 +414,15 @@ static void open_file_test(void)
     CloseHandle( handle );
     pRtlFreeUnicodeString( &nameW );
 
+    wcscat( path, L"\\" );
+    pRtlDosPathNameToNtPathName_U( path, &nameW, NULL, NULL );
+    status = NtOpenFile( &handle, FILE_LIST_DIRECTORY | SYNCHRONIZE, &attr, &io,
+                         FILE_SHARE_READ | FILE_SHARE_WRITE,
+                         FILE_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT | FILE_OPEN_FOR_BACKUP_INTENT );
+    ok( status == STATUS_NOT_A_DIRECTORY, "open %s failed %lx\n", wine_dbgstr_w(nameW.Buffer), status );
+    CloseHandle( handle );
+    pRtlFreeUnicodeString( &nameW );
+
     wcscat( path, L"\\cmd.exe" );
     pRtlDosPathNameToNtPathName_U( path, &nameW, NULL, NULL );
     status = pNtOpenFile( &handle, GENERIC_READ, &attr, &io,
@@ -1317,10 +1326,6 @@ static void test_file_full_size_information(void)
         "[ffsi] TotalAllocationUnits error fsi:0x%s, ffsi:0x%s\n",
         wine_dbgstr_longlong(fsi.TotalAllocationUnits.QuadPart),
         wine_dbgstr_longlong(ffsi.TotalAllocationUnits.QuadPart));
-    ok(ffsi.CallerAvailableAllocationUnits.QuadPart == fsi.AvailableAllocationUnits.QuadPart,
-        "[ffsi] CallerAvailableAllocationUnits error fsi:0x%s, ffsi: 0x%s\n",
-        wine_dbgstr_longlong(fsi.AvailableAllocationUnits.QuadPart),
-        wine_dbgstr_longlong(ffsi.CallerAvailableAllocationUnits.QuadPart));
 
     /* Assume file system is NTFS */
     ok(ffsi.BytesPerSector == 512, "[ffsi] BytesPerSector expected 512, got %ld\n",ffsi.BytesPerSector);

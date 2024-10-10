@@ -203,7 +203,7 @@ _ACRTIMP DECLSPEC_NORETURN void __cdecl _Exit(int);
 _ACRTIMP DECLSPEC_NORETURN void __cdecl _exit(int);
 _ACRTIMP DECLSPEC_NORETURN void __cdecl abort(void);
 _ACRTIMP int           __cdecl abs(int);
-_ACRTIMP int           __cdecl atexit(void (__cdecl *)(void));
+extern int             __cdecl atexit(void (__cdecl *)(void));
 _ACRTIMP double        __cdecl atof(const char*);
 _ACRTIMP int           __cdecl atoi(const char*);
 _ACRTIMP int           __cdecl _atoi_l(const char*,_locale_t);
@@ -238,6 +238,8 @@ _ACRTIMP unsigned __int64 __cdecl _strtoui64_l(const char*,char**,int,_locale_t)
 _ACRTIMP int           __cdecl system(const char*);
 _ACRTIMP void*         __cdecl bsearch(const void*,const void*,size_t,size_t,int (__cdecl *)(const void*,const void*));
 _ACRTIMP void          __cdecl qsort(void*,size_t,size_t,int (__cdecl *)(const void*,const void*));
+_ACRTIMP void          __cdecl qsort_s(void*,size_t,size_t,int (__cdecl *)(void*,const void*,const void*),void*);
+_ACRTIMP unsigned int  __cdecl _set_abort_behavior(unsigned int flags, unsigned int mask);
 
 typedef void (__cdecl *_purecall_handler)(void);
 _ACRTIMP _purecall_handler __cdecl _set_purecall_handler(_purecall_handler);

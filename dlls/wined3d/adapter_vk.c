@@ -44,7 +44,6 @@ static const struct wined3d_state_entry_template misc_state_template_vk[] =
     {STATE_DEPTH_BOUNDS,                                  {STATE_DEPTH_BOUNDS,                                  state_nop}},
     {STATE_RASTERIZER,                                    {STATE_RASTERIZER,                                    state_nop}},
     {STATE_SCISSORRECT,                                   {STATE_SCISSORRECT,                                   state_nop}},
-    {STATE_POINTSPRITECOORDORIGIN,                        {STATE_POINTSPRITECOORDORIGIN,                        state_nop}},
 
     {STATE_TEXTURESTAGE(0, WINED3D_TSS_BUMPENV_MAT00),    {STATE_TEXTURESTAGE(0, WINED3D_TSS_BUMPENV_MAT00),    state_nop}},
     {STATE_TEXTURESTAGE(0, WINED3D_TSS_BUMPENV_MAT01),    {STATE_TEXTURESTAGE(0, WINED3D_TSS_BUMPENV_MAT00)}},
@@ -100,27 +99,6 @@ static const struct wined3d_state_entry_template misc_state_template_vk[] =
     {STATE_RENDER(WINED3D_RS_LINEPATTERN),                {STATE_RENDER(WINED3D_RS_LINEPATTERN),                state_nop}},
     {STATE_RENDER(WINED3D_RS_DITHERENABLE),               {STATE_RENDER(WINED3D_RS_DITHERENABLE),               state_nop}},
     {STATE_RENDER(WINED3D_RS_MULTISAMPLEANTIALIAS),       {STATE_RENDER(WINED3D_RS_MULTISAMPLEANTIALIAS),       state_nop}},
-    /* Samplers */
-    {STATE_SAMPLER(0),                                    {STATE_SAMPLER(0),                                    state_nop}},
-    {STATE_SAMPLER(1),                                    {STATE_SAMPLER(1),                                    state_nop}},
-    {STATE_SAMPLER(2),                                    {STATE_SAMPLER(2),                                    state_nop}},
-    {STATE_SAMPLER(3),                                    {STATE_SAMPLER(3),                                    state_nop}},
-    {STATE_SAMPLER(4),                                    {STATE_SAMPLER(4),                                    state_nop}},
-    {STATE_SAMPLER(5),                                    {STATE_SAMPLER(5),                                    state_nop}},
-    {STATE_SAMPLER(6),                                    {STATE_SAMPLER(6),                                    state_nop}},
-    {STATE_SAMPLER(7),                                    {STATE_SAMPLER(7),                                    state_nop}},
-    {STATE_SAMPLER(8),                                    {STATE_SAMPLER(8),                                    state_nop}},
-    {STATE_SAMPLER(9),                                    {STATE_SAMPLER(9),                                    state_nop}},
-    {STATE_SAMPLER(10),                                   {STATE_SAMPLER(10),                                   state_nop}},
-    {STATE_SAMPLER(11),                                   {STATE_SAMPLER(11),                                   state_nop}},
-    {STATE_SAMPLER(12),                                   {STATE_SAMPLER(12),                                   state_nop}},
-    {STATE_SAMPLER(13),                                   {STATE_SAMPLER(13),                                   state_nop}},
-    {STATE_SAMPLER(14),                                   {STATE_SAMPLER(14),                                   state_nop}},
-    {STATE_SAMPLER(15),                                   {STATE_SAMPLER(15),                                   state_nop}},
-    {STATE_SAMPLER(16), /* Vertex sampler 0 */            {STATE_SAMPLER(16),                                   state_nop}},
-    {STATE_SAMPLER(17), /* Vertex sampler 1 */            {STATE_SAMPLER(17),                                   state_nop}},
-    {STATE_SAMPLER(18), /* Vertex sampler 2 */            {STATE_SAMPLER(18),                                   state_nop}},
-    {STATE_SAMPLER(19), /* Vertex sampler 3 */            {STATE_SAMPLER(19),                                   state_nop}},
     {STATE_BASEVERTEXINDEX,                               {STATE_STREAMSRC}},
     {STATE_FRAMEBUFFER,                                   {STATE_FRAMEBUFFER,                                   state_nop}},
     {STATE_SHADER(WINED3D_SHADER_TYPE_PIXEL),             {STATE_SHADER(WINED3D_SHADER_TYPE_PIXEL),             state_nop}},
@@ -242,6 +220,8 @@ static HRESULT wined3d_select_vulkan_queue_family(const struct wined3d_adapter_v
 struct wined3d_physical_device_info
 {
     VkPhysicalDeviceExtendedDynamicStateFeaturesEXT dynamic_state_features;
+    VkPhysicalDeviceExtendedDynamicState2FeaturesEXT dynamic_state2_features;
+    VkPhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state3_features;
     VkPhysicalDeviceHostQueryResetFeatures host_query_reset_features;
     VkPhysicalDeviceShaderDrawParametersFeatures draw_parameters_features;
     VkPhysicalDeviceTransformFeedbackFeaturesEXT xfb_features;
@@ -252,6 +232,7 @@ struct wined3d_physical_device_info
 
 static void wined3d_disable_vulkan_features(struct wined3d_physical_device_info *info)
 {
+    VkPhysicalDeviceExtendedDynamicState3FeaturesEXT *dynamic_state3 = &info->dynamic_state3_features;
     VkPhysicalDeviceFeatures *features = &info->features2.features;
 
     features->depthBounds = VK_FALSE;
@@ -279,6 +260,31 @@ static void wined3d_disable_vulkan_features(struct wined3d_physical_device_info 
     features->sparseResidency16Samples = VK_FALSE;
     features->sparseResidencyAliased = VK_FALSE;
     features->inheritedQueries = VK_FALSE;
+
+    dynamic_state3->extendedDynamicState3AlphaToOneEnable = VK_FALSE;
+    dynamic_state3->extendedDynamicState3ColorBlendAdvanced = VK_FALSE;
+    dynamic_state3->extendedDynamicState3ConservativeRasterizationMode = VK_FALSE;
+    dynamic_state3->extendedDynamicState3CoverageModulationMode = VK_FALSE;
+    dynamic_state3->extendedDynamicState3CoverageModulationTable = VK_FALSE;
+    dynamic_state3->extendedDynamicState3CoverageModulationTableEnable = VK_FALSE;
+    dynamic_state3->extendedDynamicState3CoverageReductionMode = VK_FALSE;
+    dynamic_state3->extendedDynamicState3CoverageToColorEnable = VK_FALSE;
+    dynamic_state3->extendedDynamicState3CoverageToColorLocation = VK_FALSE;
+    dynamic_state3->extendedDynamicState3DepthClipEnable = VK_FALSE;
+    dynamic_state3->extendedDynamicState3DepthClipNegativeOneToOne = VK_FALSE;
+    dynamic_state3->extendedDynamicState3ExtraPrimitiveOverestimationSize = VK_FALSE;
+    dynamic_state3->extendedDynamicState3LineRasterizationMode = VK_FALSE;
+    dynamic_state3->extendedDynamicState3LineStippleEnable = VK_FALSE;
+    dynamic_state3->extendedDynamicState3LogicOpEnable = VK_FALSE;
+    dynamic_state3->extendedDynamicState3PolygonMode = VK_FALSE;
+    dynamic_state3->extendedDynamicState3ProvokingVertexMode = VK_FALSE;
+    dynamic_state3->extendedDynamicState3RasterizationStream = VK_FALSE;
+    dynamic_state3->extendedDynamicState3RepresentativeFragmentTestEnable = VK_FALSE;
+    dynamic_state3->extendedDynamicState3SampleLocationsEnable = VK_FALSE;
+    dynamic_state3->extendedDynamicState3ShadingRateImageEnable = VK_FALSE;
+    dynamic_state3->extendedDynamicState3TessellationDomainOrigin = VK_FALSE;
+    dynamic_state3->extendedDynamicState3ViewportWScalingEnable = VK_FALSE;
+    dynamic_state3->extendedDynamicState3ViewportSwizzle = VK_FALSE;
 }
 
 static struct wined3d_allocator_chunk *wined3d_allocator_vk_create_chunk(struct wined3d_allocator *allocator,
@@ -335,9 +341,19 @@ static const struct wined3d_allocator_ops wined3d_allocator_vk_ops =
     .allocator_destroy_chunk = wined3d_allocator_vk_destroy_chunk,
 };
 
+static void add_structure(VkPhysicalDeviceFeatures2 *features2, void *s)
+{
+    VkBaseOutStructure *base = s;
+
+    base->pNext = features2->pNext;
+    features2->pNext = base;
+}
+
 static void get_physical_device_info(const struct wined3d_adapter_vk *adapter_vk, struct wined3d_physical_device_info *info)
 {
     VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT *vertex_divisor_features = &info->vertex_divisor_features;
+    VkPhysicalDeviceExtendedDynamicState3FeaturesEXT *dynamic_state3_features = &info->dynamic_state3_features;
+    VkPhysicalDeviceExtendedDynamicState2FeaturesEXT *dynamic_state2_features = &info->dynamic_state2_features;
     VkPhysicalDeviceShaderDrawParametersFeatures *draw_parameters_features = &info->draw_parameters_features;
     VkPhysicalDeviceExtendedDynamicStateFeaturesEXT *dynamic_state_features = &info->dynamic_state_features;
     VkPhysicalDeviceHostQueryResetFeatures *host_query_reset_features = &info->host_query_reset_features;
@@ -349,25 +365,36 @@ static void get_physical_device_info(const struct wined3d_adapter_vk *adapter_vk
     memset(info, 0, sizeof(*info));
 
     draw_parameters_features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
-
     if (vk_info->api_version >= VK_API_VERSION_1_1)
-        xfb_features->pNext = draw_parameters_features;
+        add_structure(features2, draw_parameters_features);
     else
         draw_parameters_features->shaderDrawParameters = vk_info->supported[WINED3D_VK_KHR_SHADER_DRAW_PARAMETERS];
 
     xfb_features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT;
+    if (vk_info->supported[WINED3D_VK_EXT_TRANSFORM_FEEDBACK])
+        add_structure(features2, xfb_features);
 
     vertex_divisor_features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT;
-    vertex_divisor_features->pNext = xfb_features;
+    if (vk_info->supported[WINED3D_VK_EXT_VERTEX_ATTRIBUTE_DIVISOR])
+        add_structure(features2, vertex_divisor_features);
 
     host_query_reset_features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES;
-    host_query_reset_features->pNext = vertex_divisor_features;
+    if (vk_info->supported[WINED3D_VK_EXT_HOST_QUERY_RESET])
+        add_structure(features2, host_query_reset_features);
+
+    dynamic_state3_features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT;
+    if (vk_info->supported[WINED3D_VK_EXT_EXTENDED_DYNAMIC_STATE3])
+        add_structure(features2, dynamic_state3_features);
+
+    dynamic_state2_features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT;
+    if (vk_info->supported[WINED3D_VK_EXT_EXTENDED_DYNAMIC_STATE2])
+        add_structure(features2, dynamic_state2_features);
 
     dynamic_state_features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT;
-    dynamic_state_features->pNext = host_query_reset_features;
+    if (vk_info->supported[WINED3D_VK_EXT_EXTENDED_DYNAMIC_STATE])
+        add_structure(features2, dynamic_state_features);
 
     features2->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    features2->pNext = dynamic_state_features;
 
     if (vk_info->vk_ops.vkGetPhysicalDeviceFeatures2)
         VK_CALL(vkGetPhysicalDeviceFeatures2(physical_device, features2));
@@ -1771,6 +1798,8 @@ static void adapter_vk_draw_primitive(struct wined3d_device *device,
         context_vk->c.transform_feedback_active = 0;
     }
 
+    ++context_vk->command_buffer_work_count;
+
     context_release(&context_vk->c);
 }
 
@@ -1814,6 +1843,8 @@ static void adapter_vk_dispatch_compute(struct wined3d_device *device,
 
     VK_CALL(vkCmdPipelineBarrier(vk_command_buffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
             VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 0, NULL, 0, NULL, 0, NULL));
+
+    ++context_vk->command_buffer_work_count;
 
     context_release(&context_vk->c);
 }
@@ -2260,6 +2291,7 @@ static enum wined3d_feature_level feature_level_from_caps(const struct wined3d_p
 
 static void wined3d_adapter_vk_init_d3d_info(struct wined3d_adapter_vk *adapter_vk, uint32_t wined3d_creation_flags)
 {
+    const struct VkPhysicalDeviceExtendedDynamicState3FeaturesEXT *dynamic_state3;
     struct wined3d_d3d_info *d3d_info = &adapter_vk->a.d3d_info;
     struct wined3d_vk_info *vk_info = &adapter_vk->vk_info;
     struct wined3d_physical_device_info device_info;
@@ -2306,18 +2338,13 @@ static void wined3d_adapter_vk_init_d3d_info(struct wined3d_adapter_vk *adapter_
 
     d3d_info->wined3d_creation_flags = wined3d_creation_flags;
 
-    d3d_info->xyzrhw = vertex_caps.xyzrhw;
     d3d_info->emulated_flatshading = vertex_caps.emulated_flatshading;
-    d3d_info->ffp_generic_attributes = vertex_caps.ffp_generic_attributes;
     d3d_info->ffp_alpha_test = false;
-    d3d_info->vs_clipping = !!(shader_caps.wined3d_caps & WINED3D_SHADER_CAP_VS_CLIPPING);
     d3d_info->shader_double_precision = !!(shader_caps.wined3d_caps & WINED3D_SHADER_CAP_DOUBLE_PRECISION);
     d3d_info->shader_output_interpolation = !!(shader_caps.wined3d_caps & WINED3D_SHADER_CAP_OUTPUT_INTERPOLATION);
     d3d_info->viewport_array_index_any_shader = false; /* VK_EXT_shader_viewport_index_layer */
     d3d_info->stencil_export = vk_info->supported[WINED3D_VK_EXT_SHADER_STENCIL_EXPORT];
-    d3d_info->texture_npot = true;
-    d3d_info->texture_npot_conditional = true;
-    d3d_info->normalized_texrect = false;
+    d3d_info->unconditional_npot = true;
     d3d_info->draw_base_vertex_offset = true;
     d3d_info->vertex_bgra = true;
     d3d_info->texture_swizzle = true;
@@ -2344,6 +2371,20 @@ static void wined3d_adapter_vk_init_d3d_info(struct wined3d_adapter_vk *adapter_
     d3d_info->multisample_draw_location = WINED3D_LOCATION_TEXTURE_RGB;
 
     vk_info->multiple_viewports = device_info.features2.features.multiViewport;
+    vk_info->dynamic_state2 = device_info.dynamic_state2_features.extendedDynamicState2;
+    vk_info->dynamic_patch_vertex_count = device_info.dynamic_state2_features.extendedDynamicState2PatchControlPoints;
+
+    dynamic_state3 = &device_info.dynamic_state3_features;
+    vk_info->dynamic_multisample_state = dynamic_state3->extendedDynamicState3RasterizationSamples
+            && dynamic_state3->extendedDynamicState3AlphaToCoverageEnable
+            && dynamic_state3->extendedDynamicState3SampleMask;
+    vk_info->dynamic_blend_state = dynamic_state3->extendedDynamicState3ColorBlendEnable
+            && dynamic_state3->extendedDynamicState3ColorBlendEquation
+            && dynamic_state3->extendedDynamicState3ColorWriteMask;
+    /* Rasterizer state needs EDS2, for rasterizer discard, and EDS1, for cull mode and front face. */
+    vk_info->dynamic_rasterizer_state = dynamic_state3->extendedDynamicState3DepthClampEnable
+            && vk_info->dynamic_state2
+            && adapter_vk->vk_info.supported[WINED3D_VK_EXT_EXTENDED_DYNAMIC_STATE];
 }
 
 static bool wined3d_adapter_vk_init_device_extensions(struct wined3d_adapter_vk *adapter_vk)
@@ -2366,10 +2407,12 @@ static bool wined3d_adapter_vk_init_device_extensions(struct wined3d_adapter_vk 
     info[] =
     {
         {VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME,      VK_API_VERSION_1_3},
+        {VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME,    VK_API_VERSION_1_3},
+        {VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME,    ~0u},
         {VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,            VK_API_VERSION_1_2},
         {VK_EXT_SHADER_STENCIL_EXPORT_EXTENSION_NAME,       ~0u},
         {VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME,          ~0u},
-        {VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME,    ~0u,                true},
+        {VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME,    ~0u},
         {VK_KHR_MAINTENANCE1_EXTENSION_NAME,                VK_API_VERSION_1_1, true},
         {VK_KHR_MAINTENANCE2_EXTENSION_NAME,                VK_API_VERSION_1_1},
         {VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,VK_API_VERSION_1_2},
@@ -2385,9 +2428,12 @@ static bool wined3d_adapter_vk_init_device_extensions(struct wined3d_adapter_vk 
     map[] =
     {
         {VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME,       WINED3D_VK_EXT_EXTENDED_DYNAMIC_STATE},
+        {VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME,     WINED3D_VK_EXT_EXTENDED_DYNAMIC_STATE2},
+        {VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME,     WINED3D_VK_EXT_EXTENDED_DYNAMIC_STATE3},
         {VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,             WINED3D_VK_EXT_HOST_QUERY_RESET},
         {VK_EXT_SHADER_STENCIL_EXPORT_EXTENSION_NAME,        WINED3D_VK_EXT_SHADER_STENCIL_EXPORT},
         {VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME,           WINED3D_VK_EXT_TRANSFORM_FEEDBACK},
+        {VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME,     WINED3D_VK_EXT_VERTEX_ATTRIBUTE_DIVISOR},
         {VK_KHR_MAINTENANCE2_EXTENSION_NAME,                 WINED3D_VK_KHR_MAINTENANCE2},
         {VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME, WINED3D_VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE},
         {VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,       WINED3D_VK_KHR_SHADER_DRAW_PARAMETERS},

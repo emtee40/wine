@@ -735,12 +735,6 @@ struct process *create_process( int fd, struct process *parent, unsigned int fla
     if (!process->handles || !process->token) goto error;
     process->session_id = token_get_session_id( process->token );
 
-    /* Assign a high security label to the token. The default would be medium
-     * but Wine provides admin access to all applications right now so high
-     * makes more sense for the time being. */
-    if (!token_assign_label( process->token, &high_label_sid ))
-        goto error;
-
     set_fd_events( process->msg_fd, POLLIN );  /* start listening to events */
     return process;
 
@@ -844,7 +838,7 @@ static struct security_descriptor *process_get_sd( struct object *obj )
         process_default_sd->dacl_len  = dacl_len;
         sid = (struct sid *)(process_default_sd + 1);
         sid = copy_sid( sid, &builtin_admins_sid );
-        sid = copy_sid( sid, &domain_users_sid );
+        copy_sid( sid, &domain_users_sid );
 
         dacl = (struct acl *)((char *)(process_default_sd + 1) + admins_sid_len + users_sid_len);
         dacl->revision = ACL_REVISION;
@@ -864,7 +858,7 @@ static void process_poll_event( struct fd *fd, int event )
     struct process *process = get_fd_user( fd );
     assert( process->obj.ops == &process_ops );
 
-    if (event & (POLLERR | POLLHUP)) kill_process( process, 0 );
+    if (event & (POLLERR | POLLHUP)) kill_process( process, !process->is_terminating );
     else if (event & POLLIN) receive_fd( process );
 }
 
@@ -1512,7 +1506,10 @@ DECL_HANDLER(get_process_debug_info)
 /* fetch the name of the process image */
 DECL_HANDLER(get_process_image_name)
 {
-    struct process *process = get_process_from_handle( req->handle, PROCESS_QUERY_LIMITED_INFORMATION );
+    struct process *process;
+
+    if (req->pid) process = get_process_from_id( req->pid );
+    else          process = get_process_from_handle( req->handle, PROCESS_QUERY_LIMITED_INFORMATION );
 
     if (!process) return;
     if (process->image)
@@ -1552,7 +1549,7 @@ DECL_HANDLER(get_process_vm_counters)
         char proc_path[32], line[256];
         unsigned long value;
 
-        sprintf( proc_path, "/proc/%u/status", process->unix_pid );
+        snprintf( proc_path, sizeof(proc_path), "/proc/%u/status", process->unix_pid );
         if ((f = fopen( proc_path, "r" )))
         {
             while (fgets( line, sizeof(line), f ))
@@ -1683,7 +1680,7 @@ DECL_HANDLER(get_process_idle_event)
     reply->event = 0;
     if ((process = get_process_from_handle( req->handle, PROCESS_QUERY_INFORMATION )))
     {
-        if (process->idle_event && process != current->process)
+        if (process->idle_event)
             reply->event = alloc_handle( current->process, process->idle_event,
                                          EVENT_ALL_ACCESS, 0 );
         release_object( process );

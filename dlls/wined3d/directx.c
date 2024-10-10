@@ -466,11 +466,13 @@ static const struct wined3d_gpu_description gpu_description_table[] =
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_GEFORCE_GTX1060,    "NVIDIA GeForce GTX 1060",          DRIVER_NVIDIA_KEPLER,  6144},
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_GEFORCE_GTX1060M,   "NVIDIA GeForce GTX 1060M",         DRIVER_NVIDIA_KEPLER,  6144},
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_GEFORCE_GTX1070,    "NVIDIA GeForce GTX 1070",          DRIVER_NVIDIA_KEPLER,  8192},
+    {HW_VENDOR_NVIDIA,     CARD_NVIDIA_GEFORCE_GTX1070M,   "NVIDIA GeForce GTX 1070M",         DRIVER_NVIDIA_KEPLER,  8192},
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_GEFORCE_GTX1080,    "NVIDIA GeForce GTX 1080",          DRIVER_NVIDIA_KEPLER,  8192},
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_GEFORCE_GTX1080M,   "NVIDIA GeForce GTX 1080M",         DRIVER_NVIDIA_KEPLER,  8192},
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_GEFORCE_GTX1080TI,  "NVIDIA GeForce GTX 1080 Ti",       DRIVER_NVIDIA_KEPLER,  11264},
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_TITANX_PASCAL,      "NVIDIA TITAN X (Pascal)",          DRIVER_NVIDIA_KEPLER,  12288},
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_TITANV,             "NVIDIA TITAN V",                   DRIVER_NVIDIA_KEPLER,  12288},
+    {HW_VENDOR_NVIDIA,     CARD_NVIDIA_GEFORCE_GTX1650     ,"NVIDIA GeForce GTX 1650"      ,   DRIVER_NVIDIA_KEPLER,  4096},
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_GEFORCE_GTX1650SUPER,"NVIDIA GeForce GTX 1650 SUPER",   DRIVER_NVIDIA_KEPLER,  4096},
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_GEFORCE_GTX1660SUPER,"NVIDIA GeForce GTX 1660 SUPER",   DRIVER_NVIDIA_KEPLER,  6144},
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_GEFORCE_GTX1660TI,  "NVIDIA GeForce GTX 1660 Ti",       DRIVER_NVIDIA_KEPLER,  6144},
@@ -479,6 +481,7 @@ static const struct wined3d_gpu_description gpu_description_table[] =
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_GEFORCE_RTX2080,    "NVIDIA GeForce RTX 2080",          DRIVER_NVIDIA_KEPLER,  8192},
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_GEFORCE_RTX2080TI,  "NVIDIA GeForce RTX 2080 Ti",       DRIVER_NVIDIA_KEPLER,  11264},
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_GEFORCE_RTX3070,    "NVIDIA GeForce RTX 3070",          DRIVER_NVIDIA_KEPLER,  8192},
+    {HW_VENDOR_NVIDIA,     CARD_NVIDIA_GEFORCE_RTX3080,    "NVIDIA GeForce RTX 3080",          DRIVER_NVIDIA_KEPLER,  10240},
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_TESLA_T4,           "NVIDIA Tesla T4",                  DRIVER_NVIDIA_KEPLER,  16384},
     {HW_VENDOR_NVIDIA,     CARD_NVIDIA_AMPERE_A10,         "NVIDIA Ampere A10",                DRIVER_NVIDIA_KEPLER,  24576},
 
@@ -2181,12 +2184,45 @@ unsigned int CDECL wined3d_calculate_format_pitch(const struct wined3d_adapter *
 }
 
 HRESULT CDECL wined3d_check_device_format_conversion(const struct wined3d_output *output,
-        enum wined3d_device_type device_type, enum wined3d_format_id src_format,
-        enum wined3d_format_id dst_format)
+        enum wined3d_device_type device_type, enum wined3d_format_id src_format_id,
+        enum wined3d_format_id dst_format_id)
 {
-    FIXME("output %p, device_type %s, src_format %s, dst_format %s stub!\n",
-            output, debug_d3ddevicetype(device_type), debug_d3dformat(src_format),
-            debug_d3dformat(dst_format));
+    const struct wined3d_format *src_format = wined3d_get_format(output->adapter, src_format_id, 0);
+    const struct wined3d_format *dst_format = wined3d_get_format(output->adapter, dst_format_id, 0);
+
+    TRACE("output %p, device_type %s, src_format %s, dst_format %s.\n",
+            output, debug_d3ddevicetype(device_type), debug_d3dformat(src_format_id),
+            debug_d3dformat(dst_format_id));
+
+    if (!(src_format->caps[WINED3D_GL_RES_TYPE_TEX_2D] & WINED3D_FORMAT_CAP_BLIT))
+    {
+        TRACE("Source format does not support blitting.\n");
+        return WINED3DERR_NOTAVAILABLE;
+    }
+
+    if (!(dst_format->caps[WINED3D_GL_RES_TYPE_TEX_2D] & WINED3D_FORMAT_CAP_BLIT))
+    {
+        TRACE("Destination format does not support blitting.\n");
+        return WINED3DERR_NOTAVAILABLE;
+    }
+
+    /* Source cannot be depth/stencil (although it can be YUV or compressed,
+     * and AMD also allows blitting from luminance formats). */
+    if (src_format->depth_size || src_format->stencil_size)
+    {
+        TRACE("Source format is depth/stencil.\n");
+        return WINED3DERR_NOTAVAILABLE;
+    }
+
+    /* The destination format must be a simple RGB format (no luminance, YUV,
+     * compression, etc.) All such formats have a nonzero red_size; the only
+     * exceptions are X24G8 (not supported in d3d9) and A8 (which, it turns out,
+     * no vendor reports support for converting to). */
+    if (!dst_format->red_size)
+    {
+        TRACE("Destination format is not a simple RGB format.\n");
+        return WINED3DERR_NOTAVAILABLE;
+    }
 
     return WINED3D_OK;
 }
@@ -2434,12 +2470,8 @@ HRESULT CDECL wined3d_get_device_caps(const struct wined3d_adapter *adapter,
                           WINED3DPTEXTURECAPS_PROJECTED          |
                           WINED3DPTEXTURECAPS_PERSPECTIVE;
 
-    if (!d3d_info->texture_npot)
-    {
-        caps->TextureCaps |= WINED3DPTEXTURECAPS_POW2;
-        if (d3d_info->texture_npot_conditional)
-            caps->TextureCaps |= WINED3DPTEXTURECAPS_NONPOW2CONDITIONAL;
-    }
+    if (!d3d_info->unconditional_npot)
+        caps->TextureCaps |= WINED3DPTEXTURECAPS_POW2 | WINED3DPTEXTURECAPS_NONPOW2CONDITIONAL;
 
     caps->TextureFilterCaps =  WINED3DPTFILTERCAPS_MAGFLINEAR       |
                                WINED3DPTFILTERCAPS_MAGFPOINT        |
@@ -2767,7 +2799,6 @@ static const struct wined3d_state_entry_template misc_state_template_no3d[] =
     {STATE_VDECL,                                         {STATE_VDECL, state_nop}},
     {STATE_RASTERIZER,                                    {STATE_VDECL}},
     {STATE_SCISSORRECT,                                   {STATE_VDECL}},
-    {STATE_POINTSPRITECOORDORIGIN,                        {STATE_VDECL}},
 
     {STATE_TEXTURESTAGE(0, WINED3D_TSS_BUMPENV_MAT00),    {STATE_VDECL}},
     {STATE_TEXTURESTAGE(0, WINED3D_TSS_BUMPENV_MAT01),    {STATE_VDECL}},
@@ -2824,27 +2855,6 @@ static const struct wined3d_state_entry_template misc_state_template_no3d[] =
     {STATE_RENDER(WINED3D_RS_ZFUNC),                      {STATE_VDECL}},
     {STATE_RENDER(WINED3D_RS_DITHERENABLE),               {STATE_VDECL}},
     {STATE_RENDER(WINED3D_RS_MULTISAMPLEANTIALIAS),       {STATE_VDECL}},
-    /* Samplers */
-    {STATE_SAMPLER(0),                                    {STATE_VDECL}},
-    {STATE_SAMPLER(1),                                    {STATE_VDECL}},
-    {STATE_SAMPLER(2),                                    {STATE_VDECL}},
-    {STATE_SAMPLER(3),                                    {STATE_VDECL}},
-    {STATE_SAMPLER(4),                                    {STATE_VDECL}},
-    {STATE_SAMPLER(5),                                    {STATE_VDECL}},
-    {STATE_SAMPLER(6),                                    {STATE_VDECL}},
-    {STATE_SAMPLER(7),                                    {STATE_VDECL}},
-    {STATE_SAMPLER(8),                                    {STATE_VDECL}},
-    {STATE_SAMPLER(9),                                    {STATE_VDECL}},
-    {STATE_SAMPLER(10),                                   {STATE_VDECL}},
-    {STATE_SAMPLER(11),                                   {STATE_VDECL}},
-    {STATE_SAMPLER(12),                                   {STATE_VDECL}},
-    {STATE_SAMPLER(13),                                   {STATE_VDECL}},
-    {STATE_SAMPLER(14),                                   {STATE_VDECL}},
-    {STATE_SAMPLER(15),                                   {STATE_VDECL}},
-    {STATE_SAMPLER(16), /* Vertex sampler 0 */            {STATE_VDECL}},
-    {STATE_SAMPLER(17), /* Vertex sampler 1 */            {STATE_VDECL}},
-    {STATE_SAMPLER(18), /* Vertex sampler 2 */            {STATE_VDECL}},
-    {STATE_SAMPLER(19), /* Vertex sampler 3 */            {STATE_VDECL}},
     {STATE_BASEVERTEXINDEX,                               {STATE_VDECL}},
     {STATE_FRAMEBUFFER,                                   {STATE_VDECL}},
     {STATE_SHADER(WINED3D_SHADER_TYPE_PIXEL),             {STATE_VDECL}},
@@ -3320,7 +3330,7 @@ static void wined3d_adapter_no3d_init_d3d_info(struct wined3d_adapter *adapter, 
     struct wined3d_d3d_info *d3d_info = &adapter->d3d_info;
 
     d3d_info->wined3d_creation_flags = wined3d_creation_flags;
-    d3d_info->texture_npot = TRUE;
+    d3d_info->unconditional_npot = true;
     d3d_info->feature_level = WINED3D_FEATURE_LEVEL_5;
 }
 

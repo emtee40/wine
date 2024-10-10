@@ -17,9 +17,75 @@
  */
 
 #include "vkd3d_shader_private.h"
+#include "vkd3d_types.h"
 
-bool vsir_program_init(struct vsir_program *program, const struct vkd3d_shader_version *version, unsigned int reserve)
+static int convert_parameter_info(const struct vkd3d_shader_compile_info *compile_info,
+        unsigned int *ret_count, const struct vkd3d_shader_parameter1 **ret_parameters)
 {
+    const struct vkd3d_shader_spirv_target_info *spirv_info;
+    struct vkd3d_shader_parameter1 *parameters;
+
+    *ret_count = 0;
+    *ret_parameters = NULL;
+
+    if (!(spirv_info = vkd3d_find_struct(compile_info->next, SPIRV_TARGET_INFO)) || !spirv_info->parameter_count)
+        return VKD3D_OK;
+
+    if (!(parameters = vkd3d_calloc(spirv_info->parameter_count, sizeof(*parameters))))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    for (unsigned int i = 0; i < spirv_info->parameter_count; ++i)
+    {
+        const struct vkd3d_shader_parameter *src = &spirv_info->parameters[i];
+        struct vkd3d_shader_parameter1 *dst = &parameters[i];
+
+        dst->name = src->name;
+        dst->type = src->type;
+        dst->data_type = src->data_type;
+
+        if (src->type == VKD3D_SHADER_PARAMETER_TYPE_IMMEDIATE_CONSTANT)
+        {
+            dst->u.immediate_constant.u.u32 = src->u.immediate_constant.u.u32;
+        }
+        else if (src->type == VKD3D_SHADER_PARAMETER_TYPE_SPECIALIZATION_CONSTANT)
+        {
+            dst->u.specialization_constant = src->u.specialization_constant;
+        }
+        else
+        {
+            ERR("Invalid parameter type %#x.\n", src->type);
+            return VKD3D_ERROR_INVALID_ARGUMENT;
+        }
+    }
+
+    *ret_count = spirv_info->parameter_count;
+    *ret_parameters = parameters;
+
+    return VKD3D_OK;
+}
+
+bool vsir_program_init(struct vsir_program *program, const struct vkd3d_shader_compile_info *compile_info,
+        const struct vkd3d_shader_version *version, unsigned int reserve)
+{
+    memset(program, 0, sizeof(*program));
+
+    if (compile_info)
+    {
+        const struct vkd3d_shader_parameter_info *parameter_info;
+
+        if ((parameter_info = vkd3d_find_struct(compile_info->next, PARAMETER_INFO)))
+        {
+            program->parameter_count = parameter_info->parameter_count;
+            program->parameters = parameter_info->parameters;
+        }
+        else
+        {
+            if (convert_parameter_info(compile_info, &program->parameter_count, &program->parameters) < 0)
+                return false;
+            program->free_parameters = true;
+        }
+    }
+
     program->shader_version = *version;
     return shader_instruction_array_init(&program->instructions, reserve);
 }
@@ -28,10 +94,27 @@ void vsir_program_cleanup(struct vsir_program *program)
 {
     size_t i;
 
+    if (program->free_parameters)
+        vkd3d_free((void *)program->parameters);
     for (i = 0; i < program->block_name_count; ++i)
         vkd3d_free((void *)program->block_names[i]);
     vkd3d_free(program->block_names);
     shader_instruction_array_destroy(&program->instructions);
+    shader_signature_cleanup(&program->input_signature);
+    shader_signature_cleanup(&program->output_signature);
+    shader_signature_cleanup(&program->patch_constant_signature);
+}
+
+const struct vkd3d_shader_parameter1 *vsir_program_get_parameter(
+        const struct vsir_program *program, enum vkd3d_shader_parameter_name name)
+{
+    for (unsigned int i = 0; i < program->parameter_count; ++i)
+    {
+        if (program->parameters[i].name == name)
+            return &program->parameters[i];
+    }
+
+    return NULL;
 }
 
 static inline bool shader_register_is_phase_instance_id(const struct vkd3d_shader_register *reg)
@@ -41,9 +124,9 @@ static inline bool shader_register_is_phase_instance_id(const struct vkd3d_shade
 
 static bool vsir_instruction_is_dcl(const struct vkd3d_shader_instruction *instruction)
 {
-    enum vkd3d_shader_opcode handler_idx = instruction->handler_idx;
-    return (VKD3DSIH_DCL <= handler_idx && handler_idx <= VKD3DSIH_DCL_VERTICES_OUT)
-            || handler_idx == VKD3DSIH_HS_DECLS;
+    enum vkd3d_shader_opcode opcode = instruction->opcode;
+    return (VKD3DSIH_DCL <= opcode && opcode <= VKD3DSIH_DCL_VERTICES_OUT)
+            || opcode == VKD3DSIH_HS_DECLS;
 }
 
 static void vkd3d_shader_instruction_make_nop(struct vkd3d_shader_instruction *ins)
@@ -53,24 +136,11 @@ static void vkd3d_shader_instruction_make_nop(struct vkd3d_shader_instruction *i
     vsir_instruction_init(ins, &location, VKD3DSIH_NOP);
 }
 
-static void remove_dcl_temps(struct vsir_program *program)
-{
-    unsigned int i;
-
-    for (i = 0; i < program->instructions.count; ++i)
-    {
-        struct vkd3d_shader_instruction *ins = &program->instructions.elements[i];
-
-        if (ins->handler_idx == VKD3DSIH_DCL_TEMPS)
-            vkd3d_shader_instruction_make_nop(ins);
-    }
-}
-
 static bool vsir_instruction_init_with_params(struct vsir_program *program,
         struct vkd3d_shader_instruction *ins, const struct vkd3d_shader_location *location,
-        enum vkd3d_shader_opcode handler_idx, unsigned int dst_count, unsigned int src_count)
+        enum vkd3d_shader_opcode opcode, unsigned int dst_count, unsigned int src_count)
 {
-    vsir_instruction_init(ins, location, handler_idx);
+    vsir_instruction_init(ins, location, opcode);
     ins->dst_count = dst_count;
     ins->src_count = src_count;
 
@@ -91,86 +161,329 @@ static bool vsir_instruction_init_with_params(struct vsir_program *program,
     return true;
 }
 
-static enum vkd3d_result instruction_array_lower_texkills(struct vkd3d_shader_parser *parser)
+static bool get_opcode_from_rel_op(enum vkd3d_shader_rel_op rel_op, enum vkd3d_data_type data_type,
+        enum vkd3d_shader_opcode *opcode, bool *requires_swap)
 {
-    struct vsir_program *program = &parser->program;
-    struct vkd3d_shader_instruction_array *instructions = &program->instructions;
-    struct vkd3d_shader_instruction *texkill_ins, *ins;
-    unsigned int components_read = 3 + (program->shader_version.major >= 2);
-    unsigned int tmp_idx = ~0u;
-    unsigned int i, k;
-
-    for (i = 0; i < instructions->count; ++i)
+    switch (rel_op)
     {
-        texkill_ins = &instructions->elements[i];
+        case VKD3D_SHADER_REL_OP_LT:
+        case VKD3D_SHADER_REL_OP_GT:
+            *requires_swap = (rel_op == VKD3D_SHADER_REL_OP_GT);
+            if (data_type == VKD3D_DATA_FLOAT)
+            {
+                *opcode = VKD3DSIH_LTO;
+                return true;
+            }
+            break;
 
-        if (texkill_ins->handler_idx != VKD3DSIH_TEXKILL)
-            continue;
+        case VKD3D_SHADER_REL_OP_GE:
+        case VKD3D_SHADER_REL_OP_LE:
+            *requires_swap = (rel_op == VKD3D_SHADER_REL_OP_LE);
+            if (data_type == VKD3D_DATA_FLOAT)
+            {
+                *opcode = VKD3DSIH_GEO;
+                return true;
+            }
+            break;
 
-        if (!shader_instruction_array_insert_at(instructions, i + 1, components_read + 1))
-            return VKD3D_ERROR_OUT_OF_MEMORY;
+        case VKD3D_SHADER_REL_OP_EQ:
+            *requires_swap = false;
+            if (data_type == VKD3D_DATA_FLOAT)
+            {
+                *opcode = VKD3DSIH_EQO;
+                return true;
+            }
+            break;
 
-        if (tmp_idx == ~0u)
-            tmp_idx = program->temp_count++;
+        case VKD3D_SHADER_REL_OP_NE:
+            *requires_swap = false;
+            if (data_type == VKD3D_DATA_FLOAT)
+            {
+                *opcode = VKD3DSIH_NEO;
+                return true;
+            }
+            break;
+    }
+    return false;
+}
 
-        /* tmp = ins->dst[0] < 0  */
+static enum vkd3d_result vsir_program_lower_ifc(struct vsir_program *program,
+        struct vkd3d_shader_instruction *ifc, unsigned int *tmp_idx,
+        struct vkd3d_shader_message_context *message_context)
+{
+    struct vkd3d_shader_instruction_array *instructions = &program->instructions;
+    size_t pos = ifc - instructions->elements;
+    struct vkd3d_shader_instruction *ins;
+    enum vkd3d_shader_opcode opcode;
+    bool swap;
 
-        ins = &instructions->elements[i + 1];
-        if (!vsir_instruction_init_with_params(program, ins, &texkill_ins->location, VKD3DSIH_LTO, 1, 2))
+    if (!shader_instruction_array_insert_at(instructions, pos + 1, 2))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    if (*tmp_idx == ~0u)
+        *tmp_idx = program->temp_count++;
+
+    /* Replace ifc comparison with actual comparison, saving the result in the tmp register. */
+    if (!(get_opcode_from_rel_op(ifc->flags, ifc->src[0].reg.data_type, &opcode, &swap)))
+    {
+        vkd3d_shader_error(message_context, &ifc->location, VKD3D_SHADER_ERROR_VSIR_NOT_IMPLEMENTED,
+                "Aborting due to not yet implemented feature: opcode for rel_op %u and data type %u.",
+                ifc->flags, ifc->src[0].reg.data_type);
+        return VKD3D_ERROR_NOT_IMPLEMENTED;
+    }
+
+    ins = &instructions->elements[pos + 1];
+    if (!vsir_instruction_init_with_params(program, ins, &ifc->location, opcode, 1, 2))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    vsir_register_init(&ins->dst[0].reg, VKD3DSPR_TEMP, VKD3D_DATA_UINT, 1);
+    ins->dst[0].reg.dimension = VSIR_DIMENSION_VEC4;
+    ins->dst[0].reg.idx[0].offset = *tmp_idx;
+    ins->dst[0].write_mask = VKD3DSP_WRITEMASK_0;
+
+    ins->src[0] = ifc->src[swap];
+    ins->src[1] = ifc->src[!swap];
+
+    /* Create new if instruction using the previous result. */
+    ins = &instructions->elements[pos + 2];
+    if (!vsir_instruction_init_with_params(program, ins, &ifc->location, VKD3DSIH_IF, 0, 1))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+    ins->flags = VKD3D_SHADER_CONDITIONAL_OP_NZ;
+
+    vsir_register_init(&ins->src[0].reg, VKD3DSPR_TEMP, VKD3D_DATA_UINT, 1);
+    ins->src[0].reg.dimension = VSIR_DIMENSION_VEC4;
+    ins->src[0].reg.idx[0].offset = *tmp_idx;
+    ins->src[0].swizzle = VKD3D_SHADER_SWIZZLE(X, X, X, X);
+
+    /* Make the original instruction no-op */
+    vkd3d_shader_instruction_make_nop(ifc);
+
+    return VKD3D_OK;
+}
+
+static enum vkd3d_result vsir_program_lower_texkill(struct vsir_program *program,
+        struct vkd3d_shader_instruction *texkill, unsigned int *tmp_idx)
+{
+    const unsigned int components_read = 3 + (program->shader_version.major >= 2);
+    struct vkd3d_shader_instruction_array *instructions = &program->instructions;
+    size_t pos = texkill - instructions->elements;
+    struct vkd3d_shader_instruction *ins;
+    unsigned int j;
+
+    if (!shader_instruction_array_insert_at(instructions, pos + 1, components_read + 1))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    if (*tmp_idx == ~0u)
+        *tmp_idx = program->temp_count++;
+
+    /* tmp = ins->dst[0] < 0  */
+
+    ins = &instructions->elements[pos + 1];
+    if (!vsir_instruction_init_with_params(program, ins, &texkill->location, VKD3DSIH_LTO, 1, 2))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    vsir_register_init(&ins->dst[0].reg, VKD3DSPR_TEMP, VKD3D_DATA_UINT, 1);
+    ins->dst[0].reg.dimension = VSIR_DIMENSION_VEC4;
+    ins->dst[0].reg.idx[0].offset = *tmp_idx;
+    ins->dst[0].write_mask = VKD3DSP_WRITEMASK_ALL;
+
+    ins->src[0].reg = texkill->dst[0].reg;
+    ins->src[0].swizzle = VKD3D_SHADER_NO_SWIZZLE;
+    vsir_register_init(&ins->src[1].reg, VKD3DSPR_IMMCONST, VKD3D_DATA_FLOAT, 0);
+    ins->src[1].reg.dimension = VSIR_DIMENSION_VEC4;
+    ins->src[1].reg.u.immconst_f32[0] = 0.0f;
+    ins->src[1].reg.u.immconst_f32[1] = 0.0f;
+    ins->src[1].reg.u.immconst_f32[2] = 0.0f;
+    ins->src[1].reg.u.immconst_f32[3] = 0.0f;
+
+    /* tmp.x = tmp.x || tmp.y */
+    /* tmp.x = tmp.x || tmp.z */
+    /* tmp.x = tmp.x || tmp.w, if sm >= 2.0 */
+
+    for (j = 1; j < components_read; ++j)
+    {
+        ins = &instructions->elements[pos + 1 + j];
+        if (!(vsir_instruction_init_with_params(program, ins, &texkill->location, VKD3DSIH_OR, 1, 2)))
             return VKD3D_ERROR_OUT_OF_MEMORY;
 
         vsir_register_init(&ins->dst[0].reg, VKD3DSPR_TEMP, VKD3D_DATA_UINT, 1);
         ins->dst[0].reg.dimension = VSIR_DIMENSION_VEC4;
-        ins->dst[0].reg.idx[0].offset = tmp_idx;
-        ins->dst[0].write_mask = VKD3DSP_WRITEMASK_ALL;
-
-        ins->src[0].reg = texkill_ins->dst[0].reg;
-        vsir_register_init(&ins->src[1].reg, VKD3DSPR_IMMCONST, VKD3D_DATA_FLOAT, 0);
-        ins->src[1].reg.dimension = VSIR_DIMENSION_VEC4;
-        ins->src[1].reg.u.immconst_f32[0] = 0.0f;
-        ins->src[1].reg.u.immconst_f32[1] = 0.0f;
-        ins->src[1].reg.u.immconst_f32[2] = 0.0f;
-        ins->src[1].reg.u.immconst_f32[3] = 0.0f;
-
-        /* tmp.x = tmp.x || tmp.y */
-        /* tmp.x = tmp.x || tmp.z */
-        /* tmp.x = tmp.x || tmp.w, if sm >= 2.0 */
-
-        for (k = 1; k < components_read; ++k)
-        {
-            ins = &instructions->elements[i + 1 + k];
-            if (!(vsir_instruction_init_with_params(program, ins, &texkill_ins->location, VKD3DSIH_OR, 1, 2)))
-                return VKD3D_ERROR_OUT_OF_MEMORY;
-
-            vsir_register_init(&ins->dst[0].reg, VKD3DSPR_TEMP, VKD3D_DATA_UINT, 1);
-            ins->dst[0].reg.dimension = VSIR_DIMENSION_VEC4;
-            ins->dst[0].reg.idx[0].offset = tmp_idx;
-            ins->dst[0].write_mask = VKD3DSP_WRITEMASK_0;
-
-            vsir_register_init(&ins->src[0].reg, VKD3DSPR_TEMP, VKD3D_DATA_UINT, 1);
-            ins->src[0].reg.dimension = VSIR_DIMENSION_VEC4;
-            ins->src[0].reg.idx[0].offset = tmp_idx;
-            ins->src[0].swizzle = VKD3D_SHADER_SWIZZLE(X, X, X, X);
-            vsir_register_init(&ins->src[1].reg, VKD3DSPR_TEMP, VKD3D_DATA_UINT, 1);
-            ins->src[1].reg.dimension = VSIR_DIMENSION_VEC4;
-            ins->src[1].reg.idx[0].offset = tmp_idx;
-            ins->src[1].swizzle = vkd3d_shader_create_swizzle(k, k, k, k);
-        }
-
-        /* discard_nz tmp.x */
-
-        ins = &instructions->elements[i + 1 + components_read];
-        if (!(vsir_instruction_init_with_params(program, ins, &texkill_ins->location, VKD3DSIH_DISCARD, 0, 1)))
-            return VKD3D_ERROR_OUT_OF_MEMORY;
-        ins->flags = VKD3D_SHADER_CONDITIONAL_OP_NZ;
+        ins->dst[0].reg.idx[0].offset = *tmp_idx;
+        ins->dst[0].write_mask = VKD3DSP_WRITEMASK_0;
 
         vsir_register_init(&ins->src[0].reg, VKD3DSPR_TEMP, VKD3D_DATA_UINT, 1);
         ins->src[0].reg.dimension = VSIR_DIMENSION_VEC4;
-        ins->src[0].reg.idx[0].offset = tmp_idx;
+        ins->src[0].reg.idx[0].offset = *tmp_idx;
         ins->src[0].swizzle = VKD3D_SHADER_SWIZZLE(X, X, X, X);
+        vsir_register_init(&ins->src[1].reg, VKD3DSPR_TEMP, VKD3D_DATA_UINT, 1);
+        ins->src[1].reg.dimension = VSIR_DIMENSION_VEC4;
+        ins->src[1].reg.idx[0].offset = *tmp_idx;
+        ins->src[1].swizzle = vkd3d_shader_create_swizzle(j, j, j, j);
+    }
 
-        /* Make the original instruction no-op */
-        vkd3d_shader_instruction_make_nop(texkill_ins);
+    /* discard_nz tmp.x */
+
+    ins = &instructions->elements[pos + 1 + components_read];
+    if (!(vsir_instruction_init_with_params(program, ins, &texkill->location, VKD3DSIH_DISCARD, 0, 1)))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+    ins->flags = VKD3D_SHADER_CONDITIONAL_OP_NZ;
+
+    vsir_register_init(&ins->src[0].reg, VKD3DSPR_TEMP, VKD3D_DATA_UINT, 1);
+    ins->src[0].reg.dimension = VSIR_DIMENSION_VEC4;
+    ins->src[0].reg.idx[0].offset = *tmp_idx;
+    ins->src[0].swizzle = VKD3D_SHADER_SWIZZLE(X, X, X, X);
+
+    /* Make the original instruction no-op */
+    vkd3d_shader_instruction_make_nop(texkill);
+
+    return VKD3D_OK;
+}
+
+/* The Shader Model 5 Assembly documentation states: "If components of a mad
+ * instruction are tagged as precise, the hardware must execute a mad instruction
+ * or the exact equivalent, and it cannot split it into a multiply followed by an add."
+ * But DXIL.rst states the opposite: "Floating point multiply & add. This operation is
+ * not fused for "precise" operations."
+ * Windows drivers seem to conform with the latter, for SM 4-5 and SM 6. */
+static enum vkd3d_result vsir_program_lower_precise_mad(struct vsir_program *program,
+        struct vkd3d_shader_instruction *mad, unsigned int *tmp_idx)
+{
+    struct vkd3d_shader_instruction_array *instructions = &program->instructions;
+    struct vkd3d_shader_instruction *mul_ins, *add_ins;
+    size_t pos = mad - instructions->elements;
+    struct vkd3d_shader_dst_param *mul_dst;
+
+    if (!(mad->flags & VKD3DSI_PRECISE_XYZW))
+        return VKD3D_OK;
+
+    if (!shader_instruction_array_insert_at(instructions, pos + 1, 1))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    if (*tmp_idx == ~0u)
+        *tmp_idx = program->temp_count++;
+
+    mul_ins = &instructions->elements[pos];
+    add_ins = &instructions->elements[pos + 1];
+
+    mul_ins->opcode = VKD3DSIH_MUL;
+    mul_ins->src_count = 2;
+
+    if (!(vsir_instruction_init_with_params(program, add_ins, &mul_ins->location, VKD3DSIH_ADD, 1, 2)))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    add_ins->flags = mul_ins->flags & VKD3DSI_PRECISE_XYZW;
+
+    mul_dst = mul_ins->dst;
+    *add_ins->dst = *mul_dst;
+
+    mul_dst->modifiers = 0;
+    vsir_register_init(&mul_dst->reg, VKD3DSPR_TEMP, mul_ins->src[0].reg.data_type, 1);
+    mul_dst->reg.dimension = add_ins->dst->reg.dimension;
+    mul_dst->reg.idx[0].offset = *tmp_idx;
+
+    add_ins->src[0].reg = mul_dst->reg;
+    add_ins->src[0].swizzle = vsir_swizzle_from_writemask(mul_dst->write_mask);
+    add_ins->src[0].modifiers = 0;
+    add_ins->src[1] = mul_ins->src[2];
+
+    return VKD3D_OK;
+}
+
+static enum vkd3d_result vsir_program_lower_sm1_sincos(struct vsir_program *program,
+        struct vkd3d_shader_instruction *sincos)
+{
+    struct vkd3d_shader_instruction_array *instructions = &program->instructions;
+    size_t pos = sincos - instructions->elements;
+    struct vkd3d_shader_instruction *ins;
+    unsigned int s;
+
+    if (sincos->dst_count != 1)
+        return VKD3D_OK;
+
+    if (!shader_instruction_array_insert_at(instructions, pos + 1, 1))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    ins = &instructions->elements[pos + 1];
+
+    if (!(vsir_instruction_init_with_params(program, ins, &sincos->location, VKD3DSIH_SINCOS, 2, 1)))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    ins->flags = sincos->flags;
+
+    *ins->src = *sincos->src;
+    /* Set the source swizzle to replicate the first component. */
+    s = vsir_swizzle_get_component(sincos->src->swizzle, 0);
+    ins->src->swizzle = vkd3d_shader_create_swizzle(s, s, s, s);
+
+    if (sincos->dst->write_mask & VKD3DSP_WRITEMASK_1)
+    {
+        ins->dst[0] = *sincos->dst;
+        ins->dst[0].write_mask = VKD3DSP_WRITEMASK_1;
+    }
+    else
+    {
+        vsir_dst_param_init(&ins->dst[0], VKD3DSPR_NULL, VKD3D_DATA_UNUSED, 0);
+    }
+
+    if (sincos->dst->write_mask & VKD3DSP_WRITEMASK_0)
+    {
+        ins->dst[1] = *sincos->dst;
+        ins->dst[1].write_mask = VKD3DSP_WRITEMASK_0;
+    }
+    else
+    {
+        vsir_dst_param_init(&ins->dst[1], VKD3DSPR_NULL, VKD3D_DATA_UNUSED, 0);
+    }
+
+    /* Make the original instruction no-op */
+    vkd3d_shader_instruction_make_nop(sincos);
+
+    return VKD3D_OK;
+}
+
+static enum vkd3d_result vsir_program_lower_instructions(struct vsir_program *program,
+        struct vkd3d_shader_message_context *message_context)
+{
+    struct vkd3d_shader_instruction_array *instructions = &program->instructions;
+    unsigned int tmp_idx = ~0u, i;
+    enum vkd3d_result ret;
+
+    for (i = 0; i < instructions->count; ++i)
+    {
+        struct vkd3d_shader_instruction *ins = &instructions->elements[i];
+
+        switch (ins->opcode)
+        {
+            case VKD3DSIH_IFC:
+                if ((ret = vsir_program_lower_ifc(program, ins, &tmp_idx, message_context)) < 0)
+                    return ret;
+                break;
+
+            case VKD3DSIH_TEXKILL:
+                if ((ret = vsir_program_lower_texkill(program, ins, &tmp_idx)) < 0)
+                    return ret;
+                break;
+
+            case VKD3DSIH_MAD:
+                if ((ret = vsir_program_lower_precise_mad(program, ins, &tmp_idx)) < 0)
+                    return ret;
+                break;
+
+            case VKD3DSIH_DCL:
+            case VKD3DSIH_DCL_CONSTANT_BUFFER:
+            case VKD3DSIH_DCL_SAMPLER:
+            case VKD3DSIH_DCL_TEMPS:
+                vkd3d_shader_instruction_make_nop(ins);
+                break;
+
+            case VKD3DSIH_SINCOS:
+                if ((ret = vsir_program_lower_sm1_sincos(program, ins)) < 0)
+                    return ret;
+                break;
+
+            default:
+                break;
+        }
     }
 
     return VKD3D_OK;
@@ -227,10 +540,11 @@ static const struct vkd3d_shader_varying_map *find_varying_map(
     return NULL;
 }
 
-static enum vkd3d_result remap_output_signature(struct vkd3d_shader_parser *parser,
-        const struct vkd3d_shader_compile_info *compile_info)
+static enum vkd3d_result vsir_program_remap_output_signature(struct vsir_program *program,
+        const struct vkd3d_shader_compile_info *compile_info, struct vkd3d_shader_message_context *message_context)
 {
-    struct shader_signature *signature = &parser->shader_desc.output_signature;
+    const struct vkd3d_shader_location location = {.source_name = compile_info->source_name};
+    struct shader_signature *signature = &program->output_signature;
     const struct vkd3d_shader_varying_map_info *varying_map;
     unsigned int i;
 
@@ -252,7 +566,7 @@ static enum vkd3d_result remap_output_signature(struct vkd3d_shader_parser *pars
              * location with a different mask. */
             if (input_mask && input_mask != e->mask)
             {
-                vkd3d_shader_parser_error(parser, VKD3D_SHADER_ERROR_VSIR_NOT_IMPLEMENTED,
+                vkd3d_shader_error(message_context, &location, VKD3D_SHADER_ERROR_VSIR_NOT_IMPLEMENTED,
                         "Aborting due to not yet implemented feature: "
                         "Output mask %#x does not match input mask %#x.",
                         e->mask, input_mask);
@@ -269,7 +583,7 @@ static enum vkd3d_result remap_output_signature(struct vkd3d_shader_parser *pars
     {
         if (varying_map->varying_map[i].output_signature_index >= signature->element_count)
         {
-            vkd3d_shader_parser_error(parser, VKD3D_SHADER_ERROR_VSIR_NOT_IMPLEMENTED,
+            vkd3d_shader_error(message_context, &location, VKD3D_SHADER_ERROR_VSIR_NOT_IMPLEMENTED,
                     "Aborting due to not yet implemented feature: "
                     "The next stage consumes varyings not written by this stage.");
             return VKD3D_ERROR_NOT_IMPLEMENTED;
@@ -315,26 +629,26 @@ static void flattener_eliminate_phase_related_dcls(struct hull_flattener *normal
     struct shader_phase_location *loc;
     bool b;
 
-    if (ins->handler_idx == VKD3DSIH_HS_FORK_PHASE || ins->handler_idx == VKD3DSIH_HS_JOIN_PHASE)
+    if (ins->opcode == VKD3DSIH_HS_FORK_PHASE || ins->opcode == VKD3DSIH_HS_JOIN_PHASE)
     {
         b = flattener_is_in_fork_or_join_phase(normaliser);
         /* Reset the phase info. */
         normaliser->phase_body_idx = ~0u;
-        normaliser->phase = ins->handler_idx;
+        normaliser->phase = ins->opcode;
         normaliser->instance_count = 1;
         /* Leave the first occurrence and delete the rest. */
         if (b)
             vkd3d_shader_instruction_make_nop(ins);
         return;
     }
-    else if (ins->handler_idx == VKD3DSIH_DCL_HS_FORK_PHASE_INSTANCE_COUNT
-            || ins->handler_idx == VKD3DSIH_DCL_HS_JOIN_PHASE_INSTANCE_COUNT)
+    else if (ins->opcode == VKD3DSIH_DCL_HS_FORK_PHASE_INSTANCE_COUNT
+            || ins->opcode == VKD3DSIH_DCL_HS_JOIN_PHASE_INSTANCE_COUNT)
     {
         normaliser->instance_count = ins->declaration.count + !ins->declaration.count;
         vkd3d_shader_instruction_make_nop(ins);
         return;
     }
-    else if (ins->handler_idx == VKD3DSIH_DCL_INPUT && shader_register_is_phase_instance_id(
+    else if (ins->opcode == VKD3DSIH_DCL_INPUT && shader_register_is_phase_instance_id(
             &ins->declaration.dst.reg))
     {
         vkd3d_shader_instruction_make_nop(ins);
@@ -347,7 +661,7 @@ static void flattener_eliminate_phase_related_dcls(struct hull_flattener *normal
     if (normaliser->phase_body_idx == ~0u)
         normaliser->phase_body_idx = index;
 
-    if (ins->handler_idx == VKD3DSIH_RET)
+    if (ins->opcode == VKD3DSIH_RET)
     {
         normaliser->last_ret_location = ins->location;
         vkd3d_shader_instruction_make_nop(ins);
@@ -453,7 +767,7 @@ void vsir_dst_param_init(struct vkd3d_shader_dst_param *param, enum vkd3d_shader
 
 void vsir_src_param_init_label(struct vkd3d_shader_src_param *param, unsigned int label_id)
 {
-    vsir_src_param_init(param, VKD3DSPR_LABEL, VKD3D_DATA_UINT, 1);
+    vsir_src_param_init(param, VKD3DSPR_LABEL, VKD3D_DATA_UNUSED, 1);
     param->reg.dimension = VSIR_DIMENSION_NONE;
     param->reg.idx[0].offset = label_id;
 }
@@ -464,9 +778,21 @@ static void src_param_init_ssa_bool(struct vkd3d_shader_src_param *src, unsigned
     src->reg.idx[0].offset = idx;
 }
 
+static void src_param_init_temp_bool(struct vkd3d_shader_src_param *src, unsigned int idx)
+{
+    vsir_src_param_init(src, VKD3DSPR_TEMP, VKD3D_DATA_BOOL, 1);
+    src->reg.idx[0].offset = idx;
+}
+
 static void dst_param_init_ssa_bool(struct vkd3d_shader_dst_param *dst, unsigned int idx)
 {
     vsir_dst_param_init(dst, VKD3DSPR_SSA, VKD3D_DATA_BOOL, 1);
+    dst->reg.idx[0].offset = idx;
+}
+
+static void dst_param_init_temp_bool(struct vkd3d_shader_dst_param *dst, unsigned int idx)
+{
+    vsir_dst_param_init(dst, VKD3DSPR_TEMP, VKD3D_DATA_BOOL, 1);
     dst->reg.idx[0].offset = idx;
 }
 
@@ -475,6 +801,12 @@ static void dst_param_init_temp_uint(struct vkd3d_shader_dst_param *dst, unsigne
     vsir_dst_param_init(dst, VKD3DSPR_TEMP, VKD3D_DATA_UINT, 1);
     dst->reg.idx[0].offset = idx;
     dst->write_mask = VKD3DSP_WRITEMASK_0;
+}
+
+static void src_param_init_temp_float(struct vkd3d_shader_src_param *src, unsigned int idx)
+{
+    vsir_src_param_init(src, VKD3DSPR_TEMP, VKD3D_DATA_FLOAT, 1);
+    src->reg.idx[0].offset = idx;
 }
 
 static void src_param_init_temp_uint(struct vkd3d_shader_src_param *src, unsigned int idx)
@@ -489,12 +821,18 @@ static void src_param_init_const_uint(struct vkd3d_shader_src_param *src, uint32
     src->reg.u.immconst_u32[0] = value;
 }
 
+static void src_param_init_parameter(struct vkd3d_shader_src_param *src, uint32_t idx, enum vkd3d_data_type type)
+{
+    vsir_src_param_init(src, VKD3DSPR_PARAMETER, type, 1);
+    src->reg.idx[0].offset = idx;
+}
+
 void vsir_instruction_init(struct vkd3d_shader_instruction *ins, const struct vkd3d_shader_location *location,
-        enum vkd3d_shader_opcode handler_idx)
+        enum vkd3d_shader_opcode opcode)
 {
     memset(ins, 0, sizeof(*ins));
     ins->location = *location;
-    ins->handler_idx = handler_idx;
+    ins->opcode = opcode;
 }
 
 static bool vsir_instruction_init_label(struct vkd3d_shader_instruction *ins,
@@ -554,10 +892,13 @@ static bool control_point_normaliser_is_in_control_point_phase(const struct cont
     return normaliser->phase == VKD3DSIH_HS_CONTROL_POINT_PHASE;
 }
 
-static struct vkd3d_shader_src_param *instruction_array_create_outpointid_param(
+struct vkd3d_shader_src_param *instruction_array_create_outpointid_param(
         struct vkd3d_shader_instruction_array *instructions)
 {
     struct vkd3d_shader_src_param *rel_addr;
+
+    if (instructions->outpointid_param)
+        return instructions->outpointid_param;
 
     if (!(rel_addr = shader_src_param_allocator_get(&instructions->src_params, 1)))
         return NULL;
@@ -566,6 +907,7 @@ static struct vkd3d_shader_src_param *instruction_array_create_outpointid_param(
     rel_addr->swizzle = 0;
     rel_addr->modifiers = 0;
 
+    instructions->outpointid_param = rel_addr;
     return rel_addr;
 }
 
@@ -577,7 +919,7 @@ static void shader_dst_param_normalise_outpointid(struct vkd3d_shader_dst_param 
     if (control_point_normaliser_is_in_control_point_phase(normaliser) && reg->type == VKD3DSPR_OUTPUT)
     {
         /* The TPF reader validates idx_count. */
-        assert(reg->idx_count == 1);
+        VKD3D_ASSERT(reg->idx_count == 1);
         reg->idx[1] = reg->idx[0];
         /* The control point id param is implicit here. Avoid later complications by inserting it. */
         reg->idx[0].offset = 0;
@@ -672,12 +1014,12 @@ static enum vkd3d_result instruction_array_normalise_hull_shader_control_point_i
     {
         ins = &instructions->elements[i];
 
-        switch (ins->handler_idx)
+        switch (ins->opcode)
         {
             case VKD3DSIH_HS_CONTROL_POINT_PHASE:
             case VKD3DSIH_HS_FORK_PHASE:
             case VKD3DSIH_HS_JOIN_PHASE:
-                normaliser.phase = ins->handler_idx;
+                normaliser.phase = ins->opcode;
                 break;
             default:
                 if (vsir_instruction_is_dcl(ins))
@@ -695,7 +1037,7 @@ static enum vkd3d_result instruction_array_normalise_hull_shader_control_point_i
     {
         ins = &instructions->elements[i];
 
-        switch (ins->handler_idx)
+        switch (ins->opcode)
         {
             case VKD3DSIH_DCL_INPUT_CONTROL_POINT_COUNT:
                 input_control_point_count = ins->declaration.count;
@@ -799,16 +1141,16 @@ static void range_map_set_register_range(uint8_t range_map[][VKD3D_VEC4_SIZE], u
 {
     unsigned int i, j, r, c, component_idx, component_count;
 
-    assert(write_mask <= VKD3DSP_WRITEMASK_ALL);
+    VKD3D_ASSERT(write_mask <= VKD3DSP_WRITEMASK_ALL);
     component_idx = vsir_write_mask_get_component_idx(write_mask);
     component_count = vsir_write_mask_component_count(write_mask);
 
-    assert(register_idx < MAX_REG_OUTPUT && MAX_REG_OUTPUT - register_idx >= register_count);
+    VKD3D_ASSERT(register_idx < MAX_REG_OUTPUT && MAX_REG_OUTPUT - register_idx >= register_count);
 
     if (range_map[register_idx][component_idx] > register_count && is_dcl_indexrange)
     {
         /* Validated in the TPF reader. */
-        assert(range_map[register_idx][component_idx] != UINT8_MAX);
+        VKD3D_ASSERT(range_map[register_idx][component_idx] != UINT8_MAX);
         return;
     }
     if (range_map[register_idx][component_idx] == register_count)
@@ -828,7 +1170,7 @@ static void range_map_set_register_range(uint8_t range_map[][VKD3D_VEC4_SIZE], u
             /* A synthetic patch constant range which overlaps an existing range can start upstream of it
              * for fork/join phase instancing, but ranges declared by dcl_indexrange should not overlap.
              * The latter is validated in the TPF reader. */
-            assert(!range_map[r][c] || !is_dcl_indexrange);
+            VKD3D_ASSERT(!range_map[r][c] || !is_dcl_indexrange);
             range_map[r][c] = UINT8_MAX;
         }
     }
@@ -1031,7 +1373,7 @@ static bool shader_signature_merge(struct shader_signature *s, uint8_t range_map
 
             TRACE("Merging %s, reg %u, mask %#x, sysval %#x with %s, mask %#x, sysval %#x.\n", e->semantic_name,
                     e->register_index, e->mask, e->sysval_semantic, f->semantic_name, f->mask, f->sysval_semantic);
-            assert(!(e->mask & f->mask));
+            VKD3D_ASSERT(!(e->mask & f->mask));
 
             e->mask |= f->mask;
             e->used_mask |= f->used_mask;
@@ -1065,7 +1407,7 @@ static bool shader_signature_merge(struct shader_signature *s, uint8_t range_map
             continue;
 
         register_count = range_map_get_register_count(range_map, e->register_index, e->mask);
-        assert(register_count != UINT8_MAX);
+        VKD3D_ASSERT(register_count != UINT8_MAX);
         register_count += !register_count;
 
         if (register_count > 1)
@@ -1088,7 +1430,7 @@ static bool shader_signature_merge(struct shader_signature *s, uint8_t range_map
 static unsigned int shader_register_normalise_arrayed_addressing(struct vkd3d_shader_register *reg,
         unsigned int id_idx, unsigned int register_index)
 {
-    assert(id_idx < ARRAY_SIZE(reg->idx) - 1);
+    VKD3D_ASSERT(id_idx < ARRAY_SIZE(reg->idx) - 1);
 
     /* For a relative-addressed register index, move the id up a slot to separate it from the address,
      * because rel_addr can be replaced with a constant offset in some cases. */
@@ -1195,7 +1537,7 @@ static bool shader_dst_param_io_normalise(struct vkd3d_shader_dst_param *dst_par
     if (is_io_dcl)
     {
         /* Validated in the TPF reader. */
-        assert(element_idx < ARRAY_SIZE(normaliser->input_dcl_params));
+        VKD3D_ASSERT(element_idx < ARRAY_SIZE(normaliser->input_dcl_params));
 
         if (dcl_params[element_idx])
         {
@@ -1220,7 +1562,7 @@ static bool shader_dst_param_io_normalise(struct vkd3d_shader_dst_param *dst_par
         else
         {
             /* The control point id param. */
-            assert(reg->idx[0].rel_addr);
+            VKD3D_ASSERT(reg->idx[0].rel_addr);
         }
         id_idx = 1;
     }
@@ -1333,7 +1675,7 @@ static void shader_instruction_normalise_io_params(struct vkd3d_shader_instructi
     struct vkd3d_shader_register *reg;
     unsigned int i;
 
-    switch (ins->handler_idx)
+    switch (ins->opcode)
     {
         case VKD3DSIH_DCL_INPUT:
             if (normaliser->shader_type == VKD3D_SHADER_TYPE_HULL)
@@ -1367,7 +1709,7 @@ static void shader_instruction_normalise_io_params(struct vkd3d_shader_instructi
         case VKD3DSIH_HS_CONTROL_POINT_PHASE:
         case VKD3DSIH_HS_FORK_PHASE:
         case VKD3DSIH_HS_JOIN_PHASE:
-            normaliser->phase = ins->handler_idx;
+            normaliser->phase = ins->opcode;
             memset(normaliser->input_dcl_params, 0, sizeof(normaliser->input_dcl_params));
             memset(normaliser->output_dcl_params, 0, sizeof(normaliser->output_dcl_params));
             memset(normaliser->pc_dcl_params, 0, sizeof(normaliser->pc_dcl_params));
@@ -1383,10 +1725,35 @@ static void shader_instruction_normalise_io_params(struct vkd3d_shader_instructi
     }
 }
 
-static enum vkd3d_result shader_normalise_io_registers(struct vkd3d_shader_parser *parser)
+static bool use_flat_interpolation(const struct vsir_program *program,
+        struct vkd3d_shader_message_context *message_context)
 {
-    struct io_normaliser normaliser = {parser->program.instructions};
-    struct vsir_program *program = &parser->program;
+    static const struct vkd3d_shader_location no_loc;
+    const struct vkd3d_shader_parameter1 *parameter;
+
+    if (!(parameter = vsir_program_get_parameter(program, VKD3D_SHADER_PARAMETER_NAME_FLAT_INTERPOLATION)))
+        return false;
+
+    if (parameter->type != VKD3D_SHADER_PARAMETER_TYPE_IMMEDIATE_CONSTANT)
+    {
+        vkd3d_shader_error(message_context, &no_loc, VKD3D_SHADER_ERROR_VSIR_NOT_IMPLEMENTED,
+                "Unsupported flat interpolation parameter type %#x.\n", parameter->type);
+        return false;
+    }
+    if (parameter->data_type != VKD3D_SHADER_PARAMETER_DATA_TYPE_UINT32)
+    {
+        vkd3d_shader_error(message_context, &no_loc, VKD3D_SHADER_ERROR_VSIR_INVALID_DATA_TYPE,
+                "Invalid flat interpolation parameter data type %#x.\n", parameter->data_type);
+        return false;
+    }
+
+    return parameter->u.immediate_constant.u.u32;
+}
+
+static enum vkd3d_result vsir_program_normalise_io_registers(struct vsir_program *program,
+        struct vkd3d_shader_message_context *message_context)
+{
+    struct io_normaliser normaliser = {program->instructions};
     struct vkd3d_shader_instruction *ins;
     bool has_control_point_phase;
     unsigned int i, j;
@@ -1394,15 +1761,15 @@ static enum vkd3d_result shader_normalise_io_registers(struct vkd3d_shader_parse
     normaliser.phase = VKD3DSIH_INVALID;
     normaliser.shader_type = program->shader_version.type;
     normaliser.major = program->shader_version.major;
-    normaliser.input_signature = &parser->shader_desc.input_signature;
-    normaliser.output_signature = &parser->shader_desc.output_signature;
-    normaliser.patch_constant_signature = &parser->shader_desc.patch_constant_signature;
+    normaliser.input_signature = &program->input_signature;
+    normaliser.output_signature = &program->output_signature;
+    normaliser.patch_constant_signature = &program->patch_constant_signature;
 
     for (i = 0, has_control_point_phase = false; i < program->instructions.count; ++i)
     {
         ins = &program->instructions.elements[i];
 
-        switch (ins->handler_idx)
+        switch (ins->opcode)
         {
             case VKD3DSIH_DCL_OUTPUT_CONTROL_POINT_COUNT:
                 normaliser.output_control_point_count = ins->declaration.count;
@@ -1416,7 +1783,7 @@ static enum vkd3d_result shader_normalise_io_registers(struct vkd3d_shader_parse
                 /* fall through */
             case VKD3DSIH_HS_FORK_PHASE:
             case VKD3DSIH_HS_JOIN_PHASE:
-                normaliser.phase = ins->handler_idx;
+                normaliser.phase = ins->opcode;
                 break;
             default:
                 break;
@@ -1434,17 +1801,29 @@ static enum vkd3d_result shader_normalise_io_registers(struct vkd3d_shader_parse
                     normaliser.input_range_map[i][j] = normaliser.output_range_map[i][j];
                 else if (normaliser.input_range_map[i][j] && !normaliser.output_range_map[i][j])
                     normaliser.output_range_map[i][j] = normaliser.input_range_map[i][j];
-                else assert(normaliser.input_range_map[i][j] == normaliser.output_range_map[i][j]);
+                else VKD3D_ASSERT(normaliser.input_range_map[i][j] == normaliser.output_range_map[i][j]);
             }
         }
     }
 
-    if (!shader_signature_merge(&parser->shader_desc.input_signature, normaliser.input_range_map, false)
-            || !shader_signature_merge(&parser->shader_desc.output_signature, normaliser.output_range_map, false)
-            || !shader_signature_merge(&parser->shader_desc.patch_constant_signature, normaliser.pc_range_map, true))
+    if (!shader_signature_merge(&program->input_signature, normaliser.input_range_map, false)
+            || !shader_signature_merge(&program->output_signature, normaliser.output_range_map, false)
+            || !shader_signature_merge(&program->patch_constant_signature, normaliser.pc_range_map, true))
     {
         program->instructions = normaliser.instructions;
         return VKD3D_ERROR_OUT_OF_MEMORY;
+    }
+
+    if (program->shader_version.type == VKD3D_SHADER_TYPE_PIXEL
+            && program->shader_version.major < 4 && use_flat_interpolation(program, message_context))
+    {
+        for (i = 0; i < program->input_signature.element_count; ++i)
+        {
+            struct signature_element *element = &program->input_signature.elements[i];
+
+            if (!ascii_strcasecmp(element->semantic_name, "COLOR"))
+                element->interpolation_mode = VKD3DSIM_CONSTANT;
+        }
     }
 
     normaliser.phase = VKD3DSIH_INVALID;
@@ -1548,7 +1927,7 @@ static enum vkd3d_result instruction_array_normalise_flat_constants(struct vsir_
     {
         struct vkd3d_shader_instruction *ins = &program->instructions.elements[i];
 
-        if (ins->handler_idx == VKD3DSIH_DEF || ins->handler_idx == VKD3DSIH_DEFI || ins->handler_idx == VKD3DSIH_DEFB)
+        if (ins->opcode == VKD3DSIH_DEF || ins->opcode == VKD3DSIH_DEFI || ins->opcode == VKD3DSIH_DEFB)
         {
             struct flat_constant_def *def;
 
@@ -1587,7 +1966,7 @@ static void remove_dead_code(struct vsir_program *program)
     {
         struct vkd3d_shader_instruction *ins = &program->instructions.elements[i];
 
-        switch (ins->handler_idx)
+        switch (ins->opcode)
         {
             case VKD3DSIH_IF:
             case VKD3DSIH_LOOP:
@@ -1607,7 +1986,7 @@ static void remove_dead_code(struct vsir_program *program)
                 {
                     if (depth > 0)
                     {
-                        if (ins->handler_idx != VKD3DSIH_ELSE)
+                        if (ins->opcode != VKD3DSIH_ELSE)
                             --depth;
                         vkd3d_shader_instruction_make_nop(ins);
                     }
@@ -1668,23 +2047,24 @@ static void remove_dead_code(struct vsir_program *program)
     }
 }
 
-static enum vkd3d_result normalise_combined_samplers(struct vkd3d_shader_parser *parser)
+static enum vkd3d_result vsir_program_normalise_combined_samplers(struct vsir_program *program,
+        struct vkd3d_shader_message_context *message_context)
 {
     unsigned int i;
 
-    for (i = 0; i < parser->program.instructions.count; ++i)
+    for (i = 0; i < program->instructions.count; ++i)
     {
-        struct vkd3d_shader_instruction *ins = &parser->program.instructions.elements[i];
+        struct vkd3d_shader_instruction *ins = &program->instructions.elements[i];
         struct vkd3d_shader_src_param *srcs;
 
-        switch (ins->handler_idx)
+        switch (ins->opcode)
         {
             case VKD3DSIH_TEX:
-                if (!(srcs = shader_src_param_allocator_get(&parser->program.instructions.src_params, 3)))
+                if (!(srcs = shader_src_param_allocator_get(&program->instructions.src_params, 3)))
                     return VKD3D_ERROR_OUT_OF_MEMORY;
                 memset(srcs, 0, sizeof(*srcs) * 3);
 
-                ins->handler_idx = VKD3DSIH_SAMPLE;
+                ins->opcode = VKD3DSIH_SAMPLE;
 
                 srcs[0] = ins->src[0];
 
@@ -1693,6 +2073,7 @@ static enum vkd3d_result normalise_combined_samplers(struct vkd3d_shader_parser 
                 srcs[1].reg.idx[1] = ins->src[1].reg.idx[0];
                 srcs[1].reg.idx_count = 2;
                 srcs[1].reg.data_type = VKD3D_DATA_RESOURCE;
+                srcs[1].reg.dimension = VSIR_DIMENSION_VEC4;
                 srcs[1].swizzle = VKD3D_SHADER_NO_SWIZZLE;
 
                 srcs[2].reg.type = VKD3DSPR_SAMPLER;
@@ -1705,13 +2086,42 @@ static enum vkd3d_result normalise_combined_samplers(struct vkd3d_shader_parser 
                 ins->src_count = 3;
                 break;
 
+            case VKD3DSIH_TEXLDD:
+                if (!(srcs = shader_src_param_allocator_get(&program->instructions.src_params, 5)))
+                    return VKD3D_ERROR_OUT_OF_MEMORY;
+                memset(srcs, 0, sizeof(*srcs) * 5);
+
+                ins->opcode = VKD3DSIH_SAMPLE_GRAD;
+
+                srcs[0] = ins->src[0];
+
+                srcs[1].reg.type = VKD3DSPR_RESOURCE;
+                srcs[1].reg.idx[0] = ins->src[1].reg.idx[0];
+                srcs[1].reg.idx[1] = ins->src[1].reg.idx[0];
+                srcs[1].reg.idx_count = 2;
+                srcs[1].reg.data_type = VKD3D_DATA_RESOURCE;
+                srcs[1].reg.dimension = VSIR_DIMENSION_VEC4;
+                srcs[1].swizzle = VKD3D_SHADER_NO_SWIZZLE;
+
+                srcs[2].reg.type = VKD3DSPR_SAMPLER;
+                srcs[2].reg.idx[0] = ins->src[1].reg.idx[0];
+                srcs[2].reg.idx[1] = ins->src[1].reg.idx[0];
+                srcs[2].reg.idx_count = 2;
+                srcs[2].reg.data_type = VKD3D_DATA_SAMPLER;
+
+                srcs[3] = ins->src[2];
+                srcs[4] = ins->src[3];
+
+                ins->src = srcs;
+                ins->src_count = 5;
+                break;
+
             case VKD3DSIH_TEXBEM:
             case VKD3DSIH_TEXBEML:
             case VKD3DSIH_TEXCOORD:
             case VKD3DSIH_TEXDEPTH:
             case VKD3DSIH_TEXDP3:
             case VKD3DSIH_TEXDP3TEX:
-            case VKD3DSIH_TEXLDD:
             case VKD3DSIH_TEXLDL:
             case VKD3DSIH_TEXM3x2PAD:
             case VKD3DSIH_TEXM3x2TEX:
@@ -1723,9 +2133,9 @@ static enum vkd3d_result normalise_combined_samplers(struct vkd3d_shader_parser 
             case VKD3DSIH_TEXREG2AR:
             case VKD3DSIH_TEXREG2GB:
             case VKD3DSIH_TEXREG2RGB:
-                vkd3d_shader_parser_error(parser, VKD3D_SHADER_ERROR_VSIR_NOT_IMPLEMENTED,
+                vkd3d_shader_error(message_context, &ins->location, VKD3D_SHADER_ERROR_VSIR_NOT_IMPLEMENTED,
                         "Aborting due to not yet implemented feature: "
-                        "Combined sampler instruction %#x.", ins->handler_idx);
+                        "Combined sampler instruction %#x.", ins->opcode);
                 return VKD3D_ERROR_NOT_IMPLEMENTED;
 
             default:
@@ -1789,10 +2199,10 @@ struct cf_flattener_info
 
 struct cf_flattener
 {
-    struct vkd3d_shader_parser *parser;
+    struct vsir_program *program;
 
     struct vkd3d_shader_location location;
-    bool allocation_failed;
+    enum vkd3d_result status;
 
     struct vkd3d_shader_instruction *instructions;
     size_t instruction_capacity;
@@ -1812,13 +2222,20 @@ struct cf_flattener
     size_t control_flow_info_size;
 };
 
+static void cf_flattener_set_error(struct cf_flattener *flattener, enum vkd3d_result error)
+{
+    if (flattener->status != VKD3D_OK)
+        return;
+    flattener->status = error;
+}
+
 static struct vkd3d_shader_instruction *cf_flattener_require_space(struct cf_flattener *flattener, size_t count)
 {
     if (!vkd3d_array_reserve((void **)&flattener->instructions, &flattener->instruction_capacity,
             flattener->instruction_count + count, sizeof(*flattener->instructions)))
     {
         ERR("Failed to allocate instructions.\n");
-        flattener->allocation_failed = true;
+        cf_flattener_set_error(flattener, VKD3D_ERROR_OUT_OF_MEMORY);
         return NULL;
     }
     return &flattener->instructions[flattener->instruction_count];
@@ -1829,7 +2246,7 @@ static bool cf_flattener_copy_instruction(struct cf_flattener *flattener,
 {
     struct vkd3d_shader_instruction *dst_ins;
 
-    if (instruction->handler_idx == VKD3DSIH_NOP)
+    if (instruction->opcode == VKD3DSIH_NOP)
         return true;
 
     if (!(dst_ins = cf_flattener_require_space(flattener, 1)))
@@ -1850,9 +2267,9 @@ static struct vkd3d_shader_src_param *instruction_src_params_alloc(struct vkd3d_
 {
     struct vkd3d_shader_src_param *params;
 
-    if (!(params = vsir_program_get_src_params(&flattener->parser->program, count)))
+    if (!(params = vsir_program_get_src_params(flattener->program, count)))
     {
-        flattener->allocation_failed = true;
+        cf_flattener_set_error(flattener, VKD3D_ERROR_OUT_OF_MEMORY);
         return NULL;
     }
     ins->src = params;
@@ -1866,10 +2283,10 @@ static void cf_flattener_emit_label(struct cf_flattener *flattener, unsigned int
 
     if (!(ins = cf_flattener_require_space(flattener, 1)))
         return;
-    if (vsir_instruction_init_label(ins, &flattener->location, label_id, &flattener->parser->program))
+    if (vsir_instruction_init_label(ins, &flattener->location, label_id, flattener->program))
         ++flattener->instruction_count;
     else
-        flattener->allocation_failed = true;
+        cf_flattener_set_error(flattener, VKD3D_ERROR_OUT_OF_MEMORY);
 }
 
 /* For conditional branches, this returns the false target branch parameter. */
@@ -1947,7 +2364,7 @@ static struct cf_flattener_info *cf_flattener_push_control_flow_level(struct cf_
             flattener->control_flow_depth + 1, sizeof(*flattener->control_flow_info)))
     {
         ERR("Failed to allocate control flow info structure.\n");
-        flattener->allocation_failed = true;
+        cf_flattener_set_error(flattener, VKD3D_ERROR_OUT_OF_MEMORY);
         return NULL;
     }
 
@@ -2014,12 +2431,12 @@ static void VKD3D_PRINTF_FUNC(3, 4) cf_flattener_create_block_name(struct cf_fla
     flattener->block_names[block_id] = buffer.buffer;
 }
 
-static enum vkd3d_result cf_flattener_iterate_instruction_array(struct cf_flattener *flattener)
+static enum vkd3d_result cf_flattener_iterate_instruction_array(struct cf_flattener *flattener,
+        struct vkd3d_shader_message_context *message_context)
 {
     bool main_block_open, is_hull_shader, after_declarations_section;
-    struct vkd3d_shader_parser *parser = flattener->parser;
     struct vkd3d_shader_instruction_array *instructions;
-    struct vsir_program *program = &parser->program;
+    struct vsir_program *program = flattener->program;
     struct vkd3d_shader_instruction *dst_ins;
     size_t i;
 
@@ -2041,30 +2458,38 @@ static enum vkd3d_result cf_flattener_iterate_instruction_array(struct cf_flatte
         flattener->location = instruction->location;
 
         /* Declarations should occur before the first code block, which in hull shaders is marked by the first
-         * phase instruction, and in all other shader types begins with the first label instruction. */
-        if (!after_declarations_section && !vsir_instruction_is_dcl(instruction)
-                && instruction->handler_idx != VKD3DSIH_NOP)
+         * phase instruction, and in all other shader types begins with the first label instruction.
+         * Declaring an indexable temp with function scope is not considered a declaration,
+         * because it needs to live inside a function. */
+        if (!after_declarations_section && instruction->opcode != VKD3DSIH_NOP)
         {
-            after_declarations_section = true;
-            cf_flattener_emit_label(flattener, cf_flattener_alloc_block_id(flattener));
+            bool is_function_indexable = instruction->opcode == VKD3DSIH_DCL_INDEXABLE_TEMP
+                    && instruction->declaration.indexable_temp.has_function_scope;
+
+            if (!vsir_instruction_is_dcl(instruction) || is_function_indexable)
+            {
+                after_declarations_section = true;
+                cf_flattener_emit_label(flattener, cf_flattener_alloc_block_id(flattener));
+            }
         }
 
         cf_info = flattener->control_flow_depth
                 ? &flattener->control_flow_info[flattener->control_flow_depth - 1] : NULL;
 
-        switch (instruction->handler_idx)
+        switch (instruction->opcode)
         {
             case VKD3DSIH_HS_CONTROL_POINT_PHASE:
             case VKD3DSIH_HS_FORK_PHASE:
             case VKD3DSIH_HS_JOIN_PHASE:
                 if (!cf_flattener_copy_instruction(flattener, instruction))
                     return VKD3D_ERROR_OUT_OF_MEMORY;
-                if (instruction->handler_idx != VKD3DSIH_HS_CONTROL_POINT_PHASE || !instruction->flags)
+                if (instruction->opcode != VKD3DSIH_HS_CONTROL_POINT_PHASE || !instruction->flags)
                     after_declarations_section = false;
                 break;
 
             case VKD3DSIH_LABEL:
-                vkd3d_shader_parser_error(parser, VKD3D_SHADER_ERROR_VSIR_NOT_IMPLEMENTED,
+                vkd3d_shader_error(message_context, &instruction->location,
+                        VKD3D_SHADER_ERROR_VSIR_NOT_IMPLEMENTED,
                         "Aborting due to not yet implemented feature: Label instruction.");
                 return VKD3D_ERROR_NOT_IMPLEMENTED;
 
@@ -2229,8 +2654,10 @@ static enum vkd3d_result cf_flattener_iterate_instruction_array(struct cf_flatte
                 if (src->swizzle != VKD3D_SHADER_SWIZZLE(X, X, X, X))
                 {
                     WARN("Unexpected src swizzle %#x.\n", src->swizzle);
-                    vkd3d_shader_parser_error(parser, VKD3D_SHADER_ERROR_VSIR_INVALID_SWIZZLE,
+                    vkd3d_shader_error(message_context, &instruction->location,
+                            VKD3D_SHADER_ERROR_VSIR_INVALID_SWIZZLE,
                             "The swizzle for a switch case value is not scalar X.");
+                    cf_flattener_set_error(flattener, VKD3D_ERROR_INVALID_SHADER);
                 }
                 value = *src->reg.u.immconst_u32;
 
@@ -2358,21 +2785,18 @@ static enum vkd3d_result cf_flattener_iterate_instruction_array(struct cf_flatte
         ++flattener->instruction_count;
     }
 
-    return flattener->allocation_failed ? VKD3D_ERROR_OUT_OF_MEMORY : VKD3D_OK;
+    return flattener->status;
 }
 
-static enum vkd3d_result flatten_control_flow_constructs(struct vkd3d_shader_parser *parser)
+static enum vkd3d_result vsir_program_flatten_control_flow_constructs(struct vsir_program *program,
+        struct vkd3d_shader_message_context *message_context)
 {
-    struct vsir_program *program = &parser->program;
-    struct cf_flattener flattener = {0};
+    struct cf_flattener flattener = {.program = program};
     enum vkd3d_result result;
 
-    flattener.parser = parser;
-    result = cf_flattener_iterate_instruction_array(&flattener);
-
-    if (result >= 0)
+    if ((result = cf_flattener_iterate_instruction_array(&flattener, message_context)) >= 0)
     {
-        vkd3d_free(parser->program.instructions.elements);
+        vkd3d_free(program->instructions.elements);
         program->instructions.elements = flattener.instructions;
         program->instructions.capacity = flattener.instruction_capacity;
         program->instructions.count = flattener.instruction_count;
@@ -2393,7 +2817,7 @@ static enum vkd3d_result flatten_control_flow_constructs(struct vkd3d_shader_par
 
 static unsigned int label_from_src_param(const struct vkd3d_shader_src_param *param)
 {
-    assert(param->reg.type == VKD3DSPR_LABEL);
+    VKD3D_ASSERT(param->reg.type == VKD3DSPR_LABEL);
     return param->reg.idx[0].offset;
 }
 
@@ -2454,7 +2878,7 @@ static enum vkd3d_result lower_switch_to_if_ladder(struct vsir_program *program)
         struct vkd3d_shader_instruction *ins = &program->instructions.elements[i];
         unsigned int case_count, j, default_label;
 
-        switch (ins->handler_idx)
+        switch (ins->opcode)
         {
             case VKD3DSIH_LABEL:
                 current_label = label_from_src_param(&ins->src[0]);
@@ -2548,97 +2972,6 @@ static enum vkd3d_result lower_switch_to_if_ladder(struct vsir_program *program)
         }
     }
 
-    /* Second subpass: creating new blocks might have broken
-     * references in PHI instructions, so we use the block map to fix
-     * them. */
-    current_label = 0;
-    for (i = 0; i < ins_count; ++i)
-    {
-        struct vkd3d_shader_instruction *ins = &instructions[i];
-        struct vkd3d_shader_src_param *new_src;
-        unsigned int j, l, new_src_count = 0;
-
-        switch (ins->handler_idx)
-        {
-            case VKD3DSIH_LABEL:
-                current_label = label_from_src_param(&ins->src[0]);
-                continue;
-
-            case VKD3DSIH_PHI:
-                break;
-
-            default:
-                continue;
-        }
-
-        /* First count how many source parameters we need. */
-        for (j = 0; j < ins->src_count; j += 2)
-        {
-            unsigned int source_label = label_from_src_param(&ins->src[j + 1]);
-            size_t k, match_count = 0;
-
-            for (k = 0; k < map_count; ++k)
-            {
-                struct lower_switch_to_if_ladder_block_mapping *mapping = &block_map[k];
-
-                if (mapping->switch_label == source_label && mapping->target_label == current_label)
-                    match_count += 1;
-            }
-
-            new_src_count += (match_count != 0) ? 2 * match_count : 2;
-        }
-
-        assert(new_src_count >= ins->src_count);
-
-        /* Allocate more source parameters if needed. */
-        if (new_src_count == ins->src_count)
-        {
-            new_src = ins->src;
-        }
-        else
-        {
-            if (!(new_src = vsir_program_get_src_params(program, new_src_count)))
-            {
-                ERR("Failed to allocate %u source parameters.\n", new_src_count);
-                goto fail;
-            }
-        }
-
-        /* Then do the copy. */
-        for (j = 0, l = 0; j < ins->src_count; j += 2)
-        {
-            unsigned int source_label = label_from_src_param(&ins->src[j + 1]);
-            size_t k, match_count = 0;
-
-            for (k = 0; k < map_count; ++k)
-            {
-                struct lower_switch_to_if_ladder_block_mapping *mapping = &block_map[k];
-
-                if (mapping->switch_label == source_label && mapping->target_label == current_label)
-                {
-                    match_count += 1;
-
-                    new_src[l] = ins->src[j];
-                    new_src[l + 1] = ins->src[j + 1];
-                    new_src[l + 1].reg.idx[0].offset = mapping->if_label;
-                    l += 2;
-                }
-            }
-
-            if (match_count == 0)
-            {
-                new_src[l] = ins->src[j];
-                new_src[l + 1] = ins->src[j + 1];
-                l += 2;
-            }
-        }
-
-        assert(l == new_src_count);
-
-        ins->src_count = new_src_count;
-        ins->src = new_src;
-    }
-
     vkd3d_free(program->instructions.elements);
     vkd3d_free(block_map);
     program->instructions.elements = instructions;
@@ -2656,209 +2989,162 @@ fail:
     return VKD3D_ERROR_OUT_OF_MEMORY;
 }
 
-static void materialize_ssas_to_temps_process_src_param(struct vkd3d_shader_parser *parser, struct vkd3d_shader_src_param *src);
+struct ssas_to_temps_alloc
+{
+    unsigned int *table;
+    unsigned int next_temp_idx;
+};
+
+static bool ssas_to_temps_alloc_init(struct ssas_to_temps_alloc *alloc, unsigned int ssa_count, unsigned int temp_count)
+{
+    size_t i = ssa_count * sizeof(*alloc->table);
+
+    if (!(alloc->table = vkd3d_malloc(i)))
+    {
+        ERR("Failed to allocate SSA table.\n");
+        return false;
+    }
+    memset(alloc->table, 0xff, i);
+
+    alloc->next_temp_idx = temp_count;
+    return true;
+}
 
 /* This is idempotent: it can be safely applied more than once on the
  * same register. */
-static void materialize_ssas_to_temps_process_reg(struct vkd3d_shader_parser *parser, struct vkd3d_shader_register *reg)
+static void materialize_ssas_to_temps_process_reg(struct vsir_program *program, struct ssas_to_temps_alloc *alloc,
+        struct vkd3d_shader_register *reg)
 {
     unsigned int i;
 
-    if (reg->type == VKD3DSPR_SSA)
+    if (reg->type == VKD3DSPR_SSA && alloc->table[reg->idx[0].offset] != UINT_MAX)
     {
         reg->type = VKD3DSPR_TEMP;
-        reg->idx[0].offset += parser->program.temp_count;
+        reg->idx[0].offset = alloc->table[reg->idx[0].offset];
     }
 
     for (i = 0; i < reg->idx_count; ++i)
         if (reg->idx[i].rel_addr)
-            materialize_ssas_to_temps_process_src_param(parser, reg->idx[i].rel_addr);
+            materialize_ssas_to_temps_process_reg(program, alloc, &reg->idx[i].rel_addr->reg);
 }
 
-static void materialize_ssas_to_temps_process_dst_param(struct vkd3d_shader_parser *parser, struct vkd3d_shader_dst_param *dst)
+struct ssas_to_temps_block_info
 {
-    materialize_ssas_to_temps_process_reg(parser, &dst->reg);
-}
-
-static void materialize_ssas_to_temps_process_src_param(struct vkd3d_shader_parser *parser, struct vkd3d_shader_src_param *src)
-{
-    materialize_ssas_to_temps_process_reg(parser, &src->reg);
-}
-
-static const struct vkd3d_shader_src_param *materialize_ssas_to_temps_compute_source(struct vkd3d_shader_instruction *ins,
-        unsigned int label)
-{
-    unsigned int i;
-
-    assert(ins->handler_idx == VKD3DSIH_PHI);
-
-    for (i = 0; i < ins->src_count; i += 2)
+    struct phi_incoming_to_temp
     {
-        if (label_from_src_param(&ins->src[i + 1]) == label)
-            return &ins->src[i];
-    }
+        struct vkd3d_shader_src_param *src;
+        struct vkd3d_shader_dst_param *dst;
+    } *incomings;
+    size_t incoming_capacity;
+    size_t incoming_count;
+};
 
-    vkd3d_unreachable();
+static void ssas_to_temps_block_info_cleanup(struct ssas_to_temps_block_info *block_info,
+        size_t count)
+{
+    size_t i;
+
+    for (i = 0; i < count; ++i)
+        vkd3d_free(block_info[i].incomings);
+
+    vkd3d_free(block_info);
 }
 
-static bool materialize_ssas_to_temps_synthesize_mov(struct vkd3d_shader_parser *parser,
-        struct vkd3d_shader_instruction *instruction, const struct vkd3d_shader_location *loc,
-        const struct vkd3d_shader_dst_param *dest, const struct vkd3d_shader_src_param *cond,
-        const struct vkd3d_shader_src_param *source, bool invert)
+static enum vkd3d_result vsir_program_materialise_phi_ssas_to_temps(struct vsir_program *program)
 {
-    struct vkd3d_shader_src_param *src;
-    struct vkd3d_shader_dst_param *dst;
-
-    if (!vsir_instruction_init_with_params(&parser->program, instruction, loc,
-            cond ? VKD3DSIH_MOVC : VKD3DSIH_MOV, 1, cond ? 3 : 1))
-        return false;
-
-    dst = instruction->dst;
-    src = instruction->src;
-
-    dst[0] = *dest;
-    materialize_ssas_to_temps_process_dst_param(parser, &dst[0]);
-
-    assert(dst[0].write_mask == VKD3DSP_WRITEMASK_0);
-    assert(dst[0].modifiers == 0);
-    assert(dst[0].shift == 0);
-
-    if (cond)
-    {
-        src[0] = *cond;
-        src[1 + invert] = *source;
-        memset(&src[2 - invert], 0, sizeof(src[2 - invert]));
-        src[2 - invert].reg = dst[0].reg;
-        materialize_ssas_to_temps_process_src_param(parser, &src[1]);
-        materialize_ssas_to_temps_process_src_param(parser, &src[2]);
-    }
-    else
-    {
-        src[0] = *source;
-        materialize_ssas_to_temps_process_src_param(parser, &src[0]);
-    }
-
-    return true;
-}
-
-static enum vkd3d_result materialize_ssas_to_temps(struct vkd3d_shader_parser *parser)
-{
+    size_t ins_capacity = 0, ins_count = 0, phi_count, incoming_count, i;
+    struct ssas_to_temps_block_info *info, *block_info = NULL;
     struct vkd3d_shader_instruction *instructions = NULL;
-    struct materialize_ssas_to_temps_block_data
-    {
-        size_t phi_begin;
-        size_t phi_count;
-    } *block_index = NULL;
-    size_t ins_capacity = 0, ins_count = 0, i;
+    struct ssas_to_temps_alloc alloc = {0};
     unsigned int current_label = 0;
 
-    if (!reserve_instructions(&instructions, &ins_capacity, parser->program.instructions.count))
-        goto fail;
-
-    if (!(block_index = vkd3d_calloc(parser->program.block_count, sizeof(*block_index))))
+    if (!(block_info = vkd3d_calloc(program->block_count, sizeof(*block_info))))
     {
-        ERR("Failed to allocate block index.\n");
+        ERR("Failed to allocate block info array.\n");
         goto fail;
     }
 
-    for (i = 0; i < parser->program.instructions.count; ++i)
-    {
-        struct vkd3d_shader_instruction *ins = &parser->program.instructions.elements[i];
+    if (!ssas_to_temps_alloc_init(&alloc, program->ssa_count, program->temp_count))
+        goto fail;
 
-        switch (ins->handler_idx)
+    for (i = 0, phi_count = 0, incoming_count = 0; i < program->instructions.count; ++i)
+    {
+        struct vkd3d_shader_instruction *ins = &program->instructions.elements[i];
+        unsigned int j, temp_idx;
+
+        /* Only phi src/dst SSA values need be converted here. Structurisation may
+         * introduce new cases of undominated SSA use, which will be handled later. */
+        if (ins->opcode != VKD3DSIH_PHI)
+            continue;
+        ++phi_count;
+
+        temp_idx = alloc.next_temp_idx++;
+
+        for (j = 0; j < ins->src_count; j += 2)
         {
-            case VKD3DSIH_LABEL:
-                current_label = label_from_src_param(&ins->src[0]);
-                break;
+            struct phi_incoming_to_temp *incoming;
+            unsigned int label;
 
-            case VKD3DSIH_PHI:
-                assert(current_label != 0);
-                assert(i != 0);
-                if (block_index[current_label - 1].phi_begin == 0)
-                    block_index[current_label - 1].phi_begin = i;
-                block_index[current_label - 1].phi_count += 1;
-                break;
+            label = label_from_src_param(&ins->src[j + 1]);
+            VKD3D_ASSERT(label);
 
-            default:
-                current_label = 0;
-                break;
+            info = &block_info[label - 1];
+
+            if (!(vkd3d_array_reserve((void **)&info->incomings, &info->incoming_capacity, info->incoming_count + 1,
+                    sizeof(*info->incomings))))
+                goto fail;
+
+            incoming = &info->incomings[info->incoming_count++];
+            incoming->src = &ins->src[j];
+            incoming->dst = ins->dst;
+
+            alloc.table[ins->dst->reg.idx[0].offset] = temp_idx;
+
+            ++incoming_count;
         }
+
+        materialize_ssas_to_temps_process_reg(program, &alloc, &ins->dst->reg);
     }
 
-    for (i = 0; i < parser->program.instructions.count; ++i)
+    if (!phi_count)
+        goto done;
+
+    if (!reserve_instructions(&instructions, &ins_capacity, program->instructions.count + incoming_count - phi_count))
+        goto fail;
+
+    for (i = 0; i < program->instructions.count; ++i)
     {
-        struct vkd3d_shader_instruction *ins = &parser->program.instructions.elements[i];
+        struct vkd3d_shader_instruction *mov_ins, *ins = &program->instructions.elements[i];
         size_t j;
 
         for (j = 0; j < ins->dst_count; ++j)
-            materialize_ssas_to_temps_process_dst_param(parser, &ins->dst[j]);
+            materialize_ssas_to_temps_process_reg(program, &alloc, &ins->dst[j].reg);
 
         for (j = 0; j < ins->src_count; ++j)
-            materialize_ssas_to_temps_process_src_param(parser, &ins->src[j]);
+            materialize_ssas_to_temps_process_reg(program, &alloc, &ins->src[j].reg);
 
-        switch (ins->handler_idx)
+        switch (ins->opcode)
         {
             case VKD3DSIH_LABEL:
                 current_label = label_from_src_param(&ins->src[0]);
                 break;
 
             case VKD3DSIH_BRANCH:
-            {
-                if (vsir_register_is_label(&ins->src[0].reg))
+            case VKD3DSIH_SWITCH_MONOLITHIC:
+                info = &block_info[current_label - 1];
+
+                for (j = 0; j < info->incoming_count; ++j)
                 {
-                    const struct materialize_ssas_to_temps_block_data *data = &block_index[label_from_src_param(&ins->src[0]) - 1];
+                    struct phi_incoming_to_temp *incoming = &info->incomings[j];
 
-                    if (!reserve_instructions(&instructions, &ins_capacity, ins_count + data->phi_count))
+                    mov_ins = &instructions[ins_count++];
+                    if (!vsir_instruction_init_with_params(program, mov_ins, &ins->location, VKD3DSIH_MOV, 1, 0))
                         goto fail;
-
-                    for (j = data->phi_begin; j < data->phi_begin + data->phi_count; ++j)
-                    {
-                        const struct vkd3d_shader_src_param *source;
-
-                        source = materialize_ssas_to_temps_compute_source(&parser->program.instructions.elements[j], current_label);
-                        if (!materialize_ssas_to_temps_synthesize_mov(parser, &instructions[ins_count], &ins->location,
-                                &parser->program.instructions.elements[j].dst[0], NULL, source, false))
-                            goto fail;
-
-                        ++ins_count;
-                    }
-                }
-                else
-                {
-                    struct materialize_ssas_to_temps_block_data *data_true = &block_index[label_from_src_param(&ins->src[1]) - 1],
-                            *data_false = &block_index[label_from_src_param(&ins->src[2]) - 1];
-                    const struct vkd3d_shader_src_param *cond = &ins->src[0];
-
-                    if (!reserve_instructions(&instructions, &ins_capacity,
-                            ins_count + data_true->phi_count + data_false->phi_count))
-                        goto fail;
-
-                    for (j = data_true->phi_begin; j < data_true->phi_begin + data_true->phi_count; ++j)
-                    {
-                        const struct vkd3d_shader_src_param *source;
-
-                        source = materialize_ssas_to_temps_compute_source(&parser->program.instructions.elements[j], current_label);
-                        if (!materialize_ssas_to_temps_synthesize_mov(parser, &instructions[ins_count], &ins->location,
-                                &parser->program.instructions.elements[j].dst[0], cond, source, false))
-                            goto fail;
-
-                        ++ins_count;
-                    }
-
-                    for (j = data_false->phi_begin; j < data_false->phi_begin + data_false->phi_count; ++j)
-                    {
-                        const struct vkd3d_shader_src_param *source;
-
-                        source = materialize_ssas_to_temps_compute_source(&parser->program.instructions.elements[j], current_label);
-                        if (!materialize_ssas_to_temps_synthesize_mov(parser, &instructions[ins_count], &ins->location,
-                                &parser->program.instructions.elements[j].dst[0], cond, source, true))
-                            goto fail;
-
-                        ++ins_count;
-                    }
+                    *mov_ins->dst = *incoming->dst;
+                    mov_ins->src = incoming->src;
+                    mov_ins->src_count = 1;
                 }
                 break;
-            }
 
             case VKD3DSIH_PHI:
                 continue;
@@ -2867,145 +3153,25 @@ static enum vkd3d_result materialize_ssas_to_temps(struct vkd3d_shader_parser *p
                 break;
         }
 
-        if (!reserve_instructions(&instructions, &ins_capacity, ins_count + 1))
-            goto fail;
-
         instructions[ins_count++] = *ins;
     }
 
-    vkd3d_free(parser->program.instructions.elements);
-    vkd3d_free(block_index);
-    parser->program.instructions.elements = instructions;
-    parser->program.instructions.capacity = ins_capacity;
-    parser->program.instructions.count = ins_count;
-    parser->program.temp_count += parser->program.ssa_count;
-    parser->program.ssa_count = 0;
+    vkd3d_free(program->instructions.elements);
+    program->instructions.elements = instructions;
+    program->instructions.capacity = ins_capacity;
+    program->instructions.count = ins_count;
+    program->temp_count = alloc.next_temp_idx;
+done:
+    ssas_to_temps_block_info_cleanup(block_info, program->block_count);
+    vkd3d_free(alloc.table);
 
     return VKD3D_OK;
 
 fail:
     vkd3d_free(instructions);
-    vkd3d_free(block_index);
+    ssas_to_temps_block_info_cleanup(block_info, program->block_count);
+    vkd3d_free(alloc.table);
 
-    return VKD3D_ERROR_OUT_OF_MEMORY;
-}
-
-static enum vkd3d_result simple_structurizer_run(struct vkd3d_shader_parser *parser)
-{
-    const unsigned int block_temp_idx = parser->program.temp_count;
-    struct vkd3d_shader_instruction *instructions = NULL;
-    const struct vkd3d_shader_location no_loc = {0};
-    size_t ins_capacity = 0, ins_count = 0, i;
-    bool first_label_found = false;
-
-    if (!reserve_instructions(&instructions, &ins_capacity, parser->program.instructions.count))
-        goto fail;
-
-    for (i = 0; i < parser->program.instructions.count; ++i)
-    {
-        struct vkd3d_shader_instruction *ins = &parser->program.instructions.elements[i];
-
-        switch (ins->handler_idx)
-        {
-            case VKD3DSIH_PHI:
-            case VKD3DSIH_SWITCH_MONOLITHIC:
-                vkd3d_unreachable();
-
-            case VKD3DSIH_LABEL:
-                if (!reserve_instructions(&instructions, &ins_capacity, ins_count + 4))
-                    goto fail;
-
-                if (!first_label_found)
-                {
-                    first_label_found = true;
-
-                    if (!vsir_instruction_init_with_params(&parser->program, &instructions[ins_count], &no_loc, VKD3DSIH_MOV, 1, 1))
-                        goto fail;
-                    dst_param_init_temp_uint(&instructions[ins_count].dst[0], block_temp_idx);
-                    src_param_init_const_uint(&instructions[ins_count].src[0], label_from_src_param(&ins->src[0]));
-                    ins_count++;
-
-                    if (!vsir_instruction_init_with_params(&parser->program, &instructions[ins_count], &no_loc, VKD3DSIH_LOOP, 0, 0))
-                        goto fail;
-                    ins_count++;
-
-                    if (!vsir_instruction_init_with_params(&parser->program, &instructions[ins_count], &no_loc, VKD3DSIH_SWITCH, 0, 1))
-                        goto fail;
-                    src_param_init_temp_uint(&instructions[ins_count].src[0], block_temp_idx);
-                    ins_count++;
-                }
-
-                if (!vsir_instruction_init_with_params(&parser->program, &instructions[ins_count], &no_loc, VKD3DSIH_CASE, 0, 1))
-                    goto fail;
-                src_param_init_const_uint(&instructions[ins_count].src[0], label_from_src_param(&ins->src[0]));
-                ins_count++;
-                break;
-
-            case VKD3DSIH_BRANCH:
-                if (!reserve_instructions(&instructions, &ins_capacity, ins_count + 2))
-                    goto fail;
-
-                if (vsir_register_is_label(&ins->src[0].reg))
-                {
-                    if (!vsir_instruction_init_with_params(&parser->program, &instructions[ins_count], &no_loc, VKD3DSIH_MOV, 1, 1))
-                        goto fail;
-                    dst_param_init_temp_uint(&instructions[ins_count].dst[0], block_temp_idx);
-                    src_param_init_const_uint(&instructions[ins_count].src[0], label_from_src_param(&ins->src[0]));
-                    ins_count++;
-                }
-                else
-                {
-                    if (!vsir_instruction_init_with_params(&parser->program, &instructions[ins_count], &no_loc, VKD3DSIH_MOVC, 1, 3))
-                        goto fail;
-                    dst_param_init_temp_uint(&instructions[ins_count].dst[0], block_temp_idx);
-                    instructions[ins_count].src[0] = ins->src[0];
-                    src_param_init_const_uint(&instructions[ins_count].src[1], label_from_src_param(&ins->src[1]));
-                    src_param_init_const_uint(&instructions[ins_count].src[2], label_from_src_param(&ins->src[2]));
-                    ins_count++;
-                }
-
-                if (!vsir_instruction_init_with_params(&parser->program, &instructions[ins_count], &no_loc, VKD3DSIH_BREAK, 0, 0))
-                    goto fail;
-                ins_count++;
-                break;
-
-            case VKD3DSIH_RET:
-            default:
-                if (!reserve_instructions(&instructions, &ins_capacity, ins_count + 1))
-                    goto fail;
-
-                instructions[ins_count++] = *ins;
-                break;
-        }
-    }
-
-    assert(first_label_found);
-
-    if (!reserve_instructions(&instructions, &ins_capacity, ins_count + 3))
-        goto fail;
-
-    if (!vsir_instruction_init_with_params(&parser->program, &instructions[ins_count], &no_loc, VKD3DSIH_ENDSWITCH, 0, 0))
-        goto fail;
-    ins_count++;
-
-    if (!vsir_instruction_init_with_params(&parser->program, &instructions[ins_count], &no_loc, VKD3DSIH_ENDLOOP, 0, 0))
-        goto fail;
-    ins_count++;
-
-    if (!vsir_instruction_init_with_params(&parser->program, &instructions[ins_count], &no_loc, VKD3DSIH_RET, 0, 0))
-        goto fail;
-    ins_count++;
-
-    vkd3d_free(parser->program.instructions.elements);
-    parser->program.instructions.elements = instructions;
-    parser->program.instructions.capacity = ins_capacity;
-    parser->program.instructions.count = ins_count;
-    parser->program.temp_count += 1;
-
-    return VKD3D_OK;
-
-fail:
-    vkd3d_free(instructions);
     return VKD3D_ERROR_OUT_OF_MEMORY;
 }
 
@@ -3025,14 +3191,8 @@ static void vsir_block_list_cleanup(struct vsir_block_list *list)
     vkd3d_free(list->blocks);
 }
 
-static enum vkd3d_result vsir_block_list_add(struct vsir_block_list *list, struct vsir_block *block)
+static enum vkd3d_result vsir_block_list_add_checked(struct vsir_block_list *list, struct vsir_block *block)
 {
-    size_t i;
-
-    for (i = 0; i < list->count; ++i)
-        if (block == list->blocks[i])
-            return VKD3D_OK;
-
     if (!vkd3d_array_reserve((void **)&list->blocks, &list->capacity, list->count + 1, sizeof(*list->blocks)))
     {
         ERR("Cannot extend block list.\n");
@@ -3044,9 +3204,27 @@ static enum vkd3d_result vsir_block_list_add(struct vsir_block_list *list, struc
     return VKD3D_OK;
 }
 
+static enum vkd3d_result vsir_block_list_add(struct vsir_block_list *list, struct vsir_block *block)
+{
+    size_t i;
+
+    for (i = 0; i < list->count; ++i)
+        if (block == list->blocks[i])
+            return VKD3D_FALSE;
+
+    return vsir_block_list_add_checked(list, block);
+}
+
+/* It is guaranteed that the relative order is kept. */
+static void vsir_block_list_remove_index(struct vsir_block_list *list, size_t idx)
+{
+    --list->count;
+    memmove(&list->blocks[idx], &list->blocks[idx + 1], (list->count - idx) * sizeof(*list->blocks));
+}
+
 struct vsir_block
 {
-    unsigned int label;
+    unsigned int label, order_pos;
     /* `begin' points to the instruction immediately following the
      * LABEL that introduces the block. `end' points to the terminator
      * instruction (either BRANCH or RET). They can coincide, meaning
@@ -3063,10 +3241,9 @@ static enum vkd3d_result vsir_block_init(struct vsir_block *block, unsigned int 
     if (block_count > SIZE_MAX - (sizeof(*block->dominates) * CHAR_BIT - 1))
         return VKD3D_ERROR_OUT_OF_MEMORY;
 
-    block_count = align(block_count, sizeof(*block->dominates) * CHAR_BIT);
-    byte_count = block_count / CHAR_BIT;
+    byte_count = VKD3D_BITMAP_SIZE(block_count) * sizeof(*block->dominates);
 
-    assert(label);
+    VKD3D_ASSERT(label);
     memset(block, 0, sizeof(*block));
     block->label = label;
     vsir_block_list_init(&block->predecessors);
@@ -3089,12 +3266,211 @@ static void vsir_block_cleanup(struct vsir_block *block)
     vkd3d_free(block->dominates);
 }
 
+static int block_compare(const void *ptr1, const void *ptr2)
+{
+    const struct vsir_block *block1 = *(const struct vsir_block **)ptr1;
+    const struct vsir_block *block2 = *(const struct vsir_block **)ptr2;
+
+    return vkd3d_u32_compare(block1->label, block2->label);
+}
+
+static void vsir_block_list_sort(struct vsir_block_list *list)
+{
+    qsort(list->blocks, list->count, sizeof(*list->blocks), block_compare);
+}
+
+static bool vsir_block_list_search(struct vsir_block_list *list, struct vsir_block *block)
+{
+    return !!bsearch(&block, list->blocks, list->count, sizeof(*list->blocks), block_compare);
+}
+
+struct vsir_cfg_structure_list
+{
+    struct vsir_cfg_structure *structures;
+    size_t count, capacity;
+    unsigned int end;
+};
+
+struct vsir_cfg_structure
+{
+    enum vsir_cfg_structure_type
+    {
+        /* Execute a block of the original VSIR program. */
+        STRUCTURE_TYPE_BLOCK,
+        /* Execute a loop, which is identified by an index. */
+        STRUCTURE_TYPE_LOOP,
+        /* Execute a selection construct. */
+        STRUCTURE_TYPE_SELECTION,
+        /* Execute a `return' or a (possibly) multilevel `break' or
+         * `continue', targeting a loop by its index. If `condition'
+         * is non-NULL, then the jump is conditional (this is
+         * currently not allowed for `return'). */
+        STRUCTURE_TYPE_JUMP,
+    } type;
+    union
+    {
+        struct vsir_block *block;
+        struct vsir_cfg_structure_loop
+        {
+            struct vsir_cfg_structure_list body;
+            unsigned idx;
+            bool needs_trampoline;
+            struct vsir_cfg_structure *outer_loop;
+        } loop;
+        struct vsir_cfg_structure_selection
+        {
+            struct vkd3d_shader_src_param *condition;
+            struct vsir_cfg_structure_list if_body;
+            struct vsir_cfg_structure_list else_body;
+            bool invert_condition;
+        } selection;
+        struct vsir_cfg_structure_jump
+        {
+            enum vsir_cfg_jump_type
+            {
+                /* NONE is available as an intermediate value, but it
+                 * is not allowed in valid structured programs. */
+                JUMP_NONE,
+                JUMP_BREAK,
+                JUMP_CONTINUE,
+                JUMP_RET,
+            } type;
+            unsigned int target;
+            struct vkd3d_shader_src_param *condition;
+            bool invert_condition;
+            bool needs_launcher;
+        } jump;
+    } u;
+};
+
+static void vsir_cfg_structure_init(struct vsir_cfg_structure *structure, enum vsir_cfg_structure_type type);
+static void vsir_cfg_structure_cleanup(struct vsir_cfg_structure *structure);
+
+static void vsir_cfg_structure_list_cleanup(struct vsir_cfg_structure_list *list)
+{
+    unsigned int i;
+
+    for (i = 0; i < list->count; ++i)
+        vsir_cfg_structure_cleanup(&list->structures[i]);
+    vkd3d_free(list->structures);
+}
+
+static struct vsir_cfg_structure *vsir_cfg_structure_list_append(struct vsir_cfg_structure_list *list,
+        enum vsir_cfg_structure_type type)
+{
+    struct vsir_cfg_structure *ret;
+
+    if (!vkd3d_array_reserve((void **)&list->structures, &list->capacity, list->count + 1,
+            sizeof(*list->structures)))
+        return NULL;
+
+    ret = &list->structures[list->count++];
+
+    vsir_cfg_structure_init(ret, type);
+
+    return ret;
+}
+
+static enum vkd3d_result vsir_cfg_structure_list_append_from_region(struct vsir_cfg_structure_list *list,
+        struct vsir_cfg_structure *begin, size_t size)
+{
+    if (!vkd3d_array_reserve((void **)&list->structures, &list->capacity, list->count + size,
+            sizeof(*list->structures)))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    memcpy(&list->structures[list->count], begin, size * sizeof(*begin));
+
+    list->count += size;
+
+    return VKD3D_OK;
+}
+
+static void vsir_cfg_structure_init(struct vsir_cfg_structure *structure, enum vsir_cfg_structure_type type)
+{
+    memset(structure, 0, sizeof(*structure));
+    structure->type = type;
+}
+
+static void vsir_cfg_structure_cleanup(struct vsir_cfg_structure *structure)
+{
+    switch (structure->type)
+    {
+        case STRUCTURE_TYPE_LOOP:
+            vsir_cfg_structure_list_cleanup(&structure->u.loop.body);
+            break;
+
+        case STRUCTURE_TYPE_SELECTION:
+            vsir_cfg_structure_list_cleanup(&structure->u.selection.if_body);
+            vsir_cfg_structure_list_cleanup(&structure->u.selection.else_body);
+            break;
+
+        default:
+            break;
+    }
+}
+
+struct vsir_cfg_emit_target
+{
+    struct vkd3d_shader_instruction *instructions;
+    size_t ins_capacity, ins_count;
+    unsigned int jump_target_temp_idx;
+    unsigned int temp_count;
+};
+
 struct vsir_cfg
 {
+    struct vkd3d_shader_message_context *message_context;
     struct vsir_program *program;
+    size_t function_begin;
+    size_t function_end;
     struct vsir_block *blocks;
     struct vsir_block *entry;
     size_t block_count;
+    struct vkd3d_string_buffer debug_buffer;
+
+    struct vsir_block_list *loops;
+    size_t loops_count, loops_capacity;
+    size_t *loops_by_header;
+
+    struct vsir_block_list order;
+    struct cfg_loop_interval
+    {
+        /* `begin' is the position of the first block of the loop in
+         * the topological sort; `end' is the position of the first
+         * block after the loop. In other words, `begin' is where a
+         * `continue' instruction would jump and `end' is where a
+         * `break' instruction would jump. */
+        unsigned int begin, end;
+        /* Each loop interval can be natural or synthetic. Natural
+         * intervals are added to represent loops given by CFG back
+         * edges. Synthetic intervals do not correspond to loops in
+         * the input CFG, but are added to leverage their `break'
+         * instruction in order to execute forward edges.
+         *
+         * For a synthetic loop interval it's not really important
+         * which one is the `begin' block, since we don't need to
+         * execute `continue' for them. So we have some leeway for
+         * moving it provided that these conditions are met: 1. the
+         * interval must contain all `break' instructions that target
+         * it, which in practice means that `begin' can be moved
+         * backward and not forward; 2. intervals must remain properly
+         * nested (for each pair of intervals, either one contains the
+         * other or they are disjoint).
+         *
+         * Subject to these conditions, we try to reuse the same loop
+         * as much as possible (if many forward edges target the same
+         * block), but we still try to keep `begin' as forward as
+         * possible, to keep the loop scope as small as possible. */
+        bool synthetic;
+        /* The number of jump instructions (both conditional and
+         * unconditional) that target this loop. */
+        unsigned int target_count;
+    } *loop_intervals;
+    size_t loop_interval_count, loop_interval_capacity;
+
+    struct vsir_cfg_structure_list structured_program;
+
+    struct vsir_cfg_emit_target *target;
 };
 
 static void vsir_cfg_cleanup(struct vsir_cfg *cfg)
@@ -3104,7 +3480,44 @@ static void vsir_cfg_cleanup(struct vsir_cfg *cfg)
     for (i = 0; i < cfg->block_count; ++i)
         vsir_block_cleanup(&cfg->blocks[i]);
 
+    for (i = 0; i < cfg->loops_count; ++i)
+        vsir_block_list_cleanup(&cfg->loops[i]);
+
+    vsir_block_list_cleanup(&cfg->order);
+
+    vsir_cfg_structure_list_cleanup(&cfg->structured_program);
+
     vkd3d_free(cfg->blocks);
+    vkd3d_free(cfg->loops);
+    vkd3d_free(cfg->loops_by_header);
+    vkd3d_free(cfg->loop_intervals);
+
+    if (TRACE_ON())
+        vkd3d_string_buffer_cleanup(&cfg->debug_buffer);
+}
+
+static enum vkd3d_result vsir_cfg_add_loop_interval(struct vsir_cfg *cfg, unsigned int begin,
+        unsigned int end, bool synthetic)
+{
+    struct cfg_loop_interval *interval;
+
+    if (!vkd3d_array_reserve((void **)&cfg->loop_intervals, &cfg->loop_interval_capacity,
+            cfg->loop_interval_count + 1, sizeof(*cfg->loop_intervals)))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    interval = &cfg->loop_intervals[cfg->loop_interval_count++];
+
+    interval->begin = begin;
+    interval->end = end;
+    interval->synthetic = synthetic;
+    interval->target_count = 0;
+
+    return VKD3D_OK;
+}
+
+static bool vsir_block_dominates(struct vsir_block *b1, struct vsir_block *b2)
+{
+    return bitmap_is_set(b1->dominates, b2->label - 1);
 }
 
 static enum vkd3d_result vsir_cfg_add_edge(struct vsir_cfg *cfg, struct vsir_block *block,
@@ -3114,7 +3527,7 @@ static enum vkd3d_result vsir_cfg_add_edge(struct vsir_cfg *cfg, struct vsir_blo
     struct vsir_block *successor = &cfg->blocks[target - 1];
     enum vkd3d_result ret;
 
-    assert(successor->label != 0);
+    VKD3D_ASSERT(successor->label != 0);
 
     if ((ret = vsir_block_list_add(&block->successors, successor)) < 0)
         return ret;
@@ -3139,7 +3552,7 @@ static void vsir_cfg_dump_dot(struct vsir_cfg *cfg)
         if (block->label == 0)
             continue;
 
-        switch (block->end->handler_idx)
+        switch (block->end->opcode)
         {
             case VKD3DSIH_RET:
                 shape = "trapezium";
@@ -3162,24 +3575,126 @@ static void vsir_cfg_dump_dot(struct vsir_cfg *cfg)
     TRACE("}\n");
 }
 
-static enum vkd3d_result vsir_cfg_init(struct vsir_cfg *cfg, struct vsir_program *program)
+static void vsir_cfg_structure_list_dump(struct vsir_cfg *cfg, struct vsir_cfg_structure_list *list);
+
+static void vsir_cfg_structure_dump(struct vsir_cfg *cfg, struct vsir_cfg_structure *structure)
+{
+    switch (structure->type)
+    {
+        case STRUCTURE_TYPE_BLOCK:
+            TRACE("%sblock %u\n", cfg->debug_buffer.buffer, structure->u.block->label);
+            break;
+
+        case STRUCTURE_TYPE_LOOP:
+            TRACE("%s%u : loop {\n", cfg->debug_buffer.buffer, structure->u.loop.idx);
+
+            vsir_cfg_structure_list_dump(cfg, &structure->u.loop.body);
+
+            TRACE("%s}  # %u%s\n", cfg->debug_buffer.buffer, structure->u.loop.idx,
+                    structure->u.loop.needs_trampoline ? ", tramp" : "");
+            break;
+
+        case STRUCTURE_TYPE_SELECTION:
+            TRACE("%sif {\n", cfg->debug_buffer.buffer);
+
+            vsir_cfg_structure_list_dump(cfg, &structure->u.selection.if_body);
+
+            if (structure->u.selection.else_body.count == 0)
+            {
+                TRACE("%s}\n", cfg->debug_buffer.buffer);
+            }
+            else
+            {
+                TRACE("%s} else {\n", cfg->debug_buffer.buffer);
+
+                vsir_cfg_structure_list_dump(cfg, &structure->u.selection.else_body);
+
+                TRACE("%s}\n", cfg->debug_buffer.buffer);
+            }
+            break;
+
+        case STRUCTURE_TYPE_JUMP:
+        {
+            const char *type_str;
+
+            switch (structure->u.jump.type)
+            {
+                case JUMP_RET:
+                    TRACE("%sret\n", cfg->debug_buffer.buffer);
+                    return;
+
+                case JUMP_BREAK:
+                    type_str = "break";
+                    break;
+
+                case JUMP_CONTINUE:
+                    type_str = "continue";
+                    break;
+
+                default:
+                    vkd3d_unreachable();
+            }
+
+            TRACE("%s%s%s %u%s\n", cfg->debug_buffer.buffer, type_str,
+                    structure->u.jump.condition ? "c" : "", structure->u.jump.target,
+                    structure->u.jump.needs_launcher ? "  # launch" : "");
+            break;
+        }
+
+        default:
+            vkd3d_unreachable();
+    }
+}
+
+static void vsir_cfg_structure_list_dump(struct vsir_cfg *cfg, struct vsir_cfg_structure_list *list)
+{
+    unsigned int i;
+
+    vkd3d_string_buffer_printf(&cfg->debug_buffer, "  ");
+
+    for (i = 0; i < list->count; ++i)
+        vsir_cfg_structure_dump(cfg, &list->structures[i]);
+
+    vkd3d_string_buffer_truncate(&cfg->debug_buffer, cfg->debug_buffer.content_size - 2);
+}
+
+static void vsir_cfg_dump_structured_program(struct vsir_cfg *cfg)
+{
+    unsigned int i;
+
+    for (i = 0; i < cfg->structured_program.count; ++i)
+        vsir_cfg_structure_dump(cfg, &cfg->structured_program.structures[i]);
+}
+
+static enum vkd3d_result vsir_cfg_init(struct vsir_cfg *cfg, struct vsir_program *program,
+        struct vkd3d_shader_message_context *message_context, struct vsir_cfg_emit_target *target,
+        size_t *pos)
 {
     struct vsir_block *current_block = NULL;
     enum vkd3d_result ret;
     size_t i;
 
     memset(cfg, 0, sizeof(*cfg));
+    cfg->message_context = message_context;
     cfg->program = program;
     cfg->block_count = program->block_count;
+    cfg->target = target;
+    cfg->function_begin = *pos;
+
+    vsir_block_list_init(&cfg->order);
 
     if (!(cfg->blocks = vkd3d_calloc(cfg->block_count, sizeof(*cfg->blocks))))
         return VKD3D_ERROR_OUT_OF_MEMORY;
 
-    for (i = 0; i < program->instructions.count; ++i)
+    if (TRACE_ON())
+        vkd3d_string_buffer_init(&cfg->debug_buffer);
+
+    for (i = *pos; i < program->instructions.count; ++i)
     {
         struct vkd3d_shader_instruction *instruction = &program->instructions.elements[i];
+        bool finish = false;
 
-        switch (instruction->handler_idx)
+        switch (instruction->opcode)
         {
             case VKD3DSIH_PHI:
             case VKD3DSIH_SWITCH_MONOLITHIC:
@@ -3189,11 +3704,11 @@ static enum vkd3d_result vsir_cfg_init(struct vsir_cfg *cfg, struct vsir_program
             {
                 unsigned int label = label_from_src_param(&instruction->src[0]);
 
-                assert(!current_block);
-                assert(label > 0);
-                assert(label <= cfg->block_count);
+                VKD3D_ASSERT(!current_block);
+                VKD3D_ASSERT(label > 0);
+                VKD3D_ASSERT(label <= cfg->block_count);
                 current_block = &cfg->blocks[label - 1];
-                assert(current_block->label == 0);
+                VKD3D_ASSERT(current_block->label == 0);
                 if ((ret = vsir_block_init(current_block, label, program->block_count)) < 0)
                     goto fail;
                 current_block->begin = &program->instructions.elements[i + 1];
@@ -3204,15 +3719,28 @@ static enum vkd3d_result vsir_cfg_init(struct vsir_cfg *cfg, struct vsir_program
 
             case VKD3DSIH_BRANCH:
             case VKD3DSIH_RET:
-                assert(current_block);
+                VKD3D_ASSERT(current_block);
                 current_block->end = instruction;
                 current_block = NULL;
+                break;
+
+            case VKD3DSIH_HS_CONTROL_POINT_PHASE:
+            case VKD3DSIH_HS_FORK_PHASE:
+            case VKD3DSIH_HS_JOIN_PHASE:
+                VKD3D_ASSERT(!current_block);
+                finish = true;
                 break;
 
             default:
                 break;
         }
+
+        if (finish)
+            break;
     }
+
+    *pos = i;
+    cfg->function_end = *pos;
 
     for (i = 0; i < cfg->block_count; ++i)
     {
@@ -3221,7 +3749,7 @@ static enum vkd3d_result vsir_cfg_init(struct vsir_cfg *cfg, struct vsir_program
         if (block->label == 0)
             continue;
 
-        switch (block->end->handler_idx)
+        switch (block->end->opcode)
         {
             case VKD3DSIH_RET:
                 break;
@@ -3269,7 +3797,7 @@ static void vsir_cfg_compute_dominators_recurse(struct vsir_block *current, stru
 {
     size_t i;
 
-    assert(current->label != 0);
+    VKD3D_ASSERT(current->label != 0);
 
     if (current == reference)
         return;
@@ -3285,11 +3813,7 @@ static void vsir_cfg_compute_dominators_recurse(struct vsir_block *current, stru
 
 static void vsir_cfg_compute_dominators(struct vsir_cfg *cfg)
 {
-    struct vkd3d_string_buffer buf;
     size_t i, j;
-
-    if (TRACE_ON())
-        vkd3d_string_buffer_init(&buf);
 
     for (i = 0; i < cfg->block_count; ++i)
     {
@@ -3302,111 +3826,1865 @@ static void vsir_cfg_compute_dominators(struct vsir_cfg *cfg)
 
         if (TRACE_ON())
         {
-            vkd3d_string_buffer_printf(&buf, "Block %u dominates:", block->label);
+            vkd3d_string_buffer_printf(&cfg->debug_buffer, "Block %u dominates:", block->label);
             for (j = 0; j < cfg->block_count; j++)
             {
                 struct vsir_block *block2 = &cfg->blocks[j];
 
-                if (block2->label == 0)
+                if (block2->label == 0 || !vsir_block_dominates(block, block2))
                     continue;
 
-                if (bitmap_is_set(block->dominates, j))
-                    vkd3d_string_buffer_printf(&buf, " %u", block2->label);
+                if (cfg->debug_buffer.content_size > 512)
+                {
+                    TRACE("%s...\n", cfg->debug_buffer.buffer);
+                    vkd3d_string_buffer_clear(&cfg->debug_buffer);
+                    vkd3d_string_buffer_printf(&cfg->debug_buffer, "Block %u dominates: ...", block->label);
+                }
+                vkd3d_string_buffer_printf(&cfg->debug_buffer, " %u", block2->label);
             }
-            TRACE("%s\n", buf.buffer);
-            vkd3d_string_buffer_clear(&buf);
+            TRACE("%s\n", cfg->debug_buffer.buffer);
+            vkd3d_string_buffer_clear(&cfg->debug_buffer);
+        }
+    }
+}
+
+/* A back edge is an edge X -> Y for which block Y dominates block
+ * X. All the other edges are forward edges, and it is required that
+ * the input CFG is reducible, i.e., it is acyclic once you strip away
+ * the back edges.
+ *
+ * Each back edge X -> Y defines a loop: block X is the header block,
+ * block Y is the back edge block, and the loop consists of all the
+ * blocks which are dominated by the header block and have a path to
+ * the back edge block that doesn't pass through the header block
+ * (including the header block itself). It can be proved that all the
+ * blocks in such a path (connecting a loop block to the back edge
+ * block without passing through the header block) belong to the same
+ * loop.
+ *
+ * If the input CFG is reducible its loops are properly nested (i.e.,
+ * each two loops are either disjoint or one is contained in the
+ * other), provided that each block has at most one incoming back
+ * edge. If this condition does not hold, a synthetic block can be
+ * introduced as the only back edge block for the given header block,
+ * with all the previous back edge now being forward edges to the
+ * synthetic block. This is not currently implemented (but it is
+ * rarely found in practice anyway). */
+static enum vkd3d_result vsir_cfg_scan_loop(struct vsir_block_list *loop, struct vsir_block *block,
+        struct vsir_block *header)
+{
+    enum vkd3d_result ret;
+    size_t i;
+
+    if ((ret = vsir_block_list_add(loop, block)) < 0)
+        return ret;
+
+    if (ret == VKD3D_FALSE || block == header)
+        return VKD3D_OK;
+
+    for (i = 0; i < block->predecessors.count; ++i)
+    {
+        if ((ret = vsir_cfg_scan_loop(loop, block->predecessors.blocks[i], header)) < 0)
+            return ret;
+    }
+
+    return VKD3D_OK;
+}
+
+static enum vkd3d_result vsir_cfg_compute_loops(struct vsir_cfg *cfg)
+{
+    size_t i, j, k;
+
+    if (!(cfg->loops_by_header = vkd3d_calloc(cfg->block_count, sizeof(*cfg->loops_by_header))))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+    memset(cfg->loops_by_header, 0xff, cfg->block_count * sizeof(*cfg->loops_by_header));
+
+    for (i = 0; i < cfg->block_count; ++i)
+    {
+        struct vsir_block *block = &cfg->blocks[i];
+
+        if (block->label == 0)
+            continue;
+
+        for (j = 0; j < block->successors.count; ++j)
+        {
+            struct vsir_block *header = block->successors.blocks[j];
+            struct vsir_block_list *loop;
+            enum vkd3d_result ret;
+
+            /* Is this a back edge? */
+            if (!vsir_block_dominates(header, block))
+                continue;
+
+            if (!vkd3d_array_reserve((void **)&cfg->loops, &cfg->loops_capacity, cfg->loops_count + 1, sizeof(*cfg->loops)))
+                return VKD3D_ERROR_OUT_OF_MEMORY;
+
+            loop = &cfg->loops[cfg->loops_count];
+            vsir_block_list_init(loop);
+
+            if ((ret = vsir_cfg_scan_loop(loop, block, header)) < 0)
+                return ret;
+
+            vsir_block_list_sort(loop);
+
+            if (TRACE_ON())
+            {
+                vkd3d_string_buffer_printf(&cfg->debug_buffer, "Back edge %u -> %u with loop:", block->label, header->label);
+
+                for (k = 0; k < loop->count; ++k)
+                {
+                    if (cfg->debug_buffer.content_size > 512)
+                    {
+                        TRACE("%s...\n", cfg->debug_buffer.buffer);
+                        vkd3d_string_buffer_clear(&cfg->debug_buffer);
+                        vkd3d_string_buffer_printf(&cfg->debug_buffer, "Back edge %u -> %u with loop: ...",
+                                block->label, header->label);
+                    }
+                    vkd3d_string_buffer_printf(&cfg->debug_buffer, " %u", loop->blocks[k]->label);
+                }
+
+                TRACE("%s\n", cfg->debug_buffer.buffer);
+                vkd3d_string_buffer_clear(&cfg->debug_buffer);
+            }
+
+            if (cfg->loops_by_header[header->label - 1] != SIZE_MAX)
+            {
+                FIXME("Block %u is header to more than one loop, this is not implemented.\n", header->label);
+                vkd3d_shader_error(cfg->message_context, &header->begin->location, VKD3D_SHADER_ERROR_VSIR_NOT_IMPLEMENTED,
+                        "Block %u is header to more than one loop, this is not implemented.", header->label);
+                return VKD3D_ERROR_NOT_IMPLEMENTED;
+            }
+
+            cfg->loops_by_header[header->label - 1] = cfg->loops_count;
+
+            ++cfg->loops_count;
         }
     }
 
-    if (TRACE_ON())
-        vkd3d_string_buffer_cleanup(&buf);
+    return VKD3D_OK;
 }
 
-enum vkd3d_result vkd3d_shader_normalise(struct vkd3d_shader_parser *parser,
-        const struct vkd3d_shader_compile_info *compile_info)
+struct vsir_cfg_node_sorter
 {
-    struct vkd3d_shader_instruction_array *instructions = &parser->program.instructions;
-    enum vkd3d_result result = VKD3D_OK;
-
-    remove_dcl_temps(&parser->program);
-
-    if ((result = instruction_array_lower_texkills(parser)) < 0)
-        return result;
-
-    if (parser->shader_desc.is_dxil)
+    struct vsir_cfg *cfg;
+    struct vsir_cfg_node_sorter_stack_item
     {
-        struct vsir_cfg cfg;
+        struct vsir_block_list *loop;
+        unsigned int seen_count;
+        unsigned int begin;
+    } *stack;
+    size_t stack_count, stack_capacity;
+    struct vsir_block_list available_blocks;
+};
 
-        if ((result = lower_switch_to_if_ladder(&parser->program)) < 0)
-            return result;
+/* Topologically sort the blocks according to the forward edges. By
+ * definition if the input CFG is reducible then its forward edges
+ * form a DAG, so a topological sorting exists. In order to compute it
+ * we keep an array with the incoming degree for each block and an
+ * available list of all the blocks whose incoming degree has reached
+ * zero. At each step we pick a block from the available list and
+ * strip it away from the graph, updating the incoming degrees and
+ * available list.
+ *
+ * In principle at each step we can pick whatever node we want from
+ * the available list, and will get a topological sort
+ * anyway. However, we use these two criteria to give to the computed
+ * order additional properties:
+ *
+ *  1. we keep track of which loops we're into, and pick blocks
+ *     belonging to the current innermost loop, so that loops are kept
+ *     contiguous in the order; this can always be done when the input
+ *     CFG is reducible;
+ *
+ *  2. subject to the requirement above, we always pick the most
+ *     recently added block to the available list, because this tends
+ *     to keep related blocks and require fewer control flow
+ *     primitives.
+ */
+static enum vkd3d_result vsir_cfg_sort_nodes(struct vsir_cfg *cfg)
+{
+    struct vsir_cfg_node_sorter sorter = { .cfg = cfg };
+    unsigned int *in_degrees = NULL;
+    enum vkd3d_result ret;
+    size_t i;
 
-        if ((result = materialize_ssas_to_temps(parser)) < 0)
-            return result;
+    if (!(in_degrees = vkd3d_calloc(cfg->block_count, sizeof(*in_degrees))))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
 
-        if ((result = vsir_cfg_init(&cfg, &parser->program)) < 0)
-            return result;
+    for (i = 0; i < cfg->block_count; ++i)
+    {
+        struct vsir_block *block = &cfg->blocks[i];
 
-        vsir_cfg_compute_dominators(&cfg);
-
-        if ((result = simple_structurizer_run(parser)) < 0)
+        if (block->label == 0)
         {
-            vsir_cfg_cleanup(&cfg);
-            return result;
+            in_degrees[i] = UINT_MAX;
+            continue;
         }
 
-        vsir_cfg_cleanup(&cfg);
+        in_degrees[i] = block->predecessors.count;
+
+        /* Do not count back edges. */
+        if (cfg->loops_by_header[i] != SIZE_MAX)
+        {
+            VKD3D_ASSERT(in_degrees[i] > 0);
+            in_degrees[i] -= 1;
+        }
+
+        if (in_degrees[i] == 0 && block != cfg->entry)
+        {
+            WARN("Unexpected entry point %u.\n", block->label);
+            vkd3d_shader_error(cfg->message_context, &block->begin->location, VKD3D_SHADER_ERROR_VSIR_INVALID_CONTROL_FLOW,
+                    "Block %u is unreachable from the entry point.", block->label);
+            ret = VKD3D_ERROR_INVALID_SHADER;
+            goto fail;
+        }
+    }
+
+    if (in_degrees[cfg->entry->label - 1] != 0)
+    {
+        WARN("Entry point has %u incoming forward edges.\n", in_degrees[cfg->entry->label - 1]);
+        vkd3d_shader_error(cfg->message_context, &cfg->entry->begin->location, VKD3D_SHADER_ERROR_VSIR_INVALID_CONTROL_FLOW,
+                "The entry point block has %u incoming forward edges.", in_degrees[cfg->entry->label - 1]);
+        ret = VKD3D_ERROR_INVALID_SHADER;
+        goto fail;
+    }
+
+    vsir_block_list_init(&sorter.available_blocks);
+
+    if ((ret = vsir_block_list_add_checked(&sorter.available_blocks, cfg->entry)) < 0)
+        goto fail;
+
+    while (sorter.available_blocks.count != 0)
+    {
+        struct vsir_cfg_node_sorter_stack_item *inner_stack_item = NULL;
+        struct vsir_block *block;
+        size_t new_seen_count;
+
+        if (sorter.stack_count != 0)
+            inner_stack_item = &sorter.stack[sorter.stack_count - 1];
+
+        for (i = sorter.available_blocks.count - 1; ; --i)
+        {
+            if (i == SIZE_MAX)
+            {
+                ERR("Couldn't find any viable next block, is the input CFG reducible?\n");
+                ret = VKD3D_ERROR_INVALID_SHADER;
+                goto fail;
+            }
+
+            block = sorter.available_blocks.blocks[i];
+
+            if (!inner_stack_item || vsir_block_list_search(inner_stack_item->loop, block))
+                break;
+        }
+
+        /* If the node is a loop header, open the loop. */
+        if (sorter.cfg->loops_by_header[block->label - 1] != SIZE_MAX)
+        {
+            struct vsir_block_list *loop = &sorter.cfg->loops[sorter.cfg->loops_by_header[block->label - 1]];
+
+            if (loop)
+            {
+                if (!vkd3d_array_reserve((void **)&sorter.stack, &sorter.stack_capacity,
+                        sorter.stack_count + 1, sizeof(*sorter.stack)))
+                    return VKD3D_ERROR_OUT_OF_MEMORY;
+
+                inner_stack_item = &sorter.stack[sorter.stack_count++];
+                inner_stack_item->loop = loop;
+                inner_stack_item->seen_count = 0;
+                inner_stack_item->begin = sorter.cfg->order.count;
+            }
+        }
+
+        vsir_block_list_remove_index(&sorter.available_blocks, i);
+        block->order_pos = cfg->order.count;
+        if ((ret = vsir_block_list_add_checked(&cfg->order, block)) < 0)
+            goto fail;
+
+        /* Close loops: since each loop is a strict subset of any
+         * outer loop, we just need to track how many blocks we've
+         * seen; when I close a loop I mark the same number of seen
+         * blocks for the next outer loop. */
+        new_seen_count = 1;
+        while (sorter.stack_count != 0)
+        {
+            inner_stack_item = &sorter.stack[sorter.stack_count - 1];
+
+            inner_stack_item->seen_count += new_seen_count;
+
+            VKD3D_ASSERT(inner_stack_item->seen_count <= inner_stack_item->loop->count);
+            if (inner_stack_item->seen_count != inner_stack_item->loop->count)
+                break;
+
+            if ((ret = vsir_cfg_add_loop_interval(cfg, inner_stack_item->begin,
+                    cfg->order.count, false)) < 0)
+                goto fail;
+
+            new_seen_count = inner_stack_item->loop->count;
+            --sorter.stack_count;
+        }
+
+        /* Remove (forward) edges and make new nodes available. */
+        for (i = 0; i < block->successors.count; ++i)
+        {
+            struct vsir_block *successor = block->successors.blocks[i];
+
+            if (vsir_block_dominates(successor, block))
+                continue;
+
+            VKD3D_ASSERT(in_degrees[successor->label - 1] > 0);
+            --in_degrees[successor->label - 1];
+
+            if (in_degrees[successor->label - 1] == 0)
+            {
+                if ((ret = vsir_block_list_add_checked(&sorter.available_blocks, successor)) < 0)
+                    goto fail;
+            }
+        }
+    }
+
+    if (cfg->order.count != cfg->block_count)
+    {
+        /* There is a cycle of forward edges. */
+        WARN("The control flow graph is not reducible.\n");
+        vkd3d_shader_error(cfg->message_context, &cfg->entry->begin->location, VKD3D_SHADER_ERROR_VSIR_INVALID_CONTROL_FLOW,
+                "The control flow graph is not reducible.");
+        ret = VKD3D_ERROR_INVALID_SHADER;
+        goto fail;
+    }
+
+    VKD3D_ASSERT(sorter.stack_count == 0);
+
+    vkd3d_free(in_degrees);
+    vkd3d_free(sorter.stack);
+    vsir_block_list_cleanup(&sorter.available_blocks);
+
+    if (TRACE_ON())
+    {
+        vkd3d_string_buffer_printf(&cfg->debug_buffer, "Block order:");
+
+        for (i = 0; i < cfg->order.count; ++i)
+        {
+            if (cfg->debug_buffer.content_size > 512)
+            {
+                TRACE("%s...\n", cfg->debug_buffer.buffer);
+                vkd3d_string_buffer_clear(&cfg->debug_buffer);
+                vkd3d_string_buffer_printf(&cfg->debug_buffer, "Block order: ...");
+            }
+            vkd3d_string_buffer_printf(&cfg->debug_buffer, " %u", cfg->order.blocks[i]->label);
+        }
+
+        TRACE("%s\n", cfg->debug_buffer.buffer);
+        vkd3d_string_buffer_clear(&cfg->debug_buffer);
+    }
+
+    return VKD3D_OK;
+
+fail:
+    vkd3d_free(in_degrees);
+    vkd3d_free(sorter.stack);
+    vsir_block_list_cleanup(&sorter.available_blocks);
+
+    return ret;
+}
+
+/* Sort loop intervals first by ascending begin time and then by
+ * descending end time, so that inner intervals appear after outer
+ * ones and disjoint intervals appear in their proper order. */
+static int compare_loop_intervals(const void *ptr1, const void *ptr2)
+{
+    const struct cfg_loop_interval *interval1 = ptr1;
+    const struct cfg_loop_interval *interval2 = ptr2;
+
+    if (interval1->begin != interval2->begin)
+        return vkd3d_u32_compare(interval1->begin, interval2->begin);
+
+    return -vkd3d_u32_compare(interval1->end, interval2->end);
+}
+
+static enum vkd3d_result vsir_cfg_generate_synthetic_loop_intervals(struct vsir_cfg *cfg)
+{
+    enum vkd3d_result ret;
+    size_t i, j, k;
+
+    for (i = 0; i < cfg->block_count; ++i)
+    {
+        struct vsir_block *block = &cfg->blocks[i];
+
+        if (block->label == 0)
+            continue;
+
+        for (j = 0; j < block->successors.count; ++j)
+        {
+            struct vsir_block *successor = block->successors.blocks[j];
+            struct cfg_loop_interval *extend = NULL;
+            unsigned int begin;
+            enum
+            {
+                ACTION_DO_NOTHING,
+                ACTION_CREATE_NEW,
+                ACTION_EXTEND,
+            } action = ACTION_CREATE_NEW;
+
+            /* We've already constructed loop intervals for the back
+             * edges, there's nothing more to do. */
+            if (vsir_block_dominates(successor, block))
+                continue;
+
+            VKD3D_ASSERT(block->order_pos < successor->order_pos);
+
+            /* Jumping from a block to the following one is always
+             * possible, so nothing to do. */
+            if (block->order_pos + 1 == successor->order_pos)
+                continue;
+
+            /* Let's look for a loop interval that already breaks at
+             * `successor' and either contains or can be extended to
+             * contain `block'. */
+            for (k = 0; k < cfg->loop_interval_count; ++k)
+            {
+                struct cfg_loop_interval *interval = &cfg->loop_intervals[k];
+
+                if (interval->end != successor->order_pos)
+                    continue;
+
+                if (interval->begin <= block->order_pos)
+                {
+                    action = ACTION_DO_NOTHING;
+                    break;
+                }
+
+                if (interval->synthetic)
+                {
+                    action = ACTION_EXTEND;
+                    extend = interval;
+                    break;
+                }
+            }
+
+            if (action == ACTION_DO_NOTHING)
+                continue;
+
+            /* Ok, we have to decide where the new or replacing
+             * interval has to begin. These are the rules: 1. it must
+             * begin before `block'; 2. intervals must be properly
+             * nested; 3. the new interval should begin as late as
+             * possible, to limit control flow depth and extension. */
+            begin = block->order_pos;
+
+            /* Our candidate interval is always [begin,
+             * successor->order_pos), and we move `begin' backward
+             * until the candidate interval contains all the intervals
+             * whose endpoint lies in the candidate interval
+             * itself. */
+            for (k = 0; k < cfg->loop_interval_count; ++k)
+            {
+                struct cfg_loop_interval *interval = &cfg->loop_intervals[k];
+
+                if (begin < interval->end && interval->end < successor->order_pos)
+                    begin = min(begin, interval->begin);
+            }
+
+            /* New we have to care about the intervals whose begin
+             * point lies in the candidate interval. We cannot move
+             * the candidate interval endpoint, because it is
+             * important that the loop break target matches
+             * `successor'. So we have to move that interval's begin
+             * point to the begin point of the candidate interval,
+             * i.e. `begin'. But what if the interval we should extend
+             * backward is not synthetic? This cannot happen,
+             * fortunately, because it would mean that there is a jump
+             * entering a loop via a block which is not the loop
+             * header, so the CFG would not be reducible. */
+            for (k = 0; k < cfg->loop_interval_count; ++k)
+            {
+                struct cfg_loop_interval *interval = &cfg->loop_intervals[k];
+
+                if (interval->begin < successor->order_pos && successor->order_pos < interval->end)
+                {
+                    if (interval->synthetic)
+                        interval->begin = min(begin, interval->begin);
+                    VKD3D_ASSERT(begin >= interval->begin);
+                }
+            }
+
+            if (action == ACTION_EXTEND)
+                extend->begin = begin;
+            else if ((ret = vsir_cfg_add_loop_interval(cfg, begin, successor->order_pos, true)) < 0)
+                return ret;
+        }
+    }
+
+    qsort(cfg->loop_intervals, cfg->loop_interval_count, sizeof(*cfg->loop_intervals), compare_loop_intervals);
+
+    if (TRACE_ON())
+        for (i = 0; i < cfg->loop_interval_count; ++i)
+            TRACE("%s loop interval %u - %u\n", cfg->loop_intervals[i].synthetic ? "Synthetic" : "Natural",
+                    cfg->loop_intervals[i].begin, cfg->loop_intervals[i].end);
+
+    return VKD3D_OK;
+}
+
+struct vsir_cfg_edge_action
+{
+    enum vsir_cfg_jump_type jump_type;
+    unsigned int target;
+    struct vsir_block *successor;
+};
+
+static void vsir_cfg_compute_edge_action(struct vsir_cfg *cfg, struct vsir_block *block,
+        struct vsir_block *successor, struct vsir_cfg_edge_action *action)
+{
+    unsigned int i;
+
+    action->target = UINT_MAX;
+    action->successor = successor;
+
+    if (successor->order_pos <= block->order_pos)
+    {
+        /* The successor is before the current block, so we have to
+         * use `continue'. The target loop is the innermost that
+         * contains the current block and has the successor as
+         * `continue' target. */
+        for (i = 0; i < cfg->loop_interval_count; ++i)
+        {
+            struct cfg_loop_interval *interval = &cfg->loop_intervals[i];
+
+            if (interval->begin == successor->order_pos && block->order_pos < interval->end)
+                action->target = i;
+
+            if (interval->begin > successor->order_pos)
+                break;
+        }
+
+        VKD3D_ASSERT(action->target != UINT_MAX);
+        action->jump_type = JUMP_CONTINUE;
     }
     else
     {
-        if (parser->program.shader_version.type != VKD3D_SHADER_TYPE_PIXEL)
+        /* The successor is after the current block, so we have to use
+         * `break', or possibly just jump to the following block. The
+         * target loop is the outermost that contains the current
+         * block and has the successor as `break' target. */
+        for (i = 0; i < cfg->loop_interval_count; ++i)
         {
-            if ((result = remap_output_signature(parser, compile_info)) < 0)
-                return result;
+            struct cfg_loop_interval *interval = &cfg->loop_intervals[i];
+
+            if (interval->begin <= block->order_pos && interval->end == successor->order_pos)
+            {
+                action->target = i;
+                break;
+            }
         }
 
-        if (parser->program.shader_version.type == VKD3D_SHADER_TYPE_HULL)
+        if (action->target == UINT_MAX)
         {
-            if ((result = instruction_array_flatten_hull_shader_phases(instructions)) < 0)
-                return result;
+            VKD3D_ASSERT(successor->order_pos == block->order_pos + 1);
+            action->jump_type = JUMP_NONE;
+        }
+        else
+        {
+            action->jump_type = JUMP_BREAK;
+        }
+    }
+}
 
-            if ((result = instruction_array_normalise_hull_shader_control_point_io(instructions,
-                    &parser->shader_desc.input_signature)) < 0)
-                return result;
+static enum vkd3d_result vsir_cfg_build_structured_program(struct vsir_cfg *cfg)
+{
+    unsigned int i, stack_depth = 1, open_interval_idx = 0;
+    struct vsir_cfg_structure_list **stack = NULL;
+
+    /* It's enough to allocate up to the maximum interval stacking
+     * depth (plus one for the full program), but this is simpler. */
+    if (!(stack = vkd3d_calloc(cfg->loop_interval_count + 1, sizeof(*stack))))
+        goto fail;
+    cfg->structured_program.end = cfg->order.count;
+    stack[0] = &cfg->structured_program;
+
+    for (i = 0; i < cfg->order.count; ++i)
+    {
+        struct vsir_block *block = cfg->order.blocks[i];
+        struct vsir_cfg_structure *structure;
+
+        VKD3D_ASSERT(stack_depth > 0);
+
+        /* Open loop intervals. */
+        while (open_interval_idx < cfg->loop_interval_count)
+        {
+            struct cfg_loop_interval *interval = &cfg->loop_intervals[open_interval_idx];
+
+            if (interval->begin != i)
+                break;
+
+            if (!(structure = vsir_cfg_structure_list_append(stack[stack_depth - 1], STRUCTURE_TYPE_LOOP)))
+                goto fail;
+            structure->u.loop.idx = open_interval_idx++;
+
+            structure->u.loop.body.end = interval->end;
+            stack[stack_depth++] = &structure->u.loop.body;
         }
 
-        if ((result = shader_normalise_io_registers(parser)) < 0)
-            return result;
+        /* Execute the block. */
+        if (!(structure = vsir_cfg_structure_list_append(stack[stack_depth - 1], STRUCTURE_TYPE_BLOCK)))
+            goto fail;
+        structure->u.block = block;
 
-        if ((result = instruction_array_normalise_flat_constants(&parser->program)) < 0)
-            return result;
+        /* Generate between zero and two jump instructions. */
+        switch (block->end->opcode)
+        {
+            case VKD3DSIH_BRANCH:
+            {
+                struct vsir_cfg_edge_action action_true, action_false;
+                bool invert_condition = false;
 
-        remove_dead_code(&parser->program);
+                if (vsir_register_is_label(&block->end->src[0].reg))
+                {
+                    unsigned int target = label_from_src_param(&block->end->src[0]);
+                    struct vsir_block *successor = &cfg->blocks[target - 1];
 
-        if ((result = normalise_combined_samplers(parser)) < 0)
-            return result;
+                    vsir_cfg_compute_edge_action(cfg, block, successor, &action_true);
+                    action_false = action_true;
+                }
+                else
+                {
+                    unsigned int target = label_from_src_param(&block->end->src[1]);
+                    struct vsir_block *successor = &cfg->blocks[target - 1];
+
+                    vsir_cfg_compute_edge_action(cfg, block, successor, &action_true);
+
+                    target = label_from_src_param(&block->end->src[2]);
+                    successor = &cfg->blocks[target - 1];
+
+                    vsir_cfg_compute_edge_action(cfg, block, successor, &action_false);
+                }
+
+                /* This will happen if the branch is unconditional,
+                 * but also if it's conditional with the same target
+                 * in both branches, which can happen in some corner
+                 * cases, e.g. when converting switch instructions to
+                 * selection ladders. */
+                if (action_true.successor == action_false.successor)
+                {
+                    VKD3D_ASSERT(action_true.jump_type == action_false.jump_type);
+                }
+                else
+                {
+                    /* At most one branch can just fall through to the
+                     * next block, in which case we make sure it's the
+                     * false branch. */
+                    if (action_true.jump_type == JUMP_NONE)
+                    {
+                        invert_condition = true;
+                    }
+                    else if (stack_depth >= 2)
+                    {
+                        struct vsir_cfg_structure_list *inner_loop_frame = stack[stack_depth - 2];
+                        struct vsir_cfg_structure *inner_loop = &inner_loop_frame->structures[inner_loop_frame->count - 1];
+
+                        VKD3D_ASSERT(inner_loop->type == STRUCTURE_TYPE_LOOP);
+
+                        /* Otherwise, if one of the branches is
+                         * continue-ing the inner loop we're inside,
+                         * make sure it's the false branch (because it
+                         * will be optimized out later). */
+                        if (action_true.jump_type == JUMP_CONTINUE && action_true.target == inner_loop->u.loop.idx)
+                            invert_condition = true;
+                    }
+
+                    if (invert_condition)
+                    {
+                        struct vsir_cfg_edge_action tmp = action_true;
+                        action_true = action_false;
+                        action_false = tmp;
+                    }
+
+                    VKD3D_ASSERT(action_true.jump_type != JUMP_NONE);
+
+                    if (!(structure = vsir_cfg_structure_list_append(stack[stack_depth - 1], STRUCTURE_TYPE_JUMP)))
+                        goto fail;
+                    structure->u.jump.type = action_true.jump_type;
+                    structure->u.jump.target = action_true.target;
+                    structure->u.jump.condition = &block->end->src[0];
+                    structure->u.jump.invert_condition = invert_condition;
+                }
+
+                if (action_false.jump_type != JUMP_NONE)
+                {
+                    if (!(structure = vsir_cfg_structure_list_append(stack[stack_depth - 1], STRUCTURE_TYPE_JUMP)))
+                        goto fail;
+                    structure->u.jump.type = action_false.jump_type;
+                    structure->u.jump.target = action_false.target;
+                }
+                break;
+            }
+
+            case VKD3DSIH_RET:
+                if (!(structure = vsir_cfg_structure_list_append(stack[stack_depth - 1], STRUCTURE_TYPE_JUMP)))
+                    goto fail;
+                structure->u.jump.type = JUMP_RET;
+                break;
+
+            default:
+                vkd3d_unreachable();
+        }
+
+        /* Close loop intervals. */
+        while (stack_depth > 0)
+        {
+            if (stack[stack_depth - 1]->end != i + 1)
+                break;
+
+            --stack_depth;
+        }
     }
 
-    if ((result = flatten_control_flow_constructs(parser)) < 0)
-        return result;
+    VKD3D_ASSERT(stack_depth == 0);
+    VKD3D_ASSERT(open_interval_idx == cfg->loop_interval_count);
 
     if (TRACE_ON())
-        vkd3d_shader_trace(&parser->program);
+        vsir_cfg_dump_structured_program(cfg);
 
-    if (!parser->failed && (result = vsir_validate(parser)) < 0)
-        return result;
+    vkd3d_free(stack);
 
-    if (parser->failed)
-        result = VKD3D_ERROR_INVALID_SHADER;
+    return VKD3D_OK;
 
-    return result;
+fail:
+    vkd3d_free(stack);
+
+    return VKD3D_ERROR_OUT_OF_MEMORY;
+}
+
+static void vsir_cfg_remove_trailing_continue(struct vsir_cfg *cfg,
+        struct vsir_cfg_structure_list *list, unsigned int target)
+{
+    struct vsir_cfg_structure *last = &list->structures[list->count - 1];
+
+    if (last->type == STRUCTURE_TYPE_JUMP && last->u.jump.type == JUMP_CONTINUE
+            && !last->u.jump.condition && last->u.jump.target == target)
+    {
+        --list->count;
+        VKD3D_ASSERT(cfg->loop_intervals[target].target_count > 0);
+        --cfg->loop_intervals[target].target_count;
+    }
+}
+
+static struct vsir_cfg_structure *vsir_cfg_get_trailing_break(struct vsir_cfg_structure_list *list)
+{
+    struct vsir_cfg_structure *structure;
+    size_t count = list->count;
+
+    if (count == 0)
+        return NULL;
+
+    structure = &list->structures[count - 1];
+
+    if (structure->type != STRUCTURE_TYPE_JUMP || structure->u.jump.type != JUMP_BREAK
+            || structure->u.jump.condition)
+        return NULL;
+
+    return structure;
+}
+
+/* When the last instruction in both branches of a selection construct
+ * is an unconditional break, any of them can be moved after the
+ * selection construct. If they break the same loop both of them can
+ * be moved out, otherwise we can choose which one: we choose the one
+ * that breaks the innermost loop, because we hope to eventually
+ * remove the loop itself.
+ *
+ * In principle a similar movement could be done when the last
+ * instructions are continue and continue, or continue and break. But
+ * in practice I don't think those situations can happen given the
+ * previous passes we do on the program, so we don't care. */
+static enum vkd3d_result vsir_cfg_move_breaks_out_of_selections(struct vsir_cfg *cfg,
+        struct vsir_cfg_structure_list *list)
+{
+    struct vsir_cfg_structure *selection, *if_break, *else_break, *new_break;
+    unsigned int if_target, else_target, max_target;
+    size_t pos = list->count - 1;
+
+    selection = &list->structures[pos];
+    VKD3D_ASSERT(selection->type == STRUCTURE_TYPE_SELECTION);
+
+    if_break = vsir_cfg_get_trailing_break(&selection->u.selection.if_body);
+    else_break = vsir_cfg_get_trailing_break(&selection->u.selection.else_body);
+
+    if (!if_break || !else_break)
+        return VKD3D_OK;
+
+    if_target = if_break->u.jump.target;
+    else_target = else_break->u.jump.target;
+    max_target = max(if_target, else_target);
+
+    if (!(new_break = vsir_cfg_structure_list_append(list, STRUCTURE_TYPE_JUMP)))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+    new_break->u.jump.type = JUMP_BREAK;
+    new_break->u.jump.target = max_target;
+    ++cfg->loop_intervals[max_target].target_count;
+
+    /* Pointer `selection' could have been invalidated by the append
+     * operation. */
+    selection = &list->structures[pos];
+    VKD3D_ASSERT(selection->type == STRUCTURE_TYPE_SELECTION);
+
+    if (if_target == max_target)
+    {
+        --selection->u.selection.if_body.count;
+        VKD3D_ASSERT(cfg->loop_intervals[if_target].target_count > 0);
+        --cfg->loop_intervals[if_target].target_count;
+    }
+
+    if (else_target == max_target)
+    {
+        --selection->u.selection.else_body.count;
+        VKD3D_ASSERT(cfg->loop_intervals[else_target].target_count > 0);
+        --cfg->loop_intervals[else_target].target_count;
+    }
+
+    /* If a branch becomes empty, make it the else branch, so we save a block. */
+    if (selection->u.selection.if_body.count == 0)
+    {
+        struct vsir_cfg_structure_list tmp;
+
+        selection->u.selection.invert_condition = !selection->u.selection.invert_condition;
+        tmp = selection->u.selection.if_body;
+        selection->u.selection.if_body = selection->u.selection.else_body;
+        selection->u.selection.else_body = tmp;
+    }
+
+    return VKD3D_OK;
+}
+
+static enum vkd3d_result vsir_cfg_move_breaks_out_of_selections_recursively(struct vsir_cfg *cfg,
+        struct vsir_cfg_structure_list *list)
+{
+    struct vsir_cfg_structure *trailing;
+
+    if (list->count == 0)
+        return VKD3D_OK;
+
+    trailing = &list->structures[list->count - 1];
+
+    if (trailing->type != STRUCTURE_TYPE_SELECTION)
+        return VKD3D_OK;
+
+    vsir_cfg_move_breaks_out_of_selections_recursively(cfg, &trailing->u.selection.if_body);
+    vsir_cfg_move_breaks_out_of_selections_recursively(cfg, &trailing->u.selection.else_body);
+
+    return vsir_cfg_move_breaks_out_of_selections(cfg, list);
+}
+
+static enum vkd3d_result vsir_cfg_synthesize_selections(struct vsir_cfg *cfg,
+        struct vsir_cfg_structure_list *list)
+{
+    enum vkd3d_result ret;
+    size_t i;
+
+    for (i = 0; i < list->count; ++i)
+    {
+        struct vsir_cfg_structure *structure = &list->structures[i], new_selection, *new_jump;
+
+        if (structure->type != STRUCTURE_TYPE_JUMP || !structure->u.jump.condition)
+            continue;
+
+        vsir_cfg_structure_init(&new_selection, STRUCTURE_TYPE_SELECTION);
+        new_selection.u.selection.condition = structure->u.jump.condition;
+        new_selection.u.selection.invert_condition = structure->u.jump.invert_condition;
+
+        if (!(new_jump = vsir_cfg_structure_list_append(&new_selection.u.selection.if_body,
+                STRUCTURE_TYPE_JUMP)))
+            return VKD3D_ERROR_OUT_OF_MEMORY;
+        new_jump->u.jump.type = structure->u.jump.type;
+        new_jump->u.jump.target = structure->u.jump.target;
+
+        /* Move the rest of the structure list in the else branch
+         * rather than leaving it after the selection construct. The
+         * reason is that this is more conducive to further
+         * optimization, because all the conditional `break's appear
+         * as the last instruction of a branch of a cascade of
+         * selection constructs at the end of the structure list we're
+         * processing, instead of being buried in the middle of the
+         * structure list itself. */
+        if ((ret = vsir_cfg_structure_list_append_from_region(&new_selection.u.selection.else_body,
+                &list->structures[i + 1], list->count - i - 1)) < 0)
+            return ret;
+
+        *structure = new_selection;
+        list->count = i + 1;
+
+        if ((ret = vsir_cfg_synthesize_selections(cfg, &structure->u.selection.else_body)) < 0)
+            return ret;
+
+        if ((ret = vsir_cfg_move_breaks_out_of_selections(cfg, list)) < 0)
+            return ret;
+
+        break;
+    }
+
+    return VKD3D_OK;
+}
+
+static enum vkd3d_result vsir_cfg_append_loop(struct vsir_cfg *cfg,
+        struct vsir_cfg_structure_list *new_list, struct vsir_cfg_structure *loop)
+{
+    struct vsir_cfg_structure_list *loop_body = &loop->u.loop.body;
+    unsigned int target, loop_idx = loop->u.loop.idx;
+    struct vsir_cfg_structure *trailing_break;
+    enum vkd3d_result ret;
+
+    trailing_break = vsir_cfg_get_trailing_break(loop_body);
+
+    /* If the loop's last instruction is not a break, we cannot remove
+     * the loop itself. */
+    if (!trailing_break)
+    {
+        if ((ret = vsir_cfg_structure_list_append_from_region(new_list, loop, 1)) < 0)
+            return ret;
+        memset(loop, 0, sizeof(*loop));
+        return VKD3D_OK;
+    }
+
+    target = trailing_break->u.jump.target;
+    VKD3D_ASSERT(cfg->loop_intervals[target].target_count > 0);
+
+    /* If the loop is not targeted by any jump, we can remove it. The
+     * trailing `break' then targets another loop, so we have to keep
+     * it. */
+    if (cfg->loop_intervals[loop_idx].target_count == 0)
+    {
+        if ((ret = vsir_cfg_structure_list_append_from_region(new_list,
+                &loop_body->structures[0], loop_body->count)) < 0)
+            return ret;
+        loop_body->count = 0;
+        return VKD3D_OK;
+    }
+
+    /* If the loop is targeted only by its own trailing `break'
+     * instruction, then we can remove it together with the `break'
+     * itself. */
+    if (target == loop_idx && cfg->loop_intervals[loop_idx].target_count == 1)
+    {
+        --cfg->loop_intervals[loop_idx].target_count;
+        if ((ret = vsir_cfg_structure_list_append_from_region(new_list,
+                &loop_body->structures[0], loop_body->count - 1)) < 0)
+            return ret;
+        loop_body->count = 0;
+        return VKD3D_OK;
+    }
+
+    if ((ret = vsir_cfg_structure_list_append_from_region(new_list, loop, 1)) < 0)
+        return ret;
+    memset(loop, 0, sizeof(*loop));
+
+    return VKD3D_OK;
+}
+
+static enum vkd3d_result vsir_cfg_optimize_recurse(struct vsir_cfg *cfg, struct vsir_cfg_structure_list *list)
+{
+    struct vsir_cfg_structure_list old_list = *list, *new_list = list;
+    enum vkd3d_result ret;
+    size_t i;
+
+    memset(new_list, 0, sizeof(*new_list));
+
+    for (i = 0; i < old_list.count; ++i)
+    {
+        struct vsir_cfg_structure *loop = &old_list.structures[i], *selection;
+        struct vsir_cfg_structure_list *loop_body;
+
+        if (loop->type != STRUCTURE_TYPE_LOOP)
+        {
+            if ((ret = vsir_cfg_structure_list_append_from_region(new_list, loop, 1)) < 0)
+                goto out;
+            memset(loop, 0, sizeof(*loop));
+            continue;
+        }
+
+        loop_body = &loop->u.loop.body;
+
+        if (loop_body->count == 0)
+        {
+            if ((ret = vsir_cfg_structure_list_append_from_region(new_list, loop, 1)) < 0)
+                goto out;
+            memset(loop, 0, sizeof(*loop));
+            continue;
+        }
+
+        vsir_cfg_remove_trailing_continue(cfg, loop_body, loop->u.loop.idx);
+
+        if ((ret = vsir_cfg_optimize_recurse(cfg, loop_body)) < 0)
+            goto out;
+
+        if ((ret = vsir_cfg_synthesize_selections(cfg, loop_body)) < 0)
+            goto out;
+
+        if ((ret = vsir_cfg_append_loop(cfg, new_list, loop)) < 0)
+            goto out;
+
+        /* If the last pushed instruction is a selection and one of the branches terminates with a
+         * `break', start pushing to the other branch, in the hope of eventually push a `break'
+         * there too and be able to remove a loop. */
+        if (new_list->count == 0)
+            continue;
+
+        selection = &new_list->structures[new_list->count - 1];
+
+        if (selection->type == STRUCTURE_TYPE_SELECTION)
+        {
+            if (vsir_cfg_get_trailing_break(&selection->u.selection.if_body))
+                new_list = &selection->u.selection.else_body;
+            else if (vsir_cfg_get_trailing_break(&selection->u.selection.else_body))
+                new_list = &selection->u.selection.if_body;
+        }
+    }
+
+    ret = vsir_cfg_move_breaks_out_of_selections_recursively(cfg, list);
+
+out:
+    vsir_cfg_structure_list_cleanup(&old_list);
+
+    return ret;
+}
+
+static void vsir_cfg_count_targets(struct vsir_cfg *cfg, struct vsir_cfg_structure_list *list)
+{
+    size_t i;
+
+    for (i = 0; i < list->count; ++i)
+    {
+        struct vsir_cfg_structure *structure = &list->structures[i];
+
+        switch (structure->type)
+        {
+            case STRUCTURE_TYPE_BLOCK:
+                break;
+
+            case STRUCTURE_TYPE_LOOP:
+                vsir_cfg_count_targets(cfg, &structure->u.loop.body);
+                break;
+
+            case STRUCTURE_TYPE_SELECTION:
+                vsir_cfg_count_targets(cfg, &structure->u.selection.if_body);
+                vsir_cfg_count_targets(cfg, &structure->u.selection.else_body);
+                break;
+
+            case STRUCTURE_TYPE_JUMP:
+                if (structure->u.jump.type == JUMP_BREAK || structure->u.jump.type == JUMP_CONTINUE)
+                    ++cfg->loop_intervals[structure->u.jump.target].target_count;
+                break;
+        }
+    }
+}
+
+/* Trampolines are code gadgets used to emulate multilevel jumps (which are not natively supported
+ * by SPIR-V). A trampoline is inserted just after a loop and checks whether control has reached the
+ * intended site (i.e., we just jumped out of the target block) or if other levels of jumping are
+ * needed. For each jump a trampoline is required for all the loops between the jump itself and the
+ * target loop, excluding the target loop itself. */
+static void vsir_cfg_mark_trampolines(struct vsir_cfg *cfg, struct vsir_cfg_structure_list *list,
+        struct vsir_cfg_structure *loop)
+{
+    size_t i;
+
+    for (i = 0; i < list->count; ++i)
+    {
+        struct vsir_cfg_structure *structure = &list->structures[i];
+
+        switch (structure->type)
+        {
+            case STRUCTURE_TYPE_BLOCK:
+                break;
+
+            case STRUCTURE_TYPE_LOOP:
+                structure->u.loop.outer_loop = loop;
+                vsir_cfg_mark_trampolines(cfg, &structure->u.loop.body, structure);
+                break;
+
+            case STRUCTURE_TYPE_SELECTION:
+                vsir_cfg_mark_trampolines(cfg, &structure->u.selection.if_body, loop);
+                vsir_cfg_mark_trampolines(cfg, &structure->u.selection.else_body, loop);
+                break;
+
+            case STRUCTURE_TYPE_JUMP:
+            {
+                struct vsir_cfg_structure *l;
+                if (structure->u.jump.type != JUMP_BREAK && structure->u.jump.type != JUMP_CONTINUE)
+                    break;
+                for (l = loop; l && l->u.loop.idx != structure->u.jump.target; l = l->u.loop.outer_loop)
+                {
+                    VKD3D_ASSERT(l->type == STRUCTURE_TYPE_LOOP);
+                    l->u.loop.needs_trampoline = true;
+                }
+                break;
+            }
+        }
+    }
+}
+
+/* Launchers are the counterpart of trampolines. A launcher is inserted just before a jump, and
+ * writes in a well-known variable what is the target of the jump. Trampolines will then read that
+ * variable to decide how to redirect the jump to its intended target. A launcher is needed each
+ * time the innermost loop containing the jump itself has a trampoline (independently of whether the
+ * jump is targeting that loop or not). */
+static void vsir_cfg_mark_launchers(struct vsir_cfg *cfg, struct vsir_cfg_structure_list *list,
+        struct vsir_cfg_structure *loop)
+{
+    size_t i;
+
+    for (i = 0; i < list->count; ++i)
+    {
+        struct vsir_cfg_structure *structure = &list->structures[i];
+
+        switch (structure->type)
+        {
+            case STRUCTURE_TYPE_BLOCK:
+                break;
+
+            case STRUCTURE_TYPE_LOOP:
+                vsir_cfg_mark_launchers(cfg, &structure->u.loop.body, structure);
+                break;
+
+            case STRUCTURE_TYPE_SELECTION:
+                vsir_cfg_mark_launchers(cfg, &structure->u.selection.if_body, loop);
+                vsir_cfg_mark_launchers(cfg, &structure->u.selection.else_body, loop);
+                break;
+
+            case STRUCTURE_TYPE_JUMP:
+                if (structure->u.jump.type != JUMP_BREAK && structure->u.jump.type != JUMP_CONTINUE)
+                    break;
+                VKD3D_ASSERT(loop && loop->type == STRUCTURE_TYPE_LOOP);
+                if (loop->u.loop.needs_trampoline)
+                    structure->u.jump.needs_launcher = true;
+                break;
+        }
+    }
+}
+
+static enum vkd3d_result vsir_cfg_optimize(struct vsir_cfg *cfg)
+{
+    enum vkd3d_result ret;
+
+    vsir_cfg_count_targets(cfg, &cfg->structured_program);
+
+    ret = vsir_cfg_optimize_recurse(cfg, &cfg->structured_program);
+
+    /* Trampolines and launchers cannot be marked with the same pass,
+     * because a jump might have to be marked as launcher even when it
+     * targets its innermost loop, if other jumps in the same loop
+     * need a trampoline anyway. So launchers can be discovered only
+     * once all the trampolines are known. */
+    vsir_cfg_mark_trampolines(cfg, &cfg->structured_program, NULL);
+    vsir_cfg_mark_launchers(cfg, &cfg->structured_program, NULL);
+
+    if (TRACE_ON())
+        vsir_cfg_dump_structured_program(cfg);
+
+    return ret;
+}
+
+static enum vkd3d_result vsir_cfg_structure_list_emit(struct vsir_cfg *cfg,
+        struct vsir_cfg_structure_list *list, unsigned int loop_idx);
+
+static enum vkd3d_result vsir_cfg_structure_list_emit_block(struct vsir_cfg *cfg,
+        struct vsir_block *block)
+{
+    struct vsir_cfg_emit_target *target = cfg->target;
+
+    if (!reserve_instructions(&target->instructions, &target->ins_capacity,
+            target->ins_count + (block->end - block->begin)))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    memcpy(&target->instructions[target->ins_count], block->begin,
+            (char *)block->end - (char *)block->begin);
+
+    target->ins_count += block->end - block->begin;
+
+    return VKD3D_OK;
+}
+
+static enum vkd3d_result vsir_cfg_structure_list_emit_loop(struct vsir_cfg *cfg,
+        struct vsir_cfg_structure_loop *loop, unsigned int loop_idx)
+{
+    struct vsir_cfg_emit_target *target = cfg->target;
+    const struct vkd3d_shader_location no_loc = {0};
+    enum vkd3d_result ret;
+
+    if (!reserve_instructions(&target->instructions, &target->ins_capacity, target->ins_count + 1))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    vsir_instruction_init(&target->instructions[target->ins_count++], &no_loc, VKD3DSIH_LOOP);
+
+    if ((ret = vsir_cfg_structure_list_emit(cfg, &loop->body, loop->idx)) < 0)
+        return ret;
+
+    if (!reserve_instructions(&target->instructions, &target->ins_capacity, target->ins_count + 5))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    vsir_instruction_init(&target->instructions[target->ins_count++], &no_loc, VKD3DSIH_ENDLOOP);
+
+    /* Add a trampoline to implement multilevel jumping depending on the stored
+     * jump_target value. */
+    if (loop->needs_trampoline)
+    {
+        /* If the multilevel jump is a `continue' and the target is the loop we're inside
+         * right now, then we can finally do the `continue'. */
+        const unsigned int outer_continue_target = loop_idx << 1 | 1;
+        /* If the multilevel jump is a `continue' to any other target, or if it is a `break'
+         * and the target is not the loop we just finished emitting, then it means that
+         * we have to reach an outer loop, so we keep breaking. */
+        const unsigned int inner_break_target = loop->idx << 1;
+
+        if (!vsir_instruction_init_with_params(cfg->program, &target->instructions[target->ins_count],
+                &no_loc, VKD3DSIH_IEQ, 1, 2))
+            return VKD3D_ERROR_OUT_OF_MEMORY;
+
+        dst_param_init_temp_bool(&target->instructions[target->ins_count].dst[0], target->temp_count);
+        src_param_init_temp_uint(&target->instructions[target->ins_count].src[0], target->jump_target_temp_idx);
+        src_param_init_const_uint(&target->instructions[target->ins_count].src[1], outer_continue_target);
+
+        ++target->ins_count;
+
+        if (!vsir_instruction_init_with_params(cfg->program, &target->instructions[target->ins_count],
+                &no_loc, VKD3DSIH_CONTINUEP, 0, 1))
+            return VKD3D_ERROR_OUT_OF_MEMORY;
+
+        src_param_init_temp_bool(&target->instructions[target->ins_count].src[0], target->temp_count);
+
+        ++target->ins_count;
+        ++target->temp_count;
+
+        if (!vsir_instruction_init_with_params(cfg->program, &target->instructions[target->ins_count],
+                &no_loc, VKD3DSIH_IEQ, 1, 2))
+            return VKD3D_ERROR_OUT_OF_MEMORY;
+
+        dst_param_init_temp_bool(&target->instructions[target->ins_count].dst[0], target->temp_count);
+        src_param_init_temp_uint(&target->instructions[target->ins_count].src[0], target->jump_target_temp_idx);
+        src_param_init_const_uint(&target->instructions[target->ins_count].src[1], inner_break_target);
+
+        ++target->ins_count;
+
+        if (!vsir_instruction_init_with_params(cfg->program, &target->instructions[target->ins_count],
+                &no_loc, VKD3DSIH_BREAKP, 0, 1))
+            return VKD3D_ERROR_OUT_OF_MEMORY;
+        target->instructions[target->ins_count].flags |= VKD3D_SHADER_CONDITIONAL_OP_Z;
+
+        src_param_init_temp_bool(&target->instructions[target->ins_count].src[0], target->temp_count);
+
+        ++target->ins_count;
+        ++target->temp_count;
+    }
+
+    return VKD3D_OK;
+}
+
+static enum vkd3d_result vsir_cfg_structure_list_emit_selection(struct vsir_cfg *cfg,
+        struct vsir_cfg_structure_selection *selection, unsigned int loop_idx)
+{
+    struct vsir_cfg_emit_target *target = cfg->target;
+    const struct vkd3d_shader_location no_loc = {0};
+    enum vkd3d_result ret;
+
+    if (!reserve_instructions(&target->instructions, &target->ins_capacity, target->ins_count + 1))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    if (!vsir_instruction_init_with_params(cfg->program, &target->instructions[target->ins_count],
+            &no_loc, VKD3DSIH_IF, 0, 1))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    target->instructions[target->ins_count].src[0] = *selection->condition;
+
+    if (selection->invert_condition)
+        target->instructions[target->ins_count].flags |= VKD3D_SHADER_CONDITIONAL_OP_Z;
+
+    ++target->ins_count;
+
+    if ((ret = vsir_cfg_structure_list_emit(cfg, &selection->if_body, loop_idx)) < 0)
+        return ret;
+
+    if (selection->else_body.count != 0)
+    {
+        if (!reserve_instructions(&target->instructions, &target->ins_capacity, target->ins_count + 1))
+            return VKD3D_ERROR_OUT_OF_MEMORY;
+
+        vsir_instruction_init(&target->instructions[target->ins_count++], &no_loc, VKD3DSIH_ELSE);
+
+        if ((ret = vsir_cfg_structure_list_emit(cfg, &selection->else_body, loop_idx)) < 0)
+            return ret;
+    }
+
+    if (!reserve_instructions(&target->instructions, &target->ins_capacity, target->ins_count + 1))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    vsir_instruction_init(&target->instructions[target->ins_count++], &no_loc, VKD3DSIH_ENDIF);
+
+    return VKD3D_OK;
+}
+
+static enum vkd3d_result vsir_cfg_structure_list_emit_jump(struct vsir_cfg *cfg,
+        struct vsir_cfg_structure_jump *jump, unsigned int loop_idx)
+{
+    struct vsir_cfg_emit_target *target = cfg->target;
+    const struct vkd3d_shader_location no_loc = {0};
+    /* Encode the jump target as the loop index plus a bit to remember whether
+     * we're breaking or continue-ing. */
+    unsigned int jump_target = jump->target << 1;
+    enum vkd3d_shader_opcode opcode;
+
+    switch (jump->type)
+    {
+        case JUMP_CONTINUE:
+            /* If we're continue-ing the loop we're directly inside, then we can emit a
+             * `continue'. Otherwise we first have to break all the loops between here
+             * and the loop to continue, recording our intention to continue
+             * in the lowest bit of jump_target. */
+            if (jump->target == loop_idx)
+            {
+                opcode = jump->condition ? VKD3DSIH_CONTINUEP : VKD3DSIH_CONTINUE;
+                break;
+            }
+            jump_target |= 1;
+            /* fall through */
+
+        case JUMP_BREAK:
+            opcode = jump->condition ? VKD3DSIH_BREAKP : VKD3DSIH_BREAK;
+            break;
+
+        case JUMP_RET:
+            VKD3D_ASSERT(!jump->condition);
+            opcode = VKD3DSIH_RET;
+            break;
+
+        default:
+            vkd3d_unreachable();
+    }
+
+    if (!reserve_instructions(&target->instructions, &target->ins_capacity, target->ins_count + 2))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    if (jump->needs_launcher)
+    {
+        if (!vsir_instruction_init_with_params(cfg->program, &target->instructions[target->ins_count],
+                &no_loc, VKD3DSIH_MOV, 1, 1))
+            return VKD3D_ERROR_OUT_OF_MEMORY;
+
+        dst_param_init_temp_uint(&target->instructions[target->ins_count].dst[0], target->jump_target_temp_idx);
+        src_param_init_const_uint(&target->instructions[target->ins_count].src[0], jump_target);
+
+        ++target->ins_count;
+    }
+
+    if (!vsir_instruction_init_with_params(cfg->program, &target->instructions[target->ins_count],
+            &no_loc, opcode, 0, !!jump->condition))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    if (jump->invert_condition)
+        target->instructions[target->ins_count].flags |= VKD3D_SHADER_CONDITIONAL_OP_Z;
+
+    if (jump->condition)
+        target->instructions[target->ins_count].src[0] = *jump->condition;
+
+    ++target->ins_count;
+
+    return VKD3D_OK;
+}
+
+static enum vkd3d_result vsir_cfg_structure_list_emit(struct vsir_cfg *cfg,
+        struct vsir_cfg_structure_list *list, unsigned int loop_idx)
+{
+    enum vkd3d_result ret;
+    size_t i;
+
+    for (i = 0; i < list->count; ++i)
+    {
+        struct vsir_cfg_structure *structure = &list->structures[i];
+
+        switch (structure->type)
+        {
+            case STRUCTURE_TYPE_BLOCK:
+                if ((ret = vsir_cfg_structure_list_emit_block(cfg, structure->u.block)) < 0)
+                    return ret;
+                break;
+
+            case STRUCTURE_TYPE_LOOP:
+                if ((ret = vsir_cfg_structure_list_emit_loop(cfg, &structure->u.loop, loop_idx)) < 0)
+                    return ret;
+                break;
+
+            case STRUCTURE_TYPE_SELECTION:
+                if ((ret = vsir_cfg_structure_list_emit_selection(cfg, &structure->u.selection,
+                        loop_idx)) < 0)
+                    return ret;
+                break;
+
+            case STRUCTURE_TYPE_JUMP:
+                if ((ret = vsir_cfg_structure_list_emit_jump(cfg, &structure->u.jump,
+                        loop_idx)) < 0)
+                    return ret;
+                break;
+
+            default:
+                vkd3d_unreachable();
+        }
+    }
+
+    return VKD3D_OK;
+}
+
+static enum vkd3d_result vsir_cfg_emit_structured_program(struct vsir_cfg *cfg)
+{
+    return vsir_cfg_structure_list_emit(cfg, &cfg->structured_program, UINT_MAX);
+}
+
+static enum vkd3d_result vsir_program_structurize_function(struct vsir_program *program,
+        struct vkd3d_shader_message_context *message_context, struct vsir_cfg_emit_target *target,
+        size_t *pos)
+{
+    enum vkd3d_result ret;
+    struct vsir_cfg cfg;
+
+    if ((ret = vsir_cfg_init(&cfg, program, message_context, target, pos)) < 0)
+        return ret;
+
+    vsir_cfg_compute_dominators(&cfg);
+
+    if ((ret = vsir_cfg_compute_loops(&cfg)) < 0)
+        goto out;
+
+    if ((ret = vsir_cfg_sort_nodes(&cfg)) < 0)
+        goto out;
+
+    if ((ret = vsir_cfg_generate_synthetic_loop_intervals(&cfg)) < 0)
+        goto out;
+
+    if ((ret = vsir_cfg_build_structured_program(&cfg)) < 0)
+        goto out;
+
+    if ((ret = vsir_cfg_optimize(&cfg)) < 0)
+        goto out;
+
+    ret = vsir_cfg_emit_structured_program(&cfg);
+
+out:
+    vsir_cfg_cleanup(&cfg);
+
+    return ret;
+}
+
+static enum vkd3d_result vsir_program_structurize(struct vsir_program *program,
+        struct vkd3d_shader_message_context *message_context)
+{
+    struct vsir_cfg_emit_target target = {0};
+    enum vkd3d_result ret;
+    size_t i;
+
+    target.jump_target_temp_idx = program->temp_count;
+    target.temp_count = program->temp_count + 1;
+
+    if (!reserve_instructions(&target.instructions, &target.ins_capacity, program->instructions.count))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    for (i = 0; i < program->instructions.count;)
+    {
+        struct vkd3d_shader_instruction *ins = &program->instructions.elements[i];
+
+        switch (ins->opcode)
+        {
+            case VKD3DSIH_LABEL:
+                VKD3D_ASSERT(program->shader_version.type != VKD3D_SHADER_TYPE_HULL);
+                TRACE("Structurizing a non-hull shader.\n");
+                if ((ret = vsir_program_structurize_function(program, message_context,
+                        &target, &i)) < 0)
+                    goto fail;
+                VKD3D_ASSERT(i == program->instructions.count);
+                break;
+
+            case VKD3DSIH_HS_CONTROL_POINT_PHASE:
+            case VKD3DSIH_HS_FORK_PHASE:
+            case VKD3DSIH_HS_JOIN_PHASE:
+                VKD3D_ASSERT(program->shader_version.type == VKD3D_SHADER_TYPE_HULL);
+                TRACE("Structurizing phase %u of a hull shader.\n", ins->opcode);
+                target.instructions[target.ins_count++] = *ins;
+                ++i;
+                if ((ret = vsir_program_structurize_function(program, message_context,
+                        &target, &i)) < 0)
+                    goto fail;
+                break;
+
+            default:
+                if (!reserve_instructions(&target.instructions, &target.ins_capacity, target.ins_count + 1))
+                    return VKD3D_ERROR_OUT_OF_MEMORY;
+                target.instructions[target.ins_count++] = *ins;
+                ++i;
+                break;
+        }
+    }
+
+    vkd3d_free(program->instructions.elements);
+    program->instructions.elements = target.instructions;
+    program->instructions.capacity = target.ins_capacity;
+    program->instructions.count = target.ins_count;
+    program->temp_count = target.temp_count;
+
+    return VKD3D_OK;
+
+fail:
+    vkd3d_free(target.instructions);
+
+    return ret;
+}
+
+static void register_map_undominated_use(struct vkd3d_shader_register *reg, struct ssas_to_temps_alloc *alloc,
+        struct vsir_block *block, struct vsir_block **origin_blocks)
+{
+    unsigned int i;
+
+    if (register_is_ssa(reg))
+    {
+        i = reg->idx[0].offset;
+        if (alloc->table[i] == UINT_MAX && !vsir_block_dominates(origin_blocks[i], block))
+            alloc->table[i] = alloc->next_temp_idx++;
+    }
+
+    for (i = 0; i < reg->idx_count; ++i)
+        if (reg->idx[i].rel_addr)
+            register_map_undominated_use(&reg->idx[i].rel_addr->reg, alloc, block, origin_blocks);
+}
+
+/* Drivers are not necessarily optimised to handle very large numbers of temps. For example,
+ * using them only where necessary fixes stuttering issues in Horizon Zero Dawn on RADV.
+ * This can also result in the backend emitting less code because temps typically need an
+ * access chain and a load/store. Conversion of phi SSA values to temps should eliminate all
+ * undominated SSA use, but structurisation may create new occurrences. */
+static enum vkd3d_result vsir_cfg_materialize_undominated_ssas_to_temps(struct vsir_cfg *cfg)
+{
+    struct vsir_program *program = cfg->program;
+    struct ssas_to_temps_alloc alloc = {0};
+    struct vsir_block **origin_blocks;
+    unsigned int j;
+    size_t i;
+
+    if (!(origin_blocks = vkd3d_calloc(program->ssa_count, sizeof(*origin_blocks))))
+    {
+        ERR("Failed to allocate origin block array.\n");
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+    }
+    if (!ssas_to_temps_alloc_init(&alloc, program->ssa_count, program->temp_count))
+    {
+        vkd3d_free(origin_blocks);
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+    }
+
+    for (i = 0; i < cfg->block_count; ++i)
+    {
+        struct vsir_block *block = &cfg->blocks[i];
+        struct vkd3d_shader_instruction *ins;
+
+        if (block->label == 0)
+            continue;
+
+        for (ins = block->begin; ins <= block->end; ++ins)
+        {
+            for (j = 0; j < ins->dst_count; ++j)
+            {
+                if (register_is_ssa(&ins->dst[j].reg))
+                    origin_blocks[ins->dst[j].reg.idx[0].offset] = block;
+            }
+        }
+    }
+
+    for (i = 0; i < cfg->block_count; ++i)
+    {
+        struct vsir_block *block = &cfg->blocks[i];
+        struct vkd3d_shader_instruction *ins;
+
+        if (block->label == 0)
+            continue;
+
+        for (ins = block->begin; ins <= block->end; ++ins)
+        {
+            for (j = 0; j < ins->src_count; ++j)
+                register_map_undominated_use(&ins->src[j].reg, &alloc, block, origin_blocks);
+        }
+    }
+
+    if (alloc.next_temp_idx == program->temp_count)
+        goto done;
+
+    TRACE("Emitting temps for %u values with undominated usage.\n", alloc.next_temp_idx - program->temp_count);
+
+    for (i = cfg->function_begin; i < cfg->function_end; ++i)
+    {
+        struct vkd3d_shader_instruction *ins = &program->instructions.elements[i];
+
+        for (j = 0; j < ins->dst_count; ++j)
+            materialize_ssas_to_temps_process_reg(program, &alloc, &ins->dst[j].reg);
+
+        for (j = 0; j < ins->src_count; ++j)
+            materialize_ssas_to_temps_process_reg(program, &alloc, &ins->src[j].reg);
+    }
+
+    program->temp_count = alloc.next_temp_idx;
+done:
+    vkd3d_free(origin_blocks);
+    vkd3d_free(alloc.table);
+
+    return VKD3D_OK;
+}
+
+static enum vkd3d_result vsir_program_materialize_undominated_ssas_to_temps_in_function(
+        struct vsir_program *program, struct vkd3d_shader_message_context *message_context,
+        size_t *pos)
+{
+    enum vkd3d_result ret;
+    struct vsir_cfg cfg;
+
+    if ((ret = vsir_cfg_init(&cfg, program, message_context, NULL, pos)) < 0)
+        return ret;
+
+    vsir_cfg_compute_dominators(&cfg);
+
+    ret = vsir_cfg_materialize_undominated_ssas_to_temps(&cfg);
+
+    vsir_cfg_cleanup(&cfg);
+
+    return ret;
+}
+
+static enum vkd3d_result vsir_program_materialize_undominated_ssas_to_temps(struct vsir_program *program,
+        struct vkd3d_shader_message_context *message_context)
+{
+    enum vkd3d_result ret;
+    size_t i;
+
+    for (i = 0; i < program->instructions.count;)
+    {
+        struct vkd3d_shader_instruction *ins = &program->instructions.elements[i];
+
+        switch (ins->opcode)
+        {
+            case VKD3DSIH_LABEL:
+                VKD3D_ASSERT(program->shader_version.type != VKD3D_SHADER_TYPE_HULL);
+                TRACE("Materializing undominated SSAs in a non-hull shader.\n");
+                if ((ret = vsir_program_materialize_undominated_ssas_to_temps_in_function(
+                        program, message_context, &i)) < 0)
+                    return ret;
+                VKD3D_ASSERT(i == program->instructions.count);
+                break;
+
+            case VKD3DSIH_HS_CONTROL_POINT_PHASE:
+            case VKD3DSIH_HS_FORK_PHASE:
+            case VKD3DSIH_HS_JOIN_PHASE:
+                VKD3D_ASSERT(program->shader_version.type == VKD3D_SHADER_TYPE_HULL);
+                TRACE("Materializing undominated SSAs in phase %u of a hull shader.\n", ins->opcode);
+                ++i;
+                if ((ret = vsir_program_materialize_undominated_ssas_to_temps_in_function(
+                        program, message_context, &i)) < 0)
+                    return ret;
+                break;
+
+            default:
+                ++i;
+                break;
+        }
+    }
+
+    return VKD3D_OK;
+}
+
+static bool find_colour_signature_idx(const struct shader_signature *signature, uint32_t *index)
+{
+    for (unsigned int i = 0; i < signature->element_count; ++i)
+    {
+        if (signature->elements[i].sysval_semantic == VKD3D_SHADER_SV_TARGET
+                && !signature->elements[i].register_index)
+        {
+            *index = i;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static enum vkd3d_result insert_alpha_test_before_ret(struct vsir_program *program,
+        const struct vkd3d_shader_instruction *ret, enum vkd3d_shader_comparison_func compare_func,
+        const struct vkd3d_shader_parameter1 *ref, uint32_t colour_signature_idx, uint32_t colour_temp, size_t *ret_pos)
+{
+    struct vkd3d_shader_instruction_array *instructions = &program->instructions;
+    size_t pos = ret - instructions->elements;
+    struct vkd3d_shader_instruction *ins;
+
+    static const struct
+    {
+        enum vkd3d_shader_opcode float_opcode;
+        enum vkd3d_shader_opcode uint_opcode;
+        bool swap;
+    }
+    opcodes[] =
+    {
+        [VKD3D_SHADER_COMPARISON_FUNC_EQUAL]         = {VKD3DSIH_EQO, VKD3DSIH_IEQ},
+        [VKD3D_SHADER_COMPARISON_FUNC_NOT_EQUAL]     = {VKD3DSIH_NEO, VKD3DSIH_INE},
+        [VKD3D_SHADER_COMPARISON_FUNC_GREATER_EQUAL] = {VKD3DSIH_GEO, VKD3DSIH_UGE},
+        [VKD3D_SHADER_COMPARISON_FUNC_LESS]          = {VKD3DSIH_LTO, VKD3DSIH_ULT},
+        [VKD3D_SHADER_COMPARISON_FUNC_LESS_EQUAL]    = {VKD3DSIH_GEO, VKD3DSIH_UGE, true},
+        [VKD3D_SHADER_COMPARISON_FUNC_GREATER]       = {VKD3DSIH_LTO, VKD3DSIH_ULT, true},
+    };
+
+    if (compare_func == VKD3D_SHADER_COMPARISON_FUNC_NEVER)
+    {
+        if (!shader_instruction_array_insert_at(&program->instructions, pos, 1))
+            return VKD3D_ERROR_OUT_OF_MEMORY;
+        ins = &program->instructions.elements[pos];
+
+        vsir_instruction_init_with_params(program, ins, &ret->location, VKD3DSIH_DISCARD, 0, 1);
+        ins->flags = VKD3D_SHADER_CONDITIONAL_OP_Z;
+        src_param_init_const_uint(&ins->src[0], 0);
+
+        *ret_pos = pos + 1;
+        return VKD3D_OK;
+    }
+
+    if (!shader_instruction_array_insert_at(&program->instructions, pos, 3))
+        return VKD3D_ERROR_OUT_OF_MEMORY;
+
+    ins = &program->instructions.elements[pos];
+
+    switch (ref->data_type)
+    {
+        case VKD3D_SHADER_PARAMETER_DATA_TYPE_FLOAT32:
+            vsir_instruction_init_with_params(program, ins, &ret->location, opcodes[compare_func].float_opcode, 1, 2);
+            src_param_init_temp_float(&ins->src[opcodes[compare_func].swap ? 1 : 0], colour_temp);
+            src_param_init_parameter(&ins->src[opcodes[compare_func].swap ? 0 : 1],
+                    VKD3D_SHADER_PARAMETER_NAME_ALPHA_TEST_REF, VKD3D_DATA_FLOAT);
+            break;
+
+        case VKD3D_SHADER_PARAMETER_DATA_TYPE_UINT32:
+            vsir_instruction_init_with_params(program, ins, &ret->location, opcodes[compare_func].uint_opcode, 1, 2);
+            src_param_init_temp_uint(&ins->src[opcodes[compare_func].swap ? 1 : 0], colour_temp);
+            src_param_init_parameter(&ins->src[opcodes[compare_func].swap ? 0 : 1],
+                    VKD3D_SHADER_PARAMETER_NAME_ALPHA_TEST_REF, VKD3D_DATA_UINT);
+            break;
+
+        default:
+            FIXME("Unhandled parameter data type %#x.\n", ref->data_type);
+            return VKD3D_ERROR_NOT_IMPLEMENTED;
+    }
+
+    dst_param_init_ssa_bool(&ins->dst[0], program->ssa_count);
+    ins->src[opcodes[compare_func].swap ? 1 : 0].reg.dimension = VSIR_DIMENSION_VEC4;
+    ins->src[opcodes[compare_func].swap ? 1 : 0].swizzle = VKD3D_SHADER_SWIZZLE(W, W, W, W);
+
+    ++ins;
+    vsir_instruction_init_with_params(program, ins, &ret->location, VKD3DSIH_DISCARD, 0, 1);
+    ins->flags = VKD3D_SHADER_CONDITIONAL_OP_Z;
+    src_param_init_ssa_bool(&ins->src[0], program->ssa_count);
+
+    ++program->ssa_count;
+
+    ++ins;
+    vsir_instruction_init_with_params(program, ins, &ret->location, VKD3DSIH_MOV, 1, 1);
+    vsir_dst_param_init(&ins->dst[0], VKD3DSPR_OUTPUT, VKD3D_DATA_FLOAT, 1);
+    ins->dst[0].reg.idx[0].offset = colour_signature_idx;
+    ins->dst[0].reg.dimension = VSIR_DIMENSION_VEC4;
+    ins->dst[0].write_mask = program->output_signature.elements[colour_signature_idx].mask;
+    src_param_init_temp_float(&ins->src[0], colour_temp);
+    ins->src[0].reg.dimension = VSIR_DIMENSION_VEC4;
+    ins->src[0].swizzle = VKD3D_SHADER_NO_SWIZZLE;
+
+    *ret_pos = pos + 3;
+    return VKD3D_OK;
+}
+
+static enum vkd3d_result vsir_program_insert_alpha_test(struct vsir_program *program,
+        struct vkd3d_shader_message_context *message_context)
+{
+    const struct vkd3d_shader_parameter1 *func = NULL, *ref = NULL;
+    static const struct vkd3d_shader_location no_loc;
+    enum vkd3d_shader_comparison_func compare_func;
+    uint32_t colour_signature_idx, colour_temp;
+    struct vkd3d_shader_instruction *ins;
+    size_t new_pos;
+    int ret;
+
+    if (program->shader_version.type != VKD3D_SHADER_TYPE_PIXEL)
+        return VKD3D_OK;
+
+    if (!find_colour_signature_idx(&program->output_signature, &colour_signature_idx)
+            || !(program->output_signature.elements[colour_signature_idx].mask & VKD3DSP_WRITEMASK_3))
+        return VKD3D_OK;
+
+    if (!(func = vsir_program_get_parameter(program, VKD3D_SHADER_PARAMETER_NAME_ALPHA_TEST_FUNC))
+            || !(ref = vsir_program_get_parameter(program, VKD3D_SHADER_PARAMETER_NAME_ALPHA_TEST_REF)))
+        return VKD3D_OK;
+
+    if (func->type != VKD3D_SHADER_PARAMETER_TYPE_IMMEDIATE_CONSTANT)
+    {
+        vkd3d_shader_error(message_context, &no_loc, VKD3D_SHADER_ERROR_VSIR_NOT_IMPLEMENTED,
+                "Unsupported alpha test function parameter type %#x.\n", func->type);
+        return VKD3D_ERROR_NOT_IMPLEMENTED;
+    }
+    if (func->data_type != VKD3D_SHADER_PARAMETER_DATA_TYPE_UINT32)
+    {
+        vkd3d_shader_error(message_context, &no_loc, VKD3D_SHADER_ERROR_VSIR_INVALID_DATA_TYPE,
+                "Invalid alpha test function parameter data type %#x.\n", func->data_type);
+        return VKD3D_ERROR_INVALID_ARGUMENT;
+    }
+    compare_func = func->u.immediate_constant.u.u32;
+
+    if (compare_func == VKD3D_SHADER_COMPARISON_FUNC_ALWAYS)
+        return VKD3D_OK;
+
+    /* We're going to be reading from the output, so we need to go
+     * through the whole shader and convert it to a temp. */
+
+    if (compare_func != VKD3D_SHADER_COMPARISON_FUNC_NEVER)
+        colour_temp = program->temp_count++;
+
+    for (size_t i = 0; i < program->instructions.count; ++i)
+    {
+        ins = &program->instructions.elements[i];
+
+        if (vsir_instruction_is_dcl(ins))
+            continue;
+
+        if (ins->opcode == VKD3DSIH_RET)
+        {
+            if ((ret = insert_alpha_test_before_ret(program, ins, compare_func,
+                    ref, colour_signature_idx, colour_temp, &new_pos)) < 0)
+                return ret;
+            i = new_pos;
+            continue;
+        }
+
+        /* No need to convert it if the comparison func is NEVER; we don't
+         * read from the output in that case. */
+        if (compare_func == VKD3D_SHADER_COMPARISON_FUNC_NEVER)
+            continue;
+
+        for (size_t j = 0; j < ins->dst_count; ++j)
+        {
+            struct vkd3d_shader_dst_param *dst = &ins->dst[j];
+
+            /* Note we run after I/O normalization. */
+            if (dst->reg.type == VKD3DSPR_OUTPUT && dst->reg.idx[0].offset == colour_signature_idx)
+            {
+                dst->reg.type = VKD3DSPR_TEMP;
+                dst->reg.idx[0].offset = colour_temp;
+            }
+        }
+    }
+
+    return VKD3D_OK;
 }
 
 struct validation_context
 {
-    struct vkd3d_shader_parser *parser;
+    struct vkd3d_shader_message_context *message_context;
     const struct vsir_program *program;
     size_t instruction_idx;
+    struct vkd3d_shader_location null_location;
     bool invalid_instruction_idx;
+    enum vkd3d_result status;
     bool dcl_temps_found;
     enum vkd3d_shader_opcode phase;
     enum cf_type
@@ -3452,16 +5730,21 @@ static void VKD3D_PRINTF_FUNC(3, 4) validator_error(struct validation_context *c
 
     if (ctx->invalid_instruction_idx)
     {
-        vkd3d_shader_parser_error(ctx->parser, error, "%s", buf.buffer);
+        vkd3d_shader_error(ctx->message_context, &ctx->null_location, error, "%s", buf.buffer);
         ERR("VSIR validation error: %s\n", buf.buffer);
     }
     else
     {
-        vkd3d_shader_parser_error(ctx->parser, error, "instruction %zu: %s", ctx->instruction_idx + 1, buf.buffer);
+        const struct vkd3d_shader_instruction *ins = &ctx->program->instructions.elements[ctx->instruction_idx];
+        vkd3d_shader_error(ctx->message_context, &ins->location, error,
+                "instruction %zu: %s", ctx->instruction_idx + 1, buf.buffer);
         ERR("VSIR validation error: instruction %zu: %s\n", ctx->instruction_idx + 1, buf.buffer);
     }
 
     vkd3d_string_buffer_cleanup(&buf);
+
+    if (!ctx->status)
+        ctx->status = VKD3D_ERROR_INVALID_SHADER;
 }
 
 static void vsir_validate_src_param(struct validation_context *ctx,
@@ -3515,10 +5798,10 @@ static void vsir_validate_register(struct validation_context *ctx,
             if (reg->idx[0].rel_addr)
                 validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_INDEX, "Non-NULL relative address for a TEMP register.");
 
-            if (reg->idx[0].offset >= ctx->parser->program.temp_count)
+            if (reg->idx[0].offset >= ctx->program->temp_count)
             {
                 validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_INDEX, "TEMP register index %u exceeds the maximum count %u.",
-                        reg->idx[0].offset, ctx->parser->program.temp_count);
+                        reg->idx[0].offset, ctx->program->temp_count);
                 break;
             }
 
@@ -3606,7 +5889,7 @@ static void vsir_validate_register(struct validation_context *ctx,
                 validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_PRECISION, "Invalid precision %#x for a LABEL register.",
                         reg->precision);
 
-            if (reg->data_type != VKD3D_DATA_UINT)
+            if (reg->data_type != VKD3D_DATA_UNUSED)
                 validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_DATA_TYPE, "Invalid data type %#x for a LABEL register.",
                         reg->data_type);
 
@@ -3708,7 +5991,7 @@ static void vsir_validate_dst_param(struct validation_context *ctx,
     switch (dst->reg.type)
     {
         case VKD3DSPR_SSA:
-            if (dst->reg.idx[0].offset < ctx->parser->program.ssa_count)
+            if (dst->reg.idx[0].offset < ctx->program->ssa_count)
             {
                 struct validation_context_ssa_data *data = &ctx->ssas[dst->reg.idx[0].offset];
 
@@ -3761,7 +6044,7 @@ static void vsir_validate_src_param(struct validation_context *ctx,
     switch (src->reg.type)
     {
         case VKD3DSPR_SSA:
-            if (src->reg.idx[0].offset < ctx->parser->program.ssa_count)
+            if (src->reg.idx[0].offset < ctx->program->ssa_count)
             {
                 struct validation_context_ssa_data *data = &ctx->ssas[src->reg.idx[0].offset];
                 unsigned int i;
@@ -3782,7 +6065,7 @@ static void vsir_validate_dst_count(struct validation_context *ctx,
     if (instruction->dst_count != count)
         validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_DEST_COUNT,
                 "Invalid destination count %u for an instruction of type %#x, expected %u.",
-                        instruction->dst_count, instruction->handler_idx, count);
+                        instruction->dst_count, instruction->opcode, count);
 }
 
 static void vsir_validate_src_count(struct validation_context *ctx,
@@ -3791,7 +6074,7 @@ static void vsir_validate_src_count(struct validation_context *ctx,
     if (instruction->src_count != count)
         validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_SOURCE_COUNT,
                 "Invalid source count %u for an instruction of type %#x, expected %u.",
-                instruction->src_count, instruction->handler_idx, count);
+                instruction->src_count, instruction->opcode, count);
 }
 
 static bool vsir_validate_src_min_count(struct validation_context *ctx,
@@ -3801,7 +6084,7 @@ static bool vsir_validate_src_min_count(struct validation_context *ctx,
     {
         validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_SOURCE_COUNT,
                 "Invalid source count %u for an instruction of type %#x, expected at least %u.",
-                instruction->src_count, instruction->handler_idx, count);
+                instruction->src_count, instruction->opcode, count);
         return false;
     }
 
@@ -3815,7 +6098,7 @@ static bool vsir_validate_src_max_count(struct validation_context *ctx,
     {
         validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_SOURCE_COUNT,
                 "Invalid source count %u for an instruction of type %#x, expected at most %u.",
-                instruction->src_count, instruction->handler_idx, count);
+                instruction->src_count, instruction->opcode, count);
         return false;
     }
 
@@ -3838,11 +6121,11 @@ static const char *name_from_cf_type(enum cf_type type)
 static void vsir_validate_cf_type(struct validation_context *ctx,
         const struct vkd3d_shader_instruction *instruction, enum cf_type expected_type)
 {
-    assert(ctx->cf_type != CF_TYPE_UNKNOWN);
-    assert(expected_type != CF_TYPE_UNKNOWN);
+    VKD3D_ASSERT(ctx->cf_type != CF_TYPE_UNKNOWN);
+    VKD3D_ASSERT(expected_type != CF_TYPE_UNKNOWN);
     if (ctx->cf_type != expected_type)
         validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_CONTROL_FLOW, "Invalid instruction %#x in %s shader.",
-                instruction->handler_idx, name_from_cf_type(ctx->cf_type));
+                instruction->opcode, name_from_cf_type(ctx->cf_type));
 }
 
 static void vsir_validate_instruction(struct validation_context *ctx)
@@ -3852,7 +6135,6 @@ static void vsir_validate_instruction(struct validation_context *ctx)
     size_t i;
 
     instruction = &ctx->program->instructions.elements[ctx->instruction_idx];
-    ctx->parser->location = instruction->location;
 
     for (i = 0; i < instruction->dst_count; ++i)
         vsir_validate_dst_param(ctx, &instruction->dst[i]);
@@ -3860,13 +6142,13 @@ static void vsir_validate_instruction(struct validation_context *ctx)
     for (i = 0; i < instruction->src_count; ++i)
         vsir_validate_src_param(ctx, &instruction->src[i]);
 
-    if (instruction->handler_idx >= VKD3DSIH_INVALID)
+    if (instruction->opcode >= VKD3DSIH_INVALID)
     {
         validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_HANDLER, "Invalid instruction handler %#x.",
-                instruction->handler_idx);
+                instruction->opcode);
     }
 
-    switch (instruction->handler_idx)
+    switch (instruction->opcode)
     {
         case VKD3DSIH_HS_DECLS:
         case VKD3DSIH_HS_CONTROL_POINT_PHASE:
@@ -3875,23 +6157,88 @@ static void vsir_validate_instruction(struct validation_context *ctx)
             vsir_validate_dst_count(ctx, instruction, 0);
             vsir_validate_src_count(ctx, instruction, 0);
             if (version->type != VKD3D_SHADER_TYPE_HULL)
-                validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_HANDLER, "Phase instruction %#x is only valid in a hull shader.",
-                        instruction->handler_idx);
+                validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_HANDLER,
+                        "Phase instruction %#x is only valid in a hull shader.",
+                        instruction->opcode);
             if (ctx->depth != 0)
-                validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_CONTROL_FLOW, "Phase instruction %#x must appear to top level.",
-                        instruction->handler_idx);
-            ctx->phase = instruction->handler_idx;
+                validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_CONTROL_FLOW,
+                        "Phase instruction %#x must appear to top level.",
+                        instruction->opcode);
+            ctx->phase = instruction->opcode;
             ctx->dcl_temps_found = false;
+            return;
+
+        case VKD3DSIH_DCL_HS_MAX_TESSFACTOR:
+            /* Exclude non-finite values. */
+            if (!(instruction->declaration.max_tessellation_factor >= 1.0f
+                    && instruction->declaration.max_tessellation_factor <= 64.0f))
+                validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_TESSELLATION, "Max tessellation factor %f is invalid.",
+                        instruction->declaration.max_tessellation_factor);
+            return;
+
+        case VKD3DSIH_DCL_INPUT_PRIMITIVE:
+            if (instruction->declaration.primitive_type.type == VKD3D_PT_UNDEFINED
+                    || instruction->declaration.primitive_type.type >= VKD3D_PT_COUNT)
+                validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_GS, "GS input primitive %u is invalid.",
+                        instruction->declaration.primitive_type.type);
+            return;
+
+        case VKD3DSIH_DCL_VERTICES_OUT:
+            if (instruction->declaration.count > 1024)
+                validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_GS, "GS output vertex count %u is invalid.",
+                        instruction->declaration.count);
+            return;
+
+        case VKD3DSIH_DCL_OUTPUT_TOPOLOGY:
+            if (instruction->declaration.primitive_type.type == VKD3D_PT_UNDEFINED
+                    || instruction->declaration.primitive_type.type >= VKD3D_PT_COUNT)
+                validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_GS, "GS output primitive %u is invalid.",
+                        instruction->declaration.primitive_type.type);
+            return;
+
+        case VKD3DSIH_DCL_GS_INSTANCES:
+            if (!instruction->declaration.count || instruction->declaration.count > 32)
+                validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_GS, "GS instance count %u is invalid.",
+                        instruction->declaration.count);
+            return;
+
+        case VKD3DSIH_DCL_OUTPUT_CONTROL_POINT_COUNT:
+            if (!instruction->declaration.count || instruction->declaration.count > 32)
+                validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_TESSELLATION, "Output control point count %u is invalid.",
+                        instruction->declaration.count);
+            return;
+
+        case VKD3DSIH_DCL_TESSELLATOR_DOMAIN:
+            if (instruction->declaration.tessellator_domain == VKD3D_TESSELLATOR_DOMAIN_INVALID
+                    || instruction->declaration.tessellator_domain >= VKD3D_TESSELLATOR_DOMAIN_COUNT)
+                validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_TESSELLATION,
+                        "Tessellator domain %#x is invalid.", instruction->declaration.tessellator_domain);
+            return;
+
+        case VKD3DSIH_DCL_TESSELLATOR_OUTPUT_PRIMITIVE:
+            if (!instruction->declaration.tessellator_output_primitive
+                    || instruction->declaration.tessellator_output_primitive > VKD3D_SHADER_TESSELLATOR_OUTPUT_TRIANGLE_CCW)
+                validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_TESSELLATION,
+                        "Tessellator output primitive %#x is invalid.", instruction->declaration.tessellator_output_primitive);
+            return;
+
+        case VKD3DSIH_DCL_TESSELLATOR_PARTITIONING:
+            if (!instruction->declaration.tessellator_partitioning
+                    || instruction->declaration.tessellator_partitioning > VKD3D_SHADER_TESSELLATOR_PARTITIONING_FRACTIONAL_EVEN)
+                validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_TESSELLATION,
+                        "Tessellator partitioning %#x is invalid.", instruction->declaration.tessellator_partitioning);
             return;
 
         default:
             break;
     }
 
-    if (version->type == VKD3D_SHADER_TYPE_HULL && ctx->phase == VKD3DSIH_INVALID)
+    /* Only DCL instructions may occur outside hull shader phases. */
+    if (!vsir_instruction_is_dcl(instruction) && version->type == VKD3D_SHADER_TYPE_HULL
+            && ctx->phase == VKD3DSIH_INVALID)
         validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_HANDLER,
                 "Instruction %#x appear before any phase instruction in a hull shader.",
-                instruction->handler_idx);
+                instruction->opcode);
 
     /* We support two different control flow types in shaders:
      * block-based, like DXIL and SPIR-V, and structured, like D3DBC
@@ -3903,7 +6250,7 @@ static void vsir_validate_instruction(struct validation_context *ctx)
      * block, but need for that hasn't arisen yet, so we don't. */
     if (ctx->cf_type == CF_TYPE_UNKNOWN && !vsir_instruction_is_dcl(instruction))
     {
-        if (instruction->handler_idx == VKD3DSIH_LABEL)
+        if (instruction->opcode == VKD3DSIH_LABEL)
             ctx->cf_type = CF_TYPE_BLOCKS;
         else
             ctx->cf_type = CF_TYPE_STRUCTURED;
@@ -3911,7 +6258,7 @@ static void vsir_validate_instruction(struct validation_context *ctx)
 
     if (ctx->cf_type == CF_TYPE_BLOCKS && !vsir_instruction_is_dcl(instruction))
     {
-        switch (instruction->handler_idx)
+        switch (instruction->opcode)
         {
             case VKD3DSIH_LABEL:
                 if (ctx->inside_block)
@@ -3923,20 +6270,22 @@ static void vsir_validate_instruction(struct validation_context *ctx)
             case VKD3DSIH_BRANCH:
             case VKD3DSIH_SWITCH_MONOLITHIC:
                 if (!ctx->inside_block)
-                    validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_CONTROL_FLOW, "Invalid instruction %#x outside any block.",
-                            instruction->handler_idx);
+                    validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_CONTROL_FLOW,
+                            "Invalid instruction %#x outside any block.",
+                            instruction->opcode);
                 ctx->inside_block = false;
                 break;
 
             default:
                 if (!ctx->inside_block)
-                    validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_CONTROL_FLOW, "Invalid instruction %#x outside any block.",
-                            instruction->handler_idx);
+                    validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_CONTROL_FLOW,
+                            "Invalid instruction %#x outside any block.",
+                            instruction->opcode);
                 break;
         }
     }
 
-    switch (instruction->handler_idx)
+    switch (instruction->opcode)
     {
         case VKD3DSIH_DCL_TEMPS:
             vsir_validate_dst_count(ctx, instruction, 0);
@@ -3956,7 +6305,7 @@ static void vsir_validate_instruction(struct validation_context *ctx)
             vsir_validate_src_count(ctx, instruction, 1);
             if (!vkd3d_array_reserve((void **)&ctx->blocks, &ctx->blocks_capacity, ctx->depth + 1, sizeof(*ctx->blocks)))
                 return;
-            ctx->blocks[ctx->depth++] = instruction->handler_idx;
+            ctx->blocks[ctx->depth++] = instruction->opcode;
             break;
 
         case VKD3DSIH_IFC:
@@ -3975,7 +6324,7 @@ static void vsir_validate_instruction(struct validation_context *ctx)
             if (ctx->depth == 0 || ctx->blocks[ctx->depth - 1] != VKD3DSIH_IF)
                 validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_CONTROL_FLOW, "ELSE instruction doesn't terminate IF block.");
             else
-                ctx->blocks[ctx->depth - 1] = instruction->handler_idx;
+                ctx->blocks[ctx->depth - 1] = instruction->opcode;
             break;
 
         case VKD3DSIH_ENDIF:
@@ -3994,7 +6343,7 @@ static void vsir_validate_instruction(struct validation_context *ctx)
             vsir_validate_src_count(ctx, instruction, version->major <= 3 ? 2 : 0);
             if (!vkd3d_array_reserve((void **)&ctx->blocks, &ctx->blocks_capacity, ctx->depth + 1, sizeof(*ctx->blocks)))
                 return;
-            ctx->blocks[ctx->depth++] = instruction->handler_idx;
+            ctx->blocks[ctx->depth++] = instruction->opcode;
             break;
 
         case VKD3DSIH_ENDLOOP:
@@ -4013,7 +6362,7 @@ static void vsir_validate_instruction(struct validation_context *ctx)
             vsir_validate_src_count(ctx, instruction, 1);
             if (!vkd3d_array_reserve((void **)&ctx->blocks, &ctx->blocks_capacity, ctx->depth + 1, sizeof(*ctx->blocks)))
                 return;
-            ctx->blocks[ctx->depth++] = instruction->handler_idx;
+            ctx->blocks[ctx->depth++] = instruction->opcode;
             break;
 
         case VKD3DSIH_ENDREP:
@@ -4032,7 +6381,7 @@ static void vsir_validate_instruction(struct validation_context *ctx)
             vsir_validate_src_count(ctx, instruction, 1);
             if (!vkd3d_array_reserve((void **)&ctx->blocks, &ctx->blocks_capacity, ctx->depth + 1, sizeof(*ctx->blocks)))
                 return;
-            ctx->blocks[ctx->depth++] = instruction->handler_idx;
+            ctx->blocks[ctx->depth++] = instruction->opcode;
             break;
 
         case VKD3DSIH_ENDSWITCH:
@@ -4180,7 +6529,8 @@ static void vsir_validate_instruction(struct validation_context *ctx)
                 unsigned int value_idx = 2 * i;
                 unsigned int label_idx = 2 * i + 1;
 
-                if (!register_is_constant(&instruction->src[value_idx].reg) && !register_is_ssa(&instruction->src[value_idx].reg))
+                if (!register_is_constant_or_undef(&instruction->src[value_idx].reg)
+                        && !register_is_ssa(&instruction->src[value_idx].reg))
                     validator_error(ctx, VKD3D_SHADER_ERROR_VSIR_INVALID_REGISTER_TYPE,
                             "Invalid value register for incoming %zu of type %#x in PHI instruction, "
                             "expected SSA, IMMCONST or IMMCONST64.", i, instruction->src[value_idx].reg.type);
@@ -4203,17 +6553,20 @@ static void vsir_validate_instruction(struct validation_context *ctx)
     }
 }
 
-enum vkd3d_result vsir_validate(struct vkd3d_shader_parser *parser)
+enum vkd3d_result vsir_program_validate(struct vsir_program *program, uint64_t config_flags,
+        const char *source_name, struct vkd3d_shader_message_context *message_context)
 {
     struct validation_context ctx =
     {
-        .parser = parser,
-        .program = &parser->program,
+        .message_context = message_context,
+        .program = program,
+        .null_location = {.source_name = source_name},
+        .status = VKD3D_OK,
         .phase = VKD3DSIH_INVALID,
     };
     unsigned int i;
 
-    if (!(parser->config_flags & VKD3D_SHADER_CONFIG_FLAG_FORCE_VALIDATION))
+    if (!(config_flags & VKD3D_SHADER_CONFIG_FLAG_FORCE_VALIDATION))
         return VKD3D_OK;
 
     if (!(ctx.temps = vkd3d_calloc(ctx.program->temp_count, sizeof(*ctx.temps))))
@@ -4222,7 +6575,7 @@ enum vkd3d_result vsir_validate(struct vkd3d_shader_parser *parser)
     if (!(ctx.ssas = vkd3d_calloc(ctx.program->ssa_count, sizeof(*ctx.ssas))))
         goto fail;
 
-    for (ctx.instruction_idx = 0; ctx.instruction_idx < parser->program.instructions.count; ++ctx.instruction_idx)
+    for (ctx.instruction_idx = 0; ctx.instruction_idx < program->instructions.count; ++ctx.instruction_idx)
         vsir_validate_instruction(&ctx);
 
     ctx.invalid_instruction_idx = true;
@@ -4247,7 +6600,7 @@ enum vkd3d_result vsir_validate(struct vkd3d_shader_parser *parser)
     vkd3d_free(ctx.temps);
     vkd3d_free(ctx.ssas);
 
-    return VKD3D_OK;
+    return ctx.status;
 
 fail:
     vkd3d_free(ctx.blocks);
@@ -4255,4 +6608,76 @@ fail:
     vkd3d_free(ctx.ssas);
 
     return VKD3D_ERROR_OUT_OF_MEMORY;
+}
+
+enum vkd3d_result vsir_program_normalise(struct vsir_program *program, uint64_t config_flags,
+        const struct vkd3d_shader_compile_info *compile_info, struct vkd3d_shader_message_context *message_context)
+{
+    enum vkd3d_result result = VKD3D_OK;
+
+    if ((result = vsir_program_lower_instructions(program, message_context)) < 0)
+        return result;
+
+    if (program->shader_version.major >= 6)
+    {
+        if ((result = vsir_program_materialise_phi_ssas_to_temps(program)) < 0)
+            return result;
+
+        if ((result = lower_switch_to_if_ladder(program)) < 0)
+            return result;
+
+        if ((result = vsir_program_structurize(program, message_context)) < 0)
+            return result;
+
+        if ((result = vsir_program_flatten_control_flow_constructs(program, message_context)) < 0)
+            return result;
+
+        if ((result = vsir_program_materialize_undominated_ssas_to_temps(program, message_context)) < 0)
+            return result;
+    }
+    else
+    {
+        if (program->shader_version.type != VKD3D_SHADER_TYPE_PIXEL)
+        {
+            if ((result = vsir_program_remap_output_signature(program, compile_info, message_context)) < 0)
+                return result;
+        }
+
+        if (program->shader_version.type == VKD3D_SHADER_TYPE_HULL)
+        {
+            if ((result = instruction_array_flatten_hull_shader_phases(&program->instructions)) < 0)
+                return result;
+
+            if ((result = instruction_array_normalise_hull_shader_control_point_io(&program->instructions,
+                    &program->input_signature)) < 0)
+                return result;
+        }
+
+        if ((result = vsir_program_normalise_io_registers(program, message_context)) < 0)
+            return result;
+
+        if ((result = instruction_array_normalise_flat_constants(program)) < 0)
+            return result;
+
+        remove_dead_code(program);
+
+        if ((result = vsir_program_normalise_combined_samplers(program, message_context)) < 0)
+            return result;
+
+        if (compile_info->target_type != VKD3D_SHADER_TARGET_GLSL
+                && (result = vsir_program_flatten_control_flow_constructs(program, message_context)) < 0)
+            return result;
+    }
+
+    if ((result = vsir_program_insert_alpha_test(program, message_context)) < 0)
+        return result;
+
+    if (TRACE_ON())
+        vkd3d_shader_trace(program);
+
+    if ((result = vsir_program_validate(program, config_flags,
+            compile_info->source_name, message_context)) < 0)
+        return result;
+
+    return result;
 }

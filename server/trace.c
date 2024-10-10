@@ -24,6 +24,17 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <sys/socket.h>
+
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
@@ -42,6 +53,8 @@
 #include "ddk/ntddser.h"
 #define USE_WS_PREFIX
 #include "winsock2.h"
+#include "ws2tcpip.h"
+#include "tcpmib.h"
 #include "file.h"
 #include "request.h"
 #include "security.h"
@@ -119,6 +132,14 @@ static void dump_uint128( const char *prefix, const unsigned __int64 val[2] )
         fprintf( stderr, "%s%x", prefix, (unsigned int)low );
 }
 
+static void dump_uints64( const char *prefix, const unsigned __int64 *ptr, int len )
+{
+    fprintf( stderr, "%s{", prefix );
+    if (len-- > 0) dump_uint64( "", ptr++ );
+    while (len-- > 0) dump_uint64( ",", ptr++ );
+    fputc( '}', stderr );
+}
+
 static void dump_rectangle( const char *prefix, const rectangle_t *rect )
 {
     fprintf( stderr, "%s{%d,%d;%d,%d}", prefix,
@@ -173,10 +194,7 @@ static void dump_apc_call( const char *prefix, const apc_call_t *call )
         break;
     case APC_USER:
         dump_uint64( "APC_USER,func=", &call->user.func );
-        dump_uint64( ",args={", &call->user.args[0] );
-        dump_uint64( ",", &call->user.args[1] );
-        dump_uint64( ",", &call->user.args[2] );
-        fputc( '}', stderr );
+        dump_uints64( ",args=", call->user.args, 3 );
         break;
     case APC_ASYNC_IO:
         dump_uint64( "APC_ASYNC_IO,user=", &call->async_io.user );
@@ -462,6 +480,14 @@ static void dump_hw_input( const char *prefix, const hw_input_t *input )
     }
 }
 
+static void dump_obj_locator( const char *prefix, const obj_locator_t *locator )
+{
+    fprintf( stderr, "%s{", prefix );
+    dump_uint64( "id=", &locator->id );
+    dump_uint64( ",offset=", &locator->offset );
+    fprintf( stderr, "}" );
+}
+
 static void dump_luid( const char *prefix, const struct luid *luid )
 {
     fprintf( stderr, "%s%d.%u", prefix, luid->high_part, luid->low_part );
@@ -499,15 +525,8 @@ static void dump_varargs_uints( const char *prefix, data_size_t size )
 static void dump_varargs_uints64( const char *prefix, data_size_t size )
 {
     const unsigned __int64 *data = cur_data;
-    data_size_t len = size / sizeof(*data);
 
-    fprintf( stderr,"%s{", prefix );
-    while (len > 0)
-    {
-        dump_uint64( "", data++ );
-        if (--len) fputc( ',', stderr );
-    }
-    fputc( '}', stderr );
+    dump_uints64( prefix, data, size / sizeof(*data) );
     remove_data( size );
 }
 
@@ -824,6 +843,19 @@ static void dump_varargs_context( const char *prefix, data_size_t size )
         fprintf( stderr, "%s{machine=%04x", prefix, ctx.machine );
         break;
     }
+    if (ctx.flags & SERVER_CTX_EXEC_SPACE)
+    {
+        const char *space;
+
+        switch (ctx.exec_space.space.space)
+        {
+        case EXEC_SPACE_USERMODE:  space = "user"; break;
+        case EXEC_SPACE_SYSCALL:   space = "syscall"; break;
+        case EXEC_SPACE_EXCEPTION: space = "exception"; break;
+        default:                   space = "invalid"; break;
+        }
+        fprintf( stderr, ",exec_space=%s", space );
+    }
     fputc( '}', stderr );
     remove_data( size );
 }
@@ -846,7 +878,6 @@ static void dump_varargs_contexts( const char *prefix, data_size_t size )
 static void dump_varargs_debug_event( const char *prefix, data_size_t size )
 {
     debug_event_t event;
-    unsigned int i;
 
     if (!size)
     {
@@ -895,14 +926,9 @@ static void dump_varargs_debug_event( const char *prefix, data_size_t size )
                  event.exception.first, event.exception.exc_code, event.exception.flags );
         dump_uint64( ",record=", &event.exception.record );
         dump_uint64( ",address=", &event.exception.address );
-        fprintf( stderr, ",params={" );
         event.exception.nb_params = min( event.exception.nb_params, EXCEPTION_MAXIMUM_PARAMETERS );
-        for (i = 0; i < event.exception.nb_params; i++)
-        {
-            dump_uint64( "", &event.exception.params[i] );
-            if (i < event.exception.nb_params) fputc( ',', stderr );
-        }
-        fprintf( stderr, "}}" );
+        dump_uints64( ",params=", event.exception.params, event.exception.nb_params );
+        fputc( '}', stderr );
         break;
     case DbgLoadDllStateChange:
         fprintf( stderr, "%s{load_dll,file=%04x", prefix, event.load_dll.handle );
@@ -956,7 +982,7 @@ static void dump_varargs_startup_info( const char *prefix, data_size_t size )
     pos = dump_inline_unicode_string( "\",title=L\"", pos, info.title_len, size );
     pos = dump_inline_unicode_string( "\",desktop=L\"", pos, info.desktop_len, size );
     pos = dump_inline_unicode_string( "\",shellinfo=L\"", pos, info.shellinfo_len, size );
-    pos = dump_inline_unicode_string( "\",runtime=L\"", pos, info.runtime_len, size );
+    dump_inline_unicode_string( "\",runtime=L\"", pos, info.runtime_len, size );
     fprintf( stderr, "\"}" );
     remove_data( size );
 }
@@ -1159,7 +1185,6 @@ static void dump_inline_security_descriptor( const char *prefix, const struct se
         if ((sd->dacl_len >= MAX_ACL_LEN) || (offset + sd->dacl_len > size))
             return;
         dump_inline_acl( ",dacl=", (const struct acl *)((const char *)sd + offset), sd->dacl_len );
-        offset += sd->dacl_len;
     }
     fputc( '}', stderr );
 }
@@ -1367,6 +1392,125 @@ static void dump_varargs_handle_infos( const char *prefix, data_size_t size )
     fputc( '}', stderr );
 }
 
+static void dump_varargs_tcp_connections( const char *prefix, data_size_t size )
+{
+    static const char * const state_names[] = {
+        NULL,
+        "CLOSED",
+        "LISTEN",
+        "SYN_SENT",
+        "SYN_RCVD",
+        "ESTAB",
+        "FIN_WAIT1",
+        "FIN_WAIT2",
+        "CLOSE_WAIT",
+        "CLOSING",
+        "LAST_ACK",
+        "TIME_WAIT",
+        "DELETE_TCB"
+    };
+    const tcp_connection *conn;
+
+    fprintf( stderr, "%s{", prefix );
+    while (size >= sizeof(*conn))
+    {
+        conn = cur_data;
+
+        if (conn->common.family == WS_AF_INET)
+        {
+            char local_addr_str[INET_ADDRSTRLEN] = { 0 };
+            char remote_addr_str[INET_ADDRSTRLEN] = { 0 };
+            inet_ntop( AF_INET, (struct in_addr *)&conn->ipv4.local_addr, local_addr_str, INET_ADDRSTRLEN );
+            inet_ntop( AF_INET, (struct in_addr *)&conn->ipv4.remote_addr, remote_addr_str, INET_ADDRSTRLEN );
+            fprintf( stderr, "{family=AF_INET,owner=%04x,state=%s,local=%s:%d,remote=%s:%d}",
+                     conn->ipv4.owner, state_names[conn->ipv4.state],
+                     local_addr_str, conn->ipv4.local_port,
+                     remote_addr_str, conn->ipv4.remote_port );
+        }
+        else
+        {
+            char local_addr_str[INET6_ADDRSTRLEN];
+            char remote_addr_str[INET6_ADDRSTRLEN];
+            inet_ntop( AF_INET6, (struct in6_addr *)&conn->ipv6.local_addr, local_addr_str, INET6_ADDRSTRLEN );
+            inet_ntop( AF_INET6, (struct in6_addr *)&conn->ipv6.remote_addr, remote_addr_str, INET6_ADDRSTRLEN );
+            fprintf( stderr, "{family=AF_INET6,owner=%04x,state=%s,local=[%s%%%d]:%d,remote=[%s%%%d]:%d}",
+                     conn->ipv6.owner, state_names[conn->ipv6.state],
+                     local_addr_str, conn->ipv6.local_scope_id, conn->ipv6.local_port,
+                     remote_addr_str, conn->ipv6.remote_scope_id, conn->ipv6.remote_port );
+        }
+
+        size -= sizeof(*conn);
+        remove_data( sizeof(*conn) );
+        if (size) fputc( ',', stderr );
+    }
+    fputc( '}', stderr );
+}
+
+static void dump_varargs_udp_endpoints( const char *prefix, data_size_t size )
+{
+    const udp_endpoint *endpt;
+
+    fprintf( stderr, "%s{", prefix );
+    while (size >= sizeof(*endpt))
+    {
+        endpt = cur_data;
+
+        if (endpt->common.family == WS_AF_INET)
+        {
+            char addr_str[INET_ADDRSTRLEN] = { 0 };
+            inet_ntop( AF_INET, (struct in_addr *)&endpt->ipv4.addr, addr_str, INET_ADDRSTRLEN );
+            fprintf( stderr, "{family=AF_INET,owner=%04x,addr=%s:%d}",
+                     endpt->ipv4.owner, addr_str, endpt->ipv4.port );
+        }
+        else
+        {
+            char addr_str[INET6_ADDRSTRLEN];
+            inet_ntop( AF_INET6, (struct in6_addr *)&endpt->ipv6.addr, addr_str, INET6_ADDRSTRLEN );
+            fprintf( stderr, "{family=AF_INET6,owner=%04x,addr=[%s%%%d]:%d}",
+                     endpt->ipv6.owner, addr_str, endpt->ipv6.scope_id, endpt->ipv6.port );
+        }
+
+        size -= sizeof(*endpt);
+        remove_data( sizeof(*endpt) );
+        if (size) fputc( ',', stderr );
+    }
+    fputc( '}', stderr );
+}
+
+static void dump_varargs_directory_entries( const char *prefix, data_size_t size )
+{
+    fprintf( stderr, "%s{", prefix );
+    while (size)
+    {
+        const struct directory_entry *entry = cur_data;
+        data_size_t entry_size;
+        const char *next;
+
+        if (size < sizeof(*entry) ||
+            (size - sizeof(*entry) < entry->name_len) ||
+            (size - sizeof(*entry) - entry->name_len < entry->type_len))
+        {
+            fprintf( stderr, "***invalid***}" );
+            remove_data( size );
+            return;
+        }
+
+        next = (const char *)(entry + 1);
+        fprintf( stderr, "{name=L\"" );
+        dump_strW( (const WCHAR *)next, entry->name_len, stderr, "\"\"" );
+        next += entry->name_len;
+        fprintf( stderr, "\",type=L\"" );
+        dump_strW( (const WCHAR *)next, entry->type_len, stderr, "\"\"" );
+        fprintf( stderr, "\"}" );
+
+        entry_size = min( size, (sizeof(*entry) + entry->name_len + entry->type_len + 3) & ~3 );
+        size -= entry_size;
+        remove_data( entry_size );
+        if (size) fputc( ',', stderr );
+    }
+    fputc( '}', stderr );
+}
+
 typedef void (*dump_func)( const void *req );
 
 /* Everything below this line is generated automatically by tools/make_requests */
@@ -1538,6 +1682,7 @@ static void dump_get_process_debug_info_reply( const struct get_process_debug_in
 static void dump_get_process_image_name_request( const struct get_process_image_name_request *req )
 {
     fprintf( stderr, " handle=%04x", req->handle );
+    fprintf( stderr, ", pid=%04x", req->pid );
     fprintf( stderr, ", win32=%d", req->win32 );
 }
 
@@ -2064,8 +2209,8 @@ static void dump_recv_socket_reply( const struct recv_socket_reply *req )
 
 static void dump_send_socket_request( const struct send_socket_request *req )
 {
-    dump_async_data( " async=", &req->async );
-    fprintf( stderr, ", force_async=%d", req->force_async );
+    fprintf( stderr, " flags=%08x", req->flags );
+    dump_async_data( ", async=", &req->async );
 }
 
 static void dump_send_socket_reply( const struct send_socket_reply *req )
@@ -2643,13 +2788,22 @@ static void dump_get_atom_information_reply( const struct get_atom_information_r
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
+static void dump_get_msg_queue_handle_request( const struct get_msg_queue_handle_request *req )
+{
+}
+
+static void dump_get_msg_queue_handle_reply( const struct get_msg_queue_handle_reply *req )
+{
+    fprintf( stderr, " handle=%04x", req->handle );
+}
+
 static void dump_get_msg_queue_request( const struct get_msg_queue_request *req )
 {
 }
 
 static void dump_get_msg_queue_reply( const struct get_msg_queue_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    dump_obj_locator( " locator=", &req->locator );
 }
 
 static void dump_set_queue_fd_request( const struct set_queue_fd_request *req )
@@ -2735,6 +2889,7 @@ static void dump_get_message_request( const struct get_message_request *req )
     fprintf( stderr, ", hw_id=%08x", req->hw_id );
     fprintf( stderr, ", wake_mask=%08x", req->wake_mask );
     fprintf( stderr, ", changed_mask=%08x", req->changed_mask );
+    fprintf( stderr, ", internal=%08x", req->internal );
 }
 
 static void dump_get_message_reply( const struct get_message_reply *req )
@@ -2747,7 +2902,6 @@ static void dump_get_message_reply( const struct get_message_reply *req )
     fprintf( stderr, ", x=%d", req->x );
     fprintf( stderr, ", y=%d", req->y );
     fprintf( stderr, ", time=%08x", req->time );
-    fprintf( stderr, ", active_hooks=%08x", req->active_hooks );
     fprintf( stderr, ", total=%u", req->total );
     dump_varargs_message_data( ", data=", cur_size );
 }
@@ -2815,7 +2969,6 @@ static void dump_get_serial_info_request( const struct get_serial_info_request *
 static void dump_get_serial_info_reply( const struct get_serial_info_reply *req )
 {
     fprintf( stderr, " eventmask=%08x", req->eventmask );
-    fprintf( stderr, ", cookie=%08x", req->cookie );
     fprintf( stderr, ", pending_write=%08x", req->pending_write );
 }
 
@@ -2949,8 +3102,7 @@ static void dump_create_window_request( const struct create_window_request *req 
     fprintf( stderr, ", owner=%08x", req->owner );
     fprintf( stderr, ", atom=%04x", req->atom );
     dump_uint64( ", instance=", &req->instance );
-    fprintf( stderr, ", dpi=%d", req->dpi );
-    fprintf( stderr, ", awareness=%d", req->awareness );
+    fprintf( stderr, ", dpi_context=%08x", req->dpi_context );
     fprintf( stderr, ", style=%08x", req->style );
     fprintf( stderr, ", ex_style=%08x", req->ex_style );
     dump_varargs_unicode_str( ", class=", cur_size );
@@ -2963,8 +3115,7 @@ static void dump_create_window_reply( const struct create_window_reply *req )
     fprintf( stderr, ", owner=%08x", req->owner );
     fprintf( stderr, ", extra=%d", req->extra );
     dump_uint64( ", class_ptr=", &req->class_ptr );
-    fprintf( stderr, ", dpi=%d", req->dpi );
-    fprintf( stderr, ", awareness=%d", req->awareness );
+    fprintf( stderr, ", dpi_context=%08x", req->dpi_context );
 }
 
 static void dump_destroy_window_request( const struct destroy_window_request *req )
@@ -3008,8 +3159,7 @@ static void dump_get_window_info_reply( const struct get_window_info_reply *req 
     fprintf( stderr, ", tid=%04x", req->tid );
     fprintf( stderr, ", atom=%04x", req->atom );
     fprintf( stderr, ", is_unicode=%d", req->is_unicode );
-    fprintf( stderr, ", dpi=%d", req->dpi );
-    fprintf( stderr, ", awareness=%d", req->awareness );
+    fprintf( stderr, ", dpi_context=%08x", req->dpi_context );
 }
 
 static void dump_set_window_info_request( const struct set_window_info_request *req )
@@ -3046,8 +3196,7 @@ static void dump_set_parent_reply( const struct set_parent_reply *req )
 {
     fprintf( stderr, " old_parent=%08x", req->old_parent );
     fprintf( stderr, ", full_parent=%08x", req->full_parent );
-    fprintf( stderr, ", dpi=%d", req->dpi );
-    fprintf( stderr, ", awareness=%d", req->awareness );
+    fprintf( stderr, ", dpi_context=%08x", req->dpi_context );
 }
 
 static void dump_get_window_parents_request( const struct get_window_parents_request *req )
@@ -3111,6 +3260,7 @@ static void dump_set_window_pos_request( const struct set_window_pos_request *re
 {
     fprintf( stderr, " swp_flags=%04x", req->swp_flags );
     fprintf( stderr, ", paint_flags=%04x", req->paint_flags );
+    fprintf( stderr, ", monitor_dpi=%08x", req->monitor_dpi );
     fprintf( stderr, ", handle=%08x", req->handle );
     fprintf( stderr, ", previous=%08x", req->previous );
     dump_rectangle( ", window=", &req->window );
@@ -3186,26 +3336,16 @@ static void dump_get_visible_region_reply( const struct get_visible_region_reply
     dump_varargs_rectangles( ", region=", cur_size );
 }
 
-static void dump_get_surface_region_request( const struct get_surface_region_request *req )
-{
-    fprintf( stderr, " window=%08x", req->window );
-}
-
-static void dump_get_surface_region_reply( const struct get_surface_region_reply *req )
-{
-    dump_rectangle( " visible_rect=", &req->visible_rect );
-    fprintf( stderr, ", total_size=%u", req->total_size );
-    dump_varargs_rectangles( ", region=", cur_size );
-}
-
 static void dump_get_window_region_request( const struct get_window_region_request *req )
 {
     fprintf( stderr, " window=%08x", req->window );
+    fprintf( stderr, ", surface=%d", req->surface );
 }
 
 static void dump_get_window_region_reply( const struct get_window_region_reply *req )
 {
-    fprintf( stderr, " total_size=%u", req->total_size );
+    dump_rectangle( " visible_rect=", &req->visible_rect );
+    fprintf( stderr, ", total_size=%u", req->total_size );
     dump_varargs_rectangles( ", region=", cur_size );
 }
 
@@ -3400,12 +3540,18 @@ static void dump_get_thread_desktop_request( const struct get_thread_desktop_req
 
 static void dump_get_thread_desktop_reply( const struct get_thread_desktop_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    dump_obj_locator( " locator=", &req->locator );
+    fprintf( stderr, ", handle=%04x", req->handle );
 }
 
 static void dump_set_thread_desktop_request( const struct set_thread_desktop_request *req )
 {
     fprintf( stderr, " handle=%04x", req->handle );
+}
+
+static void dump_set_thread_desktop_reply( const struct set_thread_desktop_reply *req )
+{
+    dump_obj_locator( " locator=", &req->locator );
 }
 
 static void dump_enum_desktop_request( const struct enum_desktop_request *req )
@@ -3475,16 +3621,7 @@ static void dump_get_thread_input_request( const struct get_thread_input_request
 
 static void dump_get_thread_input_reply( const struct get_thread_input_reply *req )
 {
-    fprintf( stderr, " focus=%08x", req->focus );
-    fprintf( stderr, ", capture=%08x", req->capture );
-    fprintf( stderr, ", active=%08x", req->active );
-    fprintf( stderr, ", foreground=%08x", req->foreground );
-    fprintf( stderr, ", menu_owner=%08x", req->menu_owner );
-    fprintf( stderr, ", move_size=%08x", req->move_size );
-    fprintf( stderr, ", caret=%08x", req->caret );
-    fprintf( stderr, ", cursor=%08x", req->cursor );
-    fprintf( stderr, ", show_count=%d", req->show_count );
-    dump_rectangle( ", rect=", &req->rect );
+    dump_obj_locator( " locator=", &req->locator );
 }
 
 static void dump_get_last_input_time_request( const struct get_last_input_time_request *req )
@@ -3505,7 +3642,6 @@ static void dump_get_key_state_request( const struct get_key_state_request *req 
 static void dump_get_key_state_reply( const struct get_key_state_reply *req )
 {
     fprintf( stderr, " state=%02x", req->state );
-    dump_varargs_bytes( ", keystate=", cur_size );
 }
 
 static void dump_set_key_state_request( const struct set_key_state_request *req )
@@ -3607,7 +3743,6 @@ static void dump_set_hook_request( const struct set_hook_request *req )
 static void dump_set_hook_reply( const struct set_hook_reply *req )
 {
     fprintf( stderr, " handle=%08x", req->handle );
-    fprintf( stderr, ", active_hooks=%08x", req->active_hooks );
 }
 
 static void dump_remove_hook_request( const struct remove_hook_request *req )
@@ -3615,11 +3750,6 @@ static void dump_remove_hook_request( const struct remove_hook_request *req )
     fprintf( stderr, " handle=%08x", req->handle );
     dump_uint64( ", proc=", &req->proc );
     fprintf( stderr, ", id=%d", req->id );
-}
-
-static void dump_remove_hook_reply( const struct remove_hook_reply *req )
-{
-    fprintf( stderr, " active_hooks=%08x", req->active_hooks );
 }
 
 static void dump_start_hook_chain_request( const struct start_hook_chain_request *req )
@@ -3638,7 +3768,6 @@ static void dump_start_hook_chain_reply( const struct start_hook_chain_reply *re
     fprintf( stderr, ", tid=%04x", req->tid );
     fprintf( stderr, ", unicode=%d", req->unicode );
     dump_uint64( ", proc=", &req->proc );
-    fprintf( stderr, ", active_hooks=%08x", req->active_hooks );
     dump_varargs_unicode_str( ", module=", cur_size );
 }
 
@@ -3871,7 +4000,7 @@ static void dump_open_token_reply( const struct open_token_reply *req )
     fprintf( stderr, " token=%04x", req->token );
 }
 
-static void dump_set_global_windows_request( const struct set_global_windows_request *req )
+static void dump_set_desktop_shell_windows_request( const struct set_desktop_shell_windows_request *req )
 {
     fprintf( stderr, " flags=%08x", req->flags );
     fprintf( stderr, ", shell_window=%08x", req->shell_window );
@@ -3880,7 +4009,7 @@ static void dump_set_global_windows_request( const struct set_global_windows_req
     fprintf( stderr, ", taskman_window=%08x", req->taskman_window );
 }
 
-static void dump_set_global_windows_reply( const struct set_global_windows_reply *req )
+static void dump_set_desktop_shell_windows_reply( const struct set_desktop_shell_windows_reply *req )
 {
     fprintf( stderr, " old_shell_window=%08x", req->old_shell_window );
     fprintf( stderr, ", old_shell_listview=%08x", req->old_shell_listview );
@@ -4042,9 +4171,31 @@ static void dump_get_system_handles_reply( const struct get_system_handles_reply
     dump_varargs_handle_infos( ", data=", cur_size );
 }
 
+static void dump_get_tcp_connections_request( const struct get_tcp_connections_request *req )
+{
+    fprintf( stderr, " state_filter=%08x", req->state_filter );
+}
+
+static void dump_get_tcp_connections_reply( const struct get_tcp_connections_reply *req )
+{
+    fprintf( stderr, " count=%08x", req->count );
+    dump_varargs_tcp_connections( ", connections=", cur_size );
+}
+
+static void dump_get_udp_endpoints_request( const struct get_udp_endpoints_request *req )
+{
+}
+
+static void dump_get_udp_endpoints_reply( const struct get_udp_endpoints_reply *req )
+{
+    fprintf( stderr, " count=%08x", req->count );
+    dump_varargs_udp_endpoints( ", endpoints=", cur_size );
+}
+
 static void dump_create_mailslot_request( const struct create_mailslot_request *req )
 {
     fprintf( stderr, " access=%08x", req->access );
+    fprintf( stderr, ", options=%08x", req->options );
     dump_timeout( ", read_timeout=", &req->read_timeout );
     fprintf( stderr, ", max_msgsize=%08x", req->max_msgsize );
     dump_varargs_object_attributes( ", objattr=", cur_size );
@@ -4092,18 +4243,18 @@ static void dump_open_directory_reply( const struct open_directory_reply *req )
     fprintf( stderr, " handle=%04x", req->handle );
 }
 
-static void dump_get_directory_entry_request( const struct get_directory_entry_request *req )
+static void dump_get_directory_entries_request( const struct get_directory_entries_request *req )
 {
     fprintf( stderr, " handle=%04x", req->handle );
     fprintf( stderr, ", index=%08x", req->index );
+    fprintf( stderr, ", max_count=%08x", req->max_count );
 }
 
-static void dump_get_directory_entry_reply( const struct get_directory_entry_reply *req )
+static void dump_get_directory_entries_reply( const struct get_directory_entries_reply *req )
 {
     fprintf( stderr, " total_len=%u", req->total_len );
-    fprintf( stderr, ", name_len=%u", req->name_len );
-    dump_varargs_unicode_str( ", name=", min(cur_size,req->name_len) );
-    dump_varargs_unicode_str( ", type=", cur_size );
+    fprintf( stderr, ", count=%08x", req->count );
+    dump_varargs_directory_entries( ", entries=", cur_size );
 }
 
 static void dump_create_symlink_request( const struct create_symlink_request *req )
@@ -4496,6 +4647,7 @@ static void dump_get_rawinput_buffer_request( const struct get_rawinput_buffer_r
 static void dump_get_rawinput_buffer_reply( const struct get_rawinput_buffer_reply *req )
 {
     fprintf( stderr, " next_size=%u", req->next_size );
+    fprintf( stderr, ", time=%08x", req->time );
     fprintf( stderr, ", count=%08x", req->count );
     dump_varargs_bytes( ", data=", cur_size );
 }
@@ -4594,6 +4746,18 @@ static void dump_get_next_thread_request( const struct get_next_thread_request *
 static void dump_get_next_thread_reply( const struct get_next_thread_reply *req )
 {
     fprintf( stderr, " handle=%04x", req->handle );
+}
+
+static void dump_set_keyboard_repeat_request( const struct set_keyboard_repeat_request *req )
+{
+    fprintf( stderr, " enable=%d", req->enable );
+    fprintf( stderr, ", delay=%d", req->delay );
+    fprintf( stderr, ", period=%d", req->period );
+}
+
+static void dump_set_keyboard_repeat_reply( const struct set_keyboard_repeat_reply *req )
+{
+    fprintf( stderr, " enable=%d", req->enable );
 }
 
 static const dump_func req_dumpers[REQ_NB_REQUESTS] = {
@@ -4708,6 +4872,7 @@ static const dump_func req_dumpers[REQ_NB_REQUESTS] = {
     (dump_func)dump_delete_atom_request,
     (dump_func)dump_find_atom_request,
     (dump_func)dump_get_atom_information_request,
+    (dump_func)dump_get_msg_queue_handle_request,
     (dump_func)dump_get_msg_queue_request,
     (dump_func)dump_set_queue_fd_request,
     (dump_func)dump_set_queue_mask_request,
@@ -4753,7 +4918,6 @@ static const dump_func req_dumpers[REQ_NB_REQUESTS] = {
     (dump_func)dump_set_window_text_request,
     (dump_func)dump_get_windows_offset_request,
     (dump_func)dump_get_visible_region_request,
-    (dump_func)dump_get_surface_region_request,
     (dump_func)dump_get_window_region_request,
     (dump_func)dump_set_window_region_request,
     (dump_func)dump_get_update_region_request,
@@ -4813,7 +4977,7 @@ static const dump_func req_dumpers[REQ_NB_REQUESTS] = {
     (dump_func)dump_remove_clipboard_listener_request,
     (dump_func)dump_create_token_request,
     (dump_func)dump_open_token_request,
-    (dump_func)dump_set_global_windows_request,
+    (dump_func)dump_set_desktop_shell_windows_request,
     (dump_func)dump_adjust_token_privileges_request,
     (dump_func)dump_get_token_privileges_request,
     (dump_func)dump_check_token_privileges_request,
@@ -4827,11 +4991,13 @@ static const dump_func req_dumpers[REQ_NB_REQUESTS] = {
     (dump_func)dump_set_security_object_request,
     (dump_func)dump_get_security_object_request,
     (dump_func)dump_get_system_handles_request,
+    (dump_func)dump_get_tcp_connections_request,
+    (dump_func)dump_get_udp_endpoints_request,
     (dump_func)dump_create_mailslot_request,
     (dump_func)dump_set_mailslot_info_request,
     (dump_func)dump_create_directory_request,
     (dump_func)dump_open_directory_request,
-    (dump_func)dump_get_directory_entry_request,
+    (dump_func)dump_get_directory_entries_request,
     (dump_func)dump_create_symlink_request,
     (dump_func)dump_open_symlink_request,
     (dump_func)dump_query_symlink_request,
@@ -4882,6 +5048,7 @@ static const dump_func req_dumpers[REQ_NB_REQUESTS] = {
     (dump_func)dump_suspend_process_request,
     (dump_func)dump_resume_process_request,
     (dump_func)dump_get_next_thread_request,
+    (dump_func)dump_set_keyboard_repeat_request,
 };
 
 static const dump_func reply_dumpers[REQ_NB_REQUESTS] = {
@@ -4996,6 +5163,7 @@ static const dump_func reply_dumpers[REQ_NB_REQUESTS] = {
     NULL,
     (dump_func)dump_find_atom_reply,
     (dump_func)dump_get_atom_information_reply,
+    (dump_func)dump_get_msg_queue_handle_reply,
     (dump_func)dump_get_msg_queue_reply,
     NULL,
     (dump_func)dump_set_queue_mask_reply,
@@ -5041,7 +5209,6 @@ static const dump_func reply_dumpers[REQ_NB_REQUESTS] = {
     NULL,
     (dump_func)dump_get_windows_offset_reply,
     (dump_func)dump_get_visible_region_reply,
-    (dump_func)dump_get_surface_region_reply,
     (dump_func)dump_get_window_region_reply,
     NULL,
     (dump_func)dump_get_update_region_reply,
@@ -5063,7 +5230,7 @@ static const dump_func reply_dumpers[REQ_NB_REQUESTS] = {
     NULL,
     NULL,
     (dump_func)dump_get_thread_desktop_reply,
-    NULL,
+    (dump_func)dump_set_thread_desktop_reply,
     (dump_func)dump_enum_desktop_reply,
     (dump_func)dump_set_user_object_info_reply,
     (dump_func)dump_register_hotkey_reply,
@@ -5080,7 +5247,7 @@ static const dump_func reply_dumpers[REQ_NB_REQUESTS] = {
     (dump_func)dump_set_caret_window_reply,
     (dump_func)dump_set_caret_info_reply,
     (dump_func)dump_set_hook_reply,
-    (dump_func)dump_remove_hook_reply,
+    NULL,
     (dump_func)dump_start_hook_chain_reply,
     NULL,
     (dump_func)dump_get_hook_info_reply,
@@ -5101,7 +5268,7 @@ static const dump_func reply_dumpers[REQ_NB_REQUESTS] = {
     NULL,
     (dump_func)dump_create_token_reply,
     (dump_func)dump_open_token_reply,
-    (dump_func)dump_set_global_windows_reply,
+    (dump_func)dump_set_desktop_shell_windows_reply,
     (dump_func)dump_adjust_token_privileges_reply,
     (dump_func)dump_get_token_privileges_reply,
     (dump_func)dump_check_token_privileges_reply,
@@ -5115,11 +5282,13 @@ static const dump_func reply_dumpers[REQ_NB_REQUESTS] = {
     NULL,
     (dump_func)dump_get_security_object_reply,
     (dump_func)dump_get_system_handles_reply,
+    (dump_func)dump_get_tcp_connections_reply,
+    (dump_func)dump_get_udp_endpoints_reply,
     (dump_func)dump_create_mailslot_reply,
     (dump_func)dump_set_mailslot_info_reply,
     (dump_func)dump_create_directory_reply,
     (dump_func)dump_open_directory_reply,
-    (dump_func)dump_get_directory_entry_reply,
+    (dump_func)dump_get_directory_entries_reply,
     (dump_func)dump_create_symlink_reply,
     (dump_func)dump_open_symlink_reply,
     (dump_func)dump_query_symlink_reply,
@@ -5170,6 +5339,7 @@ static const dump_func reply_dumpers[REQ_NB_REQUESTS] = {
     NULL,
     NULL,
     (dump_func)dump_get_next_thread_reply,
+    (dump_func)dump_set_keyboard_repeat_reply,
 };
 
 static const char * const req_names[REQ_NB_REQUESTS] = {
@@ -5284,6 +5454,7 @@ static const char * const req_names[REQ_NB_REQUESTS] = {
     "delete_atom",
     "find_atom",
     "get_atom_information",
+    "get_msg_queue_handle",
     "get_msg_queue",
     "set_queue_fd",
     "set_queue_mask",
@@ -5329,7 +5500,6 @@ static const char * const req_names[REQ_NB_REQUESTS] = {
     "set_window_text",
     "get_windows_offset",
     "get_visible_region",
-    "get_surface_region",
     "get_window_region",
     "set_window_region",
     "get_update_region",
@@ -5389,7 +5559,7 @@ static const char * const req_names[REQ_NB_REQUESTS] = {
     "remove_clipboard_listener",
     "create_token",
     "open_token",
-    "set_global_windows",
+    "set_desktop_shell_windows",
     "adjust_token_privileges",
     "get_token_privileges",
     "check_token_privileges",
@@ -5403,11 +5573,13 @@ static const char * const req_names[REQ_NB_REQUESTS] = {
     "set_security_object",
     "get_security_object",
     "get_system_handles",
+    "get_tcp_connections",
+    "get_udp_endpoints",
     "create_mailslot",
     "set_mailslot_info",
     "create_directory",
     "open_directory",
-    "get_directory_entry",
+    "get_directory_entries",
     "create_symlink",
     "open_symlink",
     "query_symlink",
@@ -5458,6 +5630,7 @@ static const char * const req_names[REQ_NB_REQUESTS] = {
     "suspend_process",
     "resume_process",
     "get_next_thread",
+    "set_keyboard_repeat",
 };
 
 static const struct
@@ -5537,6 +5710,7 @@ static const struct
     { "KERNEL_APC",                  STATUS_KERNEL_APC },
     { "KEY_DELETED",                 STATUS_KEY_DELETED },
     { "MAPPED_FILE_SIZE_ZERO",       STATUS_MAPPED_FILE_SIZE_ZERO },
+    { "MORE_ENTRIES",                STATUS_MORE_ENTRIES },
     { "MUTANT_NOT_OWNED",            STATUS_MUTANT_NOT_OWNED },
     { "NAME_TOO_LONG",               STATUS_NAME_TOO_LONG },
     { "NETWORK_BUSY",                STATUS_NETWORK_BUSY },
@@ -5652,7 +5826,7 @@ static const char *get_status_name( unsigned int status )
         for (i = 0; status_names[i].name; i++)
             if (status_names[i].value == status) return status_names[i].name;
     }
-    sprintf( buffer, "%x", status );
+    snprintf( buffer, sizeof(buffer), "%x", status );
     return buffer;
 }
 

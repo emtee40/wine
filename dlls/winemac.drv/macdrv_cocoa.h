@@ -534,6 +534,8 @@ struct macdrv_window_state {
     unsigned int    maximized:1;
 };
 
+struct window_surface;
+
 extern macdrv_window macdrv_create_cocoa_window(const struct macdrv_window_features* wf,
         CGRect frame, void* hwnd, macdrv_event_queue queue);
 extern void macdrv_destroy_cocoa_window(macdrv_window w);
@@ -550,16 +552,10 @@ extern void macdrv_hide_cocoa_window(macdrv_window w);
 extern void macdrv_set_cocoa_window_frame(macdrv_window w, const CGRect* new_frame);
 extern void macdrv_get_cocoa_window_frame(macdrv_window w, CGRect* out_frame);
 extern void macdrv_set_cocoa_parent_window(macdrv_window w, macdrv_window parent);
-extern void macdrv_set_window_surface(macdrv_window w, void *surface, pthread_mutex_t *mutex);
-extern CGImageRef create_surface_image(void *window_surface, CGRect *rect, int copy_data, int color_keyed,
-        CGFloat key_red, CGFloat key_green, CGFloat key_blue);
-extern int get_surface_blit_rects(void *window_surface, const CGRect **rects, int *count);
-extern void macdrv_window_needs_display(macdrv_window w, CGRect rect);
+extern void macdrv_window_set_color_image(macdrv_window w, CGImageRef image, CGRect rect, CGRect dirty);
+extern void macdrv_window_set_shape_image(macdrv_window w, CGImageRef image);
 extern void macdrv_set_window_shape(macdrv_window w, const CGRect *rects, int count);
 extern void macdrv_set_window_alpha(macdrv_window w, CGFloat alpha);
-extern void macdrv_set_window_color_key(macdrv_window w, CGFloat keyRed, CGFloat keyGreen,
-                                        CGFloat keyBlue);
-extern void macdrv_clear_window_color_key(macdrv_window w);
 extern void macdrv_window_use_per_pixel_alpha(macdrv_window w, int use_per_pixel_alpha);
 extern void macdrv_give_cocoa_window_focus(macdrv_window w, int activate);
 extern void macdrv_set_window_min_max_sizes(macdrv_window w, CGSize min_size, CGSize max_size);

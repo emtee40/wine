@@ -18,7 +18,6 @@
  */
 
 #include "wined3d_private.h"
-#include "wined3d_shaders.h"
 #include "wined3d_gl.h"
 #include "wined3d_vk.h"
 
@@ -45,7 +44,6 @@ static GLenum get_texture_view_target(const struct wined3d_gl_info *gl_info,
     view_types[] =
     {
         {GL_TEXTURE_CUBE_MAP,  0, GL_TEXTURE_CUBE_MAP},
-        {GL_TEXTURE_RECTANGLE, 0, GL_TEXTURE_RECTANGLE},
         {GL_TEXTURE_3D,        0, GL_TEXTURE_3D},
 
         {GL_TEXTURE_2D,       0,                          GL_TEXTURE_2D},
@@ -269,7 +267,17 @@ static void create_buffer_texture(struct wined3d_gl_view *view, struct wined3d_c
 
     view->target = GL_TEXTURE_BUFFER;
     if (!view->name)
+    {
         gl_info->gl_ops.gl.p_glGenTextures(1, &view->name);
+    }
+    else if (gl_info->supported[ARB_BINDLESS_TEXTURE])
+    {
+        /* If we already bound this view to a shader, we acquired a handle to
+         * it, and it's now immutable. This means we can't bind a new buffer
+         * storage to it, so recreate the texture. */
+        gl_info->gl_ops.gl.p_glDeleteTextures(1, &view->name);
+        gl_info->gl_ops.gl.p_glGenTextures(1, &view->name);
+    }
 
     wined3d_context_gl_bind_texture(context_gl, GL_TEXTURE_BUFFER, view->name);
     if (gl_info->supported[ARB_TEXTURE_BUFFER_RANGE])
@@ -455,24 +463,14 @@ void wined3d_rendertarget_view_get_drawable_size(const struct wined3d_rendertarg
         *width = texture->resource.width;
         *height = texture->resource.height;
     }
-    else if (wined3d_settings.offscreen_rendering_mode == ORM_BACKBUFFER)
-    {
-        const struct wined3d_swapchain_desc *desc = &context->swapchain->state.desc;
-
-        /* The drawable size of a backbuffer / aux buffer offscreen target is
-         * the size of the current context's drawable, which is the size of
-         * the back buffer of the swapchain the active context belongs to. */
-        *width = desc->backbuffer_width;
-        *height = desc->backbuffer_height;
-    }
     else
     {
         unsigned int level_idx = view->sub_resource_idx % texture->level_count;
 
         /* The drawable size of an FBO target is the OpenGL texture size,
          * which is the power of two size. */
-        *width = wined3d_texture_get_level_pow2_width(texture, level_idx);
-        *height = wined3d_texture_get_level_pow2_height(texture, level_idx);
+        *width = wined3d_texture_get_level_width(texture, level_idx);
+        *height = wined3d_texture_get_level_height(texture, level_idx);
     }
 }
 
@@ -1305,22 +1303,12 @@ void wined3d_shader_resource_view_gl_bind(struct wined3d_shader_resource_view_gl
     texture_gl = wined3d_texture_gl(wined3d_texture_from_resource(view_gl->v.resource));
     wined3d_texture_gl_bind(texture_gl, context_gl, sampler_gl->s.desc.srgb_decode);
     wined3d_sampler_gl_bind(sampler_gl, unit, texture_gl, context_gl);
-
-    /* Trigger shader constant reloading (for NP2 texcoord fixup) */
-    if (!(texture_gl->t.flags & WINED3D_TEXTURE_POW2_MAT_IDENT))
-        context_gl->c.constant_update_mask |= WINED3D_SHADER_CONST_PS_NP2_FIXUP;
 }
 
 /* Context activation is done by the caller. */
 static void shader_resource_view_gl_bind_and_dirtify(struct wined3d_shader_resource_view_gl *view_gl,
         struct wined3d_context_gl *context_gl)
 {
-    if (context_gl->active_texture < ARRAY_SIZE(context_gl->rev_tex_unit_map))
-    {
-        unsigned int active_sampler = context_gl->rev_tex_unit_map[context_gl->active_texture];
-        if (active_sampler != WINED3D_UNMAPPED_STAGE)
-            context_invalidate_state(&context_gl->c, STATE_SAMPLER(active_sampler));
-    }
     /* FIXME: Ideally we'd only do this when touching a binding that's used by
      * a shader. */
     context_invalidate_compute_state(&context_gl->c, STATE_COMPUTE_SHADER_RESOURCE_BINDING);
@@ -1899,6 +1887,36 @@ HRESULT wined3d_unordered_access_view_gl_init(struct wined3d_unordered_access_vi
     return hr;
 }
 
+static int compile_hlsl_cs(const struct vkd3d_shader_code *hlsl, struct vkd3d_shader_code *dxbc)
+{
+    struct vkd3d_shader_hlsl_source_info hlsl_info;
+    struct vkd3d_shader_compile_info info;
+
+    static const struct vkd3d_shader_compile_option options[] =
+    {
+        {VKD3D_SHADER_COMPILE_OPTION_API_VERSION, VKD3D_SHADER_API_VERSION_1_12},
+    };
+
+    info.type = VKD3D_SHADER_STRUCTURE_TYPE_COMPILE_INFO;
+    info.next = &hlsl_info;
+    info.source = *hlsl;
+    info.source_type = VKD3D_SHADER_SOURCE_HLSL;
+    info.target_type = VKD3D_SHADER_TARGET_DXBC_TPF;
+    info.options = options;
+    info.option_count = ARRAY_SIZE(options);
+    info.log_level = VKD3D_SHADER_LOG_NONE;
+    info.source_name = NULL;
+
+    hlsl_info.type = VKD3D_SHADER_STRUCTURE_TYPE_HLSL_SOURCE_INFO;
+    hlsl_info.next = NULL;
+    hlsl_info.entry_point = "main";
+    hlsl_info.secondary_code.code = NULL;
+    hlsl_info.secondary_code.size = 0;
+    hlsl_info.profile = "cs_5_0";
+
+    return vkd3d_shader_compile(&info, dxbc, NULL);
+}
+
 struct wined3d_uav_clear_constants_vk
 {
     VkClearColorValue color;
@@ -1907,31 +1925,79 @@ struct wined3d_uav_clear_constants_vk
 };
 
 static VkPipeline create_uav_pipeline(struct wined3d_context_vk *context_vk,
-        struct wined3d_pipeline_layout_vk *layout, const unsigned int *byte_code, size_t byte_code_size,
+        struct wined3d_pipeline_layout_vk *layout, const char *resource_filename,
         enum wined3d_shader_resource_type resource_type)
 {
     VkComputePipelineCreateInfo pipeline_info;
     struct wined3d_shader_desc shader_desc;
     const struct wined3d_vk_info *vk_info;
+    struct vkd3d_shader_code code, dxbc;
     struct wined3d_context *context;
     VkShaderModule shader_module;
     VkDevice vk_device;
+    void *resource_ptr;
     VkPipeline result;
+    HGLOBAL global;
+    HMODULE module;
+    HRSRC resource;
     VkResult vr;
+    int ret;
 
     vk_info = context_vk->vk_info;
     context = &context_vk->c;
 
-    shader_desc.byte_code = (const DWORD *)byte_code;
-    shader_desc.byte_code_size = byte_code_size;
+    if (!GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                           (const char *)create_uav_pipeline, &module))
+    {
+        ERR("Failed to get a reference to the current module, last error %ld.\n", GetLastError());
+        return VK_NULL_HANDLE;
+    }
+
+    if (!(resource = FindResourceA(module, resource_filename, (const char *)RT_RCDATA)))
+    {
+        ERR("Failed to retrieve resource, last error %ld.\n", GetLastError());
+        return VK_NULL_HANDLE;
+    }
+
+    if (!(global = LoadResource(module, resource)))
+    {
+        ERR("Failed to load resource, last error %ld.\n", GetLastError());
+        return VK_NULL_HANDLE;
+    }
+
+    if (!(resource_ptr = LockResource(global)))
+    {
+        ERR("Failed to lock resource.\n");
+        FreeResource(resource);
+        return VK_NULL_HANDLE;
+    }
+
+    code.code = resource_ptr;
+    code.size = SizeofResource(module, resource);
+
+    if ((ret = compile_hlsl_cs(&code, &dxbc)) < 0)
+    {
+        ERR("Failed to compile shader, ret %d.\n", ret);
+        FreeResource(resource);
+        return VK_NULL_HANDLE;
+    }
+
+    if (FreeResource(resource))
+        ERR("Failed to free resource.\n");
+
+    shader_desc.byte_code = dxbc.code;
+    shader_desc.byte_code_size = dxbc.size;
 
     shader_module = (VkShaderModule)context->device->adapter->shader_backend->shader_compile(context, &shader_desc,
             WINED3D_SHADER_TYPE_COMPUTE);
     if (shader_module == VK_NULL_HANDLE)
     {
         ERR("Failed to create shader.\n");
+        vkd3d_shader_free_shader_code(&dxbc);
         return VK_NULL_HANDLE;
     }
+
+    vkd3d_shader_free_shader_code(&dxbc);
 
     pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
     pipeline_info.pNext = NULL;
@@ -1982,32 +2048,30 @@ void wined3d_device_vk_uav_clear_state_init(struct wined3d_device_vk *device_vk)
     vk_set_bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
     state->buffer_layout = wined3d_context_vk_get_pipeline_layout(context_vk, vk_set_bindings, 2);
 
-#define SHADER_DESC(name) name, sizeof(name)
     state->float_pipelines.buffer = create_uav_pipeline(context_vk, state->buffer_layout,
-            SHADER_DESC(cs_uav_clear_buffer_float_code), WINED3D_SHADER_RESOURCE_BUFFER);
+            "cs_uav_clear_buffer_float_code.hlsl", WINED3D_SHADER_RESOURCE_BUFFER);
     state->uint_pipelines.buffer = create_uav_pipeline(context_vk, state->buffer_layout,
-            SHADER_DESC(cs_uav_clear_buffer_uint_code), WINED3D_SHADER_RESOURCE_BUFFER);
+            "cs_uav_clear_buffer_uint_code.hlsl", WINED3D_SHADER_RESOURCE_BUFFER);
     state->float_pipelines.image_1d = create_uav_pipeline(context_vk, state->image_layout,
-            SHADER_DESC(cs_uav_clear_1d_float_code), WINED3D_SHADER_RESOURCE_TEXTURE_1D);
+            "cs_uav_clear_1d_float_code.hlsl", WINED3D_SHADER_RESOURCE_TEXTURE_1D);
     state->uint_pipelines.image_1d = create_uav_pipeline(context_vk, state->image_layout,
-            SHADER_DESC(cs_uav_clear_1d_uint_code), WINED3D_SHADER_RESOURCE_TEXTURE_1D);
+            "cs_uav_clear_1d_uint_code.hlsl", WINED3D_SHADER_RESOURCE_TEXTURE_1D);
     state->float_pipelines.image_1d_array = create_uav_pipeline(context_vk, state->image_layout,
-            SHADER_DESC(cs_uav_clear_1d_array_float_code), WINED3D_SHADER_RESOURCE_TEXTURE_1DARRAY);
+            "cs_uav_clear_1d_array_float_code.hlsl", WINED3D_SHADER_RESOURCE_TEXTURE_1DARRAY);
     state->uint_pipelines.image_1d_array = create_uav_pipeline(context_vk, state->image_layout,
-            SHADER_DESC(cs_uav_clear_1d_array_uint_code), WINED3D_SHADER_RESOURCE_TEXTURE_1DARRAY);
+            "cs_uav_clear_1d_array_uint_code.hlsl", WINED3D_SHADER_RESOURCE_TEXTURE_1DARRAY);
     state->float_pipelines.image_2d = create_uav_pipeline(context_vk, state->image_layout,
-            SHADER_DESC(cs_uav_clear_2d_float_code), WINED3D_SHADER_RESOURCE_TEXTURE_2D);
+            "cs_uav_clear_2d_float_code.hlsl", WINED3D_SHADER_RESOURCE_TEXTURE_2D);
     state->uint_pipelines.image_2d = create_uav_pipeline(context_vk, state->image_layout,
-            SHADER_DESC(cs_uav_clear_2d_uint_code), WINED3D_SHADER_RESOURCE_TEXTURE_2D);
+            "cs_uav_clear_2d_uint_code.hlsl", WINED3D_SHADER_RESOURCE_TEXTURE_2D);
     state->float_pipelines.image_2d_array = create_uav_pipeline(context_vk, state->image_layout,
-            SHADER_DESC(cs_uav_clear_2d_array_float_code), WINED3D_SHADER_RESOURCE_TEXTURE_2DARRAY);
+            "cs_uav_clear_2d_array_float_code.hlsl", WINED3D_SHADER_RESOURCE_TEXTURE_2DARRAY);
     state->uint_pipelines.image_2d_array = create_uav_pipeline(context_vk, state->image_layout,
-            SHADER_DESC(cs_uav_clear_2d_array_uint_code), WINED3D_SHADER_RESOURCE_TEXTURE_2DARRAY);
+            "cs_uav_clear_2d_array_uint_code.hlsl", WINED3D_SHADER_RESOURCE_TEXTURE_2DARRAY);
     state->float_pipelines.image_3d = create_uav_pipeline(context_vk, state->image_layout,
-            SHADER_DESC(cs_uav_clear_3d_float_code), WINED3D_SHADER_RESOURCE_TEXTURE_3D);
+            "cs_uav_clear_3d_float_code.hlsl", WINED3D_SHADER_RESOURCE_TEXTURE_3D);
     state->uint_pipelines.image_3d = create_uav_pipeline(context_vk, state->image_layout,
-            SHADER_DESC(cs_uav_clear_3d_uint_code), WINED3D_SHADER_RESOURCE_TEXTURE_3D);
-#undef SHADER_DESC
+            "cs_uav_clear_3d_uint_code.hlsl", WINED3D_SHADER_RESOURCE_TEXTURE_3D);
 
     state->buffer_group_size.x = 128;
     state->buffer_group_size.y = 1;

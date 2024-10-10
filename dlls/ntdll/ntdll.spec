@@ -71,6 +71,7 @@
 @ stdcall -norelay KiUserApcDispatcher(ptr long long long ptr)
 @ stdcall -norelay KiUserCallbackDispatcher(long ptr long)
 @ stdcall -norelay -arch=arm,arm64,arm64ec KiUserCallbackDispatcherReturn()
+@ stdcall -norelay -arch=arm64ec KiUserEmulationDispatcher(ptr)
 @ stdcall -norelay KiUserExceptionDispatcher(ptr ptr)
 # @ stub LdrAccessOutOfProcessResource
 @ stdcall LdrAccessResource(long ptr ptr ptr)
@@ -338,8 +339,9 @@
 @ stdcall -syscall NtQueryVirtualMemory(long ptr long ptr long ptr)
 @ stdcall -syscall NtQueryVolumeInformationFile(long ptr ptr long long)
 @ stdcall -syscall NtQueueApcThread(long ptr long long long)
+@ stdcall -syscall NtQueueApcThreadEx(long long ptr long long long)
 @ stdcall -syscall NtRaiseException(ptr ptr long)
-@ stdcall -syscall NtRaiseHardError(long long ptr ptr long ptr)
+@ stdcall -syscall NtRaiseHardError(long long long ptr long ptr)
 @ stdcall -syscall NtReadFile(long long ptr ptr ptr ptr long ptr ptr)
 @ stdcall -syscall NtReadFileScatter(long long ptr ptr ptr ptr long ptr ptr)
 # @ stub NtReadRequestData
@@ -459,6 +461,7 @@
 @ stub PfxInitialize
 @ stub PfxInsertPrefix
 @ stub PfxRemovePrefix
+@ stdcall -arch=arm64ec ProcessPendingCrossProcessEmulatorWork()
 # @ stub PropertyLengthAsVariant
 @ stub RtlAbortRXact
 @ stdcall RtlAbsoluteToSelfRelativeSD(ptr ptr ptr)
@@ -539,6 +542,7 @@
 # @ stub RtlComputeImportTableHash
 # @ stub RtlComputePrivatizedDllName_U
 @ stub RtlConsoleMultiByteToUnicodeN
+@ stdcall RtlConvertDeviceFamilyInfoToString(ptr ptr ptr ptr)
 @ stub RtlConvertExclusiveToShared
 @ stdcall -arch=win32 -ret64 RtlConvertLongToLargeInteger(long)
 # @ stub RtlConvertPropertyToVariant
@@ -649,7 +653,7 @@
 # @ stub RtlEnumerateGenericTableAvl
 # @ stub RtlEnumerateGenericTableLikeADirectory
 @ stdcall RtlEnumerateGenericTableWithoutSplaying(ptr ptr)
-# @ stub RtlEnumerateGenericTableWithoutSplayingAvl
+@ stdcall RtlEnumerateGenericTableWithoutSplayingAvl(ptr ptr)
 @ stub RtlEnumerateProperties
 @ stdcall RtlEqualComputerName(ptr ptr)
 @ stdcall RtlEqualDomainName(ptr ptr)
@@ -742,8 +746,7 @@
 # @ stub RtlGetLengthWithoutTrailingPathSeperators
 @ stdcall RtlGetLocaleFileMappingAddress(ptr ptr ptr)
 @ stdcall RtlGetLongestNtPathLength()
-@ stdcall -syscall -arch=win32 RtlGetNativeSystemInformation(long ptr long ptr) NtWow64GetNativeSystemInformation
-@ stdcall -syscall -arch=win64 RtlGetNativeSystemInformation(long ptr long ptr) NtQuerySystemInformation
+@ stdcall RtlGetNativeSystemInformation(long ptr long ptr)
 # @ stub RtlGetNextRange
 @ stdcall RtlGetNtGlobalFlags()
 @ stdcall RtlGetNtProductType(ptr)
@@ -876,7 +879,7 @@
 # @ stub RtlLogStackBackTrace
 @ stdcall RtlLookupAtomInAtomTable(ptr wstr ptr)
 @ stdcall RtlLookupElementGenericTable(ptr ptr)
-# @ stub RtlLookupElementGenericTableAvl
+@ stdcall RtlLookupElementGenericTableAvl(ptr ptr)
 @ stdcall -arch=!i386 RtlLookupFunctionEntry(long ptr ptr)
 @ stdcall -arch=!i386 RtlLookupFunctionTable(long ptr ptr)
 @ stdcall RtlMakeSelfRelativeSD(ptr ptr ptr)
@@ -898,7 +901,7 @@
 @ stdcall RtlNtStatusToDosError(long)
 @ stdcall RtlNtStatusToDosErrorNoTeb(long)
 @ stdcall RtlNumberGenericTableElements(ptr)
-# @ stub RtlNumberGenericTableElementsAvl
+@ stdcall RtlNumberGenericTableElementsAvl(ptr)
 @ stdcall RtlNumberOfClearBits(ptr)
 @ stdcall RtlNumberOfSetBits(ptr)
 @ stdcall RtlOemStringToUnicodeSize(ptr)
@@ -949,6 +952,8 @@
 @ stdcall RtlRaiseStatus(long)
 @ stdcall RtlRandom(ptr)
 @ stdcall RtlRandomEx(ptr)
+@ stdcall RtlRbInsertNodeEx(ptr ptr long ptr)
+@ stdcall RtlRbRemoveNode(ptr ptr)
 @ stdcall RtlReAllocateHeap(long long ptr long)
 @ stub RtlReadMemoryStream
 @ stub RtlReadOutOfProcessMemoryStream
@@ -1387,8 +1392,9 @@
 @ stdcall -private -syscall ZwQueryVirtualMemory(long ptr long ptr long ptr) NtQueryVirtualMemory
 @ stdcall -private -syscall ZwQueryVolumeInformationFile(long ptr ptr long long) NtQueryVolumeInformationFile
 @ stdcall -private -syscall ZwQueueApcThread(long ptr long long long) NtQueueApcThread
+@ stdcall -private -syscall ZwQueueApcThreadEx(long long ptr long long long) NtQueueApcThreadEx
 @ stdcall -private -syscall ZwRaiseException(ptr ptr long) NtRaiseException
-@ stdcall -private -syscall ZwRaiseHardError(long long ptr ptr long ptr) NtRaiseHardError
+@ stdcall -private -syscall ZwRaiseHardError(long long long ptr long ptr) NtRaiseHardError
 @ stdcall -private -syscall ZwReadFile(long long ptr ptr ptr ptr long ptr ptr) NtReadFile
 @ stdcall -private -syscall ZwReadFileScatter(long long ptr ptr ptr ptr long ptr ptr) NtReadFileScatter
 # @ stub ZwReadRequestData
@@ -1717,11 +1723,11 @@
 @ cdecl wine_server_handle_to_fd(long long ptr ptr)
 
 # Unix interface
-@ stdcall __wine_unix_call(int64 long ptr)
 @ stdcall __wine_unix_spawnvp(long ptr)
 @ stdcall __wine_ctrl_routine(ptr)
 @ extern -private __wine_syscall_dispatcher
 @ extern -private __wine_unix_call_dispatcher
+@ extern -private -arch=arm64ec __wine_unix_call_dispatcher_arm64ec
 @ extern -private __wine_unixlib_handle
 
 # Debugging

@@ -269,10 +269,11 @@ static void codeview_init_basic_types(struct module* module)
     cv_basic_types[T_PUINT8]  = &symt_new_pointer(module, cv_basic_types[T_UINT8],  ptrsz)->symt;
 }
 
-static int leaf_as_variant(VARIANT* v, const unsigned short int* leaf)
+static int leaf_as_variant(VARIANT *v, const unsigned char *leaf)
 {
-    unsigned short int type = *leaf++;
+    unsigned short int type = *(const unsigned short *)leaf;
     int length = 2;
+    leaf += length;
 
     if (type < LF_NUMERIC)
     {
@@ -298,7 +299,7 @@ static int leaf_as_variant(VARIANT* v, const unsigned short int* leaf)
         case LF_USHORT:
             length += 2;
             V_VT(v) = VT_UI2;
-            V_UI2(v) = *leaf;
+            V_UI2(v) = *(const unsigned short*)leaf;
             break;
 
         case LF_LONG:
@@ -394,10 +395,11 @@ static int leaf_as_variant(VARIANT* v, const unsigned short int* leaf)
     return length;
 }
 
-static int numeric_leaf(int* value, const unsigned short int* leaf)
+static int numeric_leaf(int *value, const unsigned char *leaf)
 {
-    unsigned short int type = *leaf++;
+    unsigned short int type = *(const unsigned short int *)leaf;
     int length = 2;
+    leaf += length;
 
     if (type < LF_NUMERIC)
     {
@@ -419,7 +421,7 @@ static int numeric_leaf(int* value, const unsigned short int* leaf)
 
         case LF_USHORT:
             length += 2;
-            *value = *leaf;
+            *value = *(const unsigned short*)leaf;
             break;
 
         case LF_LONG:
@@ -722,31 +724,31 @@ static BOOL codeview_type_extract_name(const union codeview_type* cvtype,
     {
     case LF_STRUCTURE_V1:
     case LF_CLASS_V1:
-        leaf_len = numeric_leaf(&value, &cvtype->struct_v1.structlen);
-        p_name = (const struct p_string*)((const unsigned char*)&cvtype->struct_v1.structlen + leaf_len);
+        leaf_len = numeric_leaf(&value, cvtype->struct_v1.data);
+        p_name = (const struct p_string*)&cvtype->struct_v1.data[leaf_len];
         break;
     case LF_STRUCTURE_V2:
     case LF_CLASS_V2:
-        leaf_len = numeric_leaf(&value, &cvtype->struct_v2.structlen);
-        p_name = (const struct p_string*)((const unsigned char*)&cvtype->struct_v2.structlen + leaf_len);
+        leaf_len = numeric_leaf(&value, cvtype->struct_v2.data);
+        p_name = (const struct p_string*)&cvtype->struct_v2.data[leaf_len];
         break;
     case LF_STRUCTURE_V3:
     case LF_CLASS_V3:
-        leaf_len = numeric_leaf(&value, &cvtype->struct_v3.structlen);
-        c_name = (const char*)&cvtype->struct_v3.structlen + leaf_len;
+        leaf_len = numeric_leaf(&value, cvtype->struct_v3.data);
+        c_name = (const char*)&cvtype->struct_v3.data[leaf_len];
         decorated = cvtype->struct_v3.property.has_decorated_name;
         break;
     case LF_UNION_V1:
-        leaf_len = numeric_leaf(&value, &cvtype->union_v1.un_len);
-        p_name = (const struct p_string*)((const unsigned char*)&cvtype->union_v1.un_len + leaf_len);
+        leaf_len = numeric_leaf(&value, cvtype->union_v1.data);
+        p_name = (const struct p_string*)&cvtype->union_v1.data[leaf_len];
         break;
     case LF_UNION_V2:
-        leaf_len = numeric_leaf(&value, &cvtype->union_v2.un_len);
-        p_name = (const struct p_string*)((const unsigned char*)&cvtype->union_v2.un_len + leaf_len);
+        leaf_len = numeric_leaf(&value, cvtype->union_v2.data);
+        p_name = (const struct p_string*)&cvtype->union_v2.data[leaf_len];
         break;
     case LF_UNION_V3:
-        leaf_len = numeric_leaf(&value, &cvtype->union_v3.un_len);
-        c_name = (const char*)&cvtype->union_v3.un_len + leaf_len;
+        leaf_len = numeric_leaf(&value, cvtype->union_v3.data);
+        c_name = (const char*)&cvtype->union_v3.data[leaf_len];
         decorated = cvtype->union_v3.property.has_decorated_name;
         break;
     case LF_ENUM_V1:
@@ -757,7 +759,7 @@ static BOOL codeview_type_extract_name(const union codeview_type* cvtype,
         break;
     case LF_ENUM_V3:
         c_name = cvtype->enumeration_v3.name;
-        decorated = cvtype->union_v3.property.has_decorated_name;
+        decorated = cvtype->enumeration_v3.property.has_decorated_name;
         break;
     default:
         return FALSE;
@@ -821,12 +823,13 @@ static BOOL codeview_resolve_forward_type(struct codeview_type_parse* ctp, const
                 ((decoratedref && decorateddecl && !strcmp(decoratedref, decorateddecl)) ||
                  (!decoratedref && !decorateddecl && lenref == lendecl && !memcmp(nameref, namedecl, lenref))))
             {
-                TRACE("mapping forward type %.*s (%s) %x into %x\n", lenref, nameref, debugstr_a(decoratedref), reftype, hl->id);
+                TRACE("mapping forward type %s (%s) %x into %x\n", debugstr_an(nameref, lenref), debugstr_a(decoratedref), reftype, hl->id);
                 *impl_type = hl->id;
                 return TRUE;
             }
         }
     }
+    WARN("Couldn't resolve forward declaration for %s\n", debugstr_an(nameref, lenref));
     return FALSE;
 }
 
@@ -888,8 +891,8 @@ static BOOL codeview_add_type_enum_field_list(struct codeview_type_parse* ctp,
         {
         case LF_ENUMERATE_V1:
         {
-            int value, vlen = numeric_leaf(&value, &type->enumerate_v1.value);
-            const struct p_string* p_name = (const struct p_string*)((const unsigned char*)&type->enumerate_v1.value + vlen);
+            int value, vlen = numeric_leaf(&value, type->enumerate_v1.data);
+            const struct p_string* p_name = (const struct p_string*)&type->enumerate_v1.data[vlen];
 
             symt_add_enum_element(ctp->module, symt, terminate_string(p_name), value);
             ptr += 2 + 2 + vlen + (1 + p_name->namelen);
@@ -897,8 +900,8 @@ static BOOL codeview_add_type_enum_field_list(struct codeview_type_parse* ctp,
         }
         case LF_ENUMERATE_V3:
         {
-            int value, vlen = numeric_leaf(&value, &type->enumerate_v3.value);
-            const char* name = (const char*)&type->enumerate_v3.value + vlen;
+            int value, vlen = numeric_leaf(&value, type->enumerate_v3.data);
+            const char* name = (const char*)&type->enumerate_v3.data[vlen];
 
             symt_add_enum_element(ctp->module, symt, name, value);
             ptr += 2 + 2 + vlen + (1 + strlen(name));
@@ -990,7 +993,7 @@ static int codeview_add_type_struct_field_list(struct codeview_type_parse* ctp,
         switch (type->generic.id)
         {
         case LF_BCLASS_V1:
-            leaf_len = numeric_leaf(&value, &type->bclass_v1.offset);
+            leaf_len = numeric_leaf(&value, type->bclass_v1.data);
 
             /* FIXME: ignored for now */
 
@@ -998,7 +1001,7 @@ static int codeview_add_type_struct_field_list(struct codeview_type_parse* ctp,
             break;
 
         case LF_BCLASS_V2:
-            leaf_len = numeric_leaf(&value, &type->bclass_v2.offset);
+            leaf_len = numeric_leaf(&value, type->bclass_v2.data);
 
             /* FIXME: ignored for now */
 
@@ -1008,10 +1011,10 @@ static int codeview_add_type_struct_field_list(struct codeview_type_parse* ctp,
         case LF_VBCLASS_V1:
         case LF_IVBCLASS_V1:
             {
-                const unsigned short int* p_vboff;
+                const unsigned char* p_vboff;
                 int vpoff, vplen;
-                leaf_len = numeric_leaf(&value, &type->vbclass_v1.vbpoff);
-                p_vboff = (const unsigned short int*)((const char*)&type->vbclass_v1.vbpoff + leaf_len);
+                leaf_len = numeric_leaf(&value, type->vbclass_v1.data);
+                p_vboff = &type->vbclass_v1.data[leaf_len];
                 vplen = numeric_leaf(&vpoff, p_vboff);
 
                 /* FIXME: ignored for now */
@@ -1023,10 +1026,10 @@ static int codeview_add_type_struct_field_list(struct codeview_type_parse* ctp,
         case LF_VBCLASS_V2:
         case LF_IVBCLASS_V2:
             {
-                const unsigned short int* p_vboff;
+                const unsigned char* p_vboff;
                 int vpoff, vplen;
-                leaf_len = numeric_leaf(&value, &type->vbclass_v2.vbpoff);
-                p_vboff = (const unsigned short int*)((const char*)&type->vbclass_v2.vbpoff + leaf_len);
+                leaf_len = numeric_leaf(&value, type->vbclass_v2.data);
+                p_vboff = &type->vbclass_v2.data[leaf_len];
                 vplen = numeric_leaf(&vpoff, p_vboff);
 
                 /* FIXME: ignored for now */
@@ -1036,28 +1039,28 @@ static int codeview_add_type_struct_field_list(struct codeview_type_parse* ctp,
             break;
 
         case LF_MEMBER_V1:
-            leaf_len = numeric_leaf(&value, &type->member_v1.offset);
-            p_name = (const struct p_string*)((const char*)&type->member_v1.offset + leaf_len);
+            leaf_len = numeric_leaf(&value, type->member_v1.data);
+            p_name = (const struct p_string*)&type->member_v1.data[leaf_len];
 
-            codeview_add_udt_element(ctp, symt, terminate_string(p_name), value, 
+            codeview_add_udt_element(ctp, symt, terminate_string(p_name), value,
                                      type->member_v1.type);
 
             ptr += 2 + 2 + 2 + leaf_len + (1 + p_name->namelen);
             break;
 
         case LF_MEMBER_V2:
-            leaf_len = numeric_leaf(&value, &type->member_v2.offset);
-            p_name = (const struct p_string*)((const unsigned char*)&type->member_v2.offset + leaf_len);
+            leaf_len = numeric_leaf(&value, type->member_v2.data);
+            p_name = (const struct p_string*)&type->member_v2.data[leaf_len];
 
-            codeview_add_udt_element(ctp, symt, terminate_string(p_name), value, 
+            codeview_add_udt_element(ctp, symt, terminate_string(p_name), value,
                                      type->member_v2.type);
 
             ptr += 2 + 2 + 4 + leaf_len + (1 + p_name->namelen);
             break;
 
         case LF_MEMBER_V3:
-            leaf_len = numeric_leaf(&value, &type->member_v3.offset);
-            c_name = (const char*)&type->member_v3.offset + leaf_len;
+            leaf_len = numeric_leaf(&value, type->member_v3.data);
+            c_name = (const char*)&type->member_v3.data[leaf_len];
 
             codeview_add_udt_element(ctp, symt, c_name, value, type->member_v3.type);
 
@@ -1262,23 +1265,23 @@ static struct symt* codeview_parse_one_type(struct codeview_type_parse* ctp,
         break;
 
     case LF_ARRAY_V1:
-        leaf_len = numeric_leaf(&value, &type->array_v1.arrlen);
-        p_name = (const struct p_string*)((const unsigned char*)&type->array_v1.arrlen + leaf_len);
+        leaf_len = numeric_leaf(&value, type->array_v1.data);
+        p_name = (const struct p_string*)&type->array_v1.data[leaf_len];
         symt = codeview_add_type_array(ctp, terminate_string(p_name),
                                        type->array_v1.elemtype,
                                        type->array_v1.idxtype, value);
         break;
     case LF_ARRAY_V2:
-        leaf_len = numeric_leaf(&value, &type->array_v2.arrlen);
-        p_name = (const struct p_string*)((const unsigned char*)&type->array_v2.arrlen + leaf_len);
+        leaf_len = numeric_leaf(&value, type->array_v2.data);
+        p_name = (const struct p_string*)&type->array_v2.data[leaf_len];
 
         symt = codeview_add_type_array(ctp, terminate_string(p_name),
                                        type->array_v2.elemtype,
                                        type->array_v2.idxtype, value);
         break;
     case LF_ARRAY_V3:
-        leaf_len = numeric_leaf(&value, &type->array_v3.arrlen);
-        c_name = (const char*)&type->array_v3.arrlen + leaf_len;
+        leaf_len = numeric_leaf(&value, type->array_v3.data);
+        c_name = (const char*)&type->array_v3.data[leaf_len];
 
         symt = codeview_add_type_array(ctp, c_name,
                                        type->array_v3.elemtype,
@@ -1412,43 +1415,43 @@ static struct symt* codeview_load_forwardable_type(struct codeview_type_parse* c
     {
     case LF_STRUCTURE_V1:
     case LF_CLASS_V1:
-        leaf_len = numeric_leaf(&value, &type->struct_v1.structlen);
-        p_name = (const struct p_string*)((const unsigned char*)&type->struct_v1.structlen + leaf_len);
+        leaf_len = numeric_leaf(&value, type->struct_v1.data);
+        p_name = (const struct p_string*)&type->struct_v1.data[leaf_len];
         symt = &symt_new_udt(ctp->module, terminate_string(p_name), value,
                              type->generic.id == LF_CLASS_V1 ? UdtClass : UdtStruct)->symt;
         break;
 
     case LF_STRUCTURE_V2:
     case LF_CLASS_V2:
-        leaf_len = numeric_leaf(&value, &type->struct_v2.structlen);
-        p_name = (const struct p_string*)((const unsigned char*)&type->struct_v2.structlen + leaf_len);
+        leaf_len = numeric_leaf(&value, type->struct_v2.data);
+        p_name = (const struct p_string*)&type->struct_v2.data[leaf_len];
         symt = &symt_new_udt(ctp->module, terminate_string(p_name), value,
                              type->generic.id == LF_CLASS_V2 ? UdtClass : UdtStruct)->symt;
         break;
 
     case LF_STRUCTURE_V3:
     case LF_CLASS_V3:
-        leaf_len = numeric_leaf(&value, &type->struct_v3.structlen);
-        c_name = (const char*)&type->struct_v3.structlen + leaf_len;
+        leaf_len = numeric_leaf(&value, type->struct_v3.data);
+        c_name = (const char*)&type->struct_v3.data[leaf_len];
         symt = &symt_new_udt(ctp->module, c_name, value,
                              type->generic.id == LF_CLASS_V3 ? UdtClass : UdtStruct)->symt;
         break;
 
     case LF_UNION_V1:
-        leaf_len = numeric_leaf(&value, &type->union_v1.un_len);
-        p_name = (const struct p_string*)((const unsigned char*)&type->union_v1.un_len + leaf_len);
+        leaf_len = numeric_leaf(&value, type->union_v1.data);
+        p_name = (const struct p_string*)&type->union_v1.data[leaf_len];
         symt = &symt_new_udt(ctp->module, terminate_string(p_name), value, UdtUnion)->symt;
         break;
 
     case LF_UNION_V2:
-        leaf_len = numeric_leaf(&value, &type->union_v2.un_len);
-        p_name = (const struct p_string*)((const unsigned char*)&type->union_v2.un_len + leaf_len);
+        leaf_len = numeric_leaf(&value, type->union_v2.data);
+        p_name = (const struct p_string*)&type->union_v2.data[leaf_len];
         symt = &symt_new_udt(ctp->module, terminate_string(p_name), value, UdtUnion)->symt;
         break;
 
     case LF_UNION_V3:
-        leaf_len = numeric_leaf(&value, &type->union_v3.un_len);
-        c_name = (const char*)&type->union_v3.un_len + leaf_len;
+        leaf_len = numeric_leaf(&value, type->union_v3.data);
+        c_name = (const char*)&type->union_v3.data[leaf_len];
         symt = &symt_new_udt(ctp->module, c_name, value, UdtUnion)->symt;
         break;
 
@@ -1575,6 +1578,7 @@ static void codeview_snarf_linetab(const struct msc_debug_info* msc_dbg, const B
     unsigned int                k;
     const unsigned int*         filetab;
     const unsigned int*         lt_ptr;
+    const unsigned int*         offsets;
     const unsigned short*       linenos;
     const struct startend*      start;
     unsigned                    source;
@@ -1603,13 +1607,14 @@ static void codeview_snarf_linetab(const struct msc_debug_info* msc_dbg, const B
         for (j = 0; j < nseg; j++)
 	{
             ltb = (const struct codeview_linetab_block*)(linetab + *lt_ptr++);
-            linenos = (const unsigned short*)&ltb->offsets[ltb->num_lines];
+            offsets = (const unsigned int*)&ltb->data;
+            linenos = (const unsigned short*)&offsets[ltb->num_lines];
             func_addr0 = codeview_get_address(msc_dbg, ltb->seg, start[j].start);
             if (!func_addr0) continue;
             for (func = NULL, k = 0; k < ltb->num_lines; k++)
             {
                 /* now locate function (if any) */
-                addr = func_addr0 + ltb->offsets[k] - start[j].start;
+                addr = func_addr0 + offsets[k] - start[j].start;
                 /* unfortunately, we can have several functions in the same block, if there's no
                  * gap between them... find the new function if needed
                  */
@@ -1620,7 +1625,7 @@ static void codeview_snarf_linetab(const struct msc_debug_info* msc_dbg, const B
                     if (!symt_check_tag(&func->symt, SymTagFunction) && !symt_check_tag(&func->symt, SymTagInlineSite))
                     {
                         WARN("--not a func at %04x:%08x %Ix tag=%d\n",
-                             ltb->seg, ltb->offsets[k], addr, func ? func->symt.tag : -1);
+                             ltb->seg, offsets[k], addr, func ? func->symt.tag : -1);
                         func = NULL;
                         break;
                     }
@@ -2238,8 +2243,8 @@ static struct symt_function* codeview_create_inline_site(const struct msc_debug_
     {
         struct addr_range* range = &inlined->ranges[inlined->num_ranges - 1];
         if (range->low == range->high) WARN("pending empty range at end of %s inside %s\n",
-                                             inlined->hash_elt.name,
-                                             top_func->hash_elt.name);
+                                            debugstr_a(inlined->hash_elt.name),
+                                            debugstr_a(top_func->hash_elt.name));
     }
     return inlined;
 }
@@ -2274,6 +2279,7 @@ static BOOL codeview_snarf(const struct msc_debug_info* msc_dbg,
     struct symt*                        symt;
     struct symt_compiland*              compiland = NULL;
     struct location                     loc;
+    unsigned                            top_frame_size = -1;
 
     /* overwrite compiland name from outer context (if any) */
     if (objname)
@@ -2454,9 +2460,9 @@ static BOOL codeview_snarf(const struct msc_debug_info* msc_dbg,
             loc.kind = loc_regrel;
             loc.reg = sym->regrel_v3.reg;
             loc.offset = sym->regrel_v3.offset;
+            if (top_frame_size == -1) FIXME("S_REGREL32 without frameproc\n");
             symt_add_func_local(msc_dbg->module, curr_func,
-                                /* FIXME this is wrong !!! */
-                                sym->regrel_v3.offset > 0 ? DataIsParam : DataIsLocal,
+                                sym->regrel_v3.offset >= top_frame_size ? DataIsParam : DataIsLocal,
                                 &loc, block,
                                 codeview_get_type(sym->regrel_v3.symtype, FALSE),
                                 sym->regrel_v3.name);
@@ -2512,6 +2518,7 @@ static BOOL codeview_snarf(const struct msc_debug_info* msc_dbg,
             {
                 if (curr_func != top_func) FIXME("shouldn't close a top function with an opened inlined function\n");
                 top_func = curr_func = NULL;
+                top_frame_size = -1;
             }
             break;
 
@@ -2526,18 +2533,20 @@ static BOOL codeview_snarf(const struct msc_debug_info* msc_dbg,
             break;
 
         case S_COMPILE2:
-            TRACE("S-Compile-V3 machine:%x language:%x %s\n", sym->compile2_v3.machine, sym->compile2_v3.flags.iLanguage, sym->compile2_v3.name);
+            TRACE("S-Compile-V3 machine:%x language:%x %s\n",
+                  sym->compile2_v3.machine, sym->compile2_v3.flags.iLanguage, debugstr_a(sym->compile2_v3.name));
             break;
 
         case S_COMPILE3:
-            TRACE("S-Compile3-V3 machine:%x language:%x %s\n", sym->compile3_v3.machine, sym->compile3_v3.flags.iLanguage, sym->compile3_v3.name);
+            TRACE("S-Compile3-V3 machine:%x language:%x %s\n",
+                  sym->compile3_v3.machine, sym->compile3_v3.flags.iLanguage, debugstr_a(sym->compile3_v3.name));
             break;
 
         case S_ENVBLOCK:
             break;
 
         case S_OBJNAME:
-            TRACE("S-ObjName-V3 %s\n", sym->objname_v3.name);
+            TRACE("S-ObjName-V3 %s\n", debugstr_a(sym->objname_v3.name));
             if (!compiland)
                 compiland = codeview_new_compiland(msc_dbg, sym->objname_v3.name);
             break;
@@ -2579,8 +2588,8 @@ static BOOL codeview_snarf(const struct msc_debug_info* msc_dbg,
                 struct symt*            se;
                 VARIANT                 v;
 
-                vlen = leaf_as_variant(&v, &sym->constant_v1.cvalue);
-                name = (const struct p_string*)((const char*)&sym->constant_v1.cvalue + vlen);
+                vlen = leaf_as_variant(&v, sym->constant_v1.data);
+                name = (const struct p_string*)&sym->constant_v1.data[vlen];
                 se = codeview_get_type(sym->constant_v1.type, FALSE);
 
                 TRACE("S-Constant-V1 %u %s %x\n", V_INT(&v), terminate_string(name), sym->constant_v1.type);
@@ -2595,8 +2604,8 @@ static BOOL codeview_snarf(const struct msc_debug_info* msc_dbg,
                 struct symt*            se;
                 VARIANT                 v;
 
-                vlen = leaf_as_variant(&v, &sym->constant_v2.cvalue);
-                name = (const struct p_string*)((const char*)&sym->constant_v2.cvalue + vlen);
+                vlen = leaf_as_variant(&v, sym->constant_v2.data);
+                name = (const struct p_string*)&sym->constant_v2.data[vlen];
                 se = codeview_get_type(sym->constant_v2.type, FALSE);
 
                 TRACE("S-Constant-V2 %u %s %x\n", V_INT(&v), terminate_string(name), sym->constant_v2.type);
@@ -2611,11 +2620,11 @@ static BOOL codeview_snarf(const struct msc_debug_info* msc_dbg,
                 struct symt*            se;
                 VARIANT                 v;
 
-                vlen = leaf_as_variant(&v, &sym->constant_v3.cvalue);
-                name = (const char*)&sym->constant_v3.cvalue + vlen;
+                vlen = leaf_as_variant(&v, sym->constant_v3.data);
+                name = (const char*)&sym->constant_v3.data[vlen];
                 se = codeview_get_type(sym->constant_v3.type, FALSE);
 
-                TRACE("S-Constant-V3 %u %s %x\n", V_INT(&v), name, sym->constant_v3.type);
+                TRACE("S-Constant-V3 %u %s %x\n", V_INT(&v), debugstr_a(name), sym->constant_v3.type);
                 /* FIXME: we should add this as a constant value */
                 symt_new_constant(msc_dbg->module, compiland, name, se, &v);
             }
@@ -2650,7 +2659,7 @@ static BOOL codeview_snarf(const struct msc_debug_info* msc_dbg,
                     symt_new_typedef(msc_dbg->module, symt, sym->udt_v3.name);
                 else
                     FIXME("S-Udt %s: couldn't find type 0x%x\n",
-                          sym->udt_v3.name, sym->udt_v3.type);
+                          debugstr_a(sym->udt_v3.name), sym->udt_v3.type);
             }
             break;
         case S_LOCAL:
@@ -2708,7 +2717,7 @@ static BOOL codeview_snarf(const struct msc_debug_info* msc_dbg,
                     /* skip all records until paired S_INLINESITE_END */
                     sym = (const union codeview_symbol*)(root + sym->inline_site2_v3.pEnd);
                     if (sym->generic.id != S_INLINESITE_END) FIXME("complete wreckage\n");
-                    length = sym->inline_site_v3.pEnd - i + sym->generic.len;
+                    length = sym->inline_site2_v3.pEnd - i + sym->generic.len;
                 }
             }
             break;
@@ -2767,12 +2776,19 @@ static BOOL codeview_snarf(const struct msc_debug_info* msc_dbg,
                          sym->sepcode_v3.sectParent, sym->sepcode_v3.offParent);
             }
             else
-                FIXME("S_SEPCODE inside top-level function %s\n", top_func->hash_elt.name);
+                FIXME("S_SEPCODE inside top-level function %s\n", debugstr_a(top_func->hash_elt.name));
+            break;
+
+        case S_FRAMEPROC:
+            /* expecting only S_FRAMEPROC once for top level functions */
+            if (top_frame_size == -1 && curr_func && curr_func == top_func)
+                top_frame_size = sym->frame_info_v2.sz_frame;
+            else
+                FIXME("Unexpected S_FRAMEPROC %d (%p %p)\n", top_frame_size, top_func, curr_func);
             break;
 
         /* the symbols we can safely ignore for now */
         case S_TRAMPOLINE:
-        case S_FRAMEPROC:
         case S_FRAMECOOKIE:
         case S_SECTION:
         case S_COFFGROUP:
@@ -2944,7 +2960,7 @@ static BOOL pdb_global_feed_types(const struct msc_debug_info* msc_dbg, const un
                 symt_new_typedef(msc_dbg->module, symt, sym->udt_v3.name);
             else
                 FIXME("S-Udt %s: couldn't find type 0x%x\n",
-                      sym->udt_v3.name, sym->udt_v3.type);
+                      debugstr_a(sym->udt_v3.name), sym->udt_v3.type);
         }
         break;
     default: return FALSE;
@@ -3296,12 +3312,12 @@ static void pdb_convert_symbol_file(const PDB_SYMBOLS* symbols,
         sfile->symbol_size  = sym_file->symbol_size;
         sfile->lineno_size  = sym_file->lineno_size;
         sfile->lineno2_size = sym_file->lineno2_size;
-        *size = sizeof(PDB_SYMBOL_FILE) - 1;
+        *size = sizeof(PDB_SYMBOL_FILE);
     }
     else
     {
         memcpy(sfile, image, sizeof(PDB_SYMBOL_FILE_EX));
-        *size = sizeof(PDB_SYMBOL_FILE_EX) - 1;
+        *size = sizeof(PDB_SYMBOL_FILE_EX);
     }
 }
 
@@ -3700,7 +3716,7 @@ static void pdb_process_symbol_imports(const struct process *pcs,
             ptr = (const char*)imp + sizeof(*imp) + strlen(imp->filename);
             if (i >= CV_MAX_MODULES) FIXME("Out of bounds!!!\n");
             TRACE("got for %s: age=%u ts=%x\n",
-                  imp->filename, imp->Age, imp->TimeDateStamp);
+                  debugstr_a(imp->filename), imp->Age, imp->TimeDateStamp);
             if (path_find_symbol_file(pcs, msc_dbg->module, imp->filename, TRUE, NULL, imp->TimeDateStamp, imp->Age, &info,
                                       &msc_dbg->module->module.PdbUnmatched))
                 pdb_process_internal(pcs, msc_dbg, info.pdbfile, pdb_module_info, i);
@@ -4201,7 +4217,7 @@ static BOOL  pdb_parse_cmd_string(struct cpu_stack_walk* csw, PDB_FPO_DATA* fpoe
     pev_free(&pev, cpair);
     return TRUE;
 done:
-    FIXME("Couldn't evaluate %s => %s\n", wine_dbgstr_a(cmd), pev.error);
+    FIXME("Couldn't evaluate %s => %s\n", debugstr_a(cmd), pev.error);
     pev_free(&pev, NULL);
     return FALSE;
 }
@@ -4237,7 +4253,7 @@ BOOL pdb_virtual_unwind(struct cpu_stack_walk *csw, DWORD_PTR ip,
                       fpoext[i].start, fpoext[i].func_size, fpoext[i].locals_size,
                       fpoext[i].params_size, fpoext[i].maxstack_size, fpoext[i].prolog_size,
                       fpoext[i].savedregs_size, fpoext[i].flags,
-                      wine_dbgstr_a(pdb_get_string_table_entry(strbase, fpoext[i].str_offset)));
+                      debugstr_a(pdb_get_string_table_entry(strbase, fpoext[i].str_offset)));
                 ret = pdb_parse_cmd_string(csw, &fpoext[i],
                                            pdb_get_string_table_entry(strbase, fpoext[i].str_offset),
                                            cpair);
@@ -4362,7 +4378,7 @@ static BOOL codeview_process_info(const struct process *pcs,
         const OMFSignatureRSDS* rsds = (const OMFSignatureRSDS*)msc_dbg->root;
 
         TRACE("Got RSDS type of PDB file: guid=%s age=%08x name=%s\n",
-              wine_dbgstr_guid(&rsds->guid), rsds->age, rsds->name);
+              wine_dbgstr_guid(&rsds->guid), rsds->age, debugstr_a(rsds->name));
         ret = pdb_process_file(pcs, msc_dbg, rsds->name, &rsds->guid, 0, rsds->age);
         break;
     }

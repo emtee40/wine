@@ -166,7 +166,7 @@ void fpu_to_fpux( XMM_SAVE_AREA32 *fpux, const I386_FLOATING_SAVE_AREA *fpu )
  */
 static unsigned int get_server_context_flags( const void *context, USHORT machine )
 {
-    unsigned int flags, ret = 0;
+    unsigned int flags = 0, ret = 0;
 
     switch (machine)
     {
@@ -204,6 +204,7 @@ static unsigned int get_server_context_flags( const void *context, USHORT machin
         if (flags & CONTEXT_ARM64_DEBUG_REGISTERS) ret |= SERVER_CTX_DEBUG_REGISTERS;
         break;
     }
+    if (flags & CONTEXT_EXCEPTION_REQUEST) ret |= SERVER_CTX_EXEC_SPACE;
     return ret;
 }
 
@@ -218,12 +219,42 @@ static unsigned int get_native_context_flags( USHORT native_machine, USHORT wow_
     switch (MAKELONG( native_machine, wow_machine ))
     {
     case MAKELONG( IMAGE_FILE_MACHINE_AMD64, IMAGE_FILE_MACHINE_I386 ):
-        return SERVER_CTX_DEBUG_REGISTERS | SERVER_CTX_FLOATING_POINT | SERVER_CTX_YMM_REGISTERS;
+        return SERVER_CTX_DEBUG_REGISTERS | SERVER_CTX_FLOATING_POINT | SERVER_CTX_YMM_REGISTERS | SERVER_CTX_EXEC_SPACE;
     case MAKELONG( IMAGE_FILE_MACHINE_ARM64, IMAGE_FILE_MACHINE_ARMNT ):
-        return SERVER_CTX_DEBUG_REGISTERS | SERVER_CTX_FLOATING_POINT;
+        return SERVER_CTX_DEBUG_REGISTERS | SERVER_CTX_FLOATING_POINT | SERVER_CTX_EXEC_SPACE;
     default:
-        return 0;
+        return SERVER_CTX_EXEC_SPACE;
     }
+}
+
+
+/***********************************************************************
+ *           xstate_to_server
+ *
+ * Copy xstate to the server format.
+ */
+static void xstate_to_server( context_t *to, const CONTEXT_EX *xctx )
+{
+    const XSTATE *xs = (const XSTATE *)((const char *)xctx + xctx->XState.Offset);
+
+    if (xs->CompactionMask && !(xs->CompactionMask & 4)) return;
+    to->flags |= SERVER_CTX_YMM_REGISTERS;
+    if (xs->Mask & 4) memcpy( &to->ymm.regs.ymm_high, &xs->YmmContext, sizeof(xs->YmmContext) );
+}
+
+
+/***********************************************************************
+ *           exception_request_flags_to_server
+ *
+ * Copy exception reporting flags to the server format.
+ */
+static void exception_request_flags_to_server( context_t *to, DWORD context_flags )
+{
+    if (!(context_flags & CONTEXT_EXCEPTION_REPORTING)) return;
+    to->flags |= SERVER_CTX_EXEC_SPACE;
+    if (context_flags & CONTEXT_SERVICE_ACTIVE)        to->exec_space.space.space = EXEC_SPACE_SYSCALL;
+    else if (context_flags & CONTEXT_EXCEPTION_ACTIVE) to->exec_space.space.space = EXEC_SPACE_EXCEPTION;
+    else                                               to->exec_space.space.space = EXEC_SPACE_USERMODE;
 }
 
 
@@ -303,13 +334,8 @@ static NTSTATUS context_to_server( context_t *to, USHORT to_machine, const void 
             memcpy( to->ext.i386_regs, from->ExtendedRegisters, sizeof(to->ext.i386_regs) );
         }
         if (flags & CONTEXT_I386_XSTATE)
-        {
-            const CONTEXT_EX *xctx = (const CONTEXT_EX *)(from + 1);
-            const XSTATE *xs = (const XSTATE *)((const char *)xctx + xctx->XState.Offset);
-
-            to->flags |= SERVER_CTX_YMM_REGISTERS;
-            if (xs->Mask & 4) memcpy( &to->ymm.regs.ymm_high, &xs->YmmContext, sizeof(xs->YmmContext) );
-        }
+            xstate_to_server( to, (const CONTEXT_EX *)(from + 1) );
+        exception_request_flags_to_server( to, flags );
         return STATUS_SUCCESS;
     }
 
@@ -367,13 +393,8 @@ static NTSTATUS context_to_server( context_t *to, USHORT to_machine, const void 
             fpu_to_fpux( (XMM_SAVE_AREA32 *)to->fp.x86_64_regs.fpregs, &from->FloatSave );
         }
         if (flags & CONTEXT_I386_XSTATE)
-        {
-            const CONTEXT_EX *xctx = (const CONTEXT_EX *)(from + 1);
-            const XSTATE *xs = (const XSTATE *)((const char *)xctx + xctx->XState.Offset);
-
-            to->flags |= SERVER_CTX_YMM_REGISTERS;
-            if (xs->Mask & 4) memcpy( &to->ymm.regs.ymm_high, &xs->YmmContext, sizeof(xs->YmmContext) );
-        }
+            xstate_to_server( to, (const CONTEXT_EX *)(from + 1) );
+        exception_request_flags_to_server( to, flags );
         return STATUS_SUCCESS;
     }
 
@@ -434,13 +455,8 @@ static NTSTATUS context_to_server( context_t *to, USHORT to_machine, const void 
             to->debug.x86_64_regs.dr7 = from->Dr7;
         }
         if (flags & CONTEXT_AMD64_XSTATE)
-        {
-            const CONTEXT_EX *xctx = (const CONTEXT_EX *)(from + 1);
-            const XSTATE *xs = (const XSTATE *)((const char *)xctx + xctx->XState.Offset);
-
-            to->flags |= SERVER_CTX_YMM_REGISTERS;
-            if (xs->Mask & 4) memcpy( &to->ymm.regs.ymm_high, &xs->YmmContext, sizeof(xs->YmmContext) );
-        }
+            xstate_to_server( to, (const CONTEXT_EX *)(from + 1) );
+        exception_request_flags_to_server( to, flags );
         return STATUS_SUCCESS;
     }
 
@@ -505,13 +521,8 @@ static NTSTATUS context_to_server( context_t *to, USHORT to_machine, const void 
             to->debug.i386_regs.dr7 = from->Dr7;
         }
         if (flags & CONTEXT_AMD64_XSTATE)
-        {
-            const CONTEXT_EX *xctx = (const CONTEXT_EX *)(from + 1);
-            const XSTATE *xs = (const XSTATE *)((const char *)xctx + xctx->XState.Offset);
-
-            to->flags |= SERVER_CTX_YMM_REGISTERS;
-            if (xs->Mask & 4) memcpy( &to->ymm.regs.ymm_high, &xs->YmmContext, sizeof(xs->YmmContext) );
-        }
+            xstate_to_server( to, (const CONTEXT_EX *)(from + 1) );
+        exception_request_flags_to_server( to, flags );
         return STATUS_SUCCESS;
     }
 
@@ -559,6 +570,7 @@ static NTSTATUS context_to_server( context_t *to, USHORT to_machine, const void 
             for (i = 0; i < ARM_MAX_WATCHPOINTS; i++) to->debug.arm_regs.wvr[i] = from->Wvr[i];
             for (i = 0; i < ARM_MAX_WATCHPOINTS; i++) to->debug.arm_regs.wcr[i] = from->Wcr[i];
         }
+        exception_request_flags_to_server( to, flags );
         return STATUS_SUCCESS;
     }
 
@@ -600,6 +612,7 @@ static NTSTATUS context_to_server( context_t *to, USHORT to_machine, const void 
             for (i = 0; i < ARM64_MAX_WATCHPOINTS; i++) to->debug.arm64_regs.wcr[i] = from->Wcr[i];
             for (i = 0; i < ARM64_MAX_WATCHPOINTS; i++) to->debug.arm64_regs.wvr[i] = from->Wvr[i];
         }
+        exception_request_flags_to_server( to, flags );
         return STATUS_SUCCESS;
     }
 
@@ -610,6 +623,48 @@ static NTSTATUS context_to_server( context_t *to, USHORT to_machine, const void 
     default:
         return STATUS_INVALID_PARAMETER;
     }
+}
+
+
+/***********************************************************************
+ *           xstate_from_server
+ *
+ * Copy xstate from the server format.
+ */
+static void xstate_from_server( CONTEXT_EX *xctx, const context_t *from )
+{
+    XSTATE *xs = (XSTATE *)((char *)xctx + xctx->XState.Offset);
+    unsigned int i;
+
+    xs->Mask &= ~(ULONG64)4;
+
+    if (xs->CompactionMask)
+    {
+        xs->CompactionMask &= ~(UINT64)3;
+        if (!(xs->CompactionMask & 4)) return;
+    }
+
+    for (i = 0; i < ARRAY_SIZE( from->ymm.regs.ymm_high); i++)
+    {
+        if (!from->ymm.regs.ymm_high[i].low && !from->ymm.regs.ymm_high[i].high) continue;
+        memcpy( &xs->YmmContext, &from->ymm.regs, sizeof(xs->YmmContext) );
+        xs->Mask |= 4;
+        break;
+    }
+}
+
+
+/***********************************************************************
+ *           exception_request_flags_from_server
+ *
+ * Copy exception reporting flags from the server format.
+ */
+static void exception_request_flags_from_server( DWORD *context_flags, const context_t *from )
+{
+    if (!(*context_flags & CONTEXT_EXCEPTION_REQUEST) || !(from->flags & SERVER_CTX_EXEC_SPACE)) return;
+    *context_flags = (*context_flags & ~(CONTEXT_SERVICE_ACTIVE | CONTEXT_EXCEPTION_ACTIVE)) | CONTEXT_EXCEPTION_REPORTING;
+    if (from->exec_space.space.space == EXEC_SPACE_SYSCALL)        *context_flags |= CONTEXT_SERVICE_ACTIVE;
+    else if (from->exec_space.space.space == EXEC_SPACE_EXCEPTION) *context_flags |= CONTEXT_EXCEPTION_ACTIVE;
 }
 
 
@@ -686,20 +741,8 @@ static NTSTATUS context_from_server( void *dst, const context_t *from, USHORT ma
             memcpy( to->ExtendedRegisters, from->ext.i386_regs, sizeof(to->ExtendedRegisters) );
         }
         if ((from->flags & SERVER_CTX_YMM_REGISTERS) && (to_flags & CONTEXT_I386_XSTATE))
-        {
-            CONTEXT_EX *xctx = (CONTEXT_EX *)(to + 1);
-            XSTATE *xs = (XSTATE *)((char *)xctx + xctx->XState.Offset);
-
-            xs->Mask &= ~4;
-            if (xs->CompactionMask) xs->CompactionMask = 0x8000000000000004;
-            for (i = 0; i < ARRAY_SIZE( from->ymm.regs.ymm_high); i++)
-            {
-                if (!from->ymm.regs.ymm_high[i].low && !from->ymm.regs.ymm_high[i].high) continue;
-                memcpy( &xs->YmmContext, &from->ymm.regs, sizeof(xs->YmmContext) );
-                xs->Mask |= 4;
-                break;
-            }
-        }
+            xstate_from_server( (CONTEXT_EX *)(to + 1), from );
+        exception_request_flags_from_server( &to->ContextFlags, from );
         return STATUS_SUCCESS;
     }
 
@@ -760,20 +803,8 @@ static NTSTATUS context_from_server( void *dst, const context_t *from, USHORT ma
             to->Dr7 = from->debug.x86_64_regs.dr7;
         }
         if ((from->flags & SERVER_CTX_YMM_REGISTERS) && (to_flags & CONTEXT_I386_XSTATE))
-        {
-            CONTEXT_EX *xctx = (CONTEXT_EX *)(to + 1);
-            XSTATE *xs = (XSTATE *)((char *)xctx + xctx->XState.Offset);
-
-            xs->Mask &= ~4;
-            if (xs->CompactionMask) xs->CompactionMask = 0x8000000000000004;
-            for (i = 0; i < ARRAY_SIZE( from->ymm.regs.ymm_high); i++)
-            {
-                if (!from->ymm.regs.ymm_high[i].low && !from->ymm.regs.ymm_high[i].high) continue;
-                memcpy( &xs->YmmContext, &from->ymm.regs, sizeof(xs->YmmContext) );
-                xs->Mask |= 4;
-                break;
-            }
-        }
+            xstate_from_server( (CONTEXT_EX *)(to + 1), from );
+        exception_request_flags_from_server( &to->ContextFlags, from );
         return STATUS_SUCCESS;
     }
 
@@ -835,20 +866,8 @@ static NTSTATUS context_from_server( void *dst, const context_t *from, USHORT ma
             to->Dr7 = from->debug.x86_64_regs.dr7;
         }
         if ((from->flags & SERVER_CTX_YMM_REGISTERS) && (to_flags & CONTEXT_AMD64_XSTATE))
-        {
-            CONTEXT_EX *xctx = (CONTEXT_EX *)(to + 1);
-            XSTATE *xs = (XSTATE *)((char *)xctx + xctx->XState.Offset);
-
-            xs->Mask &= ~4;
-            if (xs->CompactionMask) xs->CompactionMask = 0x8000000000000004;
-            for (i = 0; i < ARRAY_SIZE( from->ymm.regs.ymm_high); i++)
-            {
-                if (!from->ymm.regs.ymm_high[i].low && !from->ymm.regs.ymm_high[i].high) continue;
-                memcpy( &xs->YmmContext, &from->ymm.regs, sizeof(xs->YmmContext) );
-                xs->Mask |= 4;
-                break;
-            }
-        }
+            xstate_from_server( (CONTEXT_EX *)(to + 1), from );
+        exception_request_flags_from_server( &to->ContextFlags, from );
         return STATUS_SUCCESS;
     }
 
@@ -917,20 +936,8 @@ static NTSTATUS context_from_server( void *dst, const context_t *from, USHORT ma
             to->Dr7 = from->debug.i386_regs.dr7;
         }
         if ((from->flags & SERVER_CTX_YMM_REGISTERS) && (to_flags & CONTEXT_AMD64_XSTATE))
-        {
-            CONTEXT_EX *xctx = (CONTEXT_EX *)(to + 1);
-            XSTATE *xs = (XSTATE *)((char *)xctx + xctx->XState.Offset);
-
-            xs->Mask &= ~4;
-            if (xs->CompactionMask) xs->CompactionMask = 0x8000000000000004;
-            for (i = 0; i < ARRAY_SIZE( from->ymm.regs.ymm_high); i++)
-            {
-                if (!from->ymm.regs.ymm_high[i].low && !from->ymm.regs.ymm_high[i].high) continue;
-                memcpy( &xs->YmmContext, &from->ymm.regs, sizeof(xs->YmmContext) );
-                xs->Mask |= 4;
-                break;
-            }
-        }
+            xstate_from_server( (CONTEXT_EX *)(to + 1), from );
+        exception_request_flags_from_server( &to->ContextFlags, from );
         return STATUS_SUCCESS;
     }
 
@@ -978,6 +985,7 @@ static NTSTATUS context_from_server( void *dst, const context_t *from, USHORT ma
             for (i = 0; i < ARM_MAX_WATCHPOINTS; i++) to->Wvr[i] = from->debug.arm_regs.wvr[i];
             for (i = 0; i < ARM_MAX_WATCHPOINTS; i++) to->Wcr[i] = from->debug.arm_regs.wcr[i];
         }
+        exception_request_flags_from_server( &to->ContextFlags, from );
         return STATUS_SUCCESS;
     }
 
@@ -1019,6 +1027,7 @@ static NTSTATUS context_from_server( void *dst, const context_t *from, USHORT ma
             for (i = 0; i < ARM64_MAX_WATCHPOINTS; i++) to->Wcr[i] = from->debug.arm64_regs.wcr[i];
             for (i = 0; i < ARM64_MAX_WATCHPOINTS; i++) to->Wvr[i] = from->debug.arm64_regs.wvr[i];
         }
+        exception_request_flags_from_server( &to->ContextFlags, from );
         return STATUS_SUCCESS;
     }
 
@@ -1497,7 +1506,7 @@ void wait_suspend( CONTEXT *context )
  *
  * Send an EXCEPTION_DEBUG_EVENT event to the debugger.
  */
-NTSTATUS send_debug_event( EXCEPTION_RECORD *rec, CONTEXT *context, BOOL first_chance )
+NTSTATUS send_debug_event( EXCEPTION_RECORD *rec, CONTEXT *context, BOOL first_chance, BOOL exception )
 {
     unsigned int ret;
     DWORD i;
@@ -1534,6 +1543,8 @@ NTSTATUS send_debug_event( EXCEPTION_RECORD *rec, CONTEXT *context, BOOL first_c
         select_op.wait.handles[0] = handle;
 
         contexts_to_server( server_contexts, context );
+        server_contexts[0].flags |= SERVER_CTX_EXEC_SPACE;
+        server_contexts[0].exec_space.space.space = exception ? EXEC_SPACE_EXCEPTION : EXEC_SPACE_SYSCALL;
         server_select( &select_op, offsetof( select_op_t, wait.handles[1] ), SELECT_INTERRUPTIBLE,
                        TIMEOUT_INFINITE, server_contexts, NULL );
 
@@ -1556,7 +1567,7 @@ NTSTATUS send_debug_event( EXCEPTION_RECORD *rec, CONTEXT *context, BOOL first_c
  */
 NTSTATUS WINAPI NtRaiseException( EXCEPTION_RECORD *rec, CONTEXT *context, BOOL first_chance )
 {
-    NTSTATUS status = send_debug_event( rec, context, first_chance );
+    NTSTATUS status = send_debug_event( rec, context, first_chance, !(is_win64 || is_wow64() || is_old_wow64()) );
 
     if (status == DBG_CONTINUE || status == DBG_EXCEPTION_HANDLED)
         return NtContinue( context, FALSE );
@@ -1719,6 +1730,17 @@ NTSTATUS WINAPI NtQueueApcThread( HANDLE handle, PNTAPCFUNC func, ULONG_PTR arg1
     }
     SERVER_END_REQ;
     return ret;
+}
+
+
+/******************************************************************************
+ *              NtQueueApcThreadEx  (NTDLL.@)
+ */
+NTSTATUS WINAPI NtQueueApcThreadEx( HANDLE handle, HANDLE reserve_handle, PNTAPCFUNC func,
+                                    ULONG_PTR arg1, ULONG_PTR arg2, ULONG_PTR arg3 )
+{
+    FIXME( "reserve handle should be used: %p\n", reserve_handle );
+    return NtQueueApcThread( handle, func, arg1, arg2, arg3 );
 }
 
 
@@ -2487,6 +2509,22 @@ NTSTATUS WINAPI NtSetInformationThread( HANDLE handle, THREADINFOCLASS class,
     case ThreadPriorityBoost:
         WARN("Unimplemented class ThreadPriorityBoost.\n");
         return STATUS_SUCCESS;
+
+    case ThreadManageWritesToExecutableMemory:
+    {
+#ifdef __aarch64__
+        const MANAGE_WRITES_TO_EXECUTABLE_MEMORY *mem = data;
+
+        if (length != sizeof(*mem)) return STATUS_INFO_LENGTH_MISMATCH;
+        if (handle != GetCurrentThread()) return STATUS_NOT_SUPPORTED;
+        if (mem->Version != 2) return STATUS_REVISION_MISMATCH;
+        if (mem->ProcessEnableWriteExceptions) return STATUS_INVALID_PARAMETER;
+        ntdll_get_thread_data()->allow_writes = mem->ThreadAllowWrites;
+        return STATUS_SUCCESS;
+#else
+        return STATUS_NOT_SUPPORTED;
+#endif
+    }
 
     case ThreadBasicInformation:
     case ThreadTimes:

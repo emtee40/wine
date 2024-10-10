@@ -208,16 +208,18 @@ static const char valid_chars[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRS
 /* encode a dll name into a linker-compatible name */
 static char *encode_dll_name( const char *name )
 {
-    char *p, *ret;
+    char *p, *ret, *ret_end;
     int len = strlen(name);
 
     if (strendswith( name, ".dll" )) len -= 4;
     if (strspn( name, valid_chars ) >= len) return strmake( "%.*s", len, name );
 
     ret = p = xmalloc( len * 4 + 1 );
+    ret_end = ret + (len * 4 + 1);
     for ( ; len > 0; len--, name++)
     {
-        if (!strchr( valid_chars, *name )) p += sprintf( p, "$x%02x", *name );
+        if (!strchr( valid_chars, *name ))
+            p += snprintf( p, ret_end - p, "$x%02x", *name );
         else *p++ = *name;
     }
     *p = 0;
@@ -1377,12 +1379,19 @@ void output_static_lib( const char *output_name, struct strarray files, int crea
 /* create a Windows-style import library using dlltool */
 static void build_dlltool_import_lib( const char *lib_name, DLLSPEC *spec, struct strarray files )
 {
+    const char *def_file, *native_def_file = NULL;
     struct strarray args;
-    char *def_file;
 
     def_file = open_temp_output_file( ".def" );
-    output_def_file( spec, 1 );
+    output_def_file( spec, &spec->exports, 1 );
     fclose( output_file );
+
+    if (native_arch != -1)
+    {
+        native_def_file = open_temp_output_file( ".def" );
+        output_def_file( spec, &spec->native_exports, 1 );
+        fclose( output_file );
+    }
 
     args = find_tool( "dlltool", NULL );
     strarray_add( &args, "-k" );
@@ -1390,6 +1399,11 @@ static void build_dlltool_import_lib( const char *lib_name, DLLSPEC *spec, struc
     strarray_add( &args, lib_name );
     strarray_add( &args, "-d" );
     strarray_add( &args, def_file );
+    if (native_def_file)
+    {
+        strarray_add( &args, "-N" );
+        strarray_add( &args, native_def_file );
+    }
 
     switch (target.cpu)
     {

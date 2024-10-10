@@ -54,33 +54,41 @@ struct winstation
     struct namespace  *desktop_names;      /* namespace for desktops of this winstation */
 };
 
-struct global_cursor
+struct key_repeat
 {
-    int                  x;                /* cursor position */
-    int                  y;
-    rectangle_t          clip;             /* cursor clip rectangle */
-    unsigned int         last_change;      /* time of last position change */
-    user_handle_t        win;              /* window that contains the cursor */
+    int                  enable;           /* enable auto-repeat */
+    timeout_t            delay;            /* auto-repeat delay */
+    timeout_t            period;           /* auto-repeat period */
+    hw_input_t           input;            /* the input to repeat */
+    user_handle_t        win;              /* target window for input event */
+    struct timeout_user *timeout;          /* timeout for repeat */
 };
 
 struct desktop
 {
     struct object        obj;              /* object header */
-    unsigned int         flags;            /* desktop flags */
     struct winstation   *winstation;       /* winstation this desktop belongs to */
     timeout_t            input_time;       /* last time this desktop had the input */
     struct list          entry;            /* entry in winstation list of desktops */
     struct list          threads;          /* list of threads connected to this desktop */
     struct window       *top_window;       /* desktop window for this desktop */
     struct window       *msg_window;       /* HWND_MESSAGE top window */
+    struct window       *shell_window;     /* shell window for this desktop */
+    struct window       *shell_listview;   /* shell list view window for this desktop */
+    struct window       *progman_window;   /* progman window for this desktop */
+    struct window       *taskman_window;   /* taskman window for this desktop */
     struct hook_table   *global_hooks;     /* table of global hooks on this desktop */
     struct list          hotkeys;          /* list of registered hotkeys */
     struct list          pointers;         /* list of active pointers */
     struct timeout_user *close_timeout;    /* timeout before closing the desktop */
     struct thread_input *foreground_input; /* thread input of foreground thread */
     unsigned int         users;            /* processes and threads using this desktop */
-    struct global_cursor cursor;           /* global cursor information */
     unsigned char        keystate[256];    /* asynchronous key state */
+    unsigned char        alt_pressed;      /* last key press was Alt (used to determine msg on release) */
+    struct key_repeat    key_repeat;       /* key auto-repeat */
+    unsigned int         clip_flags;       /* last cursor clip flags */
+    user_handle_t        cursor_win;       /* window that contains the cursor */
+    const desktop_shm_t *shared;           /* desktop session shared memory */
 };
 
 /* user handles functions */
@@ -102,16 +110,19 @@ extern void cleanup_clipboard_thread( struct thread *thread );
 
 extern void remove_thread_hooks( struct thread *thread );
 extern unsigned int get_active_hooks(void);
-extern struct thread *get_first_global_hook( int id );
+extern struct thread *get_first_global_hook( struct desktop *desktop, int id );
+extern void add_desktop_hook_count( struct desktop *desktop, struct thread *thread, int count );
 
 /* queue functions */
 
 extern void free_msg_queue( struct thread *thread );
 extern struct hook_table *get_queue_hooks( struct thread *thread );
 extern void set_queue_hooks( struct thread *thread, struct hook_table *hooks );
+extern void add_queue_hook_count( struct thread *thread, unsigned int index, int count );
 extern void inc_queue_paint_count( struct thread *thread, int incr );
 extern void queue_cleanup_window( struct thread *thread, user_handle_t win );
 extern int init_thread_queue( struct thread *thread );
+extern void check_thread_queue_idle( struct thread *thread );
 extern int attach_thread_input( struct thread *thread_from, struct thread *thread_to );
 extern void detach_thread_input( struct thread *thread_from );
 extern void set_clip_rectangle( struct desktop *desktop, const rectangle_t *rect,

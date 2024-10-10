@@ -80,7 +80,7 @@
 @ cdecl -arch=arm ??0bad_cast@std@@AAA@PBQBD@Z(ptr ptr) bad_cast_ctor
 @ thiscall -arch=i386 ??0bad_cast@std@@AAE@PBQBD@Z(ptr ptr) bad_cast_ctor
 @ cdecl -arch=win64 ??0bad_cast@std@@AEAA@PEBQEBD@Z(ptr ptr) bad_cast_ctor
-@ cdecl -arch=arm ??0bad_cast@std@@QAA@ABV01@@Z(ptr ptr) bad_cast_ctor
+@ cdecl -arch=arm ??0bad_cast@std@@QAA@ABV01@@Z(ptr ptr) bad_cast_copy_ctor
 @ thiscall -arch=i386 ??0bad_cast@std@@QAE@ABV01@@Z(ptr ptr) bad_cast_copy_ctor
 @ cdecl -arch=win64 ??0bad_cast@std@@QEAA@AEBV01@@Z(ptr ptr) bad_cast_copy_ctor
 @ cdecl -arch=arm ??0bad_cast@std@@QAA@PBD@Z(ptr str) bad_cast_ctor_charptr
@@ -496,11 +496,11 @@
 @ stub -arch=arm ?_CleanupToken@_StructuredTaskCollection@details@Concurrency@@AAAXXZ
 @ stub -arch=i386 ?_CleanupToken@_StructuredTaskCollection@details@Concurrency@@AAEXXZ
 @ stub -arch=win64 ?_CleanupToken@_StructuredTaskCollection@details@Concurrency@@AEAAXXZ
-@ stub -arch=i386 ?_ConcRT_Assert@details@Concurrency@@YAXPBD0H@Z
+@ stub -arch=win32 ?_ConcRT_Assert@details@Concurrency@@YAXPBD0H@Z
 @ stub -arch=win64 ?_ConcRT_Assert@details@Concurrency@@YAXPEBD0H@Z
 @ stub -arch=win32 ?_ConcRT_CoreAssert@details@Concurrency@@YAXPBD0H@Z
 @ stub -arch=win64 ?_ConcRT_CoreAssert@details@Concurrency@@YAXPEBD0H@Z
-@ stub -arch=i386 ?_ConcRT_DumpMessage@details@Concurrency@@YAXPB_WZZ
+@ stub -arch=win32 ?_ConcRT_DumpMessage@details@Concurrency@@YAXPB_WZZ
 @ stub -arch=win64 ?_ConcRT_DumpMessage@details@Concurrency@@YAXPEB_WZZ
 @ stub -arch=win32 ?_ConcRT_Trace@details@Concurrency@@YAXHPB_WZZ
 @ stub -arch=win64 ?_ConcRT_Trace@details@Concurrency@@YAXHPEB_WZZ
@@ -1525,8 +1525,8 @@
 @ stub _mbsncoll_l
 @ cdecl _mbsncpy(ptr str long)
 @ cdecl _mbsncpy_l(ptr str long ptr)
-@ stub _mbsncpy_s
-@ stub _mbsncpy_s_l
+@ cdecl _mbsncpy_s(ptr long str long)
+@ cdecl _mbsncpy_s_l(ptr long str long ptr)
 @ cdecl _mbsnextc(str)
 @ cdecl _mbsnextc_l(str ptr)
 @ cdecl _mbsnicmp(str str long)
@@ -2148,7 +2148,7 @@
 @ cdecl fegetenv(ptr)
 @ cdecl fegetexceptflag(ptr long)
 @ cdecl fegetround()
-@ stub feholdexcept
+@ cdecl feholdexcept(ptr)
 @ cdecl feof(ptr)
 @ cdecl feraiseexcept(long)
 @ cdecl ferror(ptr)

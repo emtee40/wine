@@ -162,14 +162,15 @@ msgid ""
 "install it for you.\n"
 "\n"
 "Note: it is recommended to use your distribution's packages instead. See <a "
-"href=\"https://wiki.winehq.org/Gecko\">https://wiki.winehq.org/Gecko</a> for "
-"details."
+"href=\"https://gitlab.winehq.org/wine/wine/-/wikis/Gecko\">https://gitlab."
+"winehq.org/wine/wine/-/wikis/Gecko</a> for details."
 msgstr ""
 "Wine 需要安裝 Gecko 套件才能正確顯示嵌在應用程式中的 HTML 網頁。Wine 可以自動"
 "幫您下載並安裝 Gecko。\n"
 "\n"
-"備註: 建議您使用發行版所附的套件。詳情請見 <a href=\"https://wiki.winehq.org/"
-"Gecko\">https://wiki.winehq.org/Gecko</a>。"
+"備註: 建議您使用發行版所附的套件。詳情請見 <a href=\"https://gitlab.winehq."
+"org/wine/wine/-/wikis/Gecko\">https://gitlab.winehq.org/wine/wine/-/wikis/"
+"Gecko</a>。"
 
 #: dlls/appwiz.cpl/appwiz.rc:110 dlls/appwiz.cpl/appwiz.rc:125
 msgid "&Install"
@@ -229,14 +230,15 @@ msgid ""
 "it for you.\n"
 "\n"
 "Note: it is recommended to use your distribution's packages instead. See <a "
-"href=\"https://wiki.winehq.org/Mono\">https://wiki.winehq.org/Mono</a> for "
-"details."
+"href=\"https://gitlab.winehq.org/wine/wine/-/wikis/Wine-Mono\">https://"
+"gitlab.winehq.org/wine/wine/-/wikis/Wine-Mono</a> for details."
 msgstr ""
 "Wine 需要安裝 wine-mono 套件才能正確執行 .NET 應用程式。Wine 可以自動幫您下載"
 "並安裝它。\n"
 "\n"
-"備註: 建議您使用發行版所附的套件。詳情請見 <a href=\"https://wiki.winehq.org/"
-"Mono\">https://wiki.winehq.org/Mono</a>。"
+"備註: 建議您使用發行版所附的套件。詳情請見 <a href=\"https://gitlab.winehq."
+"org/wine/wine/-/wikis/Wine-Mono\">https://gitlab.winehq.org/wine/wine/-/"
+"wikis/Wine-Mono</a>。"
 
 #: dlls/appwiz.cpl/appwiz.rc:31
 msgid "Add/Remove Programs"
@@ -396,6 +398,7 @@ msgid "Properties for %s"
 msgstr "%s 的內容"
 
 #: dlls/comctl32/comctl32.rc:73 dlls/comdlg32/comdlg32.rc:265
+#: dlls/desk.cpl/desk.rc:41
 msgid "&Apply"
 msgstr "套用(&A)"
 
@@ -3105,6 +3108,34 @@ msgstr "選取憑證"
 msgid "Not yet implemented"
 msgstr "尚未實作"
 
+#: dlls/desk.cpl/desk.rc:35
+#, fuzzy
+#| msgctxt "display name"
+#| msgid "Desktop"
+msgid "Desktop"
+msgstr "桌面"
+
+#: dlls/desk.cpl/desk.rc:38
+#, fuzzy
+#| msgctxt "display name"
+#| msgid "Desktop"
+msgid "Virtual Desktop"
+msgstr "桌面"
+
+#: dlls/desk.cpl/desk.rc:40 dlls/joy.cpl/joy.rc:41
+msgid "&Reset"
+msgstr "重設(&R)"
+
+#: dlls/desk.cpl/desk.rc:29
+#, fuzzy
+#| msgid "Default Settings"
+msgid "Display Settings"
+msgstr "預設設定"
+
+#: dlls/desk.cpl/desk.rc:30
+msgid "Configure monitors and display devices."
+msgstr ""
+
 #: dlls/dinput/dinput.rc:34
 msgid "Configure Devices"
 msgstr "裝置設定"
@@ -3689,59 +3720,69 @@ msgstr "搖桿"
 msgid "&Disable"
 msgstr "停用(&D)"
 
-#: dlls/joy.cpl/joy.rc:41
-msgid "&Reset"
-msgstr "重設(&R)"
-
 #: dlls/joy.cpl/joy.rc:42
-msgid "&Enable"
-msgstr "啟用(&E)"
-
-#: dlls/joy.cpl/joy.rc:43
 msgid "&Override"
 msgstr "覆寫(&O)"
 
+#: dlls/joy.cpl/joy.rc:43
+msgid "&Enable"
+msgstr "啟用(&E)"
+
 #: dlls/joy.cpl/joy.rc:44
-msgid "Connected"
-msgstr "已連接"
+#, fuzzy
+#| msgid "Connected (xinput device)"
+msgid "Connected (DirectInput devices)"
+msgstr "已連接 (xinput 裝置)"
 
 #: dlls/joy.cpl/joy.rc:46
-msgid "Connected (xinput device)"
+#, fuzzy
+#| msgid "Connected (xinput device)"
+msgid "Connected (XInput devices)"
 msgstr "已連接 (xinput 裝置)"
 
 #: dlls/joy.cpl/joy.rc:48
 msgid "Disabled"
 msgstr "已停用"
 
-#: dlls/joy.cpl/joy.rc:50
-msgid ""
-"After disabling or enabling a device, the connected joysticks won't be "
-"updated here until you restart this applet."
-msgstr "停用或啟用裝置之後，已連接的搖桿將無法更新，直到您重新啟動這個程式。"
+#: dlls/joy.cpl/joy.rc:51
+msgid "Advanced settings (restart prefix required to take effect)"
+msgstr ""
 
-#: dlls/joy.cpl/joy.rc:55
+#: dlls/joy.cpl/joy.rc:52
+#, fuzzy
+#| msgid "&Enable"
+msgid "Enable SDL"
+msgstr "啟用(&E)"
+
+#: dlls/joy.cpl/joy.rc:53
+#, fuzzy
+#| msgid "Disabled"
+msgid "Disable hidraw"
+msgstr "已停用"
+
+#: dlls/joy.cpl/joy.rc:58
 msgid "DInput"
 msgstr ""
 
-#: dlls/joy.cpl/joy.rc:59
+#: dlls/joy.cpl/joy.rc:62
 msgid "Axes"
 msgstr ""
 
-#: dlls/joy.cpl/joy.rc:60
+#: dlls/joy.cpl/joy.rc:63
 msgid "POVs"
 msgstr ""
 
-#: dlls/joy.cpl/joy.rc:61
+#: dlls/joy.cpl/joy.rc:64
 msgid "Buttons"
 msgstr "按鈕"
 
-#: dlls/joy.cpl/joy.rc:62
+#: dlls/joy.cpl/joy.rc:65
 #, fuzzy
 #| msgid "Test Force Feedback"
 msgid "Force Feedback Effect"
 msgstr "測試應力回饋"
 
-#: dlls/joy.cpl/joy.rc:64
+#: dlls/joy.cpl/joy.rc:67
 msgid ""
 "Press any button in the controller to activate the chosen effect. The effect "
 "direction can be changed with the controller axis."
@@ -3749,60 +3790,60 @@ msgstr ""
 "請按下控制器中的任何按鈕以啟用所選的效果。效果的方向可以利用控制器的軸向來變"
 "更。"
 
-#: dlls/joy.cpl/joy.rc:70
+#: dlls/joy.cpl/joy.rc:73
 msgid "XInput"
 msgstr ""
 
-#: dlls/joy.cpl/joy.rc:73
+#: dlls/joy.cpl/joy.rc:76
 #, fuzzy
 #| msgid "User"
 msgid "User #0"
 msgstr "使用者"
 
-#: dlls/joy.cpl/joy.rc:74
+#: dlls/joy.cpl/joy.rc:77
 #, fuzzy
 #| msgid "User"
 msgid "User #1"
 msgstr "使用者"
 
-#: dlls/joy.cpl/joy.rc:75
+#: dlls/joy.cpl/joy.rc:78
 #, fuzzy
 #| msgid "User"
 msgid "User #2"
 msgstr "使用者"
 
-#: dlls/joy.cpl/joy.rc:76
+#: dlls/joy.cpl/joy.rc:79
 #, fuzzy
 #| msgid "User"
 msgid "User #3"
 msgstr "使用者"
 
-#: dlls/joy.cpl/joy.rc:78
+#: dlls/joy.cpl/joy.rc:81
 msgid ""
 "No user detected on slot #0, make sure your gamepad is plugged in, and not "
 "overridden for DInput in the Joysticks tab."
 msgstr ""
 
-#: dlls/joy.cpl/joy.rc:82
+#: dlls/joy.cpl/joy.rc:85
 msgid ""
 "No user detected on slot #1, make sure your gamepad is plugged in, and not "
 "overridden for DInput in the Joysticks tab."
 msgstr ""
 
-#: dlls/joy.cpl/joy.rc:86
+#: dlls/joy.cpl/joy.rc:89
 msgid ""
 "No user detected on slot #2, make sure your gamepad is plugged in, and not "
 "overridden for DInput in the Joysticks tab."
 msgstr ""
 
-#: dlls/joy.cpl/joy.rc:90
+#: dlls/joy.cpl/joy.rc:93
 msgid ""
 "No user detected on slot #3, make sure your gamepad is plugged in, and not "
 "overridden for DInput in the Joysticks tab."
 msgstr ""
 
-#: dlls/joy.cpl/joy.rc:95 dlls/joy.cpl/joy.rc:96 dlls/joy.cpl/joy.rc:97
-#: dlls/joy.cpl/joy.rc:98
+#: dlls/joy.cpl/joy.rc:98 dlls/joy.cpl/joy.rc:99 dlls/joy.cpl/joy.rc:100
+#: dlls/joy.cpl/joy.rc:101
 msgid "Rumble"
 msgstr ""
 
@@ -3850,229 +3891,233 @@ msgstr "物件不支援這個動作"
 msgid "Argument not optional"
 msgstr "引數並非可選的"
 
-#: dlls/jscript/jscript.rc:37
+#: dlls/jscript/jscript.rc:37 dlls/vbscript/vbscript.rc:56
+msgid "Object not a collection"
+msgstr "物件並非集合物件"
+
+#: dlls/jscript/jscript.rc:38
 msgid "Syntax error"
 msgstr "語法錯誤"
 
-#: dlls/jscript/jscript.rc:38
+#: dlls/jscript/jscript.rc:39
 msgid "Expected ';'"
 msgstr "預期為 ';'"
 
-#: dlls/jscript/jscript.rc:39
+#: dlls/jscript/jscript.rc:40
 msgid "Expected '('"
 msgstr "預期為 '('"
 
-#: dlls/jscript/jscript.rc:40
+#: dlls/jscript/jscript.rc:41
 msgid "Expected ')'"
 msgstr "預期為 ')'"
 
-#: dlls/jscript/jscript.rc:41
+#: dlls/jscript/jscript.rc:42
 msgid "Expected identifier"
 msgstr "預期為識別碼"
 
-#: dlls/jscript/jscript.rc:42
+#: dlls/jscript/jscript.rc:43
 msgid "Expected '='"
 msgstr "預期為 '='"
 
-#: dlls/jscript/jscript.rc:43
+#: dlls/jscript/jscript.rc:44
 msgid "Invalid character"
 msgstr "無效的字元"
 
-#: dlls/jscript/jscript.rc:44
+#: dlls/jscript/jscript.rc:45
 msgid "Unterminated string constant"
 msgstr "未終結的字串常數"
 
-#: dlls/jscript/jscript.rc:45
+#: dlls/jscript/jscript.rc:46
 msgid "'return' statement outside of function"
 msgstr "'return' 敘述位於函式之外"
 
-#: dlls/jscript/jscript.rc:46
+#: dlls/jscript/jscript.rc:47
 msgid "Can't have 'break' outside of loop"
 msgstr "在迴圈之外不可有 'break'"
 
-#: dlls/jscript/jscript.rc:47
+#: dlls/jscript/jscript.rc:48
 msgid "Can't have 'continue' outside of loop"
 msgstr "在迴圈之外不可有 'continue'"
 
-#: dlls/jscript/jscript.rc:48
+#: dlls/jscript/jscript.rc:49
 msgid "Label redefined"
 msgstr "標貼重複定義"
 
-#: dlls/jscript/jscript.rc:49
+#: dlls/jscript/jscript.rc:50
 msgid "Label not found"
 msgstr "找不到標貼"
 
-#: dlls/jscript/jscript.rc:50
+#: dlls/jscript/jscript.rc:51
 msgid "Expected '@end'"
 msgstr "預期為 '@end'"
 
-#: dlls/jscript/jscript.rc:51
+#: dlls/jscript/jscript.rc:52
 msgid "Conditional compilation is turned off"
 msgstr "條件編譯已關閉"
 
-#: dlls/jscript/jscript.rc:52
+#: dlls/jscript/jscript.rc:53
 msgid "Expected '@'"
 msgstr "預期為 '@'"
 
-#: dlls/jscript/jscript.rc:89
+#: dlls/jscript/jscript.rc:90
 msgid "Microsoft JScript compilation error"
 msgstr "Microsoft JScript 編譯錯誤"
 
-#: dlls/jscript/jscript.rc:90
+#: dlls/jscript/jscript.rc:91
 msgid "Microsoft JScript runtime error"
 msgstr "Microsoft JScript 執行期錯誤"
 
-#: dlls/jscript/jscript.rc:91 dlls/vbscript/vbscript.rc:64
+#: dlls/jscript/jscript.rc:92 dlls/vbscript/vbscript.rc:64
 msgid "Unknown runtime error"
 msgstr "不明執行期錯誤"
 
-#: dlls/jscript/jscript.rc:55
+#: dlls/jscript/jscript.rc:56
 msgid "Number expected"
 msgstr "預期為數字"
 
-#: dlls/jscript/jscript.rc:53
+#: dlls/jscript/jscript.rc:54
 msgid "Function expected"
 msgstr "預期為函式"
 
-#: dlls/jscript/jscript.rc:54
+#: dlls/jscript/jscript.rc:55
 msgid "'[object]' is not a date object"
 msgstr "'[object]' 並非日期物件"
 
-#: dlls/jscript/jscript.rc:56
+#: dlls/jscript/jscript.rc:57
 msgid "Object expected"
 msgstr "預期為物件"
 
-#: dlls/jscript/jscript.rc:57
+#: dlls/jscript/jscript.rc:58
 msgid "Illegal assignment"
 msgstr "不合法的指派"
 
-#: dlls/jscript/jscript.rc:58
+#: dlls/jscript/jscript.rc:59
 msgid "'|' is undefined"
 msgstr "'|' 未定義"
 
-#: dlls/jscript/jscript.rc:59
+#: dlls/jscript/jscript.rc:60
 msgid "Boolean object expected"
 msgstr "預期為布林值物件"
 
-#: dlls/jscript/jscript.rc:60
+#: dlls/jscript/jscript.rc:61
 msgid "Cannot delete '|'"
 msgstr "無法刪除 '|'"
 
-#: dlls/jscript/jscript.rc:61
+#: dlls/jscript/jscript.rc:62
 msgid "VBArray object expected"
 msgstr "預期為 VBArray 物件"
 
-#: dlls/jscript/jscript.rc:62
+#: dlls/jscript/jscript.rc:63
 msgid "JScript object expected"
 msgstr "預期為 JScript 物件"
 
-#: dlls/jscript/jscript.rc:63
+#: dlls/jscript/jscript.rc:64
 msgid "Enumerator object expected"
 msgstr "預期為列舉器物件"
 
-#: dlls/jscript/jscript.rc:64
+#: dlls/jscript/jscript.rc:65
 msgid "Regular Expression object expected"
 msgstr "預期為正規表示式"
 
-#: dlls/jscript/jscript.rc:65
+#: dlls/jscript/jscript.rc:66
 msgid "Syntax error in regular expression"
 msgstr "正規表示式語法發生錯誤"
 
-#: dlls/jscript/jscript.rc:66
+#: dlls/jscript/jscript.rc:67
 #, fuzzy
 #| msgid "Expected identifier"
 msgid "Unexpected quantifier"
 msgstr "預期為識別碼"
 
-#: dlls/jscript/jscript.rc:67
+#: dlls/jscript/jscript.rc:68
 msgid "Exception thrown and not caught"
 msgstr "發生異常且未被捕捉"
 
-#: dlls/jscript/jscript.rc:69
+#: dlls/jscript/jscript.rc:70
 msgid "URI to be encoded contains invalid characters"
 msgstr "要編碼的 URI 內含無效字元"
 
-#: dlls/jscript/jscript.rc:68
+#: dlls/jscript/jscript.rc:69
 msgid "URI to be decoded is incorrect"
 msgstr "要解碼的 URI 不正確"
 
-#: dlls/jscript/jscript.rc:70
+#: dlls/jscript/jscript.rc:71
 msgid "Number of fraction digits is out of range"
 msgstr "小數位數超出範圍"
 
-#: dlls/jscript/jscript.rc:71
+#: dlls/jscript/jscript.rc:72
 msgid "Precision is out of range"
 msgstr "精確度超出範圍"
 
-#: dlls/jscript/jscript.rc:72
+#: dlls/jscript/jscript.rc:73
 msgid "Array length must be a finite positive integer"
 msgstr "陣列長度必須是有限正整數"
 
-#: dlls/jscript/jscript.rc:73
+#: dlls/jscript/jscript.rc:74
 msgid "Array object expected"
 msgstr "預期為陣列物件"
 
-#: dlls/jscript/jscript.rc:74
+#: dlls/jscript/jscript.rc:75
 msgid ""
 "'writable' attribute on the property descriptor cannot be set to 'true' on "
 "this object"
 msgstr "無法在這個物件更改屬性描述符中的 'writable' 屬性為 'true'"
 
-#: dlls/jscript/jscript.rc:75
+#: dlls/jscript/jscript.rc:76
 msgid "Cyclic __proto__ value"
 msgstr "循環的 __proto__ 值"
 
-#: dlls/jscript/jscript.rc:76
+#: dlls/jscript/jscript.rc:77
 msgid "Cannot create property for a non-extensible object"
 msgstr "無法為不可擴展的物件建立屬性"
 
-#: dlls/jscript/jscript.rc:77
+#: dlls/jscript/jscript.rc:78
 msgid "Cannot define property '|': object is not extensible"
 msgstr "無法定義屬性 '|': 物件不能擴展"
 
-#: dlls/jscript/jscript.rc:78
+#: dlls/jscript/jscript.rc:79
 msgid "Cannot redefine non-configurable property '|'"
 msgstr "無法重新定義不可設定的屬性 '|'"
 
-#: dlls/jscript/jscript.rc:79
+#: dlls/jscript/jscript.rc:80
 msgid "Cannot modify non-writable property '|'"
 msgstr "無法修改不可寫入的屬性 '|'"
 
-#: dlls/jscript/jscript.rc:80
+#: dlls/jscript/jscript.rc:81
 #, fuzzy
 #| msgid "'this' is not a | object"
 msgid "'this' is not a DataView object"
 msgstr "'this' 不是一個 | 物件"
 
-#: dlls/jscript/jscript.rc:81
+#: dlls/jscript/jscript.rc:82
 msgid "Required argument offset or value in DataView method is not specified"
 msgstr ""
 
-#: dlls/jscript/jscript.rc:82
+#: dlls/jscript/jscript.rc:83
 msgid "DataView operation access beyond specified buffer length"
 msgstr ""
 
-#: dlls/jscript/jscript.rc:83
+#: dlls/jscript/jscript.rc:84
 msgid "DataView constructor argument offset is invalid"
 msgstr ""
 
-#: dlls/jscript/jscript.rc:84
+#: dlls/jscript/jscript.rc:85
 msgid "'this' is not a | object"
 msgstr "'this' 不是一個 | 物件"
 
-#: dlls/jscript/jscript.rc:85
+#: dlls/jscript/jscript.rc:86
 #, fuzzy
 #| msgid "'this' is not a | object"
 msgid "'key' is not an object"
 msgstr "'this' 不是一個 | 物件"
 
-#: dlls/jscript/jscript.rc:86
+#: dlls/jscript/jscript.rc:87
 #, fuzzy
 #| msgid "Array object expected"
 msgid "ArrayBuffer object expected"
 msgstr "預期為陣列物件"
 
-#: dlls/jscript/jscript.rc:87
+#: dlls/jscript/jscript.rc:88
 msgid "Property cannot have both accessors and a value"
 msgstr "屬性不可同時有存取子和值"
 
@@ -4745,7 +4790,7 @@ msgstr "找不到環境變數。\n"
 msgid "No signal sent.\n"
 msgstr "未發送任何信號。\n"
 
-#: dlls/kernelbase/winerror.mc:818 programs/cmd/cmd.rc:410
+#: dlls/kernelbase/winerror.mc:818 programs/cmd/cmd.rc:406
 msgid "File name is too long.\n"
 msgstr "檔案名稱過長。\n"
 
@@ -12522,10 +12567,6 @@ msgstr "找不到指名的引數"
 msgid "Wrong number of arguments or invalid property assignment"
 msgstr "引數的個數錯誤或指派的屬性無效"
 
-#: dlls/vbscript/vbscript.rc:56
-msgid "Object not a collection"
-msgstr "物件並非集合物件"
-
 #: dlls/vbscript/vbscript.rc:57
 msgid "Specified DLL function not found"
 msgstr "找不到指定的 DLL 函數"
@@ -13506,7 +13547,7 @@ msgstr "處理參照時產生迴圈"
 msgid "Referral hop limit exceeded"
 msgstr "轉介的躍點超出了限制"
 
-#: programs/attrib/attrib.rc:30 programs/cmd/cmd.rc:373
+#: programs/attrib/attrib.rc:30 programs/cmd/cmd.rc:370
 msgid ""
 "Not Yet Implemented\n"
 "\n"
@@ -13514,7 +13555,7 @@ msgstr ""
 "尚未實作\n"
 "\n"
 
-#: programs/attrib/attrib.rc:31 programs/cmd/cmd.rc:376
+#: programs/attrib/attrib.rc:31 programs/cmd/cmd.rc:373
 msgid "%1: File Not Found\n"
 msgstr "%1: 找不到檔案\n"
 
@@ -13664,22 +13705,18 @@ msgid "COPY <filename> copies a file.\n"
 msgstr "COPY <檔案名稱> 複製檔案。\n"
 
 #: programs/cmd/cmd.rc:56
-msgid "CTTY changes the input/output device.\n"
-msgstr "CTTY 變更輸入/輸出裝置。\n"
-
-#: programs/cmd/cmd.rc:59
 msgid "DATE shows or changes the system date.\n"
 msgstr "DATE 顯示或變更系統日期。\n"
 
-#: programs/cmd/cmd.rc:62
+#: programs/cmd/cmd.rc:59
 msgid "DEL <filename> deletes a file or set of files.\n"
 msgstr "DEL <檔案名稱> 刪除檔案或一組檔案。\n"
 
-#: programs/cmd/cmd.rc:65
+#: programs/cmd/cmd.rc:62
 msgid "DIR lists the contents of a directory.\n"
 msgstr "DIR 列出目錄的內容。\n"
 
-#: programs/cmd/cmd.rc:75
+#: programs/cmd/cmd.rc:72
 msgid ""
 "ECHO <string> displays <string> on the current terminal device.\n"
 "\n"
@@ -13699,11 +13736,11 @@ msgstr ""
 "OFF)。ECHO OFF 命令本身可以藉由前置 @ 符號\n"
 "來防止它被顯示。\n"
 
-#: programs/cmd/cmd.rc:78
+#: programs/cmd/cmd.rc:75
 msgid "ERASE <filename> deletes a file or set of files.\n"
 msgstr "ERASE <檔案名稱> 刪除一個檔案或一組檔案。\n"
 
-#: programs/cmd/cmd.rc:85
+#: programs/cmd/cmd.rc:82
 msgid ""
 "The FOR command is used to execute a command for each of a set of files.\n"
 "\n"
@@ -13717,7 +13754,7 @@ msgstr ""
 "\n"
 "當在批次檔裡使用 FOR 的時候，必須使用兩個 % 符號。\n"
 
-#: programs/cmd/cmd.rc:97
+#: programs/cmd/cmd.rc:94
 msgid ""
 "The GOTO command transfers execution to another statement within a batch\n"
 "file.\n"
@@ -13741,7 +13778,7 @@ msgstr ""
 "\n"
 "GOTO 用於互動模式中將沒有任何效果。\n"
 
-#: programs/cmd/cmd.rc:101
+#: programs/cmd/cmd.rc:98
 msgid ""
 "HELP <command> shows brief help details on a topic.\n"
 "HELP without an argument shows all CMD built-in commands.\n"
@@ -13749,7 +13786,7 @@ msgstr ""
 "HELP <命令> 顯示關於某一主題的簡明細節。\n"
 "HELP 不加引數時將顯示 CMD 所有的內建命令。\n"
 
-#: programs/cmd/cmd.rc:111
+#: programs/cmd/cmd.rc:108
 msgid ""
 "IF is used to conditionally execute a command.\n"
 "\n"
@@ -13769,7 +13806,7 @@ msgstr ""
 "在命令的第二種形式中，字串一和字串二必須位於雙引號之中。\n"
 "比較的動作是不分大小寫的。\n"
 
-#: programs/cmd/cmd.rc:118
+#: programs/cmd/cmd.rc:115
 msgid ""
 "LABEL is used to set a disk volume label.\n"
 "\n"
@@ -13783,15 +13820,15 @@ msgstr ""
 "命令將向您提示詢問要讓給定的儲存裝置使用的磁碟區標籤。\n"
 "您可以利用 VOL 命令來顯示磁碟機的磁碟區標籤。\n"
 
-#: programs/cmd/cmd.rc:121
+#: programs/cmd/cmd.rc:118
 msgid "MD <name> is the short version of MKDIR. It creates a subdirectory.\n"
 msgstr "MD <名稱> 是 MKDIR 的縮寫版本。它會建立子目錄。\n"
 
-#: programs/cmd/cmd.rc:123
+#: programs/cmd/cmd.rc:120
 msgid "MKDIR <name> creates a subdirectory.\n"
 msgstr "MKDIR <名稱> 建立子目錄。\n"
 
-#: programs/cmd/cmd.rc:131
+#: programs/cmd/cmd.rc:128
 msgid ""
 "MOVE relocates a file or directory to a new point within the file system.\n"
 "\n"
@@ -13807,7 +13844,7 @@ msgstr ""
 "\n"
 "如果舊的和新的位置在不同的 DOS 儲存裝置代號之上，MOVE 將會失敗。\n"
 
-#: programs/cmd/cmd.rc:142
+#: programs/cmd/cmd.rc:139
 msgid ""
 "PATH displays or changes the cmd search path.\n"
 "\n"
@@ -13829,7 +13866,7 @@ msgstr ""
 "舉例來說:\n"
 "PATH %PATH%;c:\\temp\n"
 
-#: programs/cmd/cmd.rc:148
+#: programs/cmd/cmd.rc:145
 msgid ""
 "PAUSE displays a message on the screen asking the user to press a key.\n"
 "\n"
@@ -13841,7 +13878,7 @@ msgstr ""
 "主要用於批次檔中，以允許使用者在前一個命令的\n"
 "輸出捲動離開螢幕之前能夠去讀取它。\n"
 
-#: programs/cmd/cmd.rc:169
+#: programs/cmd/cmd.rc:166
 msgid ""
 "PROMPT sets the command-line prompt.\n"
 "\n"
@@ -13882,7 +13919,7 @@ msgstr ""
 "提示字串也可以經由改變 PROMPT 環境變數而變更，\n"
 "因此命令 SET PROMPT=text 與 PROMPT text 具有相同的效果。\n"
 
-#: programs/cmd/cmd.rc:173
+#: programs/cmd/cmd.rc:170
 msgid ""
 "A command line beginning with REM (followed by a space) performs no action,\n"
 "and can therefore be used as a comment in a batch file.\n"
@@ -13890,23 +13927,23 @@ msgstr ""
 "以 REM 起始的命令列 (之後緊接空格) 不會進行任何動作，\n"
 "因而可以做為批次檔中的註釋。\n"
 
-#: programs/cmd/cmd.rc:176
+#: programs/cmd/cmd.rc:173
 msgid "REN <filename> is the short version of RENAME. It renames a file.\n"
 msgstr "REN <檔案名稱> 是 RENAME 的簡短版本。它會重新命名檔案。\n"
 
-#: programs/cmd/cmd.rc:178
+#: programs/cmd/cmd.rc:175
 msgid "RENAME <filename> renames a file.\n"
 msgstr "RENAME <檔案名稱> 重新命名檔案。\n"
 
-#: programs/cmd/cmd.rc:181
+#: programs/cmd/cmd.rc:178
 msgid "RD <directory> is the short version of RMDIR. It deletes a directory.\n"
 msgstr "RD <目錄> 是 RMDIR 的簡短版本。它會刪除目錄。\n"
 
-#: programs/cmd/cmd.rc:183
+#: programs/cmd/cmd.rc:180
 msgid "RMDIR <directory> deletes a directory.\n"
 msgstr "RMDIR <目錄> 刪除目錄。\n"
 
-#: programs/cmd/cmd.rc:229
+#: programs/cmd/cmd.rc:226
 msgid ""
 "SET displays or changes the cmd environment variables.\n"
 "\n"
@@ -13939,7 +13976,7 @@ msgstr ""
 "因此通常會比在原生的 Win32 實作中還要多出更多變數值。\n"
 "要注意的是，從 cmd 之中是不可能去影響作業系統的環境。\n"
 
-#: programs/cmd/cmd.rc:234
+#: programs/cmd/cmd.rc:231
 msgid ""
 "SHIFT is used in a batch file to remove one parameter from the head of the\n"
 "list, so parameter 2 becomes parameter 1 and so on. It has no effect if\n"
@@ -13949,7 +13986,7 @@ msgstr ""
 "參數，因此參數 2 會成為參數 1... 等等。如果從命令列呼叫它，\n"
 "將不會有任何效果。\n"
 
-#: programs/cmd/cmd.rc:212
+#: programs/cmd/cmd.rc:209
 msgid ""
 "Start a program, or open a document in the program normally used for files\n"
 "with that suffix.\n"
@@ -14004,15 +14041,15 @@ msgstr ""
 "/ProgIDOpen    使用指定的 progID 開啟檔案。\n"
 "/?             顯示這個說明並結束。\n"
 
-#: programs/cmd/cmd.rc:237
+#: programs/cmd/cmd.rc:234
 msgid "TIME sets or shows the current system time.\n"
 msgstr "TIME 設定或顯示目前的系統時間。\n"
 
-#: programs/cmd/cmd.rc:240
+#: programs/cmd/cmd.rc:237
 msgid "TITLE <string> sets the window title for the cmd window.\n"
 msgstr "TITLE <字串> 設定 cmd 視窗的視窗標題。\n"
 
-#: programs/cmd/cmd.rc:244
+#: programs/cmd/cmd.rc:241
 msgid ""
 "TYPE <filename> copies <filename> to the console device (or elsewhere if\n"
 "redirected). No check is made that the file is readable text.\n"
@@ -14020,7 +14057,7 @@ msgstr ""
 "TYPE <檔案名稱> 將 <檔案名稱> 的內容複製到主控臺裝置 (或是其他被\n"
 "重新導向的地方)。不會檢查該檔案是否為可讀的文字。\n"
 
-#: programs/cmd/cmd.rc:253
+#: programs/cmd/cmd.rc:250
 msgid ""
 "VERIFY is used to set, clear or test the verify flag. Valid forms are:\n"
 "\n"
@@ -14038,15 +14075,15 @@ msgstr ""
 "\n"
 "驗證旗標在 Wine 中沒有任何功能。\n"
 
-#: programs/cmd/cmd.rc:256
+#: programs/cmd/cmd.rc:253
 msgid "VER displays the version of cmd you are running.\n"
 msgstr "VER 顯示您正在執行的 cmd 版本。\n"
 
-#: programs/cmd/cmd.rc:259
+#: programs/cmd/cmd.rc:256
 msgid "VOL shows the volume label of a disk device.\n"
 msgstr "VOL 顯示儲存裝置的磁碟區標籤。\n"
 
-#: programs/cmd/cmd.rc:263
+#: programs/cmd/cmd.rc:260
 msgid ""
 "ENDLOCAL ends localization of environment changes in a batch file which\n"
 "were introduced by a preceding SETLOCAL.\n"
@@ -14054,7 +14091,7 @@ msgstr ""
 "ENDLOCAL 在批次檔中結束本地的環境變更\n"
 "而這些是由之前的 SETLOCAL 所引入。\n"
 
-#: programs/cmd/cmd.rc:271
+#: programs/cmd/cmd.rc:268
 msgid ""
 "SETLOCAL starts localization of environment changes in a batch file.\n"
 "\n"
@@ -14070,7 +14107,7 @@ msgstr ""
 "的結尾，取決於誰先出現)，前一個環境的設定值\n"
 "則於該點被儲存。\n"
 
-#: programs/cmd/cmd.rc:275
+#: programs/cmd/cmd.rc:272
 msgid ""
 "PUSHD <directory> saves the current directory onto a stack, and then\n"
 "changes the current directory to the supplied one.\n"
@@ -14078,11 +14115,11 @@ msgstr ""
 "PUSHD <目錄> 儲存目前的目錄到堆疊中，\n"
 "然後變更現行目錄到所給定的目錄。\n"
 
-#: programs/cmd/cmd.rc:278
+#: programs/cmd/cmd.rc:275
 msgid "POPD changes current directory to the last one saved with PUSHD.\n"
 msgstr "POPD 變更現行目錄到上一個利用 PUSHD 儲存的目錄。\n"
 
-#: programs/cmd/cmd.rc:288
+#: programs/cmd/cmd.rc:285
 msgid ""
 "ASSOC shows or modifies file extension associations.\n"
 "\n"
@@ -14101,7 +14138,7 @@ msgstr ""
 "如果只使用副檔名，則顯示它目前的關聯。\n"
 "在等號之號如果沒有指定檔案類型就移除目前的任何關聯。\n"
 
-#: programs/cmd/cmd.rc:300
+#: programs/cmd/cmd.rc:297
 msgid ""
 "FTYPE shows or modifies open commands associated with file types.\n"
 "\n"
@@ -14123,11 +14160,11 @@ msgstr ""
 "在等號之號如果沒有指定檔案類型就移除對於給定檔案型態的\n"
 "任何關聯命令字串。\n"
 
-#: programs/cmd/cmd.rc:303
+#: programs/cmd/cmd.rc:300
 msgid "MORE displays output of files or piped input in pages.\n"
 msgstr "MORE 以分頁的方式顯示檔案的輸出或管線的輸入。\n"
 
-#: programs/cmd/cmd.rc:308
+#: programs/cmd/cmd.rc:305
 msgid ""
 "CHOICE displays a text and waits, until the User presses an allowed Key\n"
 "from a selectable list.\n"
@@ -14137,7 +14174,7 @@ msgstr ""
 "從可選取的清單中按下允許的鍵。\n"
 "CHOICE 主要用來在批次檔中建構選單選擇。\n"
 
-#: programs/cmd/cmd.rc:324
+#: programs/cmd/cmd.rc:321
 msgid ""
 "Create a symbolic link.\n"
 "\n"
@@ -14161,7 +14198,7 @@ msgstr ""
 "連結名稱 為新的符號連結的名稱。\n"
 "目標 為 連結名稱 指向的路徑。\n"
 
-#: programs/cmd/cmd.rc:312
+#: programs/cmd/cmd.rc:309
 msgid ""
 "EXIT terminates the current command session and returns to the operating\n"
 "system or shell from which you invoked cmd.\n"
@@ -14169,7 +14206,7 @@ msgstr ""
 "EXIT 終止目前的命令作業階段並回到您從其調用 cmd 的\n"
 "作業系統或命令殼。\n"
 
-#: programs/cmd/cmd.rc:364
+#: programs/cmd/cmd.rc:361
 msgid ""
 "CMD built-in commands are:\n"
 "ASSOC\t\tShow or modify file extension associations\n"
@@ -14251,110 +14288,110 @@ msgstr ""
 "\n"
 "輸入 HELP <命令> 以取得關於以上任何命令的進一步資訊。\n"
 
-#: programs/cmd/cmd.rc:365
+#: programs/cmd/cmd.rc:362
 msgid "Are you sure?"
 msgstr "您確定嗎?"
 
-#: programs/cmd/cmd.rc:366 programs/reg/reg.rc:126 programs/xcopy/xcopy.rc:43
+#: programs/cmd/cmd.rc:363 programs/reg/reg.rc:126 programs/xcopy/xcopy.rc:43
 msgctxt "Yes key"
 msgid "Y"
 msgstr "Y"
 
-#: programs/cmd/cmd.rc:367 programs/reg/reg.rc:127 programs/xcopy/xcopy.rc:44
+#: programs/cmd/cmd.rc:364 programs/reg/reg.rc:127 programs/xcopy/xcopy.rc:44
 msgctxt "No key"
 msgid "N"
 msgstr "N"
 
-#: programs/cmd/cmd.rc:368
+#: programs/cmd/cmd.rc:365
 msgid "File association missing for extension %1\n"
 msgstr "找不到副檔名 %1 的檔案關聯\n"
 
-#: programs/cmd/cmd.rc:369
+#: programs/cmd/cmd.rc:366
 msgid "No open command associated with file type '%1'\n"
 msgstr "沒有與檔案類型 '%1' 相關聯的開啟命令\n"
 
-#: programs/cmd/cmd.rc:370
+#: programs/cmd/cmd.rc:367
 msgid "Overwrite %1?"
 msgstr "覆寫 %1?"
 
-#: programs/cmd/cmd.rc:371
+#: programs/cmd/cmd.rc:368
 msgid "More..."
 msgstr "更多..."
 
-#: programs/cmd/cmd.rc:372
+#: programs/cmd/cmd.rc:369
 msgid "Line in Batch processing possibly truncated. Using:\n"
 msgstr "命令列於批次處理時可能會被截斷。使用:\n"
 
-#: programs/cmd/cmd.rc:374
+#: programs/cmd/cmd.rc:371
 msgid "Argument missing\n"
 msgstr "缺少引數\n"
 
-#: programs/cmd/cmd.rc:375
+#: programs/cmd/cmd.rc:372
 msgid "Syntax error\n"
 msgstr "語法錯誤\n"
 
-#: programs/cmd/cmd.rc:377
+#: programs/cmd/cmd.rc:374
 msgid "No help available for %1\n"
 msgstr "沒有關於 %1 的說明\n"
 
-#: programs/cmd/cmd.rc:378
+#: programs/cmd/cmd.rc:375
 msgid "Target to GOTO not found\n"
 msgstr "找不到 GOTO 的目標\n"
 
-#: programs/cmd/cmd.rc:379
+#: programs/cmd/cmd.rc:376
 msgid "Current Date is %1\n"
 msgstr "今天是 %1\n"
 
-#: programs/cmd/cmd.rc:380
+#: programs/cmd/cmd.rc:377
 msgid "Current Time is %1\n"
 msgstr "現在時間是 %1\n"
 
-#: programs/cmd/cmd.rc:381
+#: programs/cmd/cmd.rc:378
 msgid "Enter new date: "
 msgstr "輸入新日期: "
 
-#: programs/cmd/cmd.rc:382
+#: programs/cmd/cmd.rc:379
 msgid "Enter new time: "
 msgstr "輸入新時間: "
 
-#: programs/cmd/cmd.rc:383
+#: programs/cmd/cmd.rc:380
 msgid "Environment variable %1 not defined\n"
 msgstr "環境變數 %1 未定義\n"
 
-#: programs/cmd/cmd.rc:384 programs/xcopy/xcopy.rc:41
+#: programs/cmd/cmd.rc:381 programs/xcopy/xcopy.rc:41
 msgid "Failed to open '%1'\n"
 msgstr "開啟 %1 失敗\n"
 
-#: programs/cmd/cmd.rc:385
+#: programs/cmd/cmd.rc:382
 msgid "Cannot call batch label outside of a batch script\n"
 msgstr "無法呼叫批次命令指令碼外部的批次標貼\n"
 
-#: programs/cmd/cmd.rc:386 programs/reg/reg.rc:128 programs/xcopy/xcopy.rc:45
+#: programs/cmd/cmd.rc:383 programs/reg/reg.rc:128 programs/xcopy/xcopy.rc:45
 msgctxt "All key"
 msgid "A"
 msgstr "A"
 
-#: programs/cmd/cmd.rc:387
+#: programs/cmd/cmd.rc:384
 msgid "Delete %1?"
 msgstr "刪除 %1?"
 
-#: programs/cmd/cmd.rc:388
+#: programs/cmd/cmd.rc:385
 msgid "Echo is %1\n"
 msgstr "回應為 %1\n"
 
-#: programs/cmd/cmd.rc:389
+#: programs/cmd/cmd.rc:386
 msgid "Verify is %1\n"
 msgstr "驗證為 %1\n"
 
-#: programs/cmd/cmd.rc:390
+#: programs/cmd/cmd.rc:387
 msgid "Verify must be ON or OFF\n"
 msgstr "驗證必須為 ON 或 OFF\n"
 
-#: programs/cmd/cmd.rc:391
+#: programs/cmd/cmd.rc:388
 msgid "Parameter error\n"
 msgstr "參數錯誤\n"
 
-#: programs/cmd/cmd.rc:392
+#: programs/cmd/cmd.rc:389
 msgid ""
 "Volume Serial Number is %1!04x!-%2!04x!\n"
 "\n"
@@ -14362,78 +14399,92 @@ msgstr ""
 "磁碟區序號是 %1!04x!-%2!04x!\n"
 "\n"
 
-#: programs/cmd/cmd.rc:393
+#: programs/cmd/cmd.rc:390
 msgid "Volume label (11 characters, <Enter> for none)?"
 msgstr "磁碟區標籤 (11 個字元，<Enter> 表示沒有)?"
 
-#: programs/cmd/cmd.rc:394
-msgid "PATH not found\n"
-msgstr "找不到 PATH\n"
-
-#: programs/cmd/cmd.rc:395
+#: programs/cmd/cmd.rc:391
 msgid "Press any key to continue... "
 msgstr "按下任意鍵繼續... "
 
-#: programs/cmd/cmd.rc:396
+#: programs/cmd/cmd.rc:392
 msgid "Wine Command Prompt"
 msgstr "Wine 命令提示字元"
 
-#: programs/cmd/cmd.rc:397
+#: programs/cmd/cmd.rc:393
 msgid "Microsoft Windows %1!S!\n"
 msgstr "Microsoft Windows %1!S!\n"
 
-#: programs/cmd/cmd.rc:398
+#: programs/cmd/cmd.rc:394
 msgid "More? "
 msgstr "更多? "
 
-#: programs/cmd/cmd.rc:399
+#: programs/cmd/cmd.rc:395
 msgid "The input line is too long.\n"
 msgstr "輸入列太長。\n"
 
-#: programs/cmd/cmd.rc:400
+#: programs/cmd/cmd.rc:396
 msgid "Volume in drive %1!c! is %2\n"
 msgstr "位於儲存裝置 %1!c! 的磁碟區為 %2\n"
 
-#: programs/cmd/cmd.rc:401
+#: programs/cmd/cmd.rc:397
 msgid "Volume in drive %1!c! has no label.\n"
 msgstr "位於儲存裝置 %1!c! 的磁碟區沒有任何標籤。\n"
 
-#: programs/cmd/cmd.rc:402 programs/reg/reg.rc:129
+#: programs/cmd/cmd.rc:398 programs/reg/reg.rc:129
 msgid " (Yes|No)"
 msgstr " (Yes|No)"
 
-#: programs/cmd/cmd.rc:403 programs/reg/reg.rc:130
+#: programs/cmd/cmd.rc:399 programs/reg/reg.rc:130
 msgid " (Yes|No|All)"
 msgstr " (Yes|No|All)"
 
-#: programs/cmd/cmd.rc:404
+#: programs/cmd/cmd.rc:400
 msgid ""
 "Can't recognize '%1' as an internal or external command, or batch script.\n"
 msgstr "無法識別 %1 為內部、外部命令或是批次命令指令碼。\n"
 
-#: programs/cmd/cmd.rc:405
+#: programs/cmd/cmd.rc:401
 msgid "Division by zero error.\n"
 msgstr "被零除的錯誤。\n"
 
-#: programs/cmd/cmd.rc:406
+#: programs/cmd/cmd.rc:402
 msgid "Expected an operand.\n"
 msgstr "預期為一個運算元。\n"
 
-#: programs/cmd/cmd.rc:407
+#: programs/cmd/cmd.rc:403
 msgid "Expected an operator.\n"
 msgstr "預期為一個運算子。\n"
 
-#: programs/cmd/cmd.rc:408
+#: programs/cmd/cmd.rc:404
 msgid "Mismatch in parentheses.\n"
 msgstr "小括號不相符。\n"
 
-#: programs/cmd/cmd.rc:409
+#: programs/cmd/cmd.rc:405
 msgid ""
 "Badly formed number - must be one of decimal (12),\n"
 " hexadecimal (0x34) or octal (056).\n"
 msgstr ""
 "錯誤的數字形式 - 必須是十進位 (12)、\n"
 " 十六進位 (0x34) 或八進位 (056) 之一。\n"
+
+#: programs/cmd/cmd.rc:407
+#, fuzzy
+#| msgid "Syntax error\n"
+msgid "Syntax error: unexpected %1\n"
+msgstr "語法錯誤\n"
+
+#: programs/cmd/cmd.rc:408
+#, fuzzy
+#| msgid "End of file.\n"
+msgid "End of line"
+msgstr "檔案結尾。\n"
+
+#: programs/cmd/cmd.rc:409
+#, fuzzy
+#| msgid "End of file.\n"
+msgid "End of file"
+msgstr "檔案結尾。\n"
 
 #: programs/conhost/conhost.rc:54
 msgid "Cursor size"
@@ -14619,6 +14670,13 @@ msgstr "結束 Windows(&X)"
 msgid ""
 "Are you sure you want to close all programs and exit the virtual desktop?"
 msgstr "您確認要刪除這些登錄值嗎?"
+
+#: programs/explorer/explorer.rc:38
+#, fuzzy
+#| msgctxt "display name"
+#| msgid "Desktop"
+msgid "Wine Desktop"
+msgstr "桌面"
 
 #: programs/findstr/findstr.rc:28
 #, fuzzy
@@ -18843,12 +18901,12 @@ msgstr "程式錯誤詳細資訊"
 msgid ""
 "If this problem is not present under Windows and has not been reported yet, "
 "you can save the detailed information to a file using the \"Save As\" "
-"button, then <a href=\"https://wiki.winehq.org/Bugs\">file a bug report</a> "
-"and attach that file to the report."
+"button, then <a href=\"https://gitlab.winehq.org/wine/wine/-/wikis/"
+"Bugs\">file a bug report</a> and attach that file to the report."
 msgstr ""
 "如果這個問題在 Windows 之下不會出現且未曾被報告，您可以使用 [另存新檔] 按鈕將"
-"相關的詳細資訊儲存到檔案，然後<a href=\"https://wiki.winehq.org/Bugs\">發送錯"
-"誤報告</a>並附加該檔案到報告中。"
+"相關的詳細資訊儲存到檔案，然後<a href=\"https://gitlab.winehq.org/wine/"
+"wine/-/wikis/Bugs\">發送錯誤報告</a>並附加該檔案到報告中。"
 
 #: programs/winedbg/winedbg.rc:40
 msgid ""
@@ -19242,7 +19300,9 @@ msgid "Help topics: "
 msgstr "說明主題:"
 
 #: programs/wmic/wmic.rc:28
-msgid "Error: Command line not supported\n"
+#, fuzzy
+#| msgid "Error: Command line not supported\n"
+msgid "Error: Command not supported\n"
 msgstr "錯誤: 不支援命令列\n"
 
 #: programs/wmic/wmic.rc:29
@@ -19256,6 +19316,12 @@ msgstr "錯誤: 無效的查詢\n"
 #: programs/wmic/wmic.rc:31
 msgid "Error: Invalid syntax for PATH\n"
 msgstr "錯誤: 無效的 PATH 語法\n"
+
+#: programs/wmic/wmic.rc:32
+#, fuzzy
+#| msgid "Bad command.\n"
+msgid "Supply a command\n"
+msgstr "錯誤的命令。\n"
 
 #: programs/wordpad/wordpad.rc:31
 msgid "&New...\tCtrl+N"

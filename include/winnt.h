@@ -52,7 +52,7 @@ extern "C" {
 #define FASTCALL __fastcall
 
 #ifndef DECLSPEC_IMPORT
-# if defined(_MSC_VER)
+# if __has_declspec_attribute(dllimport)
 #  define DECLSPEC_IMPORT __declspec(dllimport)
 # elif defined(__MINGW32__) || defined(__CYGWIN__)
 #  define DECLSPEC_IMPORT __attribute__((dllimport))
@@ -64,7 +64,7 @@ extern "C" {
 #endif
 
 #ifndef DECLSPEC_NORETURN
-# if defined(_MSC_VER) && (_MSC_VER >= 1200) && !defined(MIDL_PASS)
+# if __has_declspec_attribute(noreturn) && !defined(MIDL_PASS)
 #  define DECLSPEC_NORETURN __declspec(noreturn)
 # elif defined(__GNUC__)
 #  define DECLSPEC_NORETURN __attribute__((noreturn))
@@ -74,7 +74,7 @@ extern "C" {
 #endif
 
 #ifndef DECLSPEC_ALIGN
-# if defined(_MSC_VER) && (_MSC_VER >= 1300) && !defined(MIDL_PASS)
+# if __has_declspec_attribute(align) && !defined(MIDL_PASS)
 #  define DECLSPEC_ALIGN(x) __declspec(align(x))
 # elif defined(__GNUC__)
 #  define DECLSPEC_ALIGN(x) __attribute__((aligned(x)))
@@ -84,7 +84,7 @@ extern "C" {
 #endif
 
 #ifndef DECLSPEC_NOTHROW
-# if defined(_MSC_VER) && (_MSC_VER >= 1200) && !defined(MIDL_PASS)
+# if __has_declspec_attribute(nothrow) && !defined(MIDL_PASS)
 #  define DECLSPEC_NOTHROW __declspec(nothrow)
 # elif defined(__GNUC__)
 #  define DECLSPEC_NOTHROW __attribute__((nothrow))
@@ -98,7 +98,7 @@ extern "C" {
 #endif
 
 #ifndef DECLSPEC_UUID
-# if defined(_MSC_VER) && (_MSC_VER >= 1100) && defined (__cplusplus)
+# if __has_declspec_attribute(uuid) && defined (__cplusplus)
 #  define DECLSPEC_UUID(x) __declspec(uuid(x))
 # else
 #  define DECLSPEC_UUID(x)
@@ -106,7 +106,7 @@ extern "C" {
 #endif
 
 #ifndef DECLSPEC_NOVTABLE
-# if defined(_MSC_VER) && (_MSC_VER >= 1100) && defined(__cplusplus)
+# if __has_declspec_attribute(novtable) && defined(__cplusplus)
 #  define DECLSPEC_NOVTABLE __declspec(novtable)
 # else
 #  define DECLSPEC_NOVTABLE
@@ -114,7 +114,7 @@ extern "C" {
 #endif
 
 #ifndef DECLSPEC_SELECTANY
-#if defined(_MSC_VER) && (_MSC_VER >= 1100)
+# if __has_declspec_attribute(selectany)
 #define DECLSPEC_SELECTANY __declspec(selectany)
 #elif defined(__MINGW32__)
 #define DECLSPEC_SELECTANY __attribute__((selectany))
@@ -126,19 +126,15 @@ extern "C" {
 #endif
 
 #ifndef NOP_FUNCTION
-# if defined(_MSC_VER)
-#  if (_MSC_VER >= 1210)
-#   define NOP_FUNCTION __noop
-#  else
-#   define NOP_FUNCTION (void)0
-#  endif
+# ifdef _MSC_VER
+#  define NOP_FUNCTION __noop
 # else
 #  define NOP_FUNCTION(...)
 # endif
 #endif
 
 #ifndef DECLSPEC_ADDRSAFE
-# if defined(_MSC_VER) && (_MSC_VER >= 1200) && (defined(_M_ALPHA) || defined(_M_AXP64))
+# if __has_declspec_attribute(address_safe) && (defined(_M_ALPHA) || defined(_M_AXP64))
 #  define DECLSPEC_ADDRSAFE __declspec(address_safe)
 # else
 #  define DECLSPEC_ADDRSAFE
@@ -146,7 +142,7 @@ extern "C" {
 #endif
 
 #ifndef FORCEINLINE
-# if defined(_MSC_VER) && (_MSC_VER >= 1200)
+# ifdef _MSC_VER
 #  define FORCEINLINE __forceinline
 # elif defined(__GNUC__) && ((__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 2)))
 #  define FORCEINLINE inline __attribute__((always_inline))
@@ -156,7 +152,7 @@ extern "C" {
 #endif
 
 #ifndef DECLSPEC_NOINLINE
-# if defined(_MSC_VER) && (_MSC_VER >= 1300)
+# if __has_declspec_attribute(noinline)
 #  define DECLSPEC_NOINLINE  __declspec(noinline)
 # elif defined(__GNUC__)
 #  define DECLSPEC_NOINLINE __attribute__((noinline))
@@ -166,7 +162,7 @@ extern "C" {
 #endif
 
 #ifndef DECLSPEC_DEPRECATED
-# if defined(_MSC_VER) && (_MSC_VER >= 1300) && !defined(MIDL_PASS)
+# if __has_declspec_attribute(deprecated) && !defined(MIDL_PASS)
 #  define DECLSPEC_DEPRECATED __declspec(deprecated)
 #  define DEPRECATE_SUPPORTED
 # elif defined(__GNUC__) && ((__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 2)))
@@ -183,7 +179,7 @@ extern "C" {
 #if defined(__WINESRC__) && !defined(WINE_UNIX_LIB)
 /* Wine uses .spec file for PE exports */
 # define DECLSPEC_EXPORT
-#elif defined(_MSC_VER)
+#elif __has_declspec_attribute(dllexport)
 # define DECLSPEC_EXPORT __declspec(dllexport)
 #elif defined(__MINGW32__)
 # define DECLSPEC_EXPORT __attribute__((dllexport))
@@ -201,6 +197,16 @@ extern "C" {
 #define DECLSPEC_HOTPATCH __attribute__((__ms_hook_prologue__))
 #else
 #define DECLSPEC_HOTPATCH
+#endif
+
+#ifndef DECLSPEC_CHPE_PATCHABLE
+# ifndef __arm64ec__
+#  define DECLSPEC_CHPE_PATCHABLE
+# elif __has_declspec_attribute(hybrid_patchable)
+#  define DECLSPEC_CHPE_PATCHABLE __declspec(hybrid_patchable)
+# else
+#  define DECLSPEC_CHPE_PATCHABLE __attribute__((hybrid_patchable))
+# endif
 #endif
 
 #if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ >= 3)))
@@ -401,7 +407,7 @@ extern "C" {
 #define MEMORY_ALLOCATION_ALIGNMENT 8
 #endif
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1300) && defined(__cplusplus)
+#if defined(_MSC_VER) && defined(__cplusplus)
 # define TYPE_ALIGNMENT(t) __alignof(t)
 #elif defined(__GNUC__)
 # define TYPE_ALIGNMENT(t) __alignof__(t)
@@ -427,7 +433,7 @@ extern "C" {
 #endif
 
 /* Eliminate Microsoft C/C++ compiler warning 4715 */
-#if defined(_MSC_VER) && (_MSC_VER > 1200)
+#ifdef _MSC_VER
 # define DEFAULT_UNREACHABLE default: __assume(0)
 #elif defined(__clang__) || (defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ >= 5))))
 # define DEFAULT_UNREACHABLE default: __builtin_unreachable()
@@ -815,17 +821,35 @@ typedef struct DECLSPEC_ALIGN(8) MEM_EXTENDED_PARAMETER {
 #define MEM_EXTENDED_PARAMETER_EC_CODE                  0x00000040
 #define MEM_EXTENDED_PARAMETER_IMAGE_NO_HPAT            0x00000080
 
-#define	PAGE_NOACCESS		0x01
-#define	PAGE_READONLY		0x02
-#define	PAGE_READWRITE		0x04
-#define	PAGE_WRITECOPY		0x08
-#define	PAGE_EXECUTE		0x10
-#define	PAGE_EXECUTE_READ	0x20
-#define	PAGE_EXECUTE_READWRITE	0x40
-#define	PAGE_EXECUTE_WRITECOPY	0x80
-#define	PAGE_GUARD		0x100
-#define	PAGE_NOCACHE		0x200
-#define	PAGE_WRITECOMBINE	0x400
+#define PAGE_NOACCESS                   0x00000001
+#define PAGE_READONLY                   0x00000002
+#define PAGE_READWRITE                  0x00000004
+#define PAGE_WRITECOPY                  0x00000008
+#define PAGE_EXECUTE                    0x00000010
+#define PAGE_EXECUTE_READ               0x00000020
+#define PAGE_EXECUTE_READWRITE          0x00000040
+#define PAGE_EXECUTE_WRITECOPY          0x00000080
+#define PAGE_GUARD                      0x00000100
+#define PAGE_NOCACHE                    0x00000200
+#define PAGE_WRITECOMBINE               0x00000400
+#define PAGE_GRAPHICS_NOACCESS          0x00000800
+#define PAGE_GRAPHICS_READONLY          0x00001000
+#define PAGE_GRAPHICS_READWRITE         0x00002000
+#define PAGE_GRAPHICS_EXECUTE           0x00004000
+#define PAGE_GRAPHICS_EXECUTE_READ      0x00008000
+#define PAGE_GRAPHICS_EXECUTE_READWRITE 0x00010000
+#define PAGE_GRAPHICS_COHERENT          0x00020000
+#define PAGE_GRAPHICS_NOCACHE           0x00040000
+#define PAGE_ENCLAVE_MASK               0x10000000
+#define PAGE_ENCLAVE_UNVALIDATED        0x20000000
+#define PAGE_ENCLAVE_NO_CHANGE          0x20000000
+#define PAGE_TARGETS_NO_UPDATE          0x40000000
+#define PAGE_TARGETS_INVALID            0x40000000
+#define PAGE_REVERT_TO_FILE_MAP         0x80000000
+#define PAGE_ENCLAVE_THREAD_CONTROL     0x80000000
+#define PAGE_ENCLAVE_DECOMMIT           (PAGE_ENCLAVE_MASK | 0)
+#define PAGE_ENCLAVE_SS_FIRST           (PAGE_ENCLAVE_MASK | 1)
+#define PAGE_ENCLAVE_SS_REST            (PAGE_ENCLAVE_MASK | 2)
 
 #define MEM_COMMIT               0x00001000
 #define MEM_RESERVE              0x00002000
@@ -1099,6 +1123,21 @@ typedef enum _HEAP_INFORMATION_CLASS {
 #define PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE    43
 #define PF_ARM_V83_JSCVT_INSTRUCTIONS_AVAILABLE 44
 #define PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE 45
+#define PF_ARM_SVE_INSTRUCTIONS_AVAILABLE       46
+#define PF_ARM_SVE2_INSTRUCTIONS_AVAILABLE      47
+#define PF_ARM_SVE2_1_INSTRUCTIONS_AVAILABLE    48
+#define PF_ARM_SVE_AES_INSTRUCTIONS_AVAILABLE   49
+#define PF_ARM_SVE_PMULL128_INSTRUCTIONS_AVAILABLE 50
+#define PF_ARM_SVE_BITPERM_INSTRUCTIONS_AVAILABLE 51
+#define PF_ARM_SVE_BF16_INSTRUCTIONS_AVAILABLE  52
+#define PF_ARM_SVE_EBF16_INSTRUCTIONS_AVAILABLE 53
+#define PF_ARM_SVE_B16B16_INSTRUCTIONS_AVAILABLE 54
+#define PF_ARM_SVE_SHA3_INSTRUCTIONS_AVAILABLE  55
+#define PF_ARM_SVE_SM4_INSTRUCTIONS_AVAILABLE   56
+#define PF_ARM_SVE_I8MM_INSTRUCTIONS_AVAILABLE  57
+#define PF_ARM_SVE_F32MM_INSTRUCTIONS_AVAILABLE 58
+#define PF_ARM_SVE_F64MM_INSTRUCTIONS_AVAILABLE 59
+#define PF_BMI2_INSTRUCTIONS_AVAILABLE          60
 
 
 /* Execution state flags */
@@ -1535,6 +1574,11 @@ typedef struct _CONTEXT_EX
     ULONG64 align;
 #endif
 } CONTEXT_EX, *PCONTEXT_EX;
+
+#define CONTEXT_EXCEPTION_ACTIVE    0x08000000
+#define CONTEXT_SERVICE_ACTIVE      0x10000000
+#define CONTEXT_EXCEPTION_REQUEST   0x40000000
+#define CONTEXT_EXCEPTION_REPORTING 0x80000000
 
 #define CONTEXT_ARM    0x0200000
 #define CONTEXT_ARM_CONTROL         (CONTEXT_ARM | 0x00000001)
@@ -2431,12 +2475,11 @@ static FORCEINLINE struct _TEB * WINAPI NtCurrentTeb(void)
     return teb;
 }
 #elif defined(__i386__) && defined(_MSC_VER)
+DWORD __readfsdword(DWORD);
+#pragma intrinsic(__readfsdword)
 static FORCEINLINE struct _TEB * WINAPI NtCurrentTeb(void)
 {
-  struct _TEB *teb;
-  __asm mov eax, fs:[0x18];
-  __asm mov teb, eax;
-  return teb;
+    return (struct _TEB *)__readfsdword( 0x18 );
 }
 #elif (defined(__aarch64__) || defined(__arm64ec__)) && defined(__GNUC__)
 register struct _TEB *__wine_current_teb __asm__("x18");
@@ -6022,6 +6065,7 @@ typedef struct _TAPE_GET_MEDIA_PARAMETERS {
 #define DEVICEFAMILYDEVICEFORM_MAX                    0x21
 
 NTSYSAPI void WINAPI RtlGetDeviceFamilyInfoEnum(ULONGLONG*,DWORD*,DWORD*);
+NTSYSAPI DWORD WINAPI RtlConvertDeviceFamilyInfoToString(DWORD *,DWORD *,WCHAR *,WCHAR *);
 
 #define EVENTLOG_SUCCESS                0x0000
 #define EVENTLOG_ERROR_TYPE             0x0001
@@ -6953,16 +6997,6 @@ static FORCEINLINE __int64 InterlockedAnd64( __int64 volatile *dest, __int64 val
 }
 #endif
 
-#if !defined(__i386__) || __has_builtin(_InterlockedDecrement64)
-#pragma intrinsic(_InterlockedDecrement64)
-__int64   _InterlockedDecrement64(__int64 volatile *);
-#else
-static FORCEINLINE __int64 InterlockedDecrement64( __int64 volatile *dest )
-{
-    return InterlockedExchangeAdd64( dest, -1 ) - 1;
-}
-#endif
-
 #if !defined(__i386__) || __has_builtin(_InterlockedExchangeAdd64)
 #pragma intrinsic(_InterlockedExchangeAdd64)
 __int64   _InterlockedExchangeAdd64(__int64 volatile *, __int64);
@@ -6972,6 +7006,16 @@ static FORCEINLINE __int64 InterlockedExchangeAdd64( __int64 volatile *dest, __i
     __int64 prev;
     do prev = *dest; while (InterlockedCompareExchange64( dest, prev + val, prev ) != prev);
     return prev;
+}
+#endif
+
+#if !defined(__i386__) || __has_builtin(_InterlockedDecrement64)
+#pragma intrinsic(_InterlockedDecrement64)
+__int64   _InterlockedDecrement64(__int64 volatile *);
+#else
+static FORCEINLINE __int64 InterlockedDecrement64( __int64 volatile *dest )
+{
+    return InterlockedExchangeAdd64( dest, -1 ) - 1;
 }
 #endif
 
@@ -7059,11 +7103,14 @@ static FORCEINLINE void MemoryBarrier(void)
  */
 #if _MSC_VER >= 1700
 #pragma intrinsic(__iso_volatile_load32)
+#pragma intrinsic(__iso_volatile_load64)
 #pragma intrinsic(__iso_volatile_store32)
 #define __WINE_LOAD32_NO_FENCE(src) (__iso_volatile_load32(src))
+#define __WINE_LOAD64_NO_FENCE(src) (__iso_volatile_load64(src))
 #define __WINE_STORE32_NO_FENCE(dest, value) (__iso_volatile_store32(dest, value))
 #else  /* _MSC_VER >= 1700 */
 #define __WINE_LOAD32_NO_FENCE(src) (*(src))
+#define __WINE_LOAD64_NO_FENCE(src) (*(src))
 #define __WINE_STORE32_NO_FENCE(dest, value) ((void)(*(dest) = (value)))
 #endif  /* _MSC_VER >= 1700 */
 
@@ -7094,6 +7141,12 @@ static FORCEINLINE LONG ReadAcquire( LONG const volatile *src )
 static FORCEINLINE LONG ReadNoFence( LONG const volatile *src )
 {
     LONG value = __WINE_LOAD32_NO_FENCE( (int const volatile *)src );
+    return value;
+}
+
+static FORCEINLINE LONG64 ReadNoFence64( LONG64 const volatile *src )
+{
+    LONG64 value = __WINE_LOAD64_NO_FENCE( (__int64 const volatile *)src );
     return value;
 }
 
@@ -7279,6 +7332,13 @@ static FORCEINLINE LONG ReadAcquire( LONG const volatile *src )
 static FORCEINLINE LONG ReadNoFence( LONG const volatile *src )
 {
     LONG value;
+    __WINE_ATOMIC_LOAD_RELAXED( src, &value );
+    return value;
+}
+
+static FORCEINLINE LONG64 ReadNoFence64( LONG64 const volatile *src )
+{
+    LONG64 value;
     __WINE_ATOMIC_LOAD_RELAXED( src, &value );
     return value;
 }

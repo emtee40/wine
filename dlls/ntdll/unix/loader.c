@@ -73,11 +73,13 @@
 # ifndef _POSIX_SPAWN_DISABLE_ASLR
 #  define _POSIX_SPAWN_DISABLE_ASLR 0x0100
 # endif
+# define environ (*_NSGetEnviron())
+#else
+  extern char **environ;
 #endif
 #ifdef __ANDROID__
 # include <jni.h>
 #endif
-extern char **environ;
 
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
@@ -111,6 +113,7 @@ void *pKiRaiseUserExceptionDispatcher = NULL;
 void *pKiUserExceptionDispatcher = NULL;
 void *pKiUserApcDispatcher = NULL;
 void *pKiUserCallbackDispatcher = NULL;
+void *pKiUserEmulationDispatcher = NULL;
 void *pLdrInitializeThunk = NULL;
 void *pRtlUserThreadStart = NULL;
 void *p__wine_ctrl_routine = NULL;
@@ -145,12 +148,6 @@ SYSTEM_SERVICE_TABLE KeServiceDescriptorTable[4] =
 
 #ifdef __GNUC__
 static void fatal_error( const char *err, ... ) __attribute__((noreturn, format(printf,1,2)));
-#endif
-
-#if defined(linux) || defined(__APPLE__)
-static const BOOL use_preloader = TRUE;
-#else
-static const BOOL use_preloader = FALSE;
 #endif
 
 static const char *bin_dir;
@@ -308,6 +305,42 @@ static char *build_path( const char *dir, const char *name )
     return ret;
 }
 
+/* build a path with the relative dir from 'from' to 'dest' appended to base */
+static char *build_relative_path( const char *base, const char *from, const char *dest )
+{
+    const char *start;
+    char *ret;
+    unsigned int dotdots = 0;
+
+    for (;;)
+    {
+        while (*from == '/') from++;
+        while (*dest == '/') dest++;
+        start = dest;  /* save start of next path element */
+        if (!*from) break;
+
+        while (*from && *from != '/' && *from == *dest) { from++; dest++; }
+        if ((!*from || *from == '/') && (!*dest || *dest == '/')) continue;
+
+        do  /* count remaining elements in 'from' */
+        {
+            dotdots++;
+            while (*from && *from != '/') from++;
+            while (*from == '/') from++;
+        }
+        while (*from);
+        break;
+    }
+
+    ret = malloc( strlen(base) + 3 * dotdots + strlen(start) + 2 );
+    strcpy( ret, base );
+    while (dotdots--) strcat( ret, "/.." );
+
+    if (!start[0]) return ret;
+    strcat( ret, "/" );
+    strcat( ret, start );
+    return ret;
+}
 
 /* build a path to a binary and exec it */
 static int build_path_and_exec( pid_t *pid, const char *dir, const char *name, char **argv )
@@ -450,8 +483,8 @@ static void init_paths( char *argv[] )
             free( path );
         }
 #endif
-        if (!bin_dir) bin_dir = build_path( dll_dir, DLL_TO_BINDIR );
-        data_dir = build_path( bin_dir, BIN_TO_DATADIR );
+        if (!bin_dir) bin_dir = build_relative_path( dll_dir, LIBDIR "/wine", BINDIR );
+        data_dir = build_relative_path( bin_dir, BINDIR, DATADIR "/wine" );
         wineloader = build_path( bin_dir, basename );
     }
     else
@@ -500,31 +533,30 @@ char *get_alternate_wineloader( WORD machine )
 
 static void preloader_exec( char **argv )
 {
-    if (use_preloader)
-    {
-        static const char *preloader = "wine-preloader";
-        char *p;
+#ifdef HAVE_WINE_PRELOADER
+    static const char *preloader = "wine-preloader";
+    char *p;
 
-        if (!(p = strrchr( argv[1], '/' ))) p = argv[1];
-        else p++;
+    if (!(p = strrchr( argv[1], '/' ))) p = argv[1];
+    else p++;
 
-        if (strlen(p) > 2 && !strcmp( p + strlen(p) - 2, "64" )) preloader = "wine64-preloader";
-        argv[0] = malloc( p - argv[1] + strlen(preloader) + 1 );
-        memcpy( argv[0], argv[1], p - argv[1] );
-        strcpy( argv[0] + (p - argv[1]), preloader );
+    if (strlen(p) > 2 && !strcmp( p + strlen(p) - 2, "64" )) preloader = "wine64-preloader";
+    argv[0] = malloc( p - argv[1] + strlen(preloader) + 1 );
+    memcpy( argv[0], argv[1], p - argv[1] );
+    strcpy( argv[0] + (p - argv[1]), preloader );
 
 #ifdef __APPLE__
-        {
-            posix_spawnattr_t attr;
-            posix_spawnattr_init( &attr );
-            posix_spawnattr_setflags( &attr, POSIX_SPAWN_SETEXEC | _POSIX_SPAWN_DISABLE_ASLR );
-            posix_spawn( NULL, argv[0], NULL, &attr, argv, *_NSGetEnviron() );
-            posix_spawnattr_destroy( &attr );
-        }
-#endif
-        execv( argv[0], argv );
-        free( argv[0] );
+    {
+        posix_spawnattr_t attr;
+        posix_spawnattr_init( &attr );
+        posix_spawnattr_setflags( &attr, POSIX_SPAWN_SETEXEC | _POSIX_SPAWN_DISABLE_ASLR );
+        posix_spawn( NULL, argv[0], NULL, &attr, argv, *_NSGetEnviron() );
+        posix_spawnattr_destroy( &attr );
     }
+#endif
+    execv( argv[0], argv );
+    free( argv[0] );
+#endif
     execv( argv[1], argv + 1 );
 }
 
@@ -1283,6 +1315,7 @@ NTSTATUS load_builtin( const pe_image_info_t *image_info, WCHAR *filename, USHOR
 {
     NTSTATUS status;
     UNICODE_STRING nt_name;
+    USHORT search_machine = image_info->machine;
     enum loadorder loadorder;
 
     init_unicode_string( &nt_name, filename );
@@ -1302,6 +1335,9 @@ NTSTATUS load_builtin( const pe_image_info_t *image_info, WCHAR *filename, USHOR
         loadorder = LO_BUILTIN;  /* builtin with no fallback since mapping a fake dll is not useful */
     }
 
+    if (is_arm64ec() && image_info->is_hybrid && search_machine == IMAGE_FILE_MACHINE_AMD64)
+        search_machine = current_machine;
+
     switch (loadorder)
     {
     case LO_NATIVE:
@@ -1309,10 +1345,10 @@ NTSTATUS load_builtin( const pe_image_info_t *image_info, WCHAR *filename, USHOR
         return STATUS_IMAGE_ALREADY_LOADED;
     case LO_BUILTIN:
         return find_builtin_dll( &nt_name, module, size, info, limit_low, limit_high,
-                                 image_info->machine, machine, FALSE );
+                                 search_machine, machine, FALSE );
     default:
         status = find_builtin_dll( &nt_name, module, size, info, limit_low, limit_high,
-                                   image_info->machine, machine, (loadorder == LO_DEFAULT) );
+                                   search_machine, machine, (loadorder == LO_DEFAULT) );
         if (status == STATUS_DLL_NOT_FOUND || status == STATUS_NOT_SUPPORTED)
             return STATUS_IMAGE_ALREADY_LOADED;
         return status;
@@ -1517,6 +1553,7 @@ static void load_ntdll_functions( HMODULE module )
 {
     void **p__wine_syscall_dispatcher;
     void **p__wine_unix_call_dispatcher;
+    void **p__wine_unix_call_dispatcher_arm64ec = NULL;
     unixlib_handle_t *p__wine_unixlib_handle;
     const IMAGE_EXPORT_DIRECTORY *exports;
 
@@ -1539,9 +1576,20 @@ static void load_ntdll_functions( HMODULE module )
     GET_FUNC( __wine_syscall_dispatcher );
     GET_FUNC( __wine_unix_call_dispatcher );
     GET_FUNC( __wine_unixlib_handle );
+    if (is_arm64ec())
+    {
+        GET_FUNC( __wine_unix_call_dispatcher_arm64ec );
+        GET_FUNC( KiUserEmulationDispatcher );
+    }
     *p__wine_syscall_dispatcher = __wine_syscall_dispatcher;
-    *p__wine_unix_call_dispatcher = __wine_unix_call_dispatcher;
     *p__wine_unixlib_handle = (UINT_PTR)unix_call_funcs;
+    if (p__wine_unix_call_dispatcher_arm64ec)
+    {
+        /* redirect __wine_unix_call_dispatcher to __wine_unix_call_dispatcher_arm64ec */
+        *p__wine_unix_call_dispatcher = *p__wine_unix_call_dispatcher_arm64ec;
+        *p__wine_unix_call_dispatcher_arm64ec = __wine_unix_call_dispatcher;
+    }
+    else *p__wine_unix_call_dispatcher = __wine_unix_call_dispatcher;
 #undef GET_FUNC
 }
 
@@ -1625,6 +1673,7 @@ static void redirect_ntdll_functions( HMODULE module )
     REDIRECT( KiUserExceptionDispatcher );
     REDIRECT( KiUserApcDispatcher );
     REDIRECT( KiUserCallbackDispatcher );
+    REDIRECT( KiUserEmulationDispatcher );
     REDIRECT( LdrInitializeThunk );
     REDIRECT( RtlUserThreadStart );
 #undef REDIRECT
@@ -1906,7 +1955,6 @@ static jstring wine_init_jni( JNIEnv *env, jobject obj, jobjectArray cmdline, jo
 
     main_argc = argc;
     main_argv = argv;
-    main_envp = environ;
 
     init_paths( argv );
     virtual_init();
@@ -2020,18 +2068,7 @@ static void apple_main_thread(void)
 #endif  /* __APPLE__ */
 
 
-#ifdef __ANDROID__
-
-static int pre_exec(void)
-{
-#if defined(__i386__) || defined(__x86_64__)
-    return 1;  /* we have a preloader */
-#else
-    return 0;  /* no exec needed */
-#endif
-}
-
-#elif defined(__linux__) && (defined(__i386__) || defined(__arm__))
+#if defined(__linux__) && !defined(__ANDROID__) && (defined(__i386__) || defined(__arm__))
 
 static void check_vmsplit( void *stack )
 {
@@ -2052,20 +2089,6 @@ static int pre_exec(void)
     return 1;  /* we have a preloader on x86/arm */
 }
 
-#elif defined(__linux__) && (defined(__x86_64__) || defined(__aarch64__))
-
-static int pre_exec(void)
-{
-    return 1;  /* we have a preloader on x86-64/arm64 */
-}
-
-#elif defined(__APPLE__) && (defined(__i386__) || defined(__x86_64__))
-
-static int pre_exec(void)
-{
-    return 1;  /* we have a preloader */
-}
-
 #elif (defined(__FreeBSD__) || defined (__FreeBSD_kernel__) || defined(__DragonFly__))
 
 static int pre_exec(void)
@@ -2082,7 +2105,11 @@ static int pre_exec(void)
 
 static int pre_exec(void)
 {
+#ifdef HAVE_WINE_PRELOADER
+    return 1;  /* we have a preloader */
+#else
     return 0;  /* no exec needed */
+#endif
 }
 
 #endif
@@ -2123,11 +2150,10 @@ static void check_command_line( int argc, char *argv[] )
  *
  * Main entry point called by the wine loader.
  */
-DECLSPEC_EXPORT void __wine_main( int argc, char *argv[], char *envp[] )
+DECLSPEC_EXPORT void __wine_main( int argc, char *argv[] )
 {
     main_argc = argc;
     main_argv = argv;
-    main_envp = envp;
 
     init_paths( argv );
 

@@ -73,7 +73,7 @@
 @ cdecl wined3d_device_get_swapchain_count(ptr)
 @ cdecl wined3d_device_get_wined3d(ptr)
 @ cdecl wined3d_device_incref(ptr)
-@ cdecl wined3d_device_process_vertices(ptr long long long ptr ptr long long)
+@ cdecl wined3d_device_process_vertices(ptr ptr long long long ptr ptr long long)
 @ cdecl wined3d_device_release_focus_window(ptr)
 @ cdecl wined3d_device_reset(ptr ptr ptr ptr long)
 @ cdecl wined3d_device_set_clip_status(ptr ptr)
@@ -228,6 +228,7 @@
 @ cdecl wined3d_state_get_feature_level(ptr)
 
 @ cdecl wined3d_stateblock_apply(ptr ptr)
+@ cdecl wined3d_stateblock_apply_clear_state(ptr ptr)
 @ cdecl wined3d_stateblock_capture(ptr ptr)
 @ cdecl wined3d_stateblock_create(ptr ptr long ptr)
 @ cdecl wined3d_stateblock_decref(ptr)
@@ -268,6 +269,7 @@
 @ cdecl wined3d_stateblock_set_vs_consts_b(ptr long long ptr)
 @ cdecl wined3d_stateblock_set_vs_consts_f(ptr long long ptr)
 @ cdecl wined3d_stateblock_set_vs_consts_i(ptr long long ptr)
+@ cdecl wined3d_stateblock_texture_changed(ptr ptr)
 
 @ cdecl wined3d_streaming_buffer_map(ptr ptr long long ptr ptr)
 @ cdecl wined3d_streaming_buffer_unmap(ptr)
@@ -317,6 +319,7 @@
 @ cdecl wined3d_texture_incref(ptr)
 @ cdecl wined3d_texture_release_dc(ptr long ptr)
 @ cdecl wined3d_texture_set_color_key(ptr long ptr)
+@ cdecl wined3d_texture_set_lod(ptr long)
 @ cdecl wined3d_texture_set_overlay_position(ptr long long long)
 @ cdecl wined3d_texture_set_sub_resource_parent(ptr long ptr ptr)
 @ cdecl wined3d_texture_update_desc(ptr long ptr long)

@@ -627,7 +627,7 @@ static BOOL start_debugger( EXCEPTION_POINTERS *epointers, HANDLE event )
     startup.cb = sizeof(startup);
     startup.dwFlags = STARTF_USESHOWWINDOW;
     startup.wShowWindow = SW_SHOWNORMAL;
-    ret = CreateProcessW( NULL, cmdline, NULL, NULL, TRUE, 0, env, NULL, &startup, &info );
+    ret = CreateProcessW( NULL, cmdline, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, env, NULL, &startup, &info );
     FreeEnvironmentStringsW( env );
 
     if (ret)
@@ -761,9 +761,8 @@ LONG WINAPI UnhandledExceptionFilter( EXCEPTION_POINTERS *epointers )
             if (ret != EXCEPTION_CONTINUE_SEARCH) return ret;
         }
 
-        /* FIXME: Should check the current error mode */
-
-        if (!start_debugger_atomic( epointers ) || !NtCurrentTeb()->Peb->BeingDebugged)
+        if ((GetErrorMode() & SEM_NOGPFAULTERRORBOX) ||
+            !start_debugger_atomic( epointers ) || !NtCurrentTeb()->Peb->BeingDebugged)
             return EXCEPTION_EXECUTE_HANDLER;
     }
     return EXCEPTION_CONTINUE_SEARCH;

@@ -19,13 +19,18 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include "ntdll_test.h"
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "ntstatus.h"
+#define WIN32_NO_STATUS
+#include "windef.h"
+#include "winbase.h"
 #include "winternl.h"
 #include "winuser.h"
 #include "ddk/wdm.h"
-#include "stdio.h"
-#include "winnt.h"
-#include "stdlib.h"
+#include "wine/test.h"
 
 static VOID     (WINAPI *pRtlInitUnicodeString)( PUNICODE_STRING, LPCWSTR );
 static NTSTATUS (WINAPI *pNtCreateEvent) ( PHANDLE, ACCESS_MASK, const POBJECT_ATTRIBUTES, EVENT_TYPE, BOOLEAN);
@@ -2627,9 +2632,9 @@ static void test_query_directory(void)
     context = 0xdeadbeef;
     size = 0xdeadbeef;
     status = NtQueryDirectoryObject( dir, info, 0, FALSE, TRUE, &context, &size );
-    todo_wine ok( status == STATUS_NO_MORE_ENTRIES, "got %#lx\n", status );
+    ok( status == STATUS_NO_MORE_ENTRIES, "got %#lx\n", status );
     ok( context == 0xdeadbeef, "got context %#lx\n", context );
-    todo_wine ok( size == sizeof(*info) || (is_wow64 && !size), "got size %lu\n", size );
+    ok( size == sizeof(*info) || (is_wow64 && !size), "got size %lu\n", size );
 
     context = 0xdeadbeef;
     size = 0xdeadbeef;
@@ -2645,9 +2650,9 @@ static void test_query_directory(void)
     size = 0xdeadbeef;
     memset( buffer, 0xcc, sizeof(buffer) );
     status = NtQueryDirectoryObject( dir, info, sizeof(buffer), FALSE, TRUE, &context, &size );
-    todo_wine ok( status == STATUS_NO_MORE_ENTRIES, "got %#lx\n", status );
+    ok( status == STATUS_NO_MORE_ENTRIES, "got %#lx\n", status );
     ok( context == 0xdeadbeef, "got context %#lx\n", context );
-    todo_wine ok( size == sizeof(*info) || (is_wow64 && !size), "got size %lu\n", size );
+    ok( size == sizeof(*info) || (is_wow64 && !size), "got size %lu\n", size );
     if (size == sizeof(*info))
         ok( !memcmp( &info[0], &empty_info, sizeof(*info) ), "entry was not cleared\n" );
 
@@ -2743,37 +2748,31 @@ static void test_query_directory(void)
 
     memset( buffer, 0xcc, sizeof(buffer) );
     status = NtQueryDirectoryObject( dir, info, sizeof(buffer), FALSE, TRUE, &context, &size );
-    todo_wine ok( !status, "got %#lx\n", status );
-    if (!status)
-    {
-        ok( context == 2, "got context %#lx\n", context );
-        check_unicode_string( &info[0].ObjectName, name1 );
-        check_unicode_string( &info[0].ObjectTypeName, L"Mutant" );
-        check_unicode_string( &info[1].ObjectName, name2 );
-        check_unicode_string( &info[1].ObjectTypeName, L"Mutant" );
-        ok( !memcmp( &info[2], &empty_info, sizeof(*info) ), "entry was not cleared\n" );
-    }
+    ok( !status, "got %#lx\n", status );
+    ok( context == 2, "got context %#lx\n", context );
+    check_unicode_string( &info[0].ObjectName, name1 );
+    check_unicode_string( &info[0].ObjectTypeName, L"Mutant" );
+    check_unicode_string( &info[1].ObjectName, name2 );
+    check_unicode_string( &info[1].ObjectTypeName, L"Mutant" );
+    ok( !memcmp( &info[2], &empty_info, sizeof(*info) ), "entry was not cleared\n" );
 
     needed_size = size;
     size = 0xdeadbeef;
     context = 0xdeadbeef;
     memset( buffer, 0xcc, sizeof(buffer) );
     status = NtQueryDirectoryObject( dir, info, needed_size - 1, FALSE, TRUE, &context, &size );
-    todo_wine ok( status == STATUS_MORE_ENTRIES, "got %#lx\n", status );
-    if (status == STATUS_MORE_ENTRIES)
-    {
-        ok( context == 1, "got context %#lx\n", context );
-        ok( size > 0 && size < needed_size, "got size %lu\n", size );
-        check_unicode_string( &info[0].ObjectName, name1 );
-        check_unicode_string( &info[0].ObjectTypeName, L"Mutant" );
-        ok( !memcmp( &info[1], &empty_info, sizeof(*info) ), "entry was not cleared\n" );
-    }
+    ok( status == STATUS_MORE_ENTRIES, "got %#lx\n", status );
+    ok( context == 1, "got context %#lx\n", context );
+    ok( size > 0 && size < needed_size, "got size %lu\n", size );
+    check_unicode_string( &info[0].ObjectName, name1 );
+    check_unicode_string( &info[0].ObjectTypeName, L"Mutant" );
+    ok( !memcmp( &info[1], &empty_info, sizeof(*info) ), "entry was not cleared\n" );
 
     size = 0xdeadbeef;
     context = 0xdeadbeef;
     memset( buffer, 0xcc, sizeof(buffer) );
     status = NtQueryDirectoryObject( dir, info, sizeof(*info), FALSE, TRUE, &context, &size );
-    todo_wine ok( status == STATUS_MORE_ENTRIES
+    ok( status == STATUS_MORE_ENTRIES
             || broken(status == STATUS_BUFFER_TOO_SMALL) /* wow64 */, "got %#lx\n", status );
     if (status == STATUS_MORE_ENTRIES)
     {
@@ -2785,7 +2784,7 @@ static void test_query_directory(void)
     size = 0xdeadbeef;
     context = 0xdeadbeef;
     status = NtQueryDirectoryObject( dir, info, 0, FALSE, TRUE, &context, &size );
-    todo_wine ok( status == STATUS_MORE_ENTRIES
+    ok( status == STATUS_MORE_ENTRIES
             || broken(status == STATUS_BUFFER_TOO_SMALL) /* wow64 */, "got %#lx\n", status );
     if (status == STATUS_MORE_ENTRIES)
     {
@@ -2796,14 +2795,11 @@ static void test_query_directory(void)
     context = 1;
     memset( buffer, 0xcc, sizeof(buffer) );
     status = NtQueryDirectoryObject( dir, info, sizeof(buffer), FALSE, FALSE, &context, &size );
-    todo_wine ok( !status, "got %#lx\n", status );
-    if (!status)
-    {
-        ok( context == 2, "got context %#lx\n", context );
-        check_unicode_string( &info[0].ObjectName, name2 );
-        check_unicode_string( &info[0].ObjectTypeName, L"Mutant" );
-        ok( !memcmp( &info[1], &empty_info, sizeof(*info) ), "entry was not cleared\n" );
-    }
+    ok( !status, "got %#lx\n", status );
+    ok( context == 2, "got context %#lx\n", context );
+    check_unicode_string( &info[0].ObjectName, name2 );
+    check_unicode_string( &info[0].ObjectTypeName, L"Mutant" );
+    ok( !memcmp( &info[1], &empty_info, sizeof(*info) ), "entry was not cleared\n" );
 
     pNtClose( child1 );
     pNtClose( child2 );
