@@ -20,7 +20,7 @@ Dens lo dossièr rasic deu còdi sorsa de Wine (qui contien aqueth fichèr),
 que  lançatz :
 
 ```
-./configura
+./configure
 make
 ```
 
@@ -98,7 +98,7 @@ futur.
 Entà compilar Wine, que  lançatz :
 
 ```
-./configura
+./configure
 make
 ```
 
@@ -178,13 +178,3 @@ aquò que's produseish, qu'obtieneratz un jornau de l'esglachament qui ei recoma
 
 - **IRC** : L'ajuda en linha qu'ei disponibla per la canau `#WineHQ` sus
  irc.libera.chat.
- 
-## SOURCES D'INFORMATIONS COMPLÉMENTAIRES
-
-- **WWW** :	Beaucoup d'informations à propos de Wine sont disponibles sur
-        WineHQ (https://www.winehq.org) : divers guides, base de données
-        d'applications, suivi de bogues. C'est probablement le meilleur
-        point de départ.
-
-
-
