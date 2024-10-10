@@ -1,4 +1,4 @@
-# Occitan translations for Wine   ### revirat entà linha 2172
+# Occitan translations for Wine   ### revirat entà linha 2196
 #
 msgid ""
 msgstr ""
@@ -2171,29 +2171,29 @@ msgstr "Chiframent de dadas"
 msgid "Key Agreement"
 msgstr "Acòrd sus la clau"
 
-#: dlls/crypt32/crypt32.rc:229   ### revirat entà linha 2172
+#: dlls/crypt32/crypt32.rc:229   
 msgid "Certificate Signing"
 msgstr "Signature de certificat"
 
 #: dlls/crypt32/crypt32.rc:230
 msgid "Off-line CRL Signing"
-msgstr "Signature de LRC hors-ligne"
+msgstr "Signatura de LRC hòra-linha"
 
 #: dlls/crypt32/crypt32.rc:231
 msgid "CRL Signing"
-msgstr "Signature de LRC"
+msgstr "Signatura de LRC"
 
 #: dlls/crypt32/crypt32.rc:232
 msgid "Encipher Only"
-msgstr "Chiffrement seul"
+msgstr "Codatge sol"
 
 #: dlls/crypt32/crypt32.rc:233
 msgid "Decipher Only"
-msgstr "Déchiffrement seul"
+msgstr "Deschifratge sol"
 
 #: dlls/crypt32/crypt32.rc:234
 msgid "SSL Client Authentication"
-msgstr "Autentificacion de client SSL"
+msgstr "Autentificacion de client SSL" ### revirat entà linha 2196
 
 #: dlls/crypt32/crypt32.rc:235
 msgid "SSL Server Authentication"
