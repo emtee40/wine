@@ -82,7 +82,7 @@ struct __wine_debug_channel
   (__WINE_GET_DEBUGGING##dbcl(dbch) && (__wine_dbg_get_channel_flags(dbch) & (1 << __WINE_DBCL##dbcl)))
 
 #define __WINE_DPRINTF(dbcl,dbch) \
-  do { if(__WINE_GET_DEBUGGING(dbcl,(dbch))) { \
+  do { if(__WINE_IS_DEBUG_ON(dbcl,(dbch))) { \
        struct __wine_debug_channel * const __dbch = (dbch); \
        const enum __wine_debug_class __dbcl = __WINE_DBCL##dbcl; \
        __WINE_DBG_LOG
