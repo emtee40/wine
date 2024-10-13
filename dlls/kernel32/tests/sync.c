@@ -248,9 +248,7 @@ static void test_mutex(void)
 
     SetLastError(0xdeadbeef);
     hOpened = OpenMutexA(0, FALSE, "WineTestMutex");
-    todo_wine
     ok(hOpened == NULL, "OpenMutex succeeded\n");
-    todo_wine
     ok(GetLastError() == ERROR_ACCESS_DENIED, "wrong error %lu\n", GetLastError());
 
     SetLastError(0xdeadbeef);
