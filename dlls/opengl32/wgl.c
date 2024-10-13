@@ -1888,6 +1888,12 @@ static NTSTATUS WINAPI call_gl_debug_message_callback( void *args, ULONG size )
     return STATUS_SUCCESS;
 }
 
+static DWORD WINAPI mapping_thread(LPVOID param)
+{
+    UNIX_CALL( mapping_thread, NULL );
+    return 0;
+}
+
 /***********************************************************************
  *           OpenGL initialisation routine
  */
@@ -1908,6 +1914,9 @@ BOOL WINAPI DllMain( HINSTANCE hinst, DWORD reason, LPVOID reserved )
             ERR( "Failed to load unixlib, status %#lx\n", status );
             return FALSE;
         }
+
+        if (NtCurrentTeb()->WowTebOffset)
+            CreateThread(NULL, 0, mapping_thread, NULL, 0, NULL);
 
         /* fallthrough */
     case DLL_THREAD_ATTACH:
