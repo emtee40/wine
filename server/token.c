@@ -1209,6 +1209,22 @@ DECL_HANDLER(create_token)
 }
 
 
+/* create a new primary admin token with Default elevation */
+DECL_HANDLER(create_primary_admin_token)
+{
+    struct token *token = token_create_admin( TRUE, SecurityIdentification,
+                                              TokenElevationTypeDefault, default_session_id );
+    if (!token)
+    {
+        set_error( STATUS_UNSUCCESSFUL );
+        return;
+    }
+
+    reply->token = alloc_handle( current->process, token, TOKEN_ALL_ACCESS, 0 );
+    release_object( token );
+}
+
+
 /* open a security token */
 DECL_HANDLER(open_token)
 {
