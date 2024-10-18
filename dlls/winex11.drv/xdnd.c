@@ -76,7 +76,7 @@ static const char *debugstr_format( int format )
 
     if (CF_PRIVATEFIRST <= format && format <= CF_PRIVATELAST) return "some private object";
     if (CF_GDIOBJFIRST <= format && format <= CF_GDIOBJLAST) return "some GDI object";
-    GetClipboardFormatNameW( format, buffer, sizeof(buffer) );
+    GetClipboardFormatNameW( format, buffer, ARRAY_SIZE(buffer) );
     return debugstr_w( buffer );
 }
 
