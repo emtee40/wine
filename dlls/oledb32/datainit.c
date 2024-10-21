@@ -834,7 +834,7 @@ static int get_propvalue_length(DBPROP *prop)
     {
         length = SysStringLen(V_BSTR(&str));
         /* Quotes values with '\"' if the value contains semicolons */
-        if (wcsstr(V_BSTR(&str), L";"))
+        if (wcschr(V_BSTR(&str), ';'))
             length += 2;
         VariantClear(&str);
         return length;
