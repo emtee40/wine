@@ -684,7 +684,7 @@ static WCHAR *parse_multisz(const WCHAR *input, DWORD *size)
     for (pos = input; pos[0] == '"'; pos++)
     {
         pos++;
-        if (!(next = wcsstr(pos, L"\""))) goto error;
+        if (!(next = wcschr(pos, '"'))) goto error;
         strbuf_append(&buf, pos, next - pos);
         strbuf_append(&buf, L"", ARRAY_SIZE(L""));
 
