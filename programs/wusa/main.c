@@ -542,7 +542,7 @@ static WCHAR *expand_expression(struct assembly_entry *assembly, const WCHAR *ex
     {
         strbuf_append(&buf, pos, next - pos);
         pos = next + 2;
-        if (!(next = wcsstr(pos, L")")))
+        if (!(next = wcschr(pos, ')')))
         {
             strbuf_append(&buf, L"$(", 2);
             break;
