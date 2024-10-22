@@ -25,6 +25,7 @@
 
 #include "initguid.h"
 #include "roapi.h"
+#include "rometadataresolution.h"
 
 #define WIDL_using_Windows_Foundation_Metadata
 #include "windows.foundation.metadata.h"
@@ -457,7 +458,51 @@ static void test_IApiInformationStatics(void)
     RoUninitialize();
 }
 
+static void test_WinMD(void)
+{
+    HRESULT hr;
+    DWORD subNamespacesCount;
+    HSTRING *subNamespaces;
+    DWORD metadataFilesCount;
+    HSTRING *metadataFiles;
+    HSTRING connectivity, garbage;
+
+    hr = RoInitialize(RO_INIT_MULTITHREADED);
+    ok(hr == S_OK, "RoInitialize failed, hr %#lx.\n", hr);
+
+    hr = WindowsCreateString(L"Windows.Networking.Connectivity", wcslen(L"Windows.Networking.Connectivity"), &connectivity);
+    ok(hr == S_OK, "WindowsCreateString failed, hr %#lx.\n", hr);
+
+    hr = RoResolveNamespace(connectivity, NULL, 0, NULL, &metadataFilesCount, &metadataFiles, &subNamespacesCount, &subNamespaces);
+    ok(hr == S_OK, "RoResolveNamespace for Windows.Networking.Connectivity failed, hr %#lx\n", hr);
+
+    for (DWORD i = 0; i < subNamespacesCount; i++)
+        WindowsDeleteString(subNamespaces[i]);
+
+    CoTaskMemFree(subNamespaces);
+
+    for (DWORD i = 0; i < metadataFilesCount; i++)
+        WindowsDeleteString(metadataFiles[i]);
+
+    CoTaskMemFree(metadataFiles);
+
+    hr = RoResolveNamespace(connectivity, NULL, 0, NULL, NULL, NULL, NULL, NULL);
+    ok(hr == E_INVALIDARG, "RoResolveNamespace with null args got %#lx\n", hr);
+
+    hr = WindowsCreateString(L"Garbage.Namespace", wcslen(L"Garbage.Namespace"), &garbage);
+    ok(hr == S_OK, "WindowsCreateString failed, hr %#lx.\n", hr);
+
+    hr = RoResolveNamespace(garbage, NULL, 0, NULL, NULL, NULL, &subNamespacesCount, &subNamespaces);
+    ok(hr == RO_E_METADATA_NAME_NOT_FOUND || /* win8 */ broken(hr == 0x80073d54), "RoResolveNamespace for Garbage.Namespace got %#lx\n", hr);
+
+    WindowsDeleteString(garbage);
+    WindowsDeleteString(connectivity);
+
+    RoUninitialize();
+}
+
 START_TEST(wintypes)
 {
     test_IApiInformationStatics();
+    test_WinMD();
 }
