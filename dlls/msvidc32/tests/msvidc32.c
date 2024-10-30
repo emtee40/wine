@@ -213,7 +213,7 @@ static void test_ICDecompressQuery(void)
     ok(lr == ICERR_OK, "got lr %Id.\n", lr);
 
     lr = ICDecompressQuery(hic, &format_cram16, &format_yvuv);
-    todo_wine ok(lr == ICERR_BADFORMAT, "got lr %Id.\n", lr);
+    ok(lr == ICERR_BADFORMAT, "got lr %Id.\n", lr);
 
     ICClose(hic);
 }

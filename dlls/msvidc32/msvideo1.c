@@ -333,6 +333,13 @@ CRAM_DecompressQuery( Msvideo1Context *info, LPBITMAPINFO in, LPBITMAPINFO out )
         TRACE("out->height = %ld\n", out->bmiHeader.biHeight );
         TRACE("out->width  = %ld\n", out->bmiHeader.biWidth );
 
+        if ((out->bmiHeader.biCompression != BI_RGB) &&
+            (out->bmiHeader.biCompression != BI_BITFIELDS))
+        {
+            TRACE("incompatible compression requested\n");
+            return ICERR_BADFORMAT;
+        }
+
         if ((in->bmiHeader.biBitCount != out->bmiHeader.biBitCount) &&
             (in->bmiHeader.biBitCount != 16 || out->bmiHeader.biBitCount != 24))
         {
