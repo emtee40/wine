@@ -87,7 +87,7 @@ static void test_IPropertySet(void)
     hr = IPropertySet_QueryInterface( propset, &IID_IObservableMap_HSTRING_IInspectable,
                                       (void *)&observable_map );
     IPropertySet_Release( propset );
-    todo_wine ok( SUCCEEDED( hr ), "QueryInterface failed, got %#lx\n", hr );
+    ok( SUCCEEDED( hr ), "QueryInterface failed, got %#lx\n", hr );
 
     if (map)
     {
