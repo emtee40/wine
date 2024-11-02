@@ -59,7 +59,7 @@ static void test_IPropertySet(void)
 
     hr = IActivationFactory_ActivateInstance( factory, &inspectable );
     IActivationFactory_Release( factory );
-    todo_wine ok( SUCCEEDED( hr ), "got %#lx\n", hr );
+    ok( SUCCEEDED( hr ), "got %#lx\n", hr );
     if (FAILED( hr ))
     {
         skip("could not activate PropertySet instance.\n");
@@ -69,7 +69,7 @@ static void test_IPropertySet(void)
 
     hr = IInspectable_QueryInterface( inspectable, &IID_IPropertySet, (void **)&propset );
     IInspectable_Release( inspectable );
-    todo_wine ok( SUCCEEDED( hr ), "QueryInterface failed, got %#lx\n", hr );
+    ok( SUCCEEDED( hr ), "QueryInterface failed, got %#lx\n", hr );
     if (FAILED( hr ))
     {
         RoUninitialize();

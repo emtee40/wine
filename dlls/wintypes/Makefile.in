@@ -5,4 +5,5 @@ IMPORTS   = combase
 SOURCES = \
 	classes.idl \
 	main.c \
+	propertyset.c \
 	wintypes_private.idl
