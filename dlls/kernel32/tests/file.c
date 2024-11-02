@@ -1280,12 +1280,12 @@ static void test_CreateFileA(void)
     DWORD i, ret, len;
     static const struct test_list p[] =
     {
-        {"", ERROR_PATH_NOT_FOUND, -1, FILE_ATTRIBUTE_NORMAL, TRUE }, /* dir as file w \ */
+        {"", ERROR_PATH_NOT_FOUND, -1, FILE_ATTRIBUTE_NORMAL, FALSE }, /* dir as file w \ */
         {"", ERROR_SUCCESS, ERROR_PATH_NOT_FOUND, FILE_FLAG_BACKUP_SEMANTICS, FALSE }, /* dir as dir w \ */
         {"a", ERROR_FILE_NOT_FOUND, -1, FILE_ATTRIBUTE_NORMAL, FALSE }, /* non-exist file */
         {"a\\", ERROR_FILE_NOT_FOUND, ERROR_PATH_NOT_FOUND, FILE_ATTRIBUTE_NORMAL, FALSE }, /* non-exist dir */
         {"removeme", ERROR_ACCESS_DENIED, -1, FILE_ATTRIBUTE_NORMAL, FALSE }, /* exist dir w/o \ */
-        {"removeme\\", ERROR_PATH_NOT_FOUND, -1, FILE_ATTRIBUTE_NORMAL, TRUE }, /* exist dir w \ */
+        {"removeme\\", ERROR_PATH_NOT_FOUND, -1, FILE_ATTRIBUTE_NORMAL, FALSE }, /* exist dir w \ */
         {"removeme/", ERROR_ACCESS_DENIED, -1, FILE_ATTRIBUTE_NORMAL, FALSE }, /* exist dir w / */
         {"c:", ERROR_ACCESS_DENIED, ERROR_PATH_NOT_FOUND, FILE_ATTRIBUTE_NORMAL, FALSE, TRUE }, /* device in file namespace */
         {"c:", ERROR_SUCCESS, ERROR_PATH_NOT_FOUND, FILE_FLAG_BACKUP_SEMANTICS, FALSE, TRUE }, /* device in file namespace as dir */
@@ -1293,7 +1293,7 @@ static void test_CreateFileA(void)
         {"c:\\", ERROR_SUCCESS, ERROR_ACCESS_DENIED, FILE_FLAG_BACKUP_SEMANTICS, FALSE, TRUE }, /* root dir w \ as dir */
         {"c:c:\\windows", ERROR_INVALID_NAME, -1, FILE_ATTRIBUTE_NORMAL, TRUE }, /* invalid path */
         {"\\\\?\\c:", ERROR_SUCCESS, ERROR_BAD_NETPATH, FILE_ATTRIBUTE_NORMAL, FALSE, TRUE }, /* dev namespace drive */
-        {"\\\\?\\c:\\", ERROR_PATH_NOT_FOUND, ERROR_BAD_NETPATH, FILE_ATTRIBUTE_NORMAL, TRUE, TRUE }, /* dev namespace drive w \ */
+        {"\\\\?\\c:\\", ERROR_PATH_NOT_FOUND, ERROR_BAD_NETPATH, FILE_ATTRIBUTE_NORMAL, FALSE, TRUE }, /* dev namespace drive w \ */
         {NULL, 0, -1, 0, FALSE}
     };
     BY_HANDLE_FILE_INFORMATION  Finfo;
@@ -1487,7 +1487,6 @@ static void test_CreateFileA(void)
                         FILE_SHARE_READ | FILE_SHARE_WRITE,
                         NULL, OPEN_EXISTING,
                         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING, NULL );
-        todo_wine
         ok(hFile == INVALID_HANDLE_VALUE && GetLastError() == ERROR_PATH_NOT_FOUND,
             "CreateFileA should have returned ERROR_PATH_NOT_FOUND on %s, but got %lu\n",
             filename, GetLastError());
