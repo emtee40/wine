@@ -1270,7 +1270,6 @@ static void test_open_msi(MSIHANDLE hinst)
     ok(hinst, result == 0, "Failed: %x\n", result);
 
     result = MsiOpenDatabaseA(buffer, (LPCSTR)MSIDBOPEN_READONLY, &handle);
-    todo_wine
     ok (hinst, result == 0, "Got %u\n", result);
 
     MsiCloseHandle(handle);
