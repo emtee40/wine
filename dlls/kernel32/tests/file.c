@@ -1287,7 +1287,7 @@ static void test_CreateFileA(void)
         {"removeme\\", ERROR_PATH_NOT_FOUND, -1, FILE_ATTRIBUTE_NORMAL, TRUE }, /* exst dir w \ */
         {"c:", ERROR_ACCESS_DENIED, ERROR_PATH_NOT_FOUND, FILE_ATTRIBUTE_NORMAL, FALSE }, /* device in file namespace */
         {"c:", ERROR_SUCCESS, ERROR_PATH_NOT_FOUND, FILE_FLAG_BACKUP_SEMANTICS, FALSE }, /* device in file namespace as dir */
-        {"c:\\", ERROR_PATH_NOT_FOUND, ERROR_ACCESS_DENIED, FILE_ATTRIBUTE_NORMAL, TRUE }, /* root dir w \ */
+        {"c:\\", ERROR_PATH_NOT_FOUND, ERROR_ACCESS_DENIED, FILE_ATTRIBUTE_NORMAL, FALSE }, /* root dir w \ */
         {"c:\\", ERROR_SUCCESS, ERROR_ACCESS_DENIED, FILE_FLAG_BACKUP_SEMANTICS, FALSE }, /* root dir w \ as dir */
         {"c:c:\\windows", ERROR_INVALID_NAME, -1, FILE_ATTRIBUTE_NORMAL, TRUE }, /* invalid path */
         {"\\\\?\\c:", ERROR_SUCCESS, ERROR_BAD_NETPATH, FILE_ATTRIBUTE_NORMAL,FALSE }, /* dev namespace drive */
@@ -1390,14 +1390,12 @@ static void test_CreateFileA(void)
         /* if we get ACCESS_DENIED when we do not expect it, assume
          * no access to the volume
          */
-        if (hFile == INVALID_HANDLE_VALUE &&
+        if (!strcmp(winetest_platform, "windows") &&
+            hFile == INVALID_HANDLE_VALUE &&
             GetLastError() == ERROR_ACCESS_DENIED &&
             p[i].err != ERROR_ACCESS_DENIED)
         {
-            if (p[i].todo_flag)
-                skip("Either no authority to volume, or is todo_wine for %s err=%ld should be %ld\n", filename, GetLastError(), p[i].err);
-            else
-                skip("Do not have authority to access volumes. Test for %s skipped\n", filename);
+            skip("Do not have authority to access volumes. Test for %s skipped\n", filename);
         }
         /* otherwise validate results with expectations */
         else
