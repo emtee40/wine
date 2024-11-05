@@ -428,9 +428,9 @@ static void convert_depth(char *input, int depth_in, char *output, BITMAPINFOHEA
             for (x = 0; x < out_hdr->biWidth; x++)
             {
                 WORD pixel = *src_row++;
-                *out_row++ = (pixel >> 7) & 0xf8;
-                *out_row++ = (pixel >> 2) & 0xf8;
                 *out_row++ = (pixel << 3) & 0xf8;
+                *out_row++ = (pixel >> 2) & 0xf8;
+                *out_row++ = (pixel >> 7) & 0xf8;
             }
         }
     }
