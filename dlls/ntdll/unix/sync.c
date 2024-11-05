@@ -1986,12 +1986,41 @@ NTSTATUS WINAPI NtSetIoCompletion( HANDLE handle, ULONG_PTR key, ULONG_PTR value
         req->cvalue      = value;
         req->status      = status;
         req->information = count;
+        req->has_reserve = FALSE;
         ret = wine_server_call( req );
     }
     SERVER_END_REQ;
     return ret;
 }
 
+/***********************************************************************
+ *             NtSetIoCompletionEx (NTDLL.@)
+ *
+ * completion_reserve_handle is a handle allocated by NtAllocateReserveObject() for pre-allocating
+ * memory for completion objects to deal with low-memory situations. It's not in use for now.
+ */
+NTSTATUS WINAPI NtSetIoCompletionEx( HANDLE completion_handle, HANDLE completion_reserve_handle,
+                                     ULONG_PTR key, ULONG_PTR value, NTSTATUS status, SIZE_T count )
+{
+    unsigned int ret;
+
+    TRACE( "(%p, %p, %lx, %lx, %x, %lx)\n", completion_handle, completion_reserve_handle,
+           key, value, (int)status, count );
+
+    SERVER_START_REQ( add_completion )
+    {
+        req->handle         = wine_server_obj_handle( completion_handle );
+        req->ckey           = key;
+        req->cvalue         = value;
+        req->status         = status;
+        req->information    = count;
+        req->reserve_handle = wine_server_obj_handle( completion_reserve_handle );
+        req->has_reserve    = TRUE;
+        ret = wine_server_call( req );
+    }
+    SERVER_END_REQ;
+    return ret;
+}
 
 /***********************************************************************
  *             NtRemoveIoCompletion (NTDLL.@)
