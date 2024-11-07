@@ -1,0 +1,8 @@
+MODULE    = structuredquery.dll
+IMPORTLIB = structuredquery
+IMPORTS   = ole32 oleaut32 uuid
+
+EXTRADLLFLAGS = -Wb,--prefer-native
+SOURCES = \
+	classes.idl \
+	main.c \

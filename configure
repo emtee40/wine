@@ -1434,6 +1434,7 @@ enable_stdole2_tlb
 enable_stdole32_tlb
 enable_sti
 enable_strmdll
+enable_structuredquery
 enable_svrapi
 enable_sxs
 enable_t2embed
@@ -22525,6 +22526,8 @@ wine_fn_config_makefile dlls/sti/tests enable_tests
 wine_fn_config_makefile dlls/storage.dll16 enable_win16
 wine_fn_config_makefile dlls/stress.dll16 enable_win16
 wine_fn_config_makefile dlls/strmdll enable_strmdll
+wine_fn_config_makefile dlls/structuredquery enable_structuredquery
+wine_fn_config_makefile dlls/structuredquery/tests enable_tests
 wine_fn_config_makefile dlls/svrapi enable_svrapi
 wine_fn_config_makefile dlls/sxs enable_sxs
 wine_fn_config_makefile dlls/sxs/tests enable_tests
