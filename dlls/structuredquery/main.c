@@ -18,16 +18,25 @@
 
 #define COBJMACROS
 #include <initguid.h>
-#include <structuredquery.h>
+#include "private.h"
 
 #include <wine/debug.h>
 
 WINE_DEFAULT_DEBUG_CHANNEL( structquery );
 
+static const struct class_info
+{
+    const CLSID *clsid;
+    HRESULT (*constructor)(REFIID, void **);
+} class_info[] = {
+    { &CLSID_QueryParser, queryparser_create },
+};
+
 struct class_factory
 {
     IClassFactory iface;
     LONG ref;
+    const struct class_info *info;
 };
 
 static inline struct class_factory *impl_from_IClassFactory( IClassFactory *iface )
@@ -74,8 +83,18 @@ static ULONG WINAPI factory_Release( IClassFactory *iface )
 static HRESULT WINAPI factory_CreateInstance( IClassFactory *iface, IUnknown *outer, REFIID iid,
                                               void **out )
 {
-    FIXME( "(%p, %p, %s, %p) stub!\n", iface, outer, debugstr_guid( iid ), out );
-    return E_NOTIMPL;
+    struct class_factory *impl;
+
+    TRACE( "(%p, %p, %s, %p)\n", iface, outer, debugstr_guid( iid ), out );
+    impl = impl_from_IClassFactory( iface );
+
+    if (!iid || !out)
+        return E_INVALIDARG;
+    if (outer)
+        return CLASS_E_NOAGGREGATION;
+
+    *out = NULL;
+    return impl->info->constructor( iid, out );
 }
 
 static HRESULT WINAPI factory_LockServer( IClassFactory *iface, BOOL lock )
@@ -95,16 +114,16 @@ const static IClassFactoryVtbl factory_vtbl =
     factory_LockServer
 };
 
-static HRESULT factory_create( REFIID iid, void **obj )
+static HRESULT factory_create( const struct class_info *info, REFIID iid, void **obj )
 {
     HRESULT hr;
     struct class_factory *impl;
-
 
     impl = calloc( 1, sizeof( *impl ) );
     if (!impl)
         return E_OUTOFMEMORY;
     impl->iface.lpVtbl = &factory_vtbl;
+    impl->info = info;
     impl->ref = 1;
 
     hr = IClassFactory_QueryInterface( &impl->iface, iid, obj );
@@ -115,6 +134,8 @@ static HRESULT factory_create( REFIID iid, void **obj )
 
 HRESULT WINAPI DllGetClassObject( REFCLSID clsid, REFIID iid, void **out )
 {
+    SIZE_T i;
+
     TRACE( "(%s, %s, %p)\n", debugstr_guid( clsid ), debugstr_guid( iid ), out );
 
     if (!clsid || !iid || !out)
@@ -122,8 +143,11 @@ HRESULT WINAPI DllGetClassObject( REFCLSID clsid, REFIID iid, void **out )
 
     *out = NULL;
 
-    if (IsEqualCLSID( clsid, &CLSID_QueryParser ))
-        return factory_create( iid, out );
+    for (i = 0; i < ARRAY_SIZE( class_info ); i++)
+    {
+        if (IsEqualCLSID( class_info[i].clsid, clsid ))
+            return factory_create( &class_info[i], iid, out );
+    }
 
     FIXME("Class not implemented, returning CLASS_E_CLASSNOTAVAILABLE.\n");
     return CLASS_E_CLASSNOTAVAILABLE;

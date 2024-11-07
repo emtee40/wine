@@ -16,36 +16,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#define COBJMACROS
-#include <initguid.h>
+#ifndef __WINE_STRUCTUREDQUERY_PRIVATE_H__
+#define __WINE_STRUCTUREDQUERY_PRIVATE_H__
 #include <structuredquery.h>
 
-#include <wine/test.h>
-
-void test_IQueryParser( void )
-{
-    HRESULT hr;
-    IQueryParser *parser = NULL;
-
-    hr = CoInitializeEx( NULL, COINIT_MULTITHREADED );
-    ok( SUCCEEDED( hr ), "got %#lx\n", hr );
-
-    hr = CoCreateInstance( &CLSID_QueryParser, NULL, CLSCTX_INPROC, &IID_IQueryParser,
-                           (void **)&parser );
-    ok( SUCCEEDED( hr ), "got %#lx\n", hr );
-
-    if (!parser)
-    {
-        skip( "Could not create IQueryParser instance.\n" );
-        CoUninitialize();
-        return;
-    }
-
-    IQueryParser_Release( parser );
-    CoUninitialize();
-}
-
-START_TEST(query)
-{
-    test_IQueryParser();
-}
+extern HRESULT queryparser_create( REFIID iid, void **out );
+#endif
