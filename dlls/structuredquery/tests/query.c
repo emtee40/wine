@@ -55,7 +55,7 @@ void test_IQueryParserManager( void )
 
     hr = CoCreateInstance( &CLSID_QueryParserManager, NULL, CLSCTX_INPROC, &IID_IQueryParserManager,
                            (void **)&manager );
-    todo_wine ok( SUCCEEDED( hr ), "got %#lx\n", hr );
+    ok( SUCCEEDED( hr ), "got %#lx\n", hr );
     if (!manager)
     {
         skip( "Could not create IQueryParserManager instance.\n" );

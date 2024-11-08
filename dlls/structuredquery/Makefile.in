@@ -6,4 +6,5 @@ EXTRADLLFLAGS = -Wb,--prefer-native
 SOURCES = \
 	classes.idl \
 	main.c \
-	queryparser.c
+	queryparser.c \
+	queryparsermanager.c

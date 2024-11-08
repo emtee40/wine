@@ -30,6 +30,7 @@ static const struct class_info
     HRESULT (*constructor)(REFIID, void **);
 } class_info[] = {
     { &CLSID_QueryParser, queryparser_create },
+    { &CLSID_QueryParserManager, queryparsermanager_create },
 };
 
 struct class_factory

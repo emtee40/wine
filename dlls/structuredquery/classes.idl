@@ -26,3 +26,12 @@ coclass QueryParser
 {
     interface IQueryParser;
 }
+
+[
+    uuid(5088b39a-29b4-4d9d-8245-4ee289222f66),
+    threading(both)
+]
+coclass QueryParserManager
+{
+    interface IQueryParserManager;
+};

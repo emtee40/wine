@@ -21,4 +21,5 @@
 #include <structuredquery.h>
 
 extern HRESULT queryparser_create( REFIID iid, void **out );
+extern HRESULT queryparsermanager_create( REFIID iid, void **out );
 #endif
