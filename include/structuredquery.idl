@@ -108,6 +108,20 @@ typedef [v1_enum] enum tagQUERY_PARSER_MANAGER_OPTION
 
 [
     object,
+    pointer_default(unique),
+    uuid(a879e3c4-af77-44fb-8f37-ebd1487cf920),
+]
+interface IQueryParserManager : IUnknown
+{
+    /* ID should be IID_IQueryParser */
+    HRESULT CreateLoadedParser([in] LPCWSTR catalog, [in] LANGID langid, [in] REFIID riid,
+                               [out, retval, iid_is(riid)] void **out);
+    HRESULT InitializeOptions([in] BOOL nqs, [in] BOOL auto_wild_card, [in] IQueryParser *parser);
+    HRESULT SetOption([in] QUERY_PARSER_MANAGER_OPTION opt, [in] const PROPVARIANT *val);
+}
+
+[
+    object,
     uuid(D6EBC66B-8921-4193-AFDD-A1789FB7FF57),
     pointer_default(unique)
 ]
@@ -289,5 +303,13 @@ library StructuredQuery1
     coclass QueryParser
     {
         interface IQueryParser;
+    };
+
+    [
+        uuid(5088b39a-29b4-4d9d-8245-4ee289222f66)
+    ]
+    coclass QueryParserManager
+    {
+        interface IQueryParserManager;
     };
 }
