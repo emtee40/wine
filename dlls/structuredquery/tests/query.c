@@ -45,7 +45,30 @@ void test_IQueryParser( void )
     CoUninitialize();
 }
 
+void test_IQueryParserManager( void )
+{
+    HRESULT hr;
+    IQueryParserManager *manager = NULL;
+
+    hr = CoInitializeEx( NULL, COINIT_MULTITHREADED );
+    ok( SUCCEEDED( hr ), "got %#lx\n", hr );
+
+    hr = CoCreateInstance( &CLSID_QueryParserManager, NULL, CLSCTX_INPROC, &IID_IQueryParserManager,
+                           (void **)&manager );
+    todo_wine ok( SUCCEEDED( hr ), "got %#lx\n", hr );
+    if (!manager)
+    {
+        skip( "Could not create IQueryParserManager instance.\n" );
+        CoUninitialize();
+        return;
+    }
+
+    IQueryParserManager_Release( manager );
+    CoUninitialize();
+}
+
 START_TEST(query)
 {
     test_IQueryParser();
+    test_IQueryParserManager();
 }
