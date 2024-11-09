@@ -986,12 +986,14 @@ static BOOL get_event(IMFMediaEventGenerator *generator, MediaEventType expected
                 ok(hr == S_OK, "Failed to get value of event, hr %#lx.\n", hr);
             }
 
+            IMFMediaEvent_Release(callback->media_event);
             break;
         }
+
+        if (callback->media_event)
+            IMFMediaEvent_Release(callback->media_event);
     }
 
-    if (callback->media_event)
-        IMFMediaEvent_Release(callback->media_event);
     IMFAsyncCallback_Release(&callback->IMFAsyncCallback_iface);
 
     return ret;
