@@ -1631,7 +1631,6 @@ static void test_source_resolver(void)
 
     get_event((IMFMediaEventGenerator *)mediasource, MEEndOfPresentation, NULL);
 
-    IMFMediaStream_Release(video_stream);
     IMFMediaTypeHandler_Release(handler);
     IMFPresentationDescriptor_Release(descriptor);
 
@@ -1641,6 +1640,7 @@ static void test_source_resolver(void)
     ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
 
     /* During shutdown, circular references such as source <-> stream should be released. */
+    todo_wine
     EXPECT_REF(mediasource, 3);
 
     ok(bytestream_closed, "Missing IMFByteStream::Close call\n");
@@ -1650,11 +1650,14 @@ static void test_source_resolver(void)
 
     IMFRateSupport_Release(rate_support);
 
+    todo_wine
     EXPECT_REF(mediasource, 2);
 
     IMFGetService_Release(get_service);
 
+    /* Holding a reference to the video stream does not prevent release of the media source. */
     refcount = IMFMediaSource_Release(mediasource);
+    todo_wine
     ok(!refcount, "Unexpected refcount %ld\n", refcount);
 
     IMFByteStream_Release(stream);
@@ -1688,6 +1691,12 @@ static void test_source_resolver(void)
         CoUninitialize();
 
     IMFSourceResolver_Release(resolver);
+
+    hr = IMFMediaStream_GetMediaSource(video_stream, &mediasource);
+    ok(hr == MF_E_SHUTDOWN, "Unexpected hr %#lx.\n", hr);
+
+    refcount = IMFMediaStream_Release(video_stream);
+    ok(!refcount, "Unexpected refcount %ld\n", refcount);
 
     hr = MFShutdown();
     ok(hr == S_OK, "Failed to shut down, hr %#lx.\n", hr);
