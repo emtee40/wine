@@ -1322,11 +1322,9 @@ static void test_source_resolver(void)
     ok(obj_type == MF_OBJECT_MEDIASOURCE, "got %d\n", obj_type);
 
     /* Test that no extra refs to mediasource are held if Start() was not called */
-    todo_wine
     EXPECT_REF(mediasource, 1);
 
     refcount = IMFMediaSource_Release(mediasource);
-    todo_wine
     ok(!refcount, "Unexpected refcount %ld\n", refcount);
     IMFByteStream_Release(stream);
 
@@ -1413,7 +1411,6 @@ static void test_source_resolver(void)
     ok(mediasource != NULL, "got %p\n", mediasource);
     ok(obj_type == MF_OBJECT_MEDIASOURCE, "got %d\n", obj_type);
 
-    todo_wine
     EXPECT_REF(mediasource, 1);
 
     check_interface(mediasource, &IID_IMFGetService, TRUE);
@@ -1422,13 +1419,11 @@ static void test_source_resolver(void)
     hr = IMFMediaSource_QueryInterface(mediasource, &IID_IMFGetService, (void**)&get_service);
     ok(hr == S_OK, "Failed to get service interface, hr %#lx.\n", hr);
 
-    todo_wine
     EXPECT_REF(mediasource, 2);
 
     hr = IMFGetService_GetService(get_service, &MF_RATE_CONTROL_SERVICE, &IID_IMFRateSupport, (void**)&rate_support);
     ok(hr == S_OK, "Failed to get rate support interface, hr %#lx.\n", hr);
 
-    todo_wine
     EXPECT_REF(mediasource, 3);
 
     hr = IMFRateSupport_GetFastestRate(rate_support, MFRATE_FORWARD, FALSE, &rate);
@@ -1521,6 +1516,7 @@ static void test_source_resolver(void)
 
     /* The stream holds a reference. It is unclear which object holds the fifth
      * reference in Windows, but it's released after MENewStream is retrieved. */
+    todo_wine
     EXPECT_REF(mediasource, 5);
 
     video_stream = NULL;
