@@ -1009,7 +1009,7 @@ static BOOL X11DRV_MapNotify( HWND hwnd, XEvent *event )
 
     if (!(data = get_win_data( hwnd ))) return FALSE;
 
-    if (!data->managed && !data->embedded && data->mapped)
+    if (!data->managed && !data->embedded && data->pending_state.wm_state == NormalState)
     {
         HWND hwndFocus = get_focus();
         if (hwndFocus && NtUserIsChild( hwnd, hwndFocus ))
@@ -1073,9 +1073,8 @@ static BOOL X11DRV_ConfigureNotify( HWND hwnd, XEvent *xev )
     struct x11drv_win_data *data;
     RECT rect;
     POINT pos = {event->x, event->y};
-    UINT flags;
+    UINT flags, old_style, new_style;
     int cx, cy, x, y;
-    DWORD style;
 
     if (!hwnd) return FALSE;
     if (!(data = get_win_data( hwnd ))) return FALSE;
@@ -1094,7 +1093,16 @@ static BOOL X11DRV_ConfigureNotify( HWND hwnd, XEvent *xev )
     SetRect( &rect, pos.x, pos.y, pos.x + event->width, pos.y + event->height );
     window_configure_notify( data, event->serial, &rect );
 
-    if (!data->mapped || data->iconic) goto done;
+    /* Compute the necessary changes to transition from the current Win32
+     * window state (old_style), to the current X11 window state (new_style).
+     */
+    old_style = NtUserGetWindowLongW( data->hwnd, GWL_STYLE );
+    new_style = old_style & ~(WS_VISIBLE | WS_MINIMIZE | WS_MAXIMIZE);
+    if (data->current_state.wm_state == IconicState) new_style |= WS_MINIMIZE;
+    if (data->current_state.wm_state != WithdrawnState) new_style |= WS_VISIBLE;
+    if (data->current_state.net_wm_state & (1 << NET_WM_STATE_MAXIMIZED)) new_style |= WS_MAXIMIZE;
+
+    if (!(old_style & WS_VISIBLE) || (old_style & WS_MINIMIZE)) goto done;
     if (!data->whole_window || !data->managed) goto done;
     if (data->configure_serial && (long)(data->configure_serial - event->serial) > 0)
     {
@@ -1135,13 +1143,11 @@ static BOOL X11DRV_ConfigureNotify( HWND hwnd, XEvent *xev )
                hwnd, (int)(data->rects.window.right - data->rects.window.left),
                (int)(data->rects.window.bottom - data->rects.window.top), cx, cy );
 
-    style = NtUserGetWindowLongW( data->hwnd, GWL_STYLE );
-    if ((style & WS_CAPTION) == WS_CAPTION || !data->is_fullscreen)
+    if ((old_style & WS_CAPTION) == WS_CAPTION || !data->is_fullscreen)
     {
-        data->net_wm_state = get_window_net_wm_state( event->display, data->whole_window );
-        if ((data->net_wm_state & (1 << NET_WM_STATE_MAXIMIZED)))
+        if ((new_style & WS_MAXIMIZE))
         {
-            if (!(style & WS_MAXIMIZE))
+            if (!(old_style & WS_MAXIMIZE))
             {
                 TRACE( "win %p/%lx is maximized\n", data->hwnd, data->whole_window );
                 release_win_data( data );
@@ -1149,7 +1155,7 @@ static BOOL X11DRV_ConfigureNotify( HWND hwnd, XEvent *xev )
                 return TRUE;
             }
         }
-        else if (style & WS_MAXIMIZE)
+        else if (old_style & WS_MAXIMIZE)
         {
             TRACE( "window %p/%lx is no longer maximized\n", data->hwnd, data->whole_window );
             release_win_data( data );
@@ -1230,11 +1236,20 @@ static int get_window_xembed_info( Display *display, Window window )
 static void handle_wm_state_notify( HWND hwnd, XPropertyEvent *event, BOOL update_window )
 {
     struct x11drv_win_data *data;
-    UINT style, value = 0;
+    UINT old_style, new_style, value = 0;
 
     if (!(data = get_win_data( hwnd ))) return;
     if (event->state == PropertyNewValue) value = get_window_wm_state( event->display, event->window );
     if (update_window) window_wm_state_notify( data, event->serial, value );
+
+    /* Compute the necessary changes to transition from the current Win32
+     * window state (old_style), to the current X11 window state (new_style).
+     */
+    old_style = NtUserGetWindowLongW( data->hwnd, GWL_STYLE );
+    new_style = old_style & ~(WS_VISIBLE | WS_MINIMIZE | WS_MAXIMIZE);
+    if (data->current_state.wm_state == IconicState) new_style |= WS_MINIMIZE;
+    if (data->current_state.wm_state != WithdrawnState) new_style |= WS_VISIBLE;
+    if (data->current_state.net_wm_state & (1 << NET_WM_STATE_MAXIMIZED)) new_style |= WS_MAXIMIZE;
 
     switch(event->state)
     {
@@ -1259,50 +1274,45 @@ static void handle_wm_state_notify( HWND hwnd, XPropertyEvent *event, BOOL updat
         break;
     }
 
-    if (!update_window || !data->managed || !data->mapped) goto done;
+    if (!update_window || !data->managed || !(old_style & WS_VISIBLE)) goto done;
 
-    style = NtUserGetWindowLongW( data->hwnd, GWL_STYLE );
-
-    if (data->iconic && data->wm_state == NormalState)  /* restore window */
+    if ((old_style & WS_MINIMIZE) && !(new_style & WS_MINIMIZE))  /* restore window */
     {
-        data->iconic = FALSE;
-        data->net_wm_state = get_window_net_wm_state( event->display, data->whole_window );
-        if ((style & WS_CAPTION) == WS_CAPTION && (data->net_wm_state & (1 << NET_WM_STATE_MAXIMIZED)))
+        if ((old_style & WS_CAPTION) == WS_CAPTION && (new_style & WS_MAXIMIZE))
         {
-            if ((style & WS_MAXIMIZEBOX) && !(style & WS_DISABLED))
+            if ((old_style & WS_MAXIMIZEBOX) && !(old_style & WS_DISABLED))
             {
                 TRACE( "restoring to max %p/%lx\n", data->hwnd, data->whole_window );
                 release_win_data( data );
                 send_message( hwnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0 );
                 return;
             }
-            TRACE( "not restoring to max win %p/%lx style %08x\n", data->hwnd, data->whole_window, style );
+            TRACE( "window %p/%lx style %#x not restoring to max\n", data->hwnd, data->whole_window, old_style );
         }
         else
         {
-            if (style & (WS_MINIMIZE | WS_MAXIMIZE))
+            if (old_style & (WS_MINIMIZE | WS_MAXIMIZE))
             {
                 TRACE( "restoring win %p/%lx\n", data->hwnd, data->whole_window );
                 release_win_data( data );
-                if ((style & (WS_MINIMIZE | WS_VISIBLE)) == (WS_MINIMIZE | WS_VISIBLE))
+                if ((old_style & (WS_MINIMIZE | WS_VISIBLE)) == (WS_MINIMIZE | WS_VISIBLE))
                     NtUserSetActiveWindow( hwnd );
                 send_message( hwnd, WM_SYSCOMMAND, SC_RESTORE, 0 );
                 return;
             }
-            TRACE( "not restoring win %p/%lx style %08x\n", data->hwnd, data->whole_window, style );
+            TRACE( "window %p/%lx style %#x not restoring\n", data->hwnd, data->whole_window, old_style );
         }
     }
-    else if (!data->iconic && data->wm_state == IconicState)
+    else if (!(old_style & WS_MINIMIZE) && (new_style & WS_MINIMIZE))
     {
-        data->iconic = TRUE;
-        if ((style & WS_MINIMIZEBOX) && !(style & WS_DISABLED))
+        if ((old_style & WS_MINIMIZEBOX) && !(old_style & WS_DISABLED))
         {
             TRACE( "minimizing win %p/%lx\n", data->hwnd, data->whole_window );
             release_win_data( data );
             send_message( hwnd, WM_SYSCOMMAND, SC_MINIMIZE, 0 );
             return;
         }
-        TRACE( "not minimizing win %p/%lx style %08x\n", data->hwnd, data->whole_window, style );
+        TRACE( "window %p/%lx style %#x not minimizing\n", data->hwnd, data->whole_window, old_style );
     }
 done:
     release_win_data( data );
@@ -1373,9 +1383,9 @@ void wait_for_withdrawn_state( HWND hwnd, BOOL set )
         if (!(data = get_win_data( hwnd ))) break;
         if (!data->managed || data->embedded || data->display != display) break;
         if (!(window = data->whole_window)) break;
-        if (!data->mapped == !set)
+        if ((data->pending_state.wm_state == WithdrawnState) == !set)
         {
-            TRACE( "window %p/%lx now %smapped\n", hwnd, window, data->mapped ? "" : "un" );
+            TRACE( "window %p/%lx now %smapped\n", hwnd, window, (data->pending_state.wm_state != WithdrawnState) ? "" : "un" );
             break;
         }
         if ((data->wm_state == WithdrawnState) != !set)
