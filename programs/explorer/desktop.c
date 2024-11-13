@@ -996,7 +996,7 @@ static void load_graphics_driver( const WCHAR *driver, GUID *guid )
 {
     static const WCHAR device_keyW[] = L"System\\CurrentControlSet\\Control\\Video\\{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}\\0000";
 
-    WCHAR buffer[MAX_PATH], libname[32], *name, *next;
+    WCHAR buffer[MAX_PATH], *env_name, libname[32], *name, *next;
     WCHAR key[ARRAY_SIZE( device_keyW ) + 39];
     BOOL null_driver = FALSE;
     HMODULE module = 0;
@@ -1008,7 +1008,9 @@ static void load_graphics_driver( const WCHAR *driver, GUID *guid )
         lstrcpyW( buffer, default_driver );
 
         /* @@ Wine registry key: HKCU\Software\Wine\Drivers */
-        if (!RegOpenKeyW( HKEY_CURRENT_USER, L"Software\\Wine\\Drivers", &hkey ))
+        if ((env_name = _wgetenv( L"WINE_VIDEO_DRIVER" )) && env_name[0] != '\0')
+            lstrcpynW( buffer, env_name, ARRAY_SIZE( buffer ));
+        else if (!RegOpenKeyW( HKEY_CURRENT_USER, L"Software\\Wine\\Drivers", &hkey ))
         {
             DWORD count = sizeof(buffer);
             RegQueryValueExW( hkey, L"Graphics", 0, NULL, (LPBYTE)buffer, &count );
