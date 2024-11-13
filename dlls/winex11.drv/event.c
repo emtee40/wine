@@ -1073,9 +1073,8 @@ static BOOL X11DRV_ConfigureNotify( HWND hwnd, XEvent *xev )
     struct x11drv_win_data *data;
     RECT rect;
     POINT pos = {event->x, event->y};
-    UINT flags;
+    UINT style, flags = 0, config_cmd = 0;
     int cx, cy, x, y;
-    DWORD style;
 
     if (!hwnd) return FALSE;
     if (!(data = get_win_data( hwnd ))) return FALSE;
@@ -1139,35 +1138,33 @@ static BOOL X11DRV_ConfigureNotify( HWND hwnd, XEvent *xev )
     if ((style & WS_CAPTION) == WS_CAPTION || !data->is_fullscreen)
     {
         data->net_wm_state = get_window_net_wm_state( event->display, data->whole_window );
-        if ((data->net_wm_state & (1 << NET_WM_STATE_MAXIMIZED)))
+        if ((data->net_wm_state & (1 << NET_WM_STATE_MAXIMIZED)) && !(style & WS_MAXIMIZE))
         {
-            if (!(style & WS_MAXIMIZE))
-            {
-                TRACE( "win %p/%lx is maximized\n", data->hwnd, data->whole_window );
-                release_win_data( data );
-                send_message( data->hwnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0 );
-                return TRUE;
-            }
+            TRACE( "window %p/%lx is maximized\n", data->hwnd, data->whole_window );
+            config_cmd = SC_MAXIMIZE;
         }
-        else if (style & WS_MAXIMIZE)
+        else if (!(data->net_wm_state & (1 << NET_WM_STATE_MAXIMIZED)) && (style & WS_MAXIMIZE))
         {
             TRACE( "window %p/%lx is no longer maximized\n", data->hwnd, data->whole_window );
-            release_win_data( data );
-            send_message( data->hwnd, WM_SYSCOMMAND, SC_RESTORE, 0 );
-            return TRUE;
+            config_cmd = SC_RESTORE;
         }
     }
-
-    if ((flags & (SWP_NOSIZE | SWP_NOMOVE)) != (SWP_NOSIZE | SWP_NOMOVE))
+    if (!config_cmd && (flags & (SWP_NOSIZE | SWP_NOMOVE)) != (SWP_NOSIZE | SWP_NOMOVE))
     {
-        release_win_data( data );
-        NtUserSetRawWindowPos( hwnd, rect, flags, FALSE );
-        return TRUE;
+        TRACE( "window %p/%lx config changed %s -> %s, flags %#x\n", data->hwnd, data->whole_window,
+               wine_dbgstr_rect(&data->rects.window), wine_dbgstr_rect(&rect), flags );
+        config_cmd = MAKELONG(SC_MOVE, flags);
     }
-
 done:
     release_win_data( data );
-    return FALSE;
+
+    if (config_cmd)
+    {
+        if (LOWORD(config_cmd) == SC_MOVE) NtUserSetRawWindowPos( hwnd, rect, HIWORD(config_cmd), FALSE );
+        else send_message( hwnd, WM_SYSCOMMAND, LOWORD(config_cmd), 0 );
+    }
+
+    return !!config_cmd;
 }
 
 
@@ -1230,7 +1227,7 @@ static int get_window_xembed_info( Display *display, Window window )
 static void handle_wm_state_notify( HWND hwnd, XPropertyEvent *event, BOOL update_window )
 {
     struct x11drv_win_data *data;
-    UINT style, value = 0;
+    UINT style, value = 0, state_cmd = 0;
 
     if (!(data = get_win_data( hwnd ))) return;
     if (event->state == PropertyNewValue) value = get_window_wm_state( event->display, event->window );
@@ -1272,24 +1269,17 @@ static void handle_wm_state_notify( HWND hwnd, XPropertyEvent *event, BOOL updat
             if ((style & WS_MAXIMIZEBOX) && !(style & WS_DISABLED))
             {
                 TRACE( "restoring to max %p/%lx\n", data->hwnd, data->whole_window );
-                release_win_data( data );
-                send_message( hwnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0 );
-                return;
+                state_cmd = SC_MAXIMIZE;
             }
-            TRACE( "not restoring to max win %p/%lx style %08x\n", data->hwnd, data->whole_window, style );
         }
         else
         {
             if (style & (WS_MINIMIZE | WS_MAXIMIZE))
             {
+                BOOL activate = (style & (WS_MINIMIZE | WS_VISIBLE)) == (WS_MINIMIZE | WS_VISIBLE);
                 TRACE( "restoring win %p/%lx\n", data->hwnd, data->whole_window );
-                release_win_data( data );
-                if ((style & (WS_MINIMIZE | WS_VISIBLE)) == (WS_MINIMIZE | WS_VISIBLE))
-                    NtUserSetActiveWindow( hwnd );
-                send_message( hwnd, WM_SYSCOMMAND, SC_RESTORE, 0 );
-                return;
+                state_cmd = MAKELONG(SC_RESTORE, activate);
             }
-            TRACE( "not restoring win %p/%lx style %08x\n", data->hwnd, data->whole_window, style );
         }
     }
     else if (!data->iconic && data->wm_state == IconicState)
@@ -1298,14 +1288,17 @@ static void handle_wm_state_notify( HWND hwnd, XPropertyEvent *event, BOOL updat
         if ((style & WS_MINIMIZEBOX) && !(style & WS_DISABLED))
         {
             TRACE( "minimizing win %p/%lx\n", data->hwnd, data->whole_window );
-            release_win_data( data );
-            send_message( hwnd, WM_SYSCOMMAND, SC_MINIMIZE, 0 );
-            return;
+            state_cmd = SC_MINIMIZE;
         }
-        TRACE( "not minimizing win %p/%lx style %08x\n", data->hwnd, data->whole_window, style );
     }
 done:
     release_win_data( data );
+
+    if (state_cmd)
+    {
+        if (LOWORD(state_cmd) == SC_RESTORE && HIWORD(state_cmd)) NtUserSetActiveWindow( hwnd );
+        send_message( hwnd, WM_SYSCOMMAND, LOWORD(state_cmd), 0 );
+    }
 }
 
 static void handle_xembed_info_notify( HWND hwnd, XPropertyEvent *event )
