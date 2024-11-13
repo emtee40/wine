@@ -39,8 +39,6 @@ WINE_DEFAULT_DEBUG_CHANNEL(explorer);
 #define DESKTOP_CLASS_ATOM ((LPCWSTR)MAKEINTATOM(32769))
 #define DESKTOP_ALL_ACCESS 0x01ff
 
-static const WCHAR default_driver[] = {'m','a','c',',','x','1','1',0};
-
 static BOOL using_root = TRUE;
 
 struct launcher
@@ -1005,7 +1003,7 @@ static void load_graphics_driver( const WCHAR *driver, GUID *guid )
 
     if (!driver)
     {
-        lstrcpyW( buffer, default_driver );
+        lstrcpyW( buffer, L"mac,x11" );
 
         /* @@ Wine registry key: HKCU\Software\Wine\Drivers */
         if (!RegOpenKeyW( HKEY_CURRENT_USER, L"Software\\Wine\\Drivers", &hkey ))
