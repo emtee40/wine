@@ -3800,10 +3800,12 @@ typedef union
 /* add completion to completion port */
 @REQ(add_completion)
     obj_handle_t  handle;         /* port handle */
+    obj_handle_t  reserve_handle; /* completion reserve object handle */
     apc_param_t   ckey;           /* completion key */
     apc_param_t   cvalue;         /* completion value */
     apc_param_t   information;    /* IO_STATUS_BLOCK Information */
     unsigned int  status;         /* completion result */
+    int           has_reserve;    /* whether completion reserve object handle is valid */
 @END
 
 
