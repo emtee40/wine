@@ -39,8 +39,8 @@ WINE_DEFAULT_DEBUG_CHANNEL(plugplay);
 DECLARE_CRITICAL_SECTION(invalidated_devices_cs);
 static CONDITION_VARIABLE invalidated_devices_cv = CONDITION_VARIABLE_INIT;
 
-static DEVICE_OBJECT **invalidated_devices;
-static size_t invalidated_devices_count;
+static DEVICE_OBJECT **invalidated_devices __WINE_PT_GUARDED_BY(&invalidated_devices_cs);
+static size_t invalidated_devices_count __WINE_GUARDED_BY(&invalidated_devices_cs);
 
 static inline const char *debugstr_propkey( const DEVPROPKEY *id )
 {
@@ -1228,7 +1228,7 @@ static NTSTATUS WINAPI pnp_manager_driver_entry( DRIVER_OBJECT *driver, UNICODE_
     return STATUS_SUCCESS;
 }
 
-static DWORD CALLBACK device_enum_thread_proc(void *arg)
+static DWORD CALLBACK device_enum_thread_proc(void *arg) __WINE_EXCLUDES(&invalidated_devices_cs)
 {
     for (;;)
     {

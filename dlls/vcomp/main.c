@@ -1583,7 +1583,7 @@ void CDECL omp_destroy_lock(omp_lock_t *lock)
     destroy_critsect(*lock);
 }
 
-void CDECL omp_set_lock(omp_lock_t *lock)
+void CDECL omp_set_lock(omp_lock_t *lock) __WINE_ACQUIRE(*lock)
 {
     TRACE("(%p)\n", lock);
 
@@ -1596,13 +1596,13 @@ void CDECL omp_set_lock(omp_lock_t *lock)
     EnterCriticalSection(*lock);
 }
 
-void CDECL omp_unset_lock(omp_lock_t *lock)
+void CDECL omp_unset_lock(omp_lock_t *lock) __WINE_RELEASE(*lock)
 {
     TRACE("(%p)\n", lock);
     LeaveCriticalSection(*lock);
 }
 
-int CDECL omp_test_lock(omp_lock_t *lock)
+int CDECL omp_test_lock(omp_lock_t *lock) __WINE_TRY_ACQUIRE(1, *lock)
 {
     TRACE("(%p)\n", lock);
 
@@ -1612,13 +1612,13 @@ int CDECL omp_test_lock(omp_lock_t *lock)
     return TryEnterCriticalSection(*lock);
 }
 
-void CDECL omp_set_nest_lock(omp_nest_lock_t *lock)
+void CDECL omp_set_nest_lock(omp_nest_lock_t *lock) __WINE_ACQUIRE(*lock)
 {
     TRACE("(%p)\n", lock);
     EnterCriticalSection(*lock);
 }
 
-void CDECL omp_unset_nest_lock(omp_nest_lock_t *lock)
+void CDECL omp_unset_nest_lock(omp_nest_lock_t *lock) __WINE_RELEASE(*lock)
 {
     TRACE("(%p)\n", lock);
     LeaveCriticalSection(*lock);
@@ -1630,7 +1630,7 @@ int CDECL omp_test_nest_lock(omp_nest_lock_t *lock)
     return TryEnterCriticalSection(*lock) ? (*lock)->RecursionCount : 0;
 }
 
-void CDECL _vcomp_enter_critsect(CRITICAL_SECTION **critsect)
+void CDECL _vcomp_enter_critsect(CRITICAL_SECTION **critsect) __WINE_ACQUIRE(*critsect)
 {
     TRACE("(%p)\n", critsect);
 
@@ -1644,7 +1644,7 @@ void CDECL _vcomp_enter_critsect(CRITICAL_SECTION **critsect)
     EnterCriticalSection(*critsect);
 }
 
-void CDECL _vcomp_leave_critsect(CRITICAL_SECTION *critsect)
+void CDECL _vcomp_leave_critsect(CRITICAL_SECTION *critsect) __WINE_RELEASE(*critsect)
 {
     TRACE("(%p)\n", critsect);
     LeaveCriticalSection(critsect);

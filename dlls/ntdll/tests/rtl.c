@@ -3019,7 +3019,7 @@ static void test_RtlInitializeCriticalSectionEx(void)
     RtlDeleteCriticalSection(&cs);
 }
 
-static void test_RtlLeaveCriticalSection(void)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS void test_RtlLeaveCriticalSection(void)
 {
     RTL_CRITICAL_SECTION cs;
     NTSTATUS status;

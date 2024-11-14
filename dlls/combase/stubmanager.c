@@ -136,6 +136,7 @@ static void stub_manager_delete_ifstub(struct stub_manager *m, struct ifstub *if
 }
 
 static struct ifstub *stub_manager_ipid_to_ifstub(struct stub_manager *m, const IPID *ipid)
+    __WINE_EXCLUDES(&m->lock)
 {
     struct ifstub *result = NULL, *ifstub;
 
@@ -175,7 +176,7 @@ struct ifstub * stub_manager_find_ifstub(struct stub_manager *m, REFIID iid, MSH
 /* creates a new stub manager and adds it into the apartment. caller must
  * release stub manager when it is no longer required. the apartment and
  * external refs together take one implicit ref */
-static struct stub_manager *new_stub_manager(struct apartment *apt, IUnknown *object)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS struct stub_manager *new_stub_manager(struct apartment *apt, IUnknown *object)
 {
     struct stub_manager *sm;
     HRESULT hres;
@@ -469,7 +470,7 @@ ULONG stub_manager_ext_release(struct stub_manager *m, ULONG refs, BOOL tablewea
 /* gets the stub manager associated with an ipid - caller must have
  * a reference to the apartment while a reference to the stub manager is held.
  * it must also call release on the stub manager when it is no longer needed */
-static struct stub_manager *get_stub_manager_from_ipid(struct apartment *apt, const IPID *ipid, struct ifstub **ifstub)
+static struct stub_manager *get_stub_manager_from_ipid(struct apartment *apt, const IPID *ipid, struct ifstub **ifstub) __WINE_EXCLUDES(&apt->cs)
 {
     struct stub_manager *result = NULL, *m;
 

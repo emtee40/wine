@@ -46,9 +46,11 @@ struct imc_entry
     struct list entry;
 };
 
+static CRITICAL_SECTION ime_cs;
+
 struct ime
 {
-    LONG refcount; /* guarded by ime_cs */
+    LONG refcount __WINE_GUARDED_BY(&ime_cs); /* guarded by ime_cs */
 
     HKL hkl;
     HMODULE module;
@@ -107,7 +109,6 @@ struct coinit_spy
     } apt_flags;
 };
 
-static CRITICAL_SECTION ime_cs;
 static CRITICAL_SECTION_DEBUG ime_cs_debug =
 {
     0, 0, &ime_cs,

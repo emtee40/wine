@@ -4644,7 +4644,7 @@ static ULONG WINAPI winhttp_request_AddRef(
 }
 
 /* critical section must be held */
-static void cancel_request( struct winhttp_request *request )
+static __WINE_NO_THREAD_SAFETY_ANALYSIS void cancel_request( struct winhttp_request *request )
 {
     if (request->state <= REQUEST_STATE_CANCELLED) return;
 
@@ -5472,7 +5472,7 @@ static void CALLBACK send_and_receive_proc( TP_CALLBACK_INSTANCE *instance, void
 }
 
 /* critical section must be held */
-static DWORD request_wait( struct winhttp_request *request, DWORD timeout )
+static DWORD request_wait( struct winhttp_request *request, DWORD timeout ) __WINE_REQUIRES(&request->cs)
 {
     HANDLE done = request->done;
     DWORD err, ret;

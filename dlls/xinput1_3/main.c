@@ -762,6 +762,7 @@ static void start_update_thread(void)
 }
 
 static BOOL controller_lock(struct xinput_controller *controller)
+    __WINE_TRY_ACQUIRE(TRUE, &controller->crit)
 {
     if (!controller->device) return FALSE;
 
@@ -777,6 +778,7 @@ static BOOL controller_lock(struct xinput_controller *controller)
 }
 
 static void controller_unlock(struct xinput_controller *controller)
+    __WINE_RELEASE( &controller->crit )
 {
     LeaveCriticalSection(&controller->crit);
 }

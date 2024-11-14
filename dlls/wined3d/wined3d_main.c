@@ -531,22 +531,22 @@ static BOOL wined3d_dll_destroy(HINSTANCE hInstDLL)
     return TRUE;
 }
 
-void WINAPI wined3d_mutex_lock(void)
+void WINAPI wined3d_mutex_lock(void) __WINE_ACQUIRE(&wined3d_cs)
 {
     EnterCriticalSection(&wined3d_cs);
 }
 
-void WINAPI wined3d_mutex_unlock(void)
+void WINAPI wined3d_mutex_unlock(void) __WINE_RELEASE(&wined3d_cs)
 {
     LeaveCriticalSection(&wined3d_cs);
 }
 
-static void wined3d_wndproc_mutex_lock(void)
+static void wined3d_wndproc_mutex_lock(void) __WINE_ACQUIRE(&wined3d_wndproc_cs)
 {
     EnterCriticalSection(&wined3d_wndproc_cs);
 }
 
-static void wined3d_wndproc_mutex_unlock(void)
+static void wined3d_wndproc_mutex_unlock(void) __WINE_RELEASE(&wined3d_wndproc_cs)
 {
     LeaveCriticalSection(&wined3d_wndproc_cs);
 }

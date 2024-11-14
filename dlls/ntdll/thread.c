@@ -452,9 +452,6 @@ int * CDECL _errno(void)
  * Fibers
  ***********************************************************************/
 
-
-static GLOBAL_FLS_DATA fls_data = { { NULL }, { &fls_data.fls_list_head, &fls_data.fls_list_head } };
-
 static RTL_CRITICAL_SECTION fls_section;
 static RTL_CRITICAL_SECTION_DEBUG fls_critsect_debug =
 {
@@ -464,14 +461,16 @@ static RTL_CRITICAL_SECTION_DEBUG fls_critsect_debug =
 };
 static RTL_CRITICAL_SECTION fls_section = { &fls_critsect_debug, -1, 0, 0, 0, 0 };
 
+static GLOBAL_FLS_DATA fls_data __WINE_GUARDED_BY(&fls_section) = { { NULL }, { &fls_data.fls_list_head, &fls_data.fls_list_head } };
+
 #define MAX_FLS_DATA_COUNT 0xff0
 
-static void lock_fls_data(void)
+static void lock_fls_data(void) __WINE_ACQUIRE(&fls_section)
 {
     RtlEnterCriticalSection( &fls_section );
 }
 
-static void unlock_fls_data(void)
+static void unlock_fls_data(void) __WINE_RELEASE(&fls_section)
 {
     RtlLeaveCriticalSection( &fls_section );
 }

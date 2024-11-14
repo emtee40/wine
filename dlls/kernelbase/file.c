@@ -1522,7 +1522,7 @@ BOOL WINAPI FindNextStreamW( HANDLE handle, void *data )
 /******************************************************************************
  *	FindClose   (kernelbase.@)
  */
-BOOL WINAPI DECLSPEC_HOTPATCH FindClose( HANDLE handle )
+BOOL __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI DECLSPEC_HOTPATCH FindClose( HANDLE handle )
 {
     FIND_FIRST_INFO *info = handle;
 

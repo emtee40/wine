@@ -1085,7 +1085,7 @@ static HRESULT testfilter_cleanup_stream(struct strmbase_filter *iface)
     return filter->cleanup_stream_hr;
 }
 
-static HRESULT testfilter_wait_state(struct strmbase_filter *iface, DWORD timeout)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT testfilter_wait_state(struct strmbase_filter *iface, DWORD timeout)
 {
     struct testfilter *filter = impl_from_BaseFilter(iface);
     HRESULT hr;

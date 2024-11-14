@@ -332,7 +332,9 @@ static HRESULT sink_query_interface(struct strmbase_pin *iface, REFIID iid, void
     return S_OK;
 }
 
-static HRESULT WINAPI BaseRenderer_Receive(struct strmbase_sink *pin, IMediaSample *sample)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI
+BaseRenderer_Receive(struct strmbase_sink *pin, IMediaSample *sample)
+    __WINE_REQUIRES( &impl_from_IPin( &pin->pin.IPin_iface )->filter.stream_cs )
 {
     struct strmbase_renderer *filter = impl_from_IPin(&pin->pin.IPin_iface);
     REFERENCE_TIME start, stop;

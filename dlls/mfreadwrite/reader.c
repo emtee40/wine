@@ -2339,6 +2339,7 @@ static HRESULT WINAPI src_reader_SetCurrentPosition(IMFSourceReaderEx *iface, RE
 
 static HRESULT source_reader_read_sample(struct source_reader *reader, DWORD index, DWORD flags, DWORD *actual_index,
         DWORD *stream_flags, LONGLONG *timestamp, IMFSample **sample)
+    __WINE_REQUIRES( &reader->cs )
 {
     struct media_stream *stream;
     DWORD actual_index_tmp;

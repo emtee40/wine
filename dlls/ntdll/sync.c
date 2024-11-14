@@ -349,7 +349,7 @@ NTSTATUS WINAPI RtlpUnWaitCriticalSection( RTL_CRITICAL_SECTION *crit )
 /******************************************************************************
  *      RtlEnterCriticalSection   (NTDLL.@)
  */
-NTSTATUS WINAPI RtlEnterCriticalSection( RTL_CRITICAL_SECTION *crit )
+NTSTATUS __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI RtlEnterCriticalSection( RTL_CRITICAL_SECTION *crit )
 {
     if (crit->SpinCount)
     {
@@ -431,7 +431,7 @@ BOOL WINAPI RtlIsCriticalSectionLockedByThread( RTL_CRITICAL_SECTION *crit )
 /******************************************************************************
  *      RtlLeaveCriticalSection   (NTDLL.@)
  */
-NTSTATUS WINAPI RtlLeaveCriticalSection( RTL_CRITICAL_SECTION *crit )
+NTSTATUS __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI RtlLeaveCriticalSection( RTL_CRITICAL_SECTION *crit )
 {
     if (--crit->RecursionCount)
     {
@@ -1233,7 +1233,7 @@ void WINAPI RtlDeleteResource(LPRTL_RWLOCK rwl)
 /***********************************************************************
  *          RtlAcquireResourceExclusive	(NTDLL.@)
  */
-BYTE WINAPI RtlAcquireResourceExclusive(LPRTL_RWLOCK rwl, BYTE fWait)
+BYTE __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI RtlAcquireResourceExclusive(LPRTL_RWLOCK rwl, BYTE fWait)
 {
     BYTE retVal = 0;
 
@@ -1282,7 +1282,7 @@ BYTE WINAPI RtlAcquireResourceExclusive(LPRTL_RWLOCK rwl, BYTE fWait)
 /***********************************************************************
  *          RtlAcquireResourceShared  (NTDLL.@)
  */
-BYTE WINAPI RtlAcquireResourceShared(LPRTL_RWLOCK rwl, BYTE fWait)
+BYTE __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI RtlAcquireResourceShared(LPRTL_RWLOCK rwl, BYTE fWait)
 {
     NTSTATUS status = STATUS_UNSUCCESSFUL;
     BYTE retVal = 0;

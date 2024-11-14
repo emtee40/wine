@@ -849,11 +849,13 @@ static inline struct wined3d_device_vk *wined3d_device_vk_from_allocator(struct 
 }
 
 static inline void wined3d_device_vk_allocator_lock(struct wined3d_device_vk *device_vk)
+    __WINE_ACQUIRE(&device_vk->allocator_cs)
 {
     EnterCriticalSection(&device_vk->allocator_cs);
 }
 
 static inline void wined3d_device_vk_allocator_unlock(struct wined3d_device_vk *device_vk)
+    __WINE_RELEASE(&device_vk->allocator_cs)
 {
     LeaveCriticalSection(&device_vk->allocator_cs);
 }

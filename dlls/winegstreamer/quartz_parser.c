@@ -1876,8 +1876,8 @@ static ULONG WINAPI GST_Seeking_Release(IMediaSeeking *iface)
     return IPin_Release(&This->pin.pin.IPin_iface);
 }
 
-static HRESULT WINAPI GST_Seeking_SetPositions(IMediaSeeking *iface,
-        LONGLONG *current, DWORD current_flags, LONGLONG *stop, DWORD stop_flags)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI GST_Seeking_SetPositions(
+    IMediaSeeking *iface, LONGLONG *current, DWORD current_flags, LONGLONG *stop, DWORD stop_flags)
 {
     struct parser_source *pin = impl_from_IMediaSeeking(iface);
     struct parser *filter = impl_from_strmbase_filter(pin->pin.pin.filter);

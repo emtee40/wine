@@ -291,12 +291,12 @@ static bool wined3d_get_unused_stream_index(const struct wined3d_state *state, u
     return false;
 }
 
-static void wined3d_allocator_chunk_vk_lock(struct wined3d_allocator_chunk_vk *chunk_vk)
+static void wined3d_allocator_chunk_vk_lock(struct wined3d_allocator_chunk_vk *chunk_vk) __WINE_ACQUIRE(&wined3d_device_vk_from_allocator(chunk_vk->c.allocator)->allocator_cs)
 {
     wined3d_device_vk_allocator_lock(wined3d_device_vk_from_allocator(chunk_vk->c.allocator));
 }
 
-static void wined3d_allocator_chunk_vk_unlock(struct wined3d_allocator_chunk_vk *chunk_vk)
+static void wined3d_allocator_chunk_vk_unlock(struct wined3d_allocator_chunk_vk *chunk_vk) __WINE_RELEASE(&wined3d_device_vk_from_allocator(chunk_vk->c.allocator)->allocator_cs)
 {
     wined3d_device_vk_allocator_unlock(wined3d_device_vk_from_allocator(chunk_vk->c.allocator));
 }

@@ -3232,8 +3232,9 @@ static DWORD HTTPREQ_SetFilePointer(object_header_t *hdr, LONG lDistanceToMove, 
     return res;
 }
 
-static DWORD HTTPREQ_ReadFile(object_header_t *hdr, void *buf, DWORD size, DWORD *ret_read,
-        DWORD flags, DWORD_PTR context)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS DWORD HTTPREQ_ReadFile(object_header_t *hdr, void *buf,
+                                                               DWORD size, DWORD *ret_read,
+                                                               DWORD flags, DWORD_PTR context)
 {
     http_request_t *req = (http_request_t*)hdr;
     DWORD res = ERROR_SUCCESS, read = 0, cread, error = ERROR_SUCCESS;
@@ -3328,7 +3329,10 @@ static DWORD HTTPREQ_WriteFile(object_header_t *hdr, const void *buffer, DWORD s
     return res;
 }
 
-static DWORD HTTPREQ_QueryDataAvailable(object_header_t *hdr, DWORD *available, DWORD flags, DWORD_PTR ctx)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS DWORD HTTPREQ_QueryDataAvailable(object_header_t *hdr,
+                                                                         DWORD *available,
+                                                                         DWORD flags,
+                                                                         DWORD_PTR ctx)
 {
     http_request_t *req = (http_request_t*)hdr;
     DWORD res = ERROR_SUCCESS, avail = 0, error = ERROR_SUCCESS;

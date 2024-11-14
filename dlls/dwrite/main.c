@@ -911,16 +911,21 @@ static HRESULT WINAPI dwritefactory_CreateCustomFontFileReference(IDWriteFactory
     return create_font_file(loader, reference_key, key_size, font_file);
 }
 
-void factory_lock(IDWriteFactory7 *iface)
+static CRITICAL_SECTION *get_cs_IDWriteFactory7(IDWriteFactory7 *iface)
+    __WINE_LOCK_RETURNED(&impl_from_IDWriteFactory7(iface)->cs)
 {
     struct dwritefactory *factory = impl_from_IDWriteFactory7(iface);
-    EnterCriticalSection(&factory->cs);
+    return &factory->cs;
+};
+
+void factory_lock(IDWriteFactory7 *iface) __WINE_ACQUIRE(get_cs_IDWriteFactory7(iface))
+{
+    EnterCriticalSection(get_cs_IDWriteFactory7(iface));
 }
 
-void factory_unlock(IDWriteFactory7 *iface)
+void factory_unlock(IDWriteFactory7 *iface) __WINE_RELEASE(get_cs_IDWriteFactory7(iface))
 {
-    struct dwritefactory *factory = impl_from_IDWriteFactory7(iface);
-    LeaveCriticalSection(&factory->cs);
+    LeaveCriticalSection(get_cs_IDWriteFactory7(iface));
 }
 
 HRESULT factory_get_cached_fontface(IDWriteFactory7 *iface, IDWriteFontFile * const *font_files, UINT32 index,

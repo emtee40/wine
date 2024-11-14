@@ -181,9 +181,8 @@ static LPCWSTR ENV_FindVariable(PCWSTR var, PCWSTR name, unsigned namelen)
  *      all chars (except the null) are written and success is returned
  *      (behavior of Win2k at least)
  */
-NTSTATUS WINAPI RtlQueryEnvironmentVariable_U(PWSTR env,
-                                              PUNICODE_STRING name,
-                                              PUNICODE_STRING value)
+NTSTATUS __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI
+RtlQueryEnvironmentVariable_U( PWSTR env, PUNICODE_STRING name, PUNICODE_STRING value )
 {
     NTSTATUS    nts = STATUS_VARIABLE_NOT_FOUND;
     PCWSTR      var;
@@ -224,8 +223,9 @@ NTSTATUS WINAPI RtlQueryEnvironmentVariable_U(PWSTR env,
 /******************************************************************
  *		RtlQueryEnvironmentVariable   [NTDLL.@]
  */
-NTSTATUS WINAPI RtlQueryEnvironmentVariable( WCHAR *env, const WCHAR *name, SIZE_T namelen,
-                                             WCHAR *value, SIZE_T value_length, SIZE_T *return_length )
+NTSTATUS __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI
+RtlQueryEnvironmentVariable( WCHAR *env, const WCHAR *name, SIZE_T namelen, WCHAR *value,
+                             SIZE_T value_length, SIZE_T *return_length )
 {
     NTSTATUS nts = STATUS_VARIABLE_NOT_FOUND;
     SIZE_T len = 0;
@@ -291,7 +291,7 @@ void WINAPI RtlSetCurrentEnvironment(PWSTR new_env, PWSTR* old_env)
  *  RtlSetEnvironmentVariable		[NTDLL.@]
  */
 NTSTATUS WINAPI RtlSetEnvironmentVariable(PWSTR* penv, PUNICODE_STRING name, 
-                                          PUNICODE_STRING value)
+                                          PUNICODE_STRING value) __WINE_NO_THREAD_SAFETY_ANALYSIS
 {
     INT varlen, len, old_size;
     LPWSTR      p, env;
@@ -381,8 +381,8 @@ done:
 /******************************************************************************
  *		RtlExpandEnvironmentStrings (NTDLL.@)
  */
-NTSTATUS WINAPI RtlExpandEnvironmentStrings( const WCHAR *renv, WCHAR *src, SIZE_T src_len,
-                                             WCHAR *dst, SIZE_T count, SIZE_T *plen )
+NTSTATUS __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI RtlExpandEnvironmentStrings(
+    const WCHAR *renv, WCHAR *src, SIZE_T src_len, WCHAR *dst, SIZE_T count, SIZE_T *plen )
 {
     SIZE_T len, copy, total_size = 1;  /* 1 for terminating '\0' */
     LPCWSTR env, var;

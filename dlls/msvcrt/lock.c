@@ -22,6 +22,7 @@
 #include "wine/debug.h"
 #include "windef.h"
 #include "winbase.h"
+#include "winnt.h"
 #include "winternl.h"
 #include "msvcrt.h"
 #include "mtdll.h"
@@ -82,7 +83,8 @@ void msvcrt_init_mt_locks(void)
 /**********************************************************************
  *              _lock (MSVCRT.@)
  */
-void CDECL _lock( int locknum )
+__WINE_NO_THREAD_SAFETY_ANALYSIS
+void CDECL _lock( int locknum ) __WINE_ACQUIRE(&lock_table[locknum].crit)
 {
   TRACE( "(%d)\n", locknum );
 
@@ -111,7 +113,7 @@ void CDECL _lock( int locknum )
  *
  * NOTE: There is no error detection to make sure the lock exists and is acquired.
  */
-void CDECL _unlock( int locknum )
+void CDECL _unlock( int locknum ) __WINE_RELEASE(&lock_table[ locknum ].crit)
 {
   TRACE( "(%d)\n", locknum );
 

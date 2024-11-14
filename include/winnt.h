@@ -227,6 +227,115 @@ extern "C" {
 #define __WINE_MALLOC
 #endif
 
+/* Thread safety annotations, currently supported by Clang. */
+#define HAVE_THREAD_ANNOTATION_ATTR(a) (!defined(WINE_NO_THREAD_SAFETY_ANALYSIS) && defined( __clang__) && __has_attribute(a))
+
+/* Disable thread safety analysis for the function. This may be needed to exclude false positives for
+ * functions that use conditional locking, operate on a lock obtained from CONTAINING_RECORD,
+ * or generally operate on a lock that cannot be tracked by Clang. */
+#if HAVE_THREAD_ANNOTATION_ATTR(no_thread_safety_analysis)
+# define __WINE_NO_THREAD_SAFETY_ANALYSIS __attribute__((no_thread_safety_analysis))
+# else
+# define __WINE_NO_THREAD_SAFETY_ANALYSIS
+#endif
+
+/* Used to annotate structs that represent a lockable resource. */
+#if HAVE_THREAD_ANNOTATION_ATTR(capability)
+# define __WINE_LOCKABLE(l) __attribute__((capability(l)))
+/* Some public functions may operate on a private lock.
+ * This macro lets them declare a dummy variable that can be used by the ACQUIRE and RELEASE
+ * annotations. In such a case, the function definition should be annotated with _
+ *  _WINE_NO_THREAD_SAFETY_ANALYSIS. */
+# define WINE_DECLARE_LOCKABLE_STUB(n) extern RTL_CRITICAL_SECTION *__wine_lockable_stub_##n##__
+# define WINE_LOCKABLE_STUB(n) __wine_lockable_stub_##n##__
+#else
+# define __WINE_LOCKABLE(l)
+# define WINE_DECLARE_LOCKABLE_STUB(n)
+# define WINE_LOCKABLE_STUB(n)
+#endif
+
+/* Used for functions that will acquire the given lock without releasing it
+ * (i.e, the lock should not be held before the call, and will be held after the function returns). */
+#if HAVE_THREAD_ANNOTATION_ATTR(acquire_capability)
+# define __WINE_ACQUIRE(...) __attribute__((acquire_capability(__VA_ARGS__)))
+#else
+# define __WINE_ACQUIRE(...)
+#endif
+
+/* Used for functions that may acquire the given lock. The first argument should be the value
+ * returned when a lock was successfully acquired. */
+#if HAVE_THREAD_ANNOTATION_ATTR(try_acquire_capability)
+# define __WINE_TRY_ACQUIRE(...) __attribute__((try_acquire_capability(__VA_ARGS__)))
+#else
+# define __WINE_TRY_ACQUIRE(...)
+#endif
+
+#if HAVE_THREAD_ANNOTATION_ATTR(try_acquire_shared_capability)
+# define __WINE_TRY_ACQUIRE_SHARED(...) __attribute__((try_acquire_shared_capability(__VA_ARGS__)))
+#else
+# define __WINE_TRY_ACQUIRE_SHARED(...)
+#endif
+
+/* Used for functions that will release the given lock. */
+#if HAVE_THREAD_ANNOTATION_ATTR(release_capability)
+# define __WINE_RELEASE(...) __attribute__((release_capability(__VA_ARGS__)))
+#else
+# define __WINE_RELEASE(...)
+#endif
+
+/* The given lock will be held for the duration of the function, and therefore should not be held
+ * by the caller. */
+#if HAVE_THREAD_ANNOTATION_ATTR(locks_excluded)
+# define __WINE_EXCLUDES(...) __attribute__((locks_excluded(__VA_ARGS__)))
+#else
+# define __WINE_EXCLUDES(...)
+#endif
+
+/* The function requires that the caller hold the given lock. */
+#if HAVE_THREAD_ANNOTATION_ATTR(requires_capability)
+# define __WINE_REQUIRES(...) __attribute__((requires_capability(__VA_ARGS__)))
+#else
+# define __WINE_REQUIRES(...)
+#endif
+
+/* THe function returns the given lock. */
+#if HAVE_THREAD_ANNOTATION_ATTR(lock_returned)
+# define __WINE_LOCK_RETURNED(l) __attribute__((lock_returned(l)))
+#else
+# define __WINE_LOCK_RETURNED(l)
+#endif
+
+/* Access to this variable is guarded by the given lock. */
+#if HAVE_THREAD_ANNOTATION_ATTR(guarded_by)
+# define __WINE_GUARDED_BY(l) __attribute__((guarded_by((l))))
+#else
+# define __WINE_GUARDED_BY(l)
+#endif
+
+/* Access to the data this pointer points to is guarded by the given lock.
+ * There's no restriction on the variable itself. */
+#if HAVE_THREAD_ANNOTATION_ATTR(pt_guarded_by)
+# define __WINE_PT_GUARDED_BY(l) __attribute__((pt_guarded_by((l))))
+#else
+# define __WINE_PT_GUARDED_BY(l)
+#endif
+
+/* (pt_)guarded_by attributes are only currently supported for global variables and non-static class members
+ * in Clang. These macros allow us to declare (and then define) a dummy stub function for Clang corresponding
+ * to a struct field containing a lock-able type. Struct fields guarded by that lock should use the
+ * __WINE_FIELD_(PT_)GUARDED_BY macros. */
+#if HAVE_THREAD_ANNOTATION_ATTR(lock_returned) && HAVE_THREAD_ANNOTATION_ATTR(guarded_by) && HAVE_THREAD_ANNOTATION_ATTR(pt_guarded_by)
+# define WINE_DECLARE_LOCK_FIELD_STUB(s, t, f) t *__wine_thread_safety_analysis_stub_##s##_##f(void *)
+# define WINE_DEFINE_LOCK_FIELD_STUB(s, t, f) t *__wine_thread_safety_analysis_stub_##s##_##f(void *__v__) __WINE_LOCK_RETURNED(&((struct s *)__v__)->f)
+# define __WINE_FIELD_GUARDED_BY(s, f) __attribute__((guarded_by((__wine_thread_safety_analysis_stub_##s##_##f)(NULL))))
+# define __WINE_FIELD_PT_GUARDED_BY(s, f) __attribute__((pt_guarded_by((__wine_thread_safety_analysis_stub_##s##_##f)(NULL))))
+#else
+# define WINE_DECLARE_LOCK_FIELD_STUB(s, t, f)
+# define WINE_DEFINE_LOCK_FIELD_STUB(s, t, f)
+# define __WINE_FIELD_GUARDED_BY(s, f)
+# define __WINE_FIELD_PT_GUARDED_BY(s, f)
+#endif
+
 /* Anonymous union/struct handling */
 
 #undef DUMMYSTRUCTNAME
@@ -6170,7 +6279,7 @@ typedef struct _RTL_CRITICAL_SECTION_DEBUG
 #endif
 } RTL_CRITICAL_SECTION_DEBUG, *PRTL_CRITICAL_SECTION_DEBUG, RTL_RESOURCE_DEBUG, *PRTL_RESOURCE_DEBUG;
 
-typedef struct _RTL_CRITICAL_SECTION {
+typedef struct __WINE_LOCKABLE("RTL_CRITICAL_SECTION") _RTL_CRITICAL_SECTION {
     PRTL_CRITICAL_SECTION_DEBUG DebugInfo;
     LONG LockCount;
     LONG RecursionCount;

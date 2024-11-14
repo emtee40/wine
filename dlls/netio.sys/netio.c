@@ -133,12 +133,12 @@ static NTSTATUS sock_error_to_ntstatus(DWORD err)
     }
 }
 
-static inline void lock_socket(struct wsk_socket_internal *socket)
+static inline void lock_socket(struct wsk_socket_internal *socket) __WINE_ACQUIRE(&socket->cs_socket)
 {
     EnterCriticalSection(&socket->cs_socket);
 }
 
-static inline void unlock_socket(struct wsk_socket_internal *socket)
+static inline void unlock_socket(struct wsk_socket_internal *socket) __WINE_RELEASE(&socket->cs_socket)
 {
     LeaveCriticalSection(&socket->cs_socket);
 }

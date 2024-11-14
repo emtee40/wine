@@ -418,7 +418,7 @@ static inline void init_ioinfo_cs(ioinfo *info)
     }
 }
 
-static inline ioinfo* get_ioinfo(int fd)
+static inline __WINE_NO_THREAD_SAFETY_ANALYSIS ioinfo* get_ioinfo(int fd)
 {
     ioinfo *ret = get_ioinfo_nolock(fd);
     if(ret == &MSVCRT___badioinfo)
@@ -482,7 +482,7 @@ static inline ioinfo* get_ioinfo_alloc_fd(int fd)
     return get_ioinfo(fd);
 }
 
-static inline ioinfo* get_ioinfo_alloc(int *fd)
+static inline __WINE_NO_THREAD_SAFETY_ANALYSIS ioinfo *get_ioinfo_alloc(int *fd)
 {
     int i;
 
@@ -515,7 +515,7 @@ static inline ioinfo* get_ioinfo_alloc(int *fd)
     return &MSVCRT___badioinfo;
 }
 
-static inline void release_ioinfo(ioinfo *info)
+static inline __WINE_NO_THREAD_SAFETY_ANALYSIS void release_ioinfo(ioinfo *info)
 {
     if(info!=&MSVCRT___badioinfo && ioinfo_is_crit_init(info))
         LeaveCriticalSection(&info->crit);
@@ -1500,7 +1500,7 @@ __msvcrt_long CDECL _lseek(int fd, __msvcrt_long offset, int whence)
 /*********************************************************************
  *              _lock_file (MSVCRT.@)
  */
-void CDECL _lock_file(FILE *file)
+void CDECL __WINE_NO_THREAD_SAFETY_ANALYSIS _lock_file(FILE *file) __WINE_ACQUIRE(file_get_cs(file))
 {
     CRITICAL_SECTION *cs = file_get_cs(file);
     if (!cs)
@@ -1512,7 +1512,7 @@ void CDECL _lock_file(FILE *file)
 /*********************************************************************
  *              _unlock_file (MSVCRT.@)
  */
-void CDECL _unlock_file(FILE *file)
+void CDECL __WINE_NO_THREAD_SAFETY_ANALYSIS _unlock_file(FILE *file) __WINE_RELEASE(file_get_cs(file))
 {
     CRITICAL_SECTION *cs = file_get_cs(file);
     if (!cs)

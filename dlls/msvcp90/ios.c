@@ -1363,7 +1363,10 @@ DEFINE_THISCALL_WRAPPER(basic_streambuf_char__Lock, 4)
 #else
 #define call_basic_streambuf_char__Lock(this) basic_streambuf_char__Lock(this)
 #endif
-void __thiscall basic_streambuf_char__Lock(basic_streambuf_char *this)
+void __thiscall basic_streambuf_char__Lock( basic_streambuf_char *this )
+#if _MSVCP_VER >= 70 && _MSVCP_VER <= 100
+__WINE_ACQUIRE(&this->lock)
+#endif
 {
     TRACE("(%p)\n", this);
 #if _MSVCP_VER >= 70 && _MSVCP_VER <= 100
@@ -1492,6 +1495,9 @@ DEFINE_THISCALL_WRAPPER(basic_streambuf_char__Unlock, 4)
 #define call_basic_streambuf_char__Unlock(this) basic_streambuf_char__Unlock(this)
 #endif
 void __thiscall basic_streambuf_char__Unlock(basic_streambuf_char *this)
+#if _MSVCP_VER >= 70 && _MSVCP_VER <= 100
+    __WINE_RELEASE(&this->lock)
+#endif
 {
     TRACE("(%p)\n", this);
 #if _MSVCP_VER >= 70 && _MSVCP_VER <= 100
@@ -2255,6 +2261,9 @@ void __thiscall basic_streambuf_wchar__Init(basic_streambuf_wchar *this, wchar_t
 /* ?_Lock@?$basic_streambuf@GU?$char_traits@G@std@@@std@@QEAAXXZ */
 DEFINE_THISCALL_WRAPPER(basic_streambuf_wchar__Lock, 4)
 void __thiscall basic_streambuf_wchar__Lock(basic_streambuf_wchar *this)
+#if _MSVCP_VER >= 70 && _MSVCP_VER <= 100
+   __WINE_ACQUIRE(&this->lock)
+#endif
 {
     TRACE("(%p)\n", this);
 #if _MSVCP_VER >= 70 && _MSVCP_VER <= 100
@@ -2392,6 +2401,9 @@ streamsize __thiscall basic_streambuf_wchar__Sgetn_s(basic_streambuf_wchar *this
 /* ?_Unlock@?$basic_streambuf@GU?$char_traits@G@std@@@std@@QEAAXXZ */
 DEFINE_THISCALL_WRAPPER(basic_streambuf_wchar__Unlock, 4)
 void __thiscall basic_streambuf_wchar__Unlock(basic_streambuf_wchar *this)
+#if _MSVCP_VER >= 70 && _MSVCP_VER <= 100
+__WINE_RELEASE(&this->lock)
+#endif
 {
     TRACE("(%p)\n", this);
 #if _MSVCP_VER >= 70 && _MSVCP_VER <= 100
@@ -6422,7 +6434,7 @@ void __thiscall basic_ostream_char_osfx(basic_ostream_char *this)
     basic_ostream_char__Osfx(this);
 }
 
-static BOOL basic_ostream_char_sentry_create(basic_ostream_char *ostr)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS BOOL basic_ostream_char_sentry_create(basic_ostream_char *ostr)
 {
     basic_ios_char *base = basic_ostream_char_get_basic_ios(ostr);
 
@@ -6435,7 +6447,7 @@ static BOOL basic_ostream_char_sentry_create(basic_ostream_char *ostr)
     return ios_base_good(&base->base);
 }
 
-static void basic_ostream_char_sentry_destroy(basic_ostream_char *ostr)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS void basic_ostream_char_sentry_destroy(basic_ostream_char *ostr)
 {
     basic_ios_char *base = basic_ostream_char_get_basic_ios(ostr);
 
@@ -7284,7 +7296,7 @@ void __thiscall basic_ostream_wchar_osfx(basic_ostream_wchar *this)
     basic_ostream_wchar__Osfx(this);
 }
 
-static BOOL basic_ostream_wchar_sentry_create(basic_ostream_wchar *ostr)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS BOOL basic_ostream_wchar_sentry_create(basic_ostream_wchar *ostr)
 {
     basic_ios_wchar *base = basic_ostream_wchar_get_basic_ios(ostr);
 
@@ -7297,7 +7309,7 @@ static BOOL basic_ostream_wchar_sentry_create(basic_ostream_wchar *ostr)
     return ios_base_good(&base->base);
 }
 
-static void basic_ostream_wchar_sentry_destroy(basic_ostream_wchar *ostr)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS void basic_ostream_wchar_sentry_destroy(basic_ostream_wchar *ostr)
 {
     basic_ios_wchar *base = basic_ostream_wchar_get_basic_ios(ostr);
 
@@ -8322,7 +8334,7 @@ void __thiscall basic_istream_char_isfx(basic_istream_char *this)
     TRACE("(%p)\n", this);
 }
 
-static BOOL basic_istream_char_sentry_create(basic_istream_char *istr, bool noskip)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS BOOL basic_istream_char_sentry_create(basic_istream_char *istr, bool noskip)
 {
     basic_ios_char *base = basic_istream_char_get_basic_ios(istr);
 
@@ -8332,7 +8344,7 @@ static BOOL basic_istream_char_sentry_create(basic_istream_char *istr, bool nosk
     return basic_istream_char_ipfx(istr, noskip);
 }
 
-static void basic_istream_char_sentry_destroy(basic_istream_char *istr)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS void basic_istream_char_sentry_destroy(basic_istream_char *istr)
 {
     basic_ios_char *base = basic_istream_char_get_basic_ios(istr);
 
@@ -9849,7 +9861,7 @@ void __thiscall basic_istream_wchar_isfx(basic_istream_wchar *this)
     TRACE("(%p)\n", this);
 }
 
-static BOOL basic_istream_wchar_sentry_create(basic_istream_wchar *istr, bool noskip)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS  BOOL basic_istream_wchar_sentry_create(basic_istream_wchar *istr, bool noskip)
 {
     basic_ios_wchar *base = basic_istream_wchar_get_basic_ios(istr);
 
@@ -9859,7 +9871,7 @@ static BOOL basic_istream_wchar_sentry_create(basic_istream_wchar *istr, bool no
     return basic_istream_wchar_ipfx(istr, noskip);
 }
 
-static void basic_istream_wchar_sentry_destroy(basic_istream_wchar *istr)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS  void basic_istream_wchar_sentry_destroy(basic_istream_wchar *istr)
 {
     basic_ios_wchar *base = basic_istream_wchar_get_basic_ios(istr);
 

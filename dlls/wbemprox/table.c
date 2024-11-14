@@ -352,7 +352,8 @@ void free_table( struct table *table )
     free( table );
 }
 
-void release_table( struct table *table )
+void __WINE_NO_THREAD_SAFETY_ANALYSIS release_table( struct table *table )
+    __WINE_EXCLUDES(&table_list_cs)
 {
     if (!--table->refs)
     {

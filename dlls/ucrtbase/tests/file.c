@@ -102,6 +102,7 @@ static void test_iobuf_layout(void)
     } fp;
     char *tempf, *ptr, **file_ptr, **file_base;
     int cnt, r, *file_cnt;
+    BOOL ret;
 
     tempf = _tempnam(".","wne");
     fp.f = fopen(tempf, "wb");
@@ -133,8 +134,9 @@ static void test_iobuf_layout(void)
     ok(!r, "setvbuf returned %d\n", r);
     ok(fp.iobuf->_flag & 0x400, "fp.iobuf->_flag = %x\n", fp.iobuf->_flag);
 
-    ok(TryEnterCriticalSection(&fp.iobuf->_crit), "TryEnterCriticalSection section returned FALSE\n");
-    LeaveCriticalSection(&fp.iobuf->_crit);
+    ret = TryEnterCriticalSection(&fp.iobuf->_crit);
+    ok(ret, "TryEnterCriticalSection section returned FALSE\n");
+    if (ret) LeaveCriticalSection(&fp.iobuf->_crit);
 
     fclose(fp.f);
     unlink(tempf);

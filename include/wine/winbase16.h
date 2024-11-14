@@ -427,9 +427,9 @@ VOID        WINAPI _CheckNotSysLevel(SYSLEVEL *lock);
 DWORD       WINAPI _ConfirmSysLevel(SYSLEVEL*);
 DWORD       WINAPI _ConfirmWin16Lock(void);
 VOID        WINAPI _CreateSysLevel(SYSLEVEL*,INT);
-VOID        WINAPI _EnterSysLevel(SYSLEVEL*);
+VOID        WINAPI _EnterSysLevel(SYSLEVEL*lvl) __WINE_ACQUIRE(&lvl->crst);
 VOID        WINAPI _EnterWin16Lock(void);
-VOID        WINAPI _LeaveSysLevel(SYSLEVEL*);
+VOID        WINAPI _LeaveSysLevel(SYSLEVEL*lvl) __WINE_RELEASE(&lvl->crst);
 VOID        WINAPI _LeaveWin16Lock(void);
 
 

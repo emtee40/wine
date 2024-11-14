@@ -439,7 +439,7 @@ void WINAPI KeInitializeGuardedMutex(PKGUARDED_MUTEX mutex)
     KeInitializeEvent(&mutex->Event, SynchronizationEvent, FALSE);
 }
 
-static void CALLBACK ke_timer_complete_proc(PTP_CALLBACK_INSTANCE instance, void *timer_, PTP_TIMER tp_timer)
+static void CALLBACK ke_timer_complete_proc(PTP_CALLBACK_INSTANCE instance, void *timer_, PTP_TIMER tp_timer) __WINE_EXCLUDES(&sync_cs)
 {
     KTIMER *timer = timer_;
     KDPC *dpc = timer->Dpc;

@@ -3317,13 +3317,15 @@ static void wined3d_cs_wait_event(struct wined3d_cs *cs)
         NtWaitForSingleObject(cs->event, FALSE, timeout);
 }
 
-static void wined3d_cs_command_lock(const struct wined3d_cs *cs)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS void wined3d_cs_command_lock(const struct wined3d_cs *cs)
+    __WINE_ACQUIRE(&wined3d_command_cs)
 {
     if (cs->serialize_commands)
         EnterCriticalSection(&wined3d_command_cs);
 }
 
-static void wined3d_cs_command_unlock(const struct wined3d_cs *cs)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS void wined3d_cs_command_unlock( const struct wined3d_cs *cs )
+    __WINE_RELEASE(&wined3d_command_cs)
 {
     if (cs->serialize_commands)
         LeaveCriticalSection(&wined3d_command_cs);

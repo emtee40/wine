@@ -894,21 +894,25 @@ static inline struct wined3d_device_gl *wined3d_device_gl_from_allocator(struct 
 }
 
 static inline void wined3d_device_gl_allocator_lock(struct wined3d_device_gl *device_gl)
+    __WINE_ACQUIRE(&device_gl->allocator_cs)
 {
     EnterCriticalSection(&device_gl->allocator_cs);
 }
 
 static inline void wined3d_device_gl_allocator_unlock(struct wined3d_device_gl *device_gl)
+    __WINE_RELEASE(&device_gl->allocator_cs)
 {
     LeaveCriticalSection(&device_gl->allocator_cs);
 }
 
 static inline void wined3d_allocator_chunk_gl_lock(struct wined3d_allocator_chunk_gl *chunk_gl)
+    __WINE_ACQUIRE(&wined3d_device_gl_from_allocator(chunk_gl->c.allocator)->allocator_cs)
 {
     wined3d_device_gl_allocator_lock(wined3d_device_gl_from_allocator(chunk_gl->c.allocator));
 }
 
 static inline void wined3d_allocator_chunk_gl_unlock(struct wined3d_allocator_chunk_gl *chunk_gl)
+    __WINE_RELEASE(&wined3d_device_gl_from_allocator(chunk_gl->c.allocator)->allocator_cs)
 {
     wined3d_device_gl_allocator_unlock(wined3d_device_gl_from_allocator(chunk_gl->c.allocator));
 }

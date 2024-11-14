@@ -148,7 +148,7 @@ static BOOL CRYPT_CollectionAddContext(WINE_COLLECTIONSTORE *store,
  */
 static context_t *CRYPT_CollectionAdvanceEnum(WINE_COLLECTIONSTORE *store,
  WINE_STORE_LIST_ENTRY *storeEntry, const CONTEXT_FUNCS *contextFuncs,
- context_t *prev)
+ context_t *prev) __WINE_REQUIRES(&store->cs)
 {
     context_t *child, *ret;
     struct list *storeNext = list_next(&store->stores, &storeEntry->entry);

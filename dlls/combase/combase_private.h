@@ -217,6 +217,7 @@ struct ifstub
 };
 
 /* stub managers hold refs on the object and each interface stub */
+WINE_DECLARE_LOCK_FIELD_STUB(stub_manager, CRITICAL_SECTION, lock);
 struct stub_manager
 {
     struct list       entry;      /* entry in apartment stubmgr list (CS apt->cs) */
@@ -224,7 +225,8 @@ struct stub_manager
     CRITICAL_SECTION  lock;
     struct apartment *apt;        /* owning apt (RO) */
 
-    ULONG             extrefs;    /* number of 'external' references (CS lock) */
+    /* number of 'external' references (CS lock) */
+    ULONG             extrefs __WINE_FIELD_GUARDED_BY(stub_manager, lock);
     ULONG             refs;       /* internal reference count (CS apt->cs) */
     ULONG             weakrefs;   /* number of weak references (CS lock) */
     OID               oid;        /* apartment-scoped unique identifier (RO) */
@@ -239,23 +241,24 @@ struct stub_manager
      * that these counts do NOT include unmarshalled interfaces, once a stream is
      * unmarshalled and a proxy set up, this count is decremented.
      */
-
-    ULONG             norm_refs;  /* refcount of normal marshals (CS lock) */
+    /* refcount of normal marshals (CS lock) */
+    ULONG             norm_refs __WINE_FIELD_GUARDED_BY(stub_manager, lock);
     BOOL              disconnected; /* CoDisconnectObject has been called (CS lock) */
 };
+WINE_DEFINE_LOCK_FIELD_STUB(stub_manager, CRITICAL_SECTION, lock);
 
-ULONG stub_manager_int_release(struct stub_manager *stub_manager);
-struct stub_manager * get_stub_manager_from_object(struct apartment *apt, IUnknown *object, BOOL alloc);
-void stub_manager_disconnect(struct stub_manager *m);
-ULONG stub_manager_ext_addref(struct stub_manager *m, ULONG refs, BOOL tableweak);
-ULONG stub_manager_ext_release(struct stub_manager *m, ULONG refs, BOOL tableweak, BOOL last_unlock_releases);
-struct stub_manager * get_stub_manager(struct apartment *apt, OID oid);
-void stub_manager_release_marshal_data(struct stub_manager *m, ULONG refs, const IPID *ipid, BOOL tableweak);
-BOOL stub_manager_is_table_marshaled(struct stub_manager *m, const IPID *ipid);
-BOOL stub_manager_notify_unmarshal(struct stub_manager *m, const IPID *ipid);
-struct ifstub * stub_manager_find_ifstub(struct stub_manager *m, REFIID iid, MSHLFLAGS flags);
+ULONG stub_manager_int_release(struct stub_manager *stub_manager) __WINE_EXCLUDES(&stub_manager->apt->cs);
+struct stub_manager * get_stub_manager_from_object(struct apartment *apt, IUnknown *object, BOOL alloc) __WINE_EXCLUDES(&apt->cs);
+void stub_manager_disconnect(struct stub_manager *m) __WINE_EXCLUDES(&m->lock);
+ULONG stub_manager_ext_addref(struct stub_manager *m, ULONG refs, BOOL tableweak) __WINE_EXCLUDES(&m->lock);
+ULONG stub_manager_ext_release(struct stub_manager *m, ULONG refs, BOOL tableweak, BOOL last_unlock_releases) __WINE_EXCLUDES(&m->lock);
+struct stub_manager * get_stub_manager(struct apartment *apt, OID oid) __WINE_EXCLUDES(&apt->cs);
+void stub_manager_release_marshal_data(struct stub_manager *m, ULONG refs, const IPID *ipid, BOOL tableweak) __WINE_EXCLUDES(&m->lock);
+BOOL stub_manager_is_table_marshaled(struct stub_manager *m, const IPID *ipid) __WINE_EXCLUDES(&m->lock);
+BOOL stub_manager_notify_unmarshal(struct stub_manager *m, const IPID *ipid) __WINE_EXCLUDES(&m->lock);
+struct ifstub * stub_manager_find_ifstub(struct stub_manager *m, REFIID iid, MSHLFLAGS flags) __WINE_EXCLUDES(&m->lock);
 struct ifstub * stub_manager_new_ifstub(struct stub_manager *m, IRpcStubBuffer *sb, REFIID iid, DWORD dest_context,
-    void *dest_context_data, MSHLFLAGS flags);
+    void *dest_context_data, MSHLFLAGS flags) __WINE_EXCLUDES(&m->lock);
 HRESULT ipid_get_dispatch_params(const IPID *ipid, struct apartment **stub_apt,
         struct stub_manager **manager, IRpcStubBuffer **stub, IRpcChannelBuffer **chan,
         IID *iid, IUnknown **iface);

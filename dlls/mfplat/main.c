@@ -436,7 +436,7 @@ static HRESULT WINAPI transform_activate_SetUnknown(IMFActivate *iface, REFGUID 
     return attributes_SetUnknown(&activate->attributes, key, unknown);
 }
 
-static HRESULT WINAPI transform_activate_LockStore(IMFActivate *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI transform_activate_LockStore(IMFActivate *iface)
 {
     struct transform_activate *activate = impl_from_IMFActivate(iface);
 
@@ -445,7 +445,7 @@ static HRESULT WINAPI transform_activate_LockStore(IMFActivate *iface)
     return attributes_LockStore(&activate->attributes);
 }
 
-static HRESULT WINAPI transform_activate_UnlockStore(IMFActivate *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI transform_activate_UnlockStore(IMFActivate *iface)
 {
     struct transform_activate *activate = impl_from_IMFActivate(iface);
 
@@ -454,7 +454,7 @@ static HRESULT WINAPI transform_activate_UnlockStore(IMFActivate *iface)
     return attributes_UnlockStore(&activate->attributes);
 }
 
-static HRESULT WINAPI transform_activate_GetCount(IMFActivate *iface, UINT32 *count)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI transform_activate_GetCount(IMFActivate *iface, UINT32 *count)
 {
     struct transform_activate *activate = impl_from_IMFActivate(iface);
 
@@ -2939,14 +2939,14 @@ HRESULT attributes_SetUnknown(struct attributes *attributes, REFGUID key, IUnkno
     return attributes_set_item(attributes, key, &attrval);
 }
 
-HRESULT attributes_LockStore(struct attributes *attributes)
+HRESULT __WINE_NO_THREAD_SAFETY_ANALYSIS attributes_LockStore(struct attributes *attributes) __WINE_ACQUIRE(&attributes->cs)
 {
     EnterCriticalSection(&attributes->cs);
 
     return S_OK;
 }
 
-HRESULT attributes_UnlockStore(struct attributes *attributes)
+HRESULT __WINE_NO_THREAD_SAFETY_ANALYSIS attributes_UnlockStore(struct attributes *attributes) __WINE_RELEASE(&attributes->cs)
 {
     LeaveCriticalSection(&attributes->cs);
 
@@ -3235,7 +3235,7 @@ static HRESULT WINAPI mfattributes_SetUnknown(IMFAttributes *iface, REFGUID key,
     return attributes_SetUnknown(attributes, key, unknown);
 }
 
-static HRESULT WINAPI mfattributes_LockStore(IMFAttributes *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI mfattributes_LockStore(IMFAttributes *iface)
 {
     struct attributes *attributes = impl_from_IMFAttributes(iface);
 
@@ -3244,7 +3244,7 @@ static HRESULT WINAPI mfattributes_LockStore(IMFAttributes *iface)
     return attributes_LockStore(attributes);
 }
 
-static HRESULT WINAPI mfattributes_UnlockStore(IMFAttributes *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI mfattributes_UnlockStore(IMFAttributes *iface)
 {
     struct attributes *attributes = impl_from_IMFAttributes(iface);
 
@@ -7097,7 +7097,7 @@ static HRESULT WINAPI mfmediaevent_SetUnknown(IMFMediaEvent *iface, REFGUID key,
     return attributes_SetUnknown(&event->attributes, key, unknown);
 }
 
-static HRESULT WINAPI mfmediaevent_LockStore(IMFMediaEvent *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI mfmediaevent_LockStore(IMFMediaEvent *iface)
 {
     struct media_event *event = impl_from_IMFMediaEvent(iface);
 
@@ -7106,7 +7106,7 @@ static HRESULT WINAPI mfmediaevent_LockStore(IMFMediaEvent *iface)
     return attributes_LockStore(&event->attributes);
 }
 
-static HRESULT WINAPI mfmediaevent_UnlockStore(IMFMediaEvent *iface)
+static __WINE_NO_THREAD_SAFETY_ANALYSIS HRESULT WINAPI mfmediaevent_UnlockStore(IMFMediaEvent *iface)
 {
     struct media_event *event = impl_from_IMFMediaEvent(iface);
 

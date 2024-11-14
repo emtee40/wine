@@ -2040,7 +2040,8 @@ NTSTATUS WINAPI LdrUnregisterDllNotification( void *cookie )
  * Note: some flags are not implemented.
  * Flag 0x01 is used to raise exceptions on errors.
  */
-NTSTATUS WINAPI LdrLockLoaderLock( ULONG flags, ULONG *result, ULONG_PTR *magic )
+NTSTATUS __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI LdrLockLoaderLock( ULONG flags, ULONG *result,
+                                                                    ULONG_PTR *magic )
 {
     if (flags & ~0x2) FIXME( "flags %lx not supported\n", flags );
 
@@ -2072,7 +2073,7 @@ NTSTATUS WINAPI LdrLockLoaderLock( ULONG flags, ULONG *result, ULONG_PTR *magic 
 /******************************************************************
  *		LdrUnlockLoaderUnlock  (NTDLL.@)
  */
-NTSTATUS WINAPI LdrUnlockLoaderLock( ULONG flags, ULONG_PTR magic )
+NTSTATUS __WINE_NO_THREAD_SAFETY_ANALYSIS WINAPI LdrUnlockLoaderLock( ULONG flags, ULONG_PTR magic )
 {
     if (magic)
     {
@@ -4277,7 +4278,7 @@ static void (WINAPI *pWow64LdrpInitialize)( CONTEXT *ctx );
 
 void (WINAPI *pWow64PrepareForException)( EXCEPTION_RECORD *rec, CONTEXT *context ) = NULL;
 
-static void init_wow64( CONTEXT *context )
+static void init_wow64( CONTEXT *context ) __WINE_RELEASE(&loader_section)
 {
     if (!imports_fixup_done)
     {
@@ -4386,7 +4387,7 @@ static void release_address_space(void)
  * Attach to all the loaded dlls.
  * If this is the first time, perform the full process initialization.
  */
-void loader_init( CONTEXT *context, void **entry )
+void __WINE_NO_THREAD_SAFETY_ANALYSIS loader_init( CONTEXT *context, void **entry ) __WINE_EXCLUDES(&loader_section)
 {
     static int attach_done;
     NTSTATUS status;

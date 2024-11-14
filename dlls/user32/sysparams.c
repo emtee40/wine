@@ -133,7 +133,7 @@ static void SYSPARAMS_NonClientMetrics32ATo32W( const NONCLIENTMETRICSA* lpnm32A
 
 /* Helper functions to retrieve monitors info */
 
-HDC get_display_dc(void)
+HDC get_display_dc(void) __WINE_ACQUIRE(&display_dc_section)
 {
     EnterCriticalSection( &display_dc_section );
     if (!display_dc)
@@ -151,7 +151,7 @@ HDC get_display_dc(void)
     return display_dc;
 }
 
-void release_display_dc( HDC hdc )
+void release_display_dc( HDC hdc ) __WINE_RELEASE(&display_dc_section)
 {
     LeaveCriticalSection( &display_dc_section );
 }

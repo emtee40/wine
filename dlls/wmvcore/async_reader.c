@@ -243,6 +243,7 @@ static DWORD async_reader_get_wait_timeout(struct async_reader *reader, QWORD pt
 }
 
 static bool async_reader_wait_pts(struct async_reader *reader, QWORD pts)
+    __WINE_REQUIRES(&reader->callback_cs)
 {
     IWMReaderCallbackAdvanced *callback_advanced = reader->callback_advanced;
     DWORD timeout;
@@ -268,6 +269,7 @@ static bool async_reader_wait_pts(struct async_reader *reader, QWORD pts)
 }
 
 static void async_reader_deliver_sample(struct async_reader *reader, struct sample *sample)
+    __WINE_REQUIRES(&reader->callback_cs)
 {
     IWMReaderCallbackAdvanced *callback_advanced = reader->callback_advanced;
     IWMReaderCallback *callback = reader->callback;
@@ -296,7 +298,7 @@ static void async_reader_deliver_sample(struct async_reader *reader, struct samp
     INSSBuffer_Release(sample->buffer);
 }
 
-static void callback_thread_run(struct async_reader *reader)
+static void callback_thread_run(struct async_reader *reader) __WINE_REQUIRES(&reader->callback_cs)
 {
     IWMReaderCallbackAdvanced *callback_advanced = reader->callback_advanced;
     IWMReaderCallback *callback = reader->callback;

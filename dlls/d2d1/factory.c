@@ -1306,22 +1306,27 @@ static BOOL STDMETHODCALLTYPE d2d_factory_mt_GetMultithreadProtected(ID2D1Multit
     return TRUE;
 }
 
-static void STDMETHODCALLTYPE d2d_factory_mt_Enter(ID2D1Multithread *iface)
+static CRITICAL_SECTION *get_cs_ID2D1Multithread(ID2D1Multithread *iface)
+    __WINE_LOCK_RETURNED(&impl_from_ID2D1Multithread(iface)->cs)
 {
     struct d2d_factory *factory = impl_from_ID2D1Multithread(iface);
+    return &factory->cs;
+}
 
+static void STDMETHODCALLTYPE d2d_factory_mt_Enter(ID2D1Multithread *iface)
+    __WINE_ACQUIRE( get_cs_ID2D1Multithread(iface))
+{
     TRACE("%p.\n", iface);
 
-    EnterCriticalSection(&factory->cs);
+    EnterCriticalSection(get_cs_ID2D1Multithread(iface));
 }
 
 static void STDMETHODCALLTYPE d2d_factory_mt_Leave(ID2D1Multithread *iface)
+    __WINE_RELEASE(get_cs_ID2D1Multithread(iface))
 {
-    struct d2d_factory *factory = impl_from_ID2D1Multithread(iface);
-
     TRACE("%p.\n", iface);
 
-    LeaveCriticalSection(&factory->cs);
+    LeaveCriticalSection(get_cs_ID2D1Multithread(iface));
 }
 
 static BOOL STDMETHODCALLTYPE d2d_factory_st_GetMultithreadProtected(ID2D1Multithread *iface)
