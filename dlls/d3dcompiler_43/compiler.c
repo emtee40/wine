@@ -457,7 +457,7 @@ HRESULT WINAPI D3DCompile2(const void *data, SIZE_T data_size, const char *filen
     struct d3dcompiler_include_from_file include_from_file;
     struct vkd3d_shader_preprocess_info preprocess_info;
     struct vkd3d_shader_hlsl_source_info hlsl_info;
-    struct vkd3d_shader_compile_option options[6];
+    struct vkd3d_shader_compile_option options[7];
     struct vkd3d_shader_compile_info compile_info;
     struct vkd3d_shader_compile_option *option;
     struct vkd3d_shader_code byte_code;
@@ -529,6 +529,13 @@ HRESULT WINAPI D3DCompile2(const void *data, SIZE_T data_size, const char *filen
     hlsl_info.entry_point = entry_point;
     hlsl_info.secondary_code.code = secondary_data;
     hlsl_info.secondary_code.size = secondary_data_size;
+
+    if (D3D_COMPILER_VERSION < 42)
+    {
+        option = &options[compile_info.option_count++];
+        option->name = VKD3D_SHADER_COMPILE_OPTION_WARN_IMPLICIT_TRUNCATION;
+        option->value = false;
+    }
 
     if (!(flags & D3DCOMPILE_DEBUG))
     {
