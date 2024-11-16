@@ -748,6 +748,8 @@ void CRYPT_ImportSystemRootCertsToReg(void)
     if (root_certs_imported)
         return;
 
+    root_certs_imported = TRUE;
+
     hsem = CreateSemaphoreW( NULL, 0, 1, L"crypt32_root_semaphore");
     if (!hsem)
     {
@@ -787,7 +789,6 @@ done:
     RegCloseKey(key);
     CertCloseStore(store, 0);
     CertCloseStore(reg, 0);
-    root_certs_imported = TRUE;
     ReleaseSemaphore(hsem, 1, NULL);
     CloseHandle(hsem);
 }
