@@ -32,6 +32,7 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(dwmapi);
 
+static int get_display_frequency(void);
 
 /**********************************************************************
  *           DwmIsCompositionEnabled         (DWMAPI.@)
@@ -88,9 +89,26 @@ HRESULT WINAPI DwmGetColorizationColor(DWORD *colorization, BOOL *opaque_blend)
  */
 HRESULT WINAPI DwmFlush(void)
 {
+    static volatile LONG last_time;
     static BOOL once;
+    DWORD now, interval, last = last_time, target;
+    int freq;
 
-    if (!once++) FIXME("() stub\n");
+    if (!once++) FIXME("() semi-stub\n");
+
+    // simulate the WaitForVBlank-like blocking behavior
+    freq = get_display_frequency();
+    interval = 1000 / freq;
+    now = GetTickCount();
+    if (now - last < interval)
+        target = last + interval;
+    else
+    {
+        // act as if we were called midway between 2 vsyncs
+        target = now + interval / 2;
+    }
+    Sleep(target - now);
+    InterlockedCompareExchange(&last_time, target, last);
 
     return S_OK;
 }
@@ -184,9 +202,9 @@ HRESULT WINAPI DwmEnableBlurBehindWindow(HWND hWnd, const DWM_BLURBEHIND *pBlurB
  */
 BOOL WINAPI DwmDefWindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam, LRESULT *plResult)
 {
-    static int i;
+    static BOOL once;
 
-    if (!i++) FIXME("stub\n");
+    if (!once++) FIXME("stub\n");
 
     return FALSE;
 }
@@ -262,7 +280,8 @@ static int get_display_frequency(void)
     }
     else
     {
-        WARN("Failed to query display frequency, returning a fallback value.\n");
+        static BOOL once;
+        if (!once++) WARN("Failed to query display frequency, returning a fallback value.\n");
         return 60;
     }
 }
@@ -273,7 +292,8 @@ static int get_display_frequency(void)
 HRESULT WINAPI DwmGetCompositionTimingInfo(HWND hwnd, DWM_TIMING_INFO *info)
 {
     LARGE_INTEGER performance_frequency, qpc;
-    static int i, display_frequency;
+    int display_frequency;
+    static BOOL once;
 
     if (!info)
         return E_INVALIDARG;
@@ -281,7 +301,7 @@ HRESULT WINAPI DwmGetCompositionTimingInfo(HWND hwnd, DWM_TIMING_INFO *info)
     if (info->cbSize != sizeof(DWM_TIMING_INFO))
         return MILERR_MISMATCHED_SIZE;
 
-    if(!i++) FIXME("(%p %p)\n", hwnd, info);
+    if (!once++) FIXME("(%p %p)\n", hwnd, info);
 
     memset(info, 0, info->cbSize);
     info->cbSize = sizeof(DWM_TIMING_INFO);
