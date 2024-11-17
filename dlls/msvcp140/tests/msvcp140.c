@@ -1712,11 +1712,11 @@ static void test__Fiopen(void)
         int is_todo;
     } tests[] = {
         { "German.utf8",    "t\xc3\xa4\xc3\x8f\xc3\xb6\xc3\x9f.txt", TRUE },
-        { "Polish.utf8",    "t\xc4\x99\xc5\x9b\xc4\x87.txt", TRUE },
-        { "Turkish.utf8",   "t\xc3\x87\xc4\x9e\xc4\xb1\xc4\xb0\xc5\x9e.txt", TRUE },
-        { "Arabic.utf8",    "t\xd8\xaa\xda\x86.txt", TRUE },
-        { "Japanese.utf8",  "t\xe3\x82\xaf\xe3\x83\xa4.txt", TRUE },
-        { "Chinese.utf8",   "t\xe4\xb8\x82\xe9\xbd\xab.txt", TRUE },
+        { "Polish.utf8",    "t\xc4\x99\xc5\x9b\xc4\x87.txt" },
+        { "Turkish.utf8",   "t\xc3\x87\xc4\x9e\xc4\xb1\xc4\xb0\xc5\x9e.txt" },
+        { "Arabic.utf8",    "t\xd8\xaa\xda\x86.txt" },
+        { "Japanese.utf8",  "t\xe3\x82\xaf\xe3\x83\xa4.txt" },
+        { "Chinese.utf8",   "t\xe4\xb8\x82\xe9\xbd\xab.txt" },
     };
 
     for(i=0; i<ARRAY_SIZE(tests); i++) {

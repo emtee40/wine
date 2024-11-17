@@ -60,6 +60,8 @@ int MSVCRT_app_type = 0;
 char* MSVCRT__pgmptr = NULL;
 WCHAR* MSVCRT__wpgmptr = NULL;
 
+unsigned int CDECL ___lc_codepage_func(void);
+
 static char **build_argv( WCHAR **wargv )
 {
     int argc;
@@ -299,12 +301,18 @@ int CDECL _get_osplatform(int *pValue)
 /* INTERNAL: Create a wide string from an ascii string */
 wchar_t *msvcrt_wstrdupa(const char *str)
 {
-  const unsigned int len = strlen(str) + 1 ;
-  wchar_t *wstr = malloc(len* sizeof (wchar_t));
-  if (!wstr)
-    return NULL;
-   MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED,str,len,wstr,len);
-  return wstr;
+    const unsigned int len = strlen(str) + 1 ;
+    wchar_t *wstr = malloc(len*sizeof (wchar_t));
+    if(!wstr)
+        return NULL;
+
+#if _MSVCR_VER >= 140
+    MultiByteToWideChar(___lc_codepage_func() == CP_UTF8 ? CP_UTF8 : CP_ACP,
+                        MB_PRECOMPOSED,str,len,wstr,len);
+#else
+    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED,str,len,wstr,len);
+#endif
+    return wstr;
 }
 
 /*********************************************************************
