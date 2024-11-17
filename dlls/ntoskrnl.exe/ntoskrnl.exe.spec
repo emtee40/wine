@@ -1055,7 +1055,7 @@
 @ stdcall RtlDeleteAce(ptr long)
 @ stdcall RtlDeleteAtomFromAtomTable(ptr long)
 @ stub RtlDeleteElementGenericTable
-@ stub RtlDeleteElementGenericTableAvl
+@ stdcall RtlDeleteElementGenericTableAvl(ptr ptr)
 @ stub RtlDeleteNoSplay
 @ stub RtlDeleteOwnersRanges
 @ stub RtlDeleteRange
@@ -1071,7 +1071,7 @@
 @ stdcall -arch=win32 RtlEnlargedUnsignedDivide(int64 long ptr)
 @ stdcall -arch=win32 -ret64 RtlEnlargedUnsignedMultiply(long long)
 @ stub RtlEnumerateGenericTable
-@ stub RtlEnumerateGenericTableAvl
+@ stdcall RtlEnumerateGenericTableAvl(ptr long)
 @ stub RtlEnumerateGenericTableLikeADirectory
 @ stdcall RtlEnumerateGenericTableWithoutSplaying(ptr ptr)
 @ stdcall RtlEnumerateGenericTableWithoutSplayingAvl(ptr ptr)
@@ -1116,7 +1116,7 @@
 @ stdcall RtlGetDaclSecurityDescriptor(ptr ptr ptr ptr)
 @ stub RtlGetDefaultCodePage
 @ stdcall RtlGetElementGenericTable(ptr long)
-@ stub RtlGetElementGenericTableAvl
+@ stdcall RtlGetElementGenericTableAvl(ptr long)
 @ stdcall RtlGetExtendedContextLength(long ptr)
 @ stdcall RtlGetExtendedContextLength2(long ptr int64)
 @ stub RtlGetFirstRange

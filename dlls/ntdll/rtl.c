@@ -1028,7 +1028,7 @@ void WINAPI RtlRbRemoveNode( RTL_RB_TREE *tree, RTL_BALANCED_NODE *node )
 void WINAPI RtlInitializeGenericTableAvl(PRTL_AVL_TABLE table, PRTL_AVL_COMPARE_ROUTINE compare,
                                          PRTL_AVL_ALLOCATE_ROUTINE allocate, PRTL_AVL_FREE_ROUTINE free, void *context)
 {
-    FIXME("%p %p %p %p %p: stub\n", table, compare, allocate, free, context);
+    FIXME("(%p, %p, %p, %p, %p): stub\n", table, compare, allocate, free, context);
 }
 
 /******************************************************************************
@@ -1055,9 +1055,55 @@ ULONG WINAPI RtlNumberGenericTableElementsAvl(RTL_AVL_TABLE *table)
 /***********************************************************************
  *           RtlInsertElementGenericTableAvl  (NTDLL.@)
  */
-void WINAPI RtlInsertElementGenericTableAvl(PRTL_AVL_TABLE table, void *buffer, ULONG size, BOOL *element)
+void * WINAPI RtlInsertElementGenericTableAvl(PRTL_AVL_TABLE table, void *buffer, ULONG size, BOOLEAN *element)
 {
-    FIXME("%p %p %lu %p: stub\n", table, buffer, size, element);
+    FIXME("(%p, %p, %lu, %p): stub\n", table, buffer, size, element);
+    return NULL;
+}
+
+/***********************************************************************
+ *           RtlGetElementGenericTableAvl  (NTDLL.@)
+ */
+void * WINAPI RtlGetElementGenericTableAvl(PRTL_AVL_TABLE table, ULONG index)
+{
+    FIXME("(%p, %lu): stub\n", table, index);
+    return NULL;
+}
+
+/***********************************************************************
+ *           RtlLookupElementGenericTableAvl  (NTDLL.@)
+ */
+void * WINAPI RtlLookupElementGenericTableAvl(PRTL_AVL_TABLE table, void *buffer)
+{
+    FIXME("(%p, %p): stub\n", table, buffer);
+    return NULL;
+}
+
+/***********************************************************************
+ *           RtlDeleteElementGenericTableAvl  (NTDLL.@)
+ */
+BOOLEAN WINAPI RtlDeleteElementGenericTableAvl(PRTL_AVL_TABLE table, void *buffer)
+{
+    FIXME("(%p, %p): stub\n", table, buffer);
+    return FALSE;
+}
+
+/***********************************************************************
+ *           RtlEnumerateGenericTableAvl  (NTDLL.@)
+ */
+void * WINAPI RtlEnumerateGenericTableAvl(PRTL_AVL_TABLE table, BOOLEAN restart)
+{
+    FIXME("(%p, %s): stub\n", table, restart ? "TRUE" : "FALSE");
+    return NULL;
+}
+
+/***********************************************************************
+ *           RtlNumberGenericTableElementsAvl  (NTDLL.@)
+ */
+ULONG WINAPI RtlNumberGenericTableElementsAvl(PRTL_AVL_TABLE table)
+{
+    FIXME("(%p): stub\n", table);
+    return 0UL;
 }
 
 /******************************************************************************
