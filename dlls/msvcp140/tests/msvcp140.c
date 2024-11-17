@@ -1709,9 +1709,8 @@ static void test__Fiopen(void)
     static const struct {
         const char *loc;
         const char *path;
-        int is_todo;
     } tests[] = {
-        { "German.utf8",    "t\xc3\xa4\xc3\x8f\xc3\xb6\xc3\x9f.txt", TRUE },
+        { "German.utf8",    "t\xc3\xa4\xc3\x8f\xc3\xb6\xc3\x9f.txt" },
         { "Polish.utf8",    "t\xc4\x99\xc5\x9b\xc4\x87.txt" },
         { "Turkish.utf8",   "t\xc3\x87\xc4\x9e\xc4\xb1\xc4\xb0\xc5\x9e.txt" },
         { "Arabic.utf8",    "t\xd8\xaa\xda\x86.txt" },
@@ -1736,9 +1735,8 @@ static void test__Fiopen(void)
         p_fclose(f);
 
         f = p__Fiopen_wchar(wpath, OPENMODE_in, SH_DENYNO);
-        todo_wine_if(tests[i].is_todo)
         ok(!!f, "failed to open %s with locale %s\n", wine_dbgstr_w(wpath), tests[i].loc);
-        if(f) p_fclose(f);
+        p_fclose(f);
 
         p__unlink(tests[i].path);
     }
