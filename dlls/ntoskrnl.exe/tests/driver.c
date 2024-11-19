@@ -2007,6 +2007,7 @@ static void test_affinity(void)
     void (WINAPI *pKeRevertToUserAffinityThreadEx)(KAFFINITY affinity);
     ULONG (WINAPI *pKeQueryActiveProcessorCountEx)(USHORT);
     KAFFINITY (WINAPI *pKeQueryActiveProcessors)(void);
+    CCHAR *pKeNumberProcessors;
     KAFFINITY mask, mask_all_cpus;
     ULONG cpu_count, count;
 
@@ -2026,6 +2027,9 @@ static void test_affinity(void)
     pKeRevertToUserAffinityThreadEx = get_proc_address("KeRevertToUserAffinityThreadEx");
     ok(!!pKeRevertToUserAffinityThreadEx, "KeRevertToUserAffinityThreadEx is not available.\n");
 
+    pKeNumberProcessors = get_proc_address("KeNumberProcessors");
+    ok(!!pKeNumberProcessors, "KeNumberProcessors is not available.\n");
+
     count = pKeQueryActiveProcessorCountEx(1);
     ok(!count, "Got unexpected count %lu.\n", count);
 
@@ -2034,6 +2038,11 @@ static void test_affinity(void)
 
     count = pKeQueryActiveProcessorCountEx(ALL_PROCESSOR_GROUPS);
     ok(count == cpu_count, "Got unexpected count %lu.\n", count);
+
+    if(count >= 64)
+        ok(*pKeNumberProcessors == 64, "Got unexpected count %lu.\n", count);
+    else
+        ok(*pKeNumberProcessors == cpu_count, "Got unexpected count %lu.\n", count);
 
     if (cpu_count >= 8 * sizeof(KAFFINITY))
         mask_all_cpus = ~(KAFFINITY)0;
