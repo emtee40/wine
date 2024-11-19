@@ -1169,6 +1169,18 @@ static struct inode *get_inode( dev_t dev, ino_t ino, int unix_fd )
     return inode;
 }
 
+static int inode_has_pending_close( struct inode *inode, const char *path )
+{
+    struct fd *fd;
+
+    LIST_FOR_EACH_ENTRY( fd, &inode->closed, struct fd, inode_entry )
+    {
+        if (fd->closed && !strcmp( fd->closed->unix_name, path ))
+            return 1;
+    }
+    return 0;
+}
+
 /* add fd to the inode list of file descriptors to close */
 static void inode_add_closed_fd( struct inode *inode, struct closed_fd *fd )
 {
@@ -1185,7 +1197,7 @@ static void inode_add_closed_fd( struct inode *inode, struct closed_fd *fd )
         free( fd->unix_name );
         free( fd );
     }
-    else if (fd->disp_flags & FILE_DISPOSITION_DELETE)
+    else if ((fd->disp_flags & FILE_DISPOSITION_DELETE) && !inode_has_pending_close( inode, fd->unix_name ))
     {
         /* close the fd but keep the structure around for unlink */
         if (fd->unix_fd != -1) close( fd->unix_fd );
