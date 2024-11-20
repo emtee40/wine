@@ -1279,6 +1279,13 @@ int __cdecl main(int argc, char *argv[])
     JOBOBJECT_ASSOCIATE_COMPLETION_PORT port_info;
     HANDLE started_event, process_monitor_thread;
     DWORD err;
+    NTSTATUS status;
+
+    /* FIXME: Until we start honoring each service's lpServiceStartName, we want
+       services to inherit a default admin token. */
+    status = NtSetInformationProcess( GetCurrentProcess(), ProcessWineSetAdminToken, NULL, 0 );
+    if (status)
+        WARN( "couldn't set admin token, error %08lx\n", status );
 
     job_object = CreateJobObjectW(NULL, NULL);
     job_limit.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_BREAKAWAY_OK | JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK;

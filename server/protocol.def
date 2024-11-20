@@ -3296,6 +3296,13 @@ enum caret_state
 @END
 
 
+/* Create a new primary admin token with Default elevation. */
+@REQ(create_primary_admin_token)
+@REPLY
+    obj_handle_t   token;    /* handle to the token */
+@END
+
+
 /* Open a security token */
 @REQ(open_token)
     obj_handle_t   handle;    /* handle to the thread or process */
@@ -3753,7 +3760,8 @@ typedef union
     unsigned int   session_id;    /* token session id */
     int            primary;       /* is the token primary or impersonation? */
     int            impersonation_level; /* level of impersonation */
-    int            elevation;     /* elevation type */
+    int            elevation_type; /* elevation type (TokenElevation*) */
+    int            is_elevated;   /* is the token elevated as per GetTokenInformation(TokenElevation)? */
     int            group_count;   /* the number of groups the token is a member of */
     int            privilege_count; /* the number of privileges the token has */
 @END

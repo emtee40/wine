@@ -28,6 +28,7 @@
 #include "winbase.h"
 #include "winerror.h"
 #include "winternl.h"
+#include "winuser.h"
 #include "aclapi.h"
 #include "winnt.h"
 #include "sddl.h"
@@ -8571,6 +8572,42 @@ static void test_elevation(void)
     CloseHandle(token);
 }
 
+static void test_admin_elevation(void)
+{
+    /* Tokens with elevation type TokenElevationTypeDefault should still come
+       back as elevated from a TokenElevation query if they belong to the admin
+       group. The owner of the desktop window should have such a token. */
+    DWORD tid, pid;
+    HANDLE hproc, htok;
+    TOKEN_ELEVATION_TYPE elevation_type;
+    TOKEN_ELEVATION elevation;
+    DWORD size;
+    BOOL ret;
+
+    tid = GetWindowThreadProcessId(GetDesktopWindow(), &pid);
+    ok(tid, "got error %lu\n", GetLastError());
+
+    hproc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+    ok(hproc != NULL, "got error %lu\n", GetLastError());
+
+    ret = OpenProcessToken(hproc, TOKEN_READ, &htok);
+    ok(ret, "got error %lu\n", GetLastError());
+
+    CloseHandle(hproc);
+
+    size = sizeof(elevation_type);
+    ret = GetTokenInformation(htok, TokenElevationType, &elevation_type, size, &size);
+    ok(ret, "got error %lu\n", GetLastError());
+    ok(elevation_type == TokenElevationTypeDefault, "unexpected elevation type %d\n", elevation_type);
+
+    size = sizeof(elevation);
+    ret = GetTokenInformation(htok, TokenElevation, &elevation, size, &size);
+    ok(ret, "got error %lu\n", GetLastError());
+    ok(elevation.TokenIsElevated, "expected token to be elevated\n");
+
+    CloseHandle(htok);
+}
+
 static void test_group_as_file_owner(void)
 {
     char sd_buffer[200], sid_buffer[100];
@@ -8717,6 +8754,7 @@ START_TEST(security)
     test_AccessCheck();
     test_token_attr();
     test_GetTokenInformation();
+    test_admin_elevation();
     test_LookupAccountSid();
     test_LookupAccountName();
     test_security_descriptor();
