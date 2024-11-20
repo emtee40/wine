@@ -983,7 +983,32 @@ HRESULT WINAPI ConvertINetMultiByteToUnicode(
     default:
         if (*pcSrcSize == -1)
             *pcSrcSize = lstrlenA(pSrcStr);
-
+        if (*pcSrcSize)
+        {
+            int cursor = 0;
+            CPINFOEXA info = { 0 };
+            GetCPInfoExA(dwEncoding, 0, &info);
+            if (info.CodePage == 932 || info.CodePage == 936 ||
+                info.CodePage == 949 || info.CodePage == 950 ||
+                info.CodePage == 1361 || dwEncoding == 932 ||
+                dwEncoding == 936 || dwEncoding == 949 ||
+                dwEncoding == 950 || dwEncoding == 1361)
+            {
+                while (cursor < *pcSrcSize)
+                {
+                    if (IsDBCSLeadByte(pSrcStr[cursor]))
+                    {
+                        cursor++;
+                        if (cursor >= *pcSrcSize)
+                        {
+                            *pcSrcSize = cursor - 1;
+                            break;
+                        }
+                    }
+                    cursor++;
+                }
+            }
+        }
         if (pDstStr)
             *pcDstSize = MultiByteToWideChar(dwEncoding, 0, pSrcStr, *pcSrcSize, pDstStr, *pcDstSize);
         else
