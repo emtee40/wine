@@ -3,6 +3,9 @@ IMPORTS = combase uuid
 
 SOURCES = \
 	access.c \
+	async.c \
+	async.idl \
 	classes.idl \
+	collection.c \
 	event_handlers.c \
-	main.c
+	main.c \

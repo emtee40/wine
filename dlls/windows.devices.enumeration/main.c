@@ -333,11 +333,27 @@ static HRESULT WINAPI device_statics_CreateFromIdAsyncAdditionalProperties( IDev
     return E_NOTIMPL;
 }
 
+static HRESULT WINAPI findall_async( IUnknown *invoker, IUnknown *param, PROPVARIANT *result )
+{
+    HRESULT hr;
+    IVectorView_DeviceInformation *view;
+
+    FIXME( "invoker %p, param %p, result %p semi-stub!\n", invoker, param, result );
+
+    hr = vectorview_deviceinformation_create( &view );
+    if (SUCCEEDED( hr ))
+    {
+        result->vt = VT_UNKNOWN;
+        result->punkVal = (IUnknown *)view;
+    }
+    return hr;
+}
+
 static HRESULT WINAPI device_statics_FindAllAsync( IDeviceInformationStatics *iface,
                                                    IAsyncOperation_DeviceInformationCollection **op )
 {
-    FIXME( "iface %p, op %p stub!\n", iface, op );
-    return E_NOTIMPL;
+    TRACE( "iface %p, op %p\n", iface, op );
+    return async_operation_device_info_collection_result_create( (IUnknown *)iface, NULL, findall_async, op );
 }
 
 static HRESULT WINAPI device_statics_FindAllAsyncDeviceClass( IDeviceInformationStatics *iface, DeviceClass class,

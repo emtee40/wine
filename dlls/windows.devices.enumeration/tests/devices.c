@@ -472,11 +472,11 @@ static void test_DeviceInformation( void )
     IDeviceWatcher_Release( device_watcher );
 
     hr = IDeviceInformationStatics_FindAllAsync( device_info_statics, &infocollection_async );
-    todo_wine ok( SUCCEEDED( hr ), "got %#lx\n", hr );
+    ok( SUCCEEDED( hr ), "got %#lx\n", hr );
     if (infocollection_async)
     {
-        todo_wine await_deviceinformationcollection( infocollection_async );
-        todo_wine check_deviceinformationcollection_async( infocollection_async, 1, Completed, S_OK, &info_collection );
+        await_deviceinformationcollection( infocollection_async );
+        check_deviceinformationcollection_async( infocollection_async, 1, Completed, S_OK, &info_collection );
         IAsyncOperation_DeviceInformationCollection_Release( infocollection_async );
     }
     if (info_collection)
