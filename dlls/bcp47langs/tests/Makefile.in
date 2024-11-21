@@ -1,0 +1,6 @@
+TESTDLL = bcp47langs.dll
+IMPORTS = bcp47langs msvcrt combase
+
+SOURCES = \
+	bcp47langs.c
+
