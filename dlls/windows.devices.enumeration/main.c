@@ -333,11 +333,144 @@ static HRESULT WINAPI device_statics_CreateFromIdAsyncAdditionalProperties( IDev
     return E_NOTIMPL;
 }
 
+static HRESULT WINAPI findall_async( IUnknown *invoker, IUnknown *param, PROPVARIANT *result )
+{
+    IDeviceInformation **devices = NULL;
+    HKEY iface_key;
+    HRESULT hr = S_OK;
+    SIZE_T devices_len = 0;
+    DWORD i;
+
+    TRACE( "invoker %p, param %p, result %p\n", invoker, param, result );
+
+    iface_key =
+        SetupDiOpenClassRegKeyExW( NULL, KEY_ENUMERATE_SUB_KEYS, DIOCR_INTERFACE, NULL, NULL );
+    if (!iface_key)
+        return HRESULT_FROM_WIN32( GetLastError() );
+    for (i = 0;SUCCEEDED( hr );i++)
+    {
+        WCHAR keyName[40];
+        DWORD keylen = 40;
+        GUID iface_class;
+        LSTATUS ret;
+        HDEVINFO devinfo;
+        DWORD j;
+
+        ret = RegEnumKeyExW( iface_key, i, keyName, &keylen, NULL, NULL, NULL, NULL );
+        if (ret == ERROR_NO_MORE_ITEMS)
+            break;
+        else if (ret)
+        {
+            hr = HRESULT_FROM_WIN32( ret );
+            break;
+        }
+        hr = CLSIDFromString( keyName, &iface_class );
+        if (FAILED( hr ))
+        {
+            ERR( "Could not parse interface GUID string %s: %#lx\n", debugstr_w( keyName ), hr );
+            continue;
+        }
+
+        devinfo = SetupDiGetClassDevsW( &iface_class, NULL, NULL, DIGCF_DEVICEINTERFACE );
+        if (devinfo == INVALID_HANDLE_VALUE)
+        {
+            DWORD err = GetLastError();
+            ERR( "Could not get device list for interface %s: %lu\n", debugstr_guid( &iface_class ), err );
+            hr = HRESULT_FROM_WIN32( err );
+            break;
+        }
+
+        for (j = 0; ;j++)
+        {
+
+            SP_DEVICE_INTERFACE_DATA iface_data = {0};
+            SP_DEVICE_INTERFACE_DETAIL_DATA_W *iface_detail_data;
+            SIZE_T size =
+                offsetof( SP_DEVICE_INTERFACE_DETAIL_DATA_W, DevicePath[MAX_PATH + 1] );
+            void *addr;
+            BOOL success;
+            IDeviceInformation *info;
+
+            iface_data.cbSize = sizeof( iface_data );
+            iface_detail_data = malloc( size );
+            if (!iface_detail_data)
+            {
+
+                hr = E_OUTOFMEMORY;
+                break;
+            }
+            iface_detail_data->cbSize = sizeof( *iface_detail_data );
+
+            success = SetupDiEnumDeviceInterfaces( devinfo, NULL, &iface_class, j,
+                                                   &iface_data );
+            if (!success)
+            {
+
+                DWORD err = GetLastError();
+                free( iface_detail_data );
+
+                if (err == ERROR_NO_MORE_ITEMS)
+                    break;
+                ERR( "Could not enumerate device interfaces: %lu\n", err );
+                    hr = HRESULT_FROM_WIN32( err );
+                    break;
+            }
+
+            success = SetupDiGetDeviceInterfaceDetailW( devinfo, &iface_data, iface_detail_data,
+                                                        size, NULL, NULL );
+            if (!success)
+            {
+
+                DWORD err = GetLastError();
+                free( iface_detail_data );
+                ERR( "Could not get interface details for %s: %lu\n",
+                     debugstr_guid( &iface_class ), err );
+                hr = HRESULT_FROM_WIN32( err );
+                    break;
+            }
+
+            hr = deviceinformation_iface_create( iface_detail_data, &info );
+            free( iface_detail_data );
+            if (FAILED( hr ))
+                break;
+
+            addr = realloc( devices, sizeof( *devices ) * (devices_len + 1) );
+            if (!addr)
+            {
+                IDeviceInformation_Release( info );
+                hr = E_OUTOFMEMORY;
+                break;
+            }
+            devices = addr;
+            devices[devices_len++] = info;
+        }
+    }
+
+    if (SUCCEEDED( hr ))
+    {
+        IVectorView_DeviceInformation *view;
+        hr = vectorview_deviceinformation_create( devices, devices_len, &view );
+        if (SUCCEEDED( hr ))
+        {
+            result->vt = VT_UNKNOWN;
+            result->punkVal = (IUnknown *)view;
+        }
+    }
+    else
+    {
+        while (devices_len--)
+            IDeviceInformation_Release( devices[devices_len] );
+        free( devices );
+    }
+    RegCloseKey( iface_key );
+    return hr;
+}
+
 static HRESULT WINAPI device_statics_FindAllAsync( IDeviceInformationStatics *iface,
                                                    IAsyncOperation_DeviceInformationCollection **op )
 {
-    FIXME( "iface %p, op %p stub!\n", iface, op );
-    return E_NOTIMPL;
+    TRACE( "iface %p, op %p\n", iface, op );
+    return async_operation_device_info_collection_result_create( (IUnknown *)iface, NULL, findall_async, op );
 }
 
 static HRESULT WINAPI device_statics_FindAllAsyncDeviceClass( IDeviceInformationStatics *iface, DeviceClass class,
