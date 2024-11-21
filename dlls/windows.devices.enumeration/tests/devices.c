@@ -342,6 +342,8 @@ static void test_DeviceInformation( void )
     DeviceWatcherStatus status = 0xdeadbeef;
     IAsyncOperation_DeviceInformationCollection *infocollection_async = NULL;
     IVectorView_DeviceInformation *info_collection = NULL;
+    IIterable_DeviceInformation *info_iterable = NULL;
+    IIterator_DeviceInformation *info_iterator = NULL;
     ULONG ref;
     HSTRING str;
     HRESULT hr;
@@ -549,7 +551,37 @@ static void test_DeviceInformation( void )
             free( devices );
         }
 
+        hr = IVectorView_DeviceInformation_QueryInterface(
+            info_collection, &IID_IIterable_DeviceInformation, (void **)&info_iterable );
         IVectorView_DeviceInformation_Release( info_collection );
+        todo_wine ok( SUCCEEDED( hr ), "got hr %#lx\n", hr );
+    }
+    if (info_iterable)
+    {
+        hr = IIterable_DeviceInformation_First( info_iterable, &info_iterator );
+        todo_wine ok( SUCCEEDED( hr ), "got hr %#lx\n", hr );
+        IIterable_DeviceInformation_Release( info_iterable );
+    }
+    if (info_iterator)
+    {
+        boolean exists;
+
+        hr = IIterator_DeviceInformation_get_HasCurrent( info_iterator, &exists );
+        todo_wine ok( SUCCEEDED( hr ), "got hr %#lx\n", hr );
+        while (SUCCEEDED( hr ) && exists)
+        {
+            IDeviceInformation *info;
+
+            hr = IIterator_DeviceInformation_get_Current( info_iterator, &info );
+            todo_wine ok( SUCCEEDED( hr ), "got hr %#lx\n", hr );
+            if (FAILED( hr )) break;
+            test_DeviceInformation_obj( __LINE__, info );
+            IDeviceInformation_Release( info );
+            hr = IIterator_DeviceInformation_MoveNext( info_iterator, &exists );
+            ok( SUCCEEDED( hr ), "got hr %#lx\n", hr );
+        }
+
+        IIterator_DeviceInformation_Release( info_iterator );
     }
 
     IDeviceInformationStatics_Release( device_info_statics );
