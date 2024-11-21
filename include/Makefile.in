@@ -748,6 +748,7 @@ SOURCES = \
 	strmif.idl \
 	strongname.h \
 	strsafe.h \
+	structuredquery.idl \
 	structuredquerycondition.idl \
 	svrapi.h \
 	synchapi.h \
