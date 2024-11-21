@@ -77,7 +77,7 @@ static void test_IPropertySet(void)
     }
 
     hr = IPropertySet_QueryInterface( propset, &IID_IMap_HSTRING_IInspectable, (void **)&map );
-    todo_wine ok( SUCCEEDED( hr ), "QueryInterface failed, got %#lx\n", hr );
+    ok( SUCCEEDED( hr ), "QueryInterface failed, got %#lx\n", hr );
     if (FAILED( hr ))
     {
         RoUninitialize();
