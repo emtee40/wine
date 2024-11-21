@@ -50,7 +50,10 @@ typedef HRESULT (WINAPI *async_operation_callback)( IUnknown *invoker, IUnknown 
 extern HRESULT async_operation_device_info_collection_result_create(
     IUnknown *invoker, IUnknown *param, async_operation_callback callback,
     IAsyncOperation_DeviceInformationCollection **out );
-extern HRESULT vectorview_deviceinformation_create( IVectorView_DeviceInformation **view );
+extern HRESULT vectorview_deviceinformation_create( IDeviceInformation **devices, SIZE_T len,
+                                                    IVectorView_DeviceInformation **view );
+extern HRESULT deviceinformation_iface_create( IDeviceInformation **info );
+
 #define DEFINE_IINSPECTABLE_( pfx, iface_type, impl_type, impl_from, iface_mem, expr )             \
     static inline impl_type *impl_from( iface_type *iface )                                        \
     {                                                                                              \

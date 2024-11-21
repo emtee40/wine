@@ -8,4 +8,5 @@ SOURCES = \
 	classes.idl \
 	collection.c \
 	event_handlers.c \
+	information.c \
 	main.c \

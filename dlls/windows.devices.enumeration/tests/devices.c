@@ -485,7 +485,7 @@ static void test_DeviceInformation( void )
         IDeviceInformation **devices;
 
         hr = IVectorView_DeviceInformation_get_Size( info_collection, &size );
-        todo_wine ok( SUCCEEDED( hr ), "got %#lx\n", hr );
+        ok( SUCCEEDED( hr ), "got %#lx\n", hr );
         for (idx = 0; idx < size ;idx++)
         {
             IDeviceInformation *info;
@@ -497,10 +497,10 @@ static void test_DeviceInformation( void )
                 UINT32 idx2 = 0;
                 boolean found = FALSE;
 
-                test_DeviceInformation_obj(__LINE__, info);
+                todo_wine test_DeviceInformation_obj(__LINE__, info);
                 IDeviceInformation_Release( info );
                 hr = IVectorView_DeviceInformation_IndexOf( info_collection, info, &idx2, &found );
-                ok( SUCCEEDED( hr ), "got %#lx\n", hr );
+                todo_wine ok( SUCCEEDED( hr ), "got %#lx\n", hr );
                 if (SUCCEEDED( hr ))
                 {
                     ok( found, "Expected IndexOf to return true\n" );

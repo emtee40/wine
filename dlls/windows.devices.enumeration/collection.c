@@ -27,6 +27,10 @@ WINE_DEFAULT_DEBUG_CHANNEL(enumeration);
 struct vectorview_DeviceInformation
 {
     IVectorView_DeviceInformation IVectorView_DeviceInformation_iface;
+
+    IDeviceInformation **devices;
+    SIZE_T len;
+
     LONG ref;
 };
 
@@ -76,7 +80,12 @@ static ULONG STDMETHODCALLTYPE vectorview_DeviceInformation_Release( IVectorView
     impl = impl_from_IVectorView_DeviceInformation( iface );
     ref = InterlockedDecrement( &impl->ref );
     if (!ref)
+    {
+        while (impl->len--)
+            IDeviceInformation_Release( impl->devices[impl->len] );
+        free( impl->devices );
         free( impl );
+    }
     return ref;
 }
 
@@ -105,15 +114,29 @@ static HRESULT STDMETHODCALLTYPE vectorview_DeviceInformation_GetTrustLevel( IVe
 static HRESULT STDMETHODCALLTYPE vectorview_DeviceInformation_GetAt( IVectorView_DeviceInformation *iface, UINT32 index,
                                                                      IDeviceInformation **value )
 {
-    FIXME( "(%p, %u, %p) stub!\n", iface, index, value );
-    return E_NOTIMPL;
+    struct vectorview_DeviceInformation *impl;
+
+    TRACE( "(%p, %u, %p)\n", iface, index, value );
+
+    impl = impl_from_IVectorView_DeviceInformation( iface );
+    *value = NULL;
+    if (index >= impl->len)
+        return E_BOUNDS;
+    *value = impl->devices[index];
+    IDeviceInformation_AddRef( *value );
+    return S_OK;
 }
 
 static HRESULT STDMETHODCALLTYPE vectorview_DeviceInformation_get_Size( IVectorView_DeviceInformation *iface,
                                                                         UINT32 *value )
 {
-    FIXME( "(%p, %p) stub!\n", iface, value );
-    return E_NOTIMPL;
+    struct vectorview_DeviceInformation *impl;
+
+    TRACE( "(%p, %p)\n", iface, value );
+
+    impl = impl_from_IVectorView_DeviceInformation( iface );
+    *value = impl->len;
+    return S_OK;
 }
 
 static HRESULT STDMETHODCALLTYPE vectorview_DeviceInformation_IndexOf( IVectorView_DeviceInformation *iface,
@@ -128,7 +151,7 @@ static HRESULT STDMETHODCALLTYPE vectorview_DeviceInformation_GetMany( IVectorVi
                                                                        UINT32 start, UINT32 size,
                                                                        IDeviceInformation **items, UINT32 *copied )
 {
-    FIXME( "(%p, %u, %u, %p, %p): stub!\n", iface, start, size, items, copied );
+    FIXME( "(%p, %u, %u, %p, %p) stub!\n", iface, start, size, items, copied );
     return E_NOTIMPL;
 }
 
@@ -149,7 +172,8 @@ const static IVectorView_DeviceInformationVtbl vectorview_DeviceInformation_vtbl
     vectorview_DeviceInformation_GetMany
 };
 
-HRESULT vectorview_deviceinformation_create( IVectorView_DeviceInformation **view )
+HRESULT vectorview_deviceinformation_create( IDeviceInformation **devices, SIZE_T len,
+                                             IVectorView_DeviceInformation **view )
 {
     struct vectorview_DeviceInformation *impl;
 
@@ -158,6 +182,8 @@ HRESULT vectorview_deviceinformation_create( IVectorView_DeviceInformation **vie
         return E_OUTOFMEMORY;
 
     impl->IVectorView_DeviceInformation_iface.lpVtbl = &vectorview_DeviceInformation_vtbl;
+    impl->devices = devices;
+    impl->len = len;
     impl->ref = 1;
     *view = &impl->IVectorView_DeviceInformation_iface;
     return S_OK;

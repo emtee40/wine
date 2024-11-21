@@ -335,16 +335,33 @@ static HRESULT WINAPI device_statics_CreateFromIdAsyncAdditionalProperties( IDev
 
 static HRESULT WINAPI findall_async( IUnknown *invoker, IUnknown *param, PROPVARIANT *result )
 {
-    HRESULT hr;
+    IDeviceInformation **devices;
     IVectorView_DeviceInformation *view;
+    HRESULT hr = S_OK;
 
     FIXME( "invoker %p, param %p, result %p semi-stub!\n", invoker, param, result );
 
-    hr = vectorview_deviceinformation_create( &view );
+    devices = calloc( 1, sizeof( *devices ) );
+    if (!devices)
+        return E_OUTOFMEMORY;
+
+    hr = deviceinformation_iface_create( &devices[0] );
+    if (FAILED( hr ))
+    {
+        free( devices );
+        return hr;
+    }
+
+    hr = vectorview_deviceinformation_create( devices, 1, &view );
     if (SUCCEEDED( hr ))
     {
         result->vt = VT_UNKNOWN;
         result->punkVal = (IUnknown *)view;
+    }
+    else
+    {
+        IDeviceInformation_Release( devices[0] );
+        free( devices );
     }
     return hr;
 }
