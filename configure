@@ -22520,6 +22520,7 @@ wine_fn_config_makefile dlls/msvcrtd/tests enable_tests
 wine_fn_config_makefile dlls/msvfw32 enable_msvfw32
 wine_fn_config_makefile dlls/msvfw32/tests enable_tests
 wine_fn_config_makefile dlls/msvidc32 enable_msvidc32
+wine_fn_config_makefile dlls/msvidc32/tests enable_tests
 wine_fn_config_makefile dlls/msvideo.dll16 enable_win16
 wine_fn_config_makefile dlls/msvproc enable_msvproc
 wine_fn_config_makefile dlls/mswsock enable_mswsock
