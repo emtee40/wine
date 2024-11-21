@@ -20,6 +20,8 @@
 #include "private.h"
 
 #include <roapi.h>
+#include <setupapi.h>
+#include <cfgmgr32.h>
 
 #include <wine/debug.h>
 #include <wine/rbtree.h>
@@ -30,6 +32,10 @@ WINE_DEFAULT_DEBUG_CHANNEL(enumeration);
 struct devinfo_DeviceInterface
 {
     IDeviceInformation IDeviceInformation_iface;
+
+    WCHAR instance_id[MAX_DEVICE_ID_LEN];
+
+    HSTRING path;
     LONG ref;
 };
 
@@ -78,7 +84,10 @@ static ULONG STDMETHODCALLTYPE devinfo_DeviceInterface_Release( IDeviceInformati
     impl = impl_DeviceInterface_from_IDeviceInformation( iface );
     ref = InterlockedDecrement( &impl->ref );
     if (!ref)
+    {
+        WindowsDeleteString( impl->path );
         free( impl );
+    }
 
     return ref;
 }
@@ -108,8 +117,12 @@ static HRESULT STDMETHODCALLTYPE device_information_GetTrustLevel(
 
 static HRESULT STDMETHODCALLTYPE devinfo_DeviceInterface_get_Id( IDeviceInformation *iface, HSTRING *id )
 {
-    FIXME( "(%p, %p) stub!\n", iface, id );
-    return E_NOTIMPL;
+    struct devinfo_DeviceInterface *impl;
+
+    TRACE( "(%p, %p)\n", iface, id );
+
+    impl = impl_DeviceInterface_from_IDeviceInformation( iface );
+    return WindowsDuplicateString( impl->path, id );
 }
 
 static HRESULT STDMETHODCALLTYPE devinfo_DeviceInterface_get_Name( IDeviceInformation *iface, HSTRING *name )
@@ -186,15 +199,24 @@ static const struct IDeviceInformationVtbl devinfo_DeviceInterface_vtbl = {
     devinfo_DeviceInterface_GetGlyphThumbnailAsync,
 };
 
-HRESULT deviceinformation_iface_create( IDeviceInformation **info )
+HRESULT deviceinformation_iface_create( const SP_DEVICE_INTERFACE_DETAIL_DATA_W *iface_detail,
+                                        IDeviceInformation **info )
 {
     struct devinfo_DeviceInterface *impl;
+    HRESULT res;
 
     impl = calloc( 1, sizeof( *impl ) );
     if (!impl)
         return E_OUTOFMEMORY;
 
     impl->IDeviceInformation_iface.lpVtbl = &devinfo_DeviceInterface_vtbl;
+    res = WindowsCreateString( iface_detail->DevicePath, wcslen( iface_detail->DevicePath ),
+                               &impl->path );
+    if (FAILED( res ))
+    {
+        free( impl );
+        return res;
+    }
     impl->ref = 1;
     *info = &impl->IDeviceInformation_iface;
     return S_OK;

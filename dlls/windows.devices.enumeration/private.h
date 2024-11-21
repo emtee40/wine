@@ -28,6 +28,7 @@
 #include "winbase.h"
 #include "winstring.h"
 #include "objbase.h"
+#include "setupapi.h"
 
 #include "activation.h"
 
@@ -52,7 +53,8 @@ extern HRESULT async_operation_device_info_collection_result_create(
     IAsyncOperation_DeviceInformationCollection **out );
 extern HRESULT vectorview_deviceinformation_create( IDeviceInformation **devices, SIZE_T len,
                                                     IVectorView_DeviceInformation **view );
-extern HRESULT deviceinformation_iface_create( IDeviceInformation **info );
+extern HRESULT deviceinformation_iface_create( const SP_DEVICE_INTERFACE_DETAIL_DATA_W *iface_detail,
+                                               IDeviceInformation **info );
 
 #define DEFINE_IINSPECTABLE_( pfx, iface_type, impl_type, impl_from, iface_mem, expr )             \
     static inline impl_type *impl_from( iface_type *iface )                                        \
