@@ -554,12 +554,12 @@ static void test_DeviceInformation( void )
         hr = IVectorView_DeviceInformation_QueryInterface(
             info_collection, &IID_IIterable_DeviceInformation, (void **)&info_iterable );
         IVectorView_DeviceInformation_Release( info_collection );
-        todo_wine ok( SUCCEEDED( hr ), "got hr %#lx\n", hr );
+        ok( SUCCEEDED( hr ), "got hr %#lx\n", hr );
     }
     if (info_iterable)
     {
         hr = IIterable_DeviceInformation_First( info_iterable, &info_iterator );
-        todo_wine ok( SUCCEEDED( hr ), "got hr %#lx\n", hr );
+        ok( SUCCEEDED( hr ), "got hr %#lx\n", hr );
         IIterable_DeviceInformation_Release( info_iterable );
     }
     if (info_iterator)
@@ -567,13 +567,13 @@ static void test_DeviceInformation( void )
         boolean exists;
 
         hr = IIterator_DeviceInformation_get_HasCurrent( info_iterator, &exists );
-        todo_wine ok( SUCCEEDED( hr ), "got hr %#lx\n", hr );
+        ok( SUCCEEDED( hr ), "got hr %#lx\n", hr );
         while (SUCCEEDED( hr ) && exists)
         {
             IDeviceInformation *info;
 
             hr = IIterator_DeviceInformation_get_Current( info_iterator, &info );
-            todo_wine ok( SUCCEEDED( hr ), "got hr %#lx\n", hr );
+            ok( SUCCEEDED( hr ), "got hr %#lx\n", hr );
             if (FAILED( hr )) break;
             test_DeviceInformation_obj( __LINE__, info );
             IDeviceInformation_Release( info );

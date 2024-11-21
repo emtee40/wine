@@ -24,9 +24,159 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(enumeration);
 
+struct iterator_DeviceInformation
+{
+    IIterator_DeviceInformation Iterator_DeviceInformation_iface;
+
+    IVectorView_DeviceInformation *IVectorView_DeviceInformation_iface;
+    UINT32 idx;
+    UINT32 len;
+    LONG ref;
+};
+
+static inline struct iterator_DeviceInformation *
+impl_from_Iterator_DeviceInformation( IIterator_DeviceInformation *iface )
+{
+    return CONTAINING_RECORD( iface, struct iterator_DeviceInformation, Iterator_DeviceInformation_iface );
+}
+
+static HRESULT STDMETHODCALLTYPE iterator_DeviceInformation_QueryInterface( IIterator_DeviceInformation *iface,
+                                                                            REFIID iid, void **out )
+{
+    TRACE( "(%p, %s, %p)\n", iface, debugstr_guid( iid ), out );
+
+    if (IsEqualGUID( iid, &IID_IUnknown ) ||
+        IsEqualGUID( iid, &IID_IInspectable ) ||
+        IsEqualGUID( iid, &IID_IIterator_DeviceInformation ))
+    {
+        IUnknown_AddRef( iface );
+        *out = iface;
+        return S_OK;
+    }
+
+    FIXME("%s not implemented, returning E_NOINTERFACE.\n", debugstr_guid(iid));
+    *out = NULL;
+    return E_NOINTERFACE;
+}
+
+static ULONG STDMETHODCALLTYPE iterator_DeviceInformation_AddRef( IIterator_DeviceInformation *iface )
+{
+    struct iterator_DeviceInformation *impl;
+
+    TRACE( "(%p)\n", iface );
+
+    impl = impl_from_Iterator_DeviceInformation( iface );
+    return InterlockedIncrement( &impl->ref );
+}
+
+static ULONG STDMETHODCALLTYPE iterator_DeviceInformation_Release( IIterator_DeviceInformation *iface )
+{
+    struct iterator_DeviceInformation *impl;
+    ULONG ref;
+
+    TRACE( "(%p)\n", iface );
+
+    impl = impl_from_Iterator_DeviceInformation( iface );
+    ref = InterlockedDecrement( &impl->ref );
+    if (!ref)
+    {
+        IVectorView_DeviceInformation_Release( impl->IVectorView_DeviceInformation_iface );
+        free( impl );
+    }
+    return ref;
+}
+
+static HRESULT STDMETHODCALLTYPE iterator_DeviceInformation_GetIids( IIterator_DeviceInformation *iface,
+                                                                     ULONG *iid_count, IID **iids )
+{
+    FIXME( "(%p, %p, %p) stub!\n", iface, iid_count, iids );
+    return E_NOTIMPL;
+}
+
+static HRESULT WINAPI iterator_DeviceInformation_GetRuntimeClassName( IIterator_DeviceInformation *iface,
+                                                                      HSTRING *class_name )
+{
+    const static WCHAR name[] = L"Windows.Foundation.Collections.IIterator`1<Windows.Devices.Enumeration.DeviceInformation>";
+    TRACE( "(%p, %p)\n", iface, class_name );
+    return WindowsCreateString( name, ARRAY_SIZE( name ), class_name );
+}
+
+static HRESULT STDMETHODCALLTYPE iterator_DeviceInformation_GetTrustLevel( IIterator_DeviceInformation *iface,
+                                                                           TrustLevel *trust_level )
+{
+    FIXME( "(%p, %p) stub!\n", iface, trust_level );
+    return E_NOTIMPL;
+}
+
+static HRESULT STDMETHODCALLTYPE iterator_DeviceInformation_get_Current( IIterator_DeviceInformation *iface,
+                                                                         IDeviceInformation **info )
+{
+    struct iterator_DeviceInformation *impl;
+
+    TRACE( "(%p, %p)\n", iface, info );
+
+    impl = impl_from_Iterator_DeviceInformation( iface );
+    return IVectorView_DeviceInformation_GetAt( impl->IVectorView_DeviceInformation_iface,
+                                                impl->idx, info );
+}
+
+static HRESULT STDMETHODCALLTYPE iterator_DeviceInformation_get_HasCurrent( IIterator_DeviceInformation *iface,
+                                                                            boolean *exists )
+{
+    struct iterator_DeviceInformation *impl;
+
+    TRACE( "(%p, %p)\n", iface, exists );
+
+    impl = impl_from_Iterator_DeviceInformation( iface );
+    *exists = impl->idx < impl->len;
+    return S_OK;
+}
+
+static HRESULT STDMETHODCALLTYPE iterator_DeviceInformation_MoveNext( IIterator_DeviceInformation *iface,
+                                                                      boolean *exists )
+{
+    struct iterator_DeviceInformation *impl;
+
+    TRACE( "(%p, %p)\n", iface, exists );
+
+    impl = impl_from_Iterator_DeviceInformation( iface );
+    if (impl->idx < impl->len) impl->idx++;
+    return IIterator_DeviceInformation_get_HasCurrent( iface, exists );
+}
+
+static HRESULT STDMETHODCALLTYPE iterator_DeviceInformation_GetMany( IIterator_DeviceInformation *iface, UINT32 size,
+                                                                     IDeviceInformation **info, UINT32 *copied )
+{
+    struct iterator_DeviceInformation *impl;
+
+    TRACE( "(%p, %u, %p, %p)\n", iface, size, info, copied );
+
+    impl = impl_from_Iterator_DeviceInformation( iface );
+    return IVectorView_DeviceInformation_GetMany( impl->IVectorView_DeviceInformation_iface,
+                                                  impl->idx, size, info, copied );
+}
+
+const static IIterator_DeviceInformationVtbl iterator_DeviceInformation_vtbl =
+{
+    /* IUnknown */
+    iterator_DeviceInformation_QueryInterface,
+    iterator_DeviceInformation_AddRef,
+    iterator_DeviceInformation_Release,
+    /* IInspectable */
+    iterator_DeviceInformation_GetIids,
+    iterator_DeviceInformation_GetRuntimeClassName,
+    iterator_DeviceInformation_GetTrustLevel,
+    /* IIterator<DeviceInformation> */
+    iterator_DeviceInformation_get_Current,
+    iterator_DeviceInformation_get_HasCurrent,
+    iterator_DeviceInformation_MoveNext,
+    iterator_DeviceInformation_GetMany,
+};
+
 struct vectorview_DeviceInformation
 {
     IVectorView_DeviceInformation IVectorView_DeviceInformation_iface;
+    IIterable_DeviceInformation IIterable_DeviceInformation_iface;
 
     IDeviceInformation **devices;
     SIZE_T len;
@@ -52,6 +202,13 @@ static HRESULT STDMETHODCALLTYPE vectorview_DeviceInformation_QueryInterface(
     {
         IUnknown_AddRef( iface );
         *out = iface;
+        return S_OK;
+    }
+    if (IsEqualGUID( iid, &IID_IIterable_DeviceInformation ))
+    {
+        struct vectorview_DeviceInformation *impl = impl_from_IVectorView_DeviceInformation( iface );
+        *out = &impl->IIterable_DeviceInformation_iface;
+        IUnknown_AddRef( iface );
         return S_OK;
     }
 
@@ -204,6 +361,45 @@ const static IVectorView_DeviceInformationVtbl vectorview_DeviceInformation_vtbl
     vectorview_DeviceInformation_GetMany
 };
 
+DEFINE_IINSPECTABLE( iterable_view_DeviceInformation, IIterable_DeviceInformation, struct vectorview_DeviceInformation,
+                     IVectorView_DeviceInformation_iface );
+
+static HRESULT STDMETHODCALLTYPE iterable_view_DeviceInformation_First( IIterable_DeviceInformation *iface,
+                                                                        IIterator_DeviceInformation **iter )
+
+{
+    struct vectorview_DeviceInformation *impl;
+    struct iterator_DeviceInformation *impl_iter;
+
+    TRACE( "(%p, %p)\n", iface, iter );
+
+    impl = impl_from_IIterable_DeviceInformation( iface );
+    impl_iter = calloc( 1, sizeof( *impl_iter ) );
+    if (!impl_iter)
+        return E_OUTOFMEMORY;
+    impl_iter->Iterator_DeviceInformation_iface.lpVtbl = &iterator_DeviceInformation_vtbl;
+    impl_iter->IVectorView_DeviceInformation_iface = &impl->IVectorView_DeviceInformation_iface;
+    IUnknown_AddRef( iface );
+    impl_iter->len = impl->len;
+    impl_iter->ref = 1;
+    *iter = &impl_iter->Iterator_DeviceInformation_iface;
+    return S_OK;
+}
+
+const static IIterable_DeviceInformationVtbl iterable_view_DeviceInformation_vtbl =
+{
+    /* IUnknown */
+    iterable_view_DeviceInformation_QueryInterface,
+    iterable_view_DeviceInformation_AddRef,
+    iterable_view_DeviceInformation_Release,
+    /* IInspectable */
+    iterable_view_DeviceInformation_GetIids,
+    iterable_view_DeviceInformation_GetRuntimeClassName,
+    iterable_view_DeviceInformation_GetTrustLevel,
+    /* IIterable<DeviceInformation> */
+    iterable_view_DeviceInformation_First,
+};
+
 HRESULT vectorview_deviceinformation_create( IDeviceInformation **devices, SIZE_T len,
                                              IVectorView_DeviceInformation **view )
 {
@@ -214,6 +410,7 @@ HRESULT vectorview_deviceinformation_create( IDeviceInformation **devices, SIZE_
         return E_OUTOFMEMORY;
 
     impl->IVectorView_DeviceInformation_iface.lpVtbl = &vectorview_DeviceInformation_vtbl;
+    impl->IIterable_DeviceInformation_iface.lpVtbl = &iterable_view_DeviceInformation_vtbl;
     impl->devices = devices;
     impl->len = len;
     impl->ref = 1;
