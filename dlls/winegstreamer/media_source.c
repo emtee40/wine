@@ -658,7 +658,7 @@ static HRESULT media_source_start(struct media_source *source, IMFPresentationDe
                 AM_SEEKING_AbsolutePositioning, AM_SEEKING_NoPositioning);
 
     for (i = 0; i < source->stream_count; i++)
-        flush_token_queue(source->streams[i], position->vt == VT_EMPTY);
+        flush_token_queue(source->streams[i], TRUE);
 
     return IMFMediaEventQueue_QueueEventParamVar(source->event_queue,
             seek_message ? MESourceSeeked : MESourceStarted, &GUID_NULL, S_OK, position);

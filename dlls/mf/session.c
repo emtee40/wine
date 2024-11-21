@@ -219,6 +219,7 @@ enum presentation_flags
     SESSION_FLAG_END_OF_PRESENTATION = 0x10,
     SESSION_FLAG_PENDING_RATE_CHANGE = 0x20,
     SESSION_FLAG_PENDING_COMMAND = 0x40,
+    SESSION_FLAG_QUEUED_COMMAND = 0x80,
 };
 
 struct media_session
@@ -260,6 +261,7 @@ struct media_session
     struct list commands;
     enum session_state state;
     DWORD caps;
+    BOOL buffering;
     CRITICAL_SECTION cs;
 };
 
@@ -454,6 +456,33 @@ static HRESULT session_is_shut_down(struct media_session *session)
     return session->state == SESSION_STATE_SHUT_DOWN ? MF_E_SHUTDOWN : S_OK;
 }
 
+static void session_schedule_command(struct media_session *session)
+{
+    struct session_op *op;
+    struct list *e;
+
+    if (session->presentation.flags & (SESSION_FLAG_PENDING_COMMAND | SESSION_FLAG_QUEUED_COMMAND))
+    {
+        TRACE("not queueing: flags %x\n", session->presentation.flags);
+        return;
+    }
+
+    if (session->state != SESSION_STATE_STOPPED && session->state != SESSION_STATE_STARTED &&
+        session->state != SESSION_STATE_PAUSED && session->state != SESSION_STATE_CLOSED &&
+        session->state != SESSION_STATE_SHUT_DOWN)
+    {
+        TRACE("not queueing: state %x\n", session->state);
+        return;
+    }
+
+    if ((e = list_head(&session->commands)))
+    {
+        op = LIST_ENTRY(e, struct session_op, entry);
+        MFPutWorkItem(MFASYNC_CALLBACK_QUEUE_STANDARD, &session->commands_callback, &op->IUnknown_iface);
+        session->presentation.flags |= SESSION_FLAG_QUEUED_COMMAND;
+    }
+}
+
 static HRESULT session_submit_command(struct media_session *session, struct session_op *op)
 {
     HRESULT hr;
@@ -463,13 +492,12 @@ static HRESULT session_submit_command(struct media_session *session, struct sess
     EnterCriticalSection(&session->cs);
     if (SUCCEEDED(hr = session_is_shut_down(session)))
     {
-        if (list_empty(&session->commands) && !(session->presentation.flags & SESSION_FLAG_PENDING_COMMAND))
-            hr = MFPutWorkItem(MFASYNC_CALLBACK_QUEUE_STANDARD, &session->commands_callback, &op->IUnknown_iface);
         if (op->command == SESSION_CMD_SHUTDOWN)
             list_add_head(&session->commands, &op->entry);
         else
             list_add_tail(&session->commands, &op->entry);
         IUnknown_AddRef(&op->IUnknown_iface);
+        session_schedule_command(session);
     }
     LeaveCriticalSection(&session->cs);
 
@@ -946,17 +974,9 @@ static struct topo_node *session_get_topo_node_output(const struct media_session
 
 static void session_command_complete(struct media_session *session)
 {
-    struct session_op *op;
-    struct list *e;
-
-    session->presentation.flags &= ~SESSION_FLAG_PENDING_COMMAND;
-
+    session->presentation.flags &= ~(SESSION_FLAG_PENDING_COMMAND | SESSION_FLAG_QUEUED_COMMAND);
     /* Submit next command. */
-    if ((e = list_head(&session->commands)))
-    {
-        op = LIST_ENTRY(e, struct session_op, entry);
-        MFPutWorkItem(MFASYNC_CALLBACK_QUEUE_STANDARD, &session->commands_callback, &op->IUnknown_iface);
-    }
+    session_schedule_command(session);
 }
 
 static void session_command_complete_with_event(struct media_session *session, MediaEventType event,
@@ -999,6 +1019,13 @@ static void session_flush_nodes(struct media_session *session)
         else if (node->type == MF_TOPOLOGY_TRANSFORM_NODE)
             IMFTransform_ProcessMessage(node->object.transform, MFT_MESSAGE_COMMAND_FLUSH, 0);
     }
+}
+
+static void session_set_state(struct media_session *session, enum session_state new_state)
+{
+    TRACE("setting state to %d\n", new_state);
+    session->state = new_state;
+    session_schedule_command(session);
 }
 
 static void session_start(struct media_session *session, const GUID *time_format, const PROPVARIANT *start_position)
@@ -1055,7 +1082,7 @@ static void session_start(struct media_session *session, const GUID *time_format
                 }
             }
 
-            session->state = SESSION_STATE_STARTING_SOURCES;
+            session_set_state(session, SESSION_STATE_STARTING_SOURCES);
             break;
         case SESSION_STATE_STARTED:
             /* Check for invalid positions */
@@ -1087,7 +1114,7 @@ static void session_start(struct media_session *session, const GUID *time_format
             PropVariantCopy(&session->presentation.start_position, start_position);
 
             /* SESSION_STATE_STARTED -> SESSION_STATE_RESTARTING_SOURCES -> SESSION_STATE_STARTED */
-            session->state = SESSION_STATE_RESTARTING_SOURCES;
+            session_set_state(session, SESSION_STATE_RESTARTING_SOURCES);
             break;
         default:
             session_command_complete_with_event(session, MESessionStarted, MF_E_INVALIDREQUEST, NULL);
@@ -1102,7 +1129,7 @@ static void session_set_started(struct media_session *session)
     unsigned int caps;
     DWORD flags;
 
-    session->state = SESSION_STATE_STARTED;
+    session_set_state(session, SESSION_STATE_STARTED);
 
     caps = session->caps | MFSESSIONCAP_PAUSE;
 
@@ -1134,7 +1161,7 @@ static void session_set_paused(struct media_session *session, unsigned int state
     /* Failed event status could indicate a failure during normal transition to paused state,
        or an attempt to pause from invalid initial state. To finalize failed transition in the former case,
        state is still forced to PAUSED, otherwise previous state is retained. */
-    if (state != ~0u) session->state = state;
+    if (state != ~0u) session_set_state(session, state);
     if (SUCCEEDED(status))
         session_set_caps(session, session->caps & ~MFSESSIONCAP_PAUSE);
     session_command_complete_with_event(session, MESessionPaused, status, NULL);
@@ -1142,10 +1169,42 @@ static void session_set_paused(struct media_session *session, unsigned int state
 
 static void session_set_closed(struct media_session *session, HRESULT status)
 {
-    session->state = SESSION_STATE_CLOSED;
+    session_set_state(session, SESSION_STATE_CLOSED);
     if (SUCCEEDED(status))
         session_set_caps(session, session->caps & ~(MFSESSIONCAP_START | MFSESSIONCAP_SEEK));
     session_command_complete_with_event(session, MESessionClosed, status, NULL);
+}
+
+static BOOL session_is_output_nodes_state(struct media_session *session, enum object_state state)
+{
+    struct topo_node *node;
+
+    LIST_FOR_EACH_ENTRY(node, &session->presentation.nodes, struct topo_node, entry)
+    {
+        if (node->type == MF_TOPOLOGY_OUTPUT_NODE && node->state != state)
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
+static HRESULT session_pause_sources(struct media_session *session)
+{
+    struct media_source *source;
+    HRESULT hr;
+
+    if (!session_is_output_nodes_state(session, OBJ_STATE_PAUSED))
+        return S_OK;
+
+    session_set_state(session, SESSION_STATE_PAUSING_SOURCES);
+
+    LIST_FOR_EACH_ENTRY(source, &session->presentation.sources, struct media_source, entry)
+    {
+        if (FAILED(hr = IMFMediaSource_Pause(source->source)))
+            return hr;
+    }
+
+    return S_OK;
 }
 
 static void session_pause(struct media_session *session)
@@ -1158,8 +1217,13 @@ static void session_pause(struct media_session *session)
         case SESSION_STATE_STARTED:
 
             /* Transition in two steps - pause the clock, wait for sinks, then pause sources. */
-            if (SUCCEEDED(hr = IMFPresentationClock_Pause(session->clock)))
-                session->state = SESSION_STATE_PAUSING_SINKS;
+            if (session->buffering)
+            {
+                session_set_state(session, SESSION_STATE_PAUSING_SINKS);
+                hr = session_pause_sources(session);
+            }
+            else if (SUCCEEDED(hr = IMFPresentationClock_Pause(session->clock)))
+                session_set_state(session, SESSION_STATE_PAUSING_SINKS);
             state = SESSION_STATE_PAUSED;
 
             break;
@@ -1197,7 +1261,7 @@ static void session_set_stopped(struct media_session *session, HRESULT status)
     MediaEventType event_type;
     IMFMediaEvent *event;
 
-    session->state = SESSION_STATE_STOPPED;
+    session_set_state(session, SESSION_STATE_STOPPED);
     event_type = session->presentation.flags & SESSION_FLAG_END_OF_PRESENTATION ? MESessionEnded : MESessionStopped;
 
     if (SUCCEEDED(MFCreateMediaEvent(event_type, &GUID_NULL, status, NULL, &event)))
@@ -1210,6 +1274,57 @@ static void session_set_stopped(struct media_session *session, HRESULT status)
     session_command_complete(session);
 }
 
+static void session_stop_sources(struct media_session *session)
+{
+    struct media_source *source;
+    BOOL stopping = FALSE;
+    HRESULT hr = S_OK;
+
+    if (!session_is_output_nodes_state(session, OBJ_STATE_STOPPED))
+        return;
+
+    session_set_state(session, SESSION_STATE_STOPPING_SOURCES);
+
+    LIST_FOR_EACH_ENTRY(source, &session->presentation.sources, struct media_source, entry)
+    {
+        if (source->state != OBJ_STATE_STOPPED)
+        {
+            stopping = TRUE;
+            if (session->presentation.flags & SESSION_FLAG_END_OF_PRESENTATION)
+                IMFMediaSource_Stop(source->source);
+            else if (FAILED(hr = IMFMediaSource_Stop(source->source)))
+                break;
+        }
+    }
+
+    if (session->presentation.flags & SESSION_FLAG_END_OF_PRESENTATION)
+        session_set_stopped(session, hr);
+    else if (!stopping || FAILED(hr))
+    {
+        if (session->presentation.flags & SESSION_FLAG_FINALIZE_SINKS)
+            session_set_closed(session, hr);
+        else
+            session_set_stopped(session, hr);
+    }
+}
+
+static void session_do_stop(struct media_session *session)
+{
+    HRESULT hr;
+
+    /* Transition in two steps - stop the clock, wait for sinks, then stop sources. */
+    IMFPresentationClock_GetTime(session->clock, &session->presentation.clock_stop_time);
+    if (session->buffering)
+    {
+        session_set_state(session, SESSION_STATE_STOPPING_SINKS);
+        session_stop_sources(session);
+    }
+    else if (SUCCEEDED(hr = IMFPresentationClock_Stop(session->clock)))
+        session_set_state(session, SESSION_STATE_STOPPING_SINKS);
+    else
+        session_set_stopped(session, hr);
+}
+
 static void session_stop(struct media_session *session)
 {
     HRESULT hr = MF_E_INVALIDREQUEST;
@@ -1218,14 +1333,7 @@ static void session_stop(struct media_session *session)
     {
         case SESSION_STATE_STARTED:
         case SESSION_STATE_PAUSED:
-
-            /* Transition in two steps - stop the clock, wait for sinks, then stop sources. */
-            IMFPresentationClock_GetTime(session->clock, &session->presentation.clock_stop_time);
-            if (SUCCEEDED(hr = IMFPresentationClock_Stop(session->clock)))
-                session->state = SESSION_STATE_STOPPING_SINKS;
-            else
-                session_set_stopped(session, hr);
-
+            session_do_stop(session);
             break;
         case SESSION_STATE_STOPPED:
             hr = S_OK;
@@ -1244,7 +1352,7 @@ static HRESULT session_finalize_sinks(struct media_session *session)
     HRESULT hr = S_OK;
 
     session->presentation.flags &= ~SESSION_FLAG_FINALIZE_SINKS;
-    session->state = SESSION_STATE_FINALIZING_SINKS;
+    session_set_state(session, SESSION_STATE_FINALIZING_SINKS);
 
     LIST_FOR_EACH_ENTRY(sink, &session->presentation.sinks, struct media_sink, entry)
     {
@@ -1280,8 +1388,13 @@ static void session_close(struct media_session *session)
         case SESSION_STATE_STARTED:
         case SESSION_STATE_PAUSED:
             session->presentation.flags |= SESSION_FLAG_FINALIZE_SINKS;
-            if (SUCCEEDED(hr = IMFPresentationClock_Stop(session->clock)))
-                session->state = SESSION_STATE_STOPPING_SINKS;
+            if (session->buffering)
+            {
+                session_set_state(session, SESSION_STATE_STOPPING_SINKS);
+                session_stop_sources(session);
+            }
+            else if (SUCCEEDED(hr = IMFPresentationClock_Stop(session->clock)))
+                session_set_state(session, SESSION_STATE_STOPPING_SINKS);
             break;
         default:
             hr = MF_E_INVALIDREQUEST;
@@ -2390,7 +2503,7 @@ static HRESULT WINAPI mfsession_Shutdown(IMFMediaSession *iface)
     EnterCriticalSection(&session->cs);
     if (SUCCEEDED(hr = session_is_shut_down(session)))
     {
-        session->state = SESSION_STATE_SHUT_DOWN;
+        session_set_state(session, SESSION_STATE_SHUT_DOWN);
         IMFMediaEventQueue_Shutdown(session->event_queue);
         if (session->quality_manager)
             IMFQualityManager_Shutdown(session->quality_manager);
@@ -2916,19 +3029,6 @@ static BOOL session_is_source_nodes_state(struct media_session *session, enum ob
     return TRUE;
 }
 
-static BOOL session_is_output_nodes_state(struct media_session *session, enum object_state state)
-{
-    struct topo_node *node;
-
-    LIST_FOR_EACH_ENTRY(node, &session->presentation.nodes, struct topo_node, entry)
-    {
-        if (node->type == MF_TOPOLOGY_OUTPUT_NODE && node->state != state)
-            return FALSE;
-    }
-
-    return TRUE;
-}
-
 static enum object_state session_get_object_state_for_event(MediaEventType event)
 {
     switch (event)
@@ -2973,6 +3073,8 @@ static HRESULT session_start_clock(struct media_session *session)
 
     if (FAILED(hr = IMFPresentationClock_Start(session->clock, start_offset)))
         WARN("Failed to start session clock, hr %#lx.\n", hr);
+    else if (session->buffering)
+        IMFPresentationClock_Pause(session->clock);
 
     return hr;
 }
@@ -3102,10 +3204,10 @@ static void session_set_source_object_state(struct media_session *session, IUnkn
                         }
                     }
                 }
-                session->state = SESSION_STATE_PREROLLING_SINKS;
+                session_set_state(session, SESSION_STATE_PREROLLING_SINKS);
             }
             else if (SUCCEEDED(session_start_clock(session)))
-                session->state = SESSION_STATE_STARTING_SINKS;
+                session_set_state(session, SESSION_STATE_STARTING_SINKS);
 
             break;
         case SESSION_STATE_RESTARTING_SOURCES:
@@ -3121,11 +3223,12 @@ static void session_set_source_object_state(struct media_session *session, IUnkn
                         &session->presentation.time_format, &session->presentation.start_position)))
                 {
                     WARN("Failed to start media source %p, hr %#lx.\n", source->source, hr);
-                    session_command_complete_with_event(session, MESessionStarted, hr, NULL);
+                    IMFMediaEventQueue_QueueEventParamVar(session->event_queue, MESessionStarted, &GUID_NULL, hr, NULL);
+                    session_do_stop(session);
                     return;
                 }
             }
-            session->state = SESSION_STATE_STARTING_SOURCES;
+            session_set_state(session, SESSION_STATE_STARTING_SOURCES);
             break;
         case SESSION_STATE_PAUSING_SOURCES:
             if (!session_is_source_nodes_state(session, OBJ_STATE_PAUSED))
@@ -3154,7 +3257,6 @@ static void session_set_source_object_state(struct media_session *session, IUnkn
 static void session_set_sink_stream_state(struct media_session *session, IMFStreamSink *stream,
         MediaEventType event_type)
 {
-    struct media_source *source;
     enum object_state state;
     HRESULT hr = S_OK;
     BOOL changed;
@@ -3172,7 +3274,7 @@ static void session_set_sink_stream_state(struct media_session *session, IMFStre
                 break;
 
             if (SUCCEEDED(session_start_clock(session)))
-                session->state = SESSION_STATE_STARTING_SINKS;
+                session_set_state(session, SESSION_STATE_STARTING_SINKS);
             break;
         case SESSION_STATE_STARTING_SINKS:
             if (!session_is_output_nodes_state(session, OBJ_STATE_STARTED))
@@ -3181,45 +3283,11 @@ static void session_set_sink_stream_state(struct media_session *session, IMFStre
             session_set_started(session);
             break;
         case SESSION_STATE_PAUSING_SINKS:
-            if (!session_is_output_nodes_state(session, OBJ_STATE_PAUSED))
-                break;
-
-            session->state = SESSION_STATE_PAUSING_SOURCES;
-
-            LIST_FOR_EACH_ENTRY(source, &session->presentation.sources, struct media_source, entry)
-            {
-                if (FAILED(hr = IMFMediaSource_Pause(source->source)))
-                    break;
-            }
-
-            if (FAILED(hr))
+            if (FAILED(hr = session_pause_sources(session)))
                 session_set_paused(session, SESSION_STATE_PAUSED, hr);
-
             break;
         case SESSION_STATE_STOPPING_SINKS:
-            if (!session_is_output_nodes_state(session, OBJ_STATE_STOPPED))
-                break;
-
-            session->state = SESSION_STATE_STOPPING_SOURCES;
-
-            LIST_FOR_EACH_ENTRY(source, &session->presentation.sources, struct media_source, entry)
-            {
-                if (session->presentation.flags & SESSION_FLAG_END_OF_PRESENTATION)
-                    IMFMediaSource_Stop(source->source);
-                else if (FAILED(hr = IMFMediaSource_Stop(source->source)))
-                    break;
-            }
-
-            if (session->presentation.flags & SESSION_FLAG_END_OF_PRESENTATION)
-                session_set_stopped(session, hr);
-            else if (FAILED(hr))
-            {
-                if (session->presentation.flags & SESSION_FLAG_FINALIZE_SINKS)
-                    session_set_closed(session, hr);
-                else
-                    session_set_stopped(session, hr);
-            }
-
+            session_stop_sources(session);
             break;
         default:
             ;
@@ -4101,8 +4169,9 @@ static HRESULT WINAPI session_events_callback_Invoke(IMFAsyncCallback *iface, IM
             {
                 if (event_type == MEBufferingStarted)
                     IMFPresentationClock_Pause(session->clock);
-                else
+                else if (session->state == SESSION_STATE_STARTING_SINKS || session->state == SESSION_STATE_STARTED)
                     IMFPresentationClock_Start(session->clock, PRESENTATION_CURRENT_POSITION);
+                session->buffering = (event_type == MEBufferingStarted);
 
                 IMFMediaEventQueue_QueueEvent(session->event_queue, event);
             }
