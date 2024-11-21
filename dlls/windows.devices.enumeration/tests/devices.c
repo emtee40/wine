@@ -480,6 +480,7 @@ static void test_DeviceInformation( void )
     if (info_collection)
     {
         UINT32 idx = 0, size = 0;
+        IDeviceInformation **devices;
 
         hr = IVectorView_DeviceInformation_get_Size( info_collection, &size );
         todo_wine ok( SUCCEEDED( hr ), "got %#lx\n", hr );
@@ -506,6 +507,49 @@ static void test_DeviceInformation( void )
             }
             winetest_pop_context();
         }
+
+        devices = calloc( 1, sizeof( *devices ) * size );
+        ok( !!devices, "Unable to allocate array\n" );
+        if (devices)
+        {
+            UINT32 copied = 0;
+
+            hr = IVectorView_DeviceInformation_GetMany( info_collection, 0, size, devices, &copied );
+            todo_wine ok( SUCCEEDED( hr ), "got %#lx\n", hr );
+            if (SUCCEEDED( hr ))
+                todo_wine ok( copied == size, "%u != %u\n", copied, size );
+            for(idx = 0; idx < copied; idx++)
+            {
+                IDeviceInformation *info = NULL;
+                HSTRING id1 = NULL, id2 = NULL;
+
+                winetest_push_context("devices %u", idx);
+                hr = IDeviceInformation_get_Id( devices[idx], &id1 );
+                ok( SUCCEEDED( hr ), "got %#lx\n", hr );
+                hr = IVectorView_DeviceInformation_GetAt( info_collection, idx, &info);
+                ok( SUCCEEDED( hr ), "got %#lx\n", hr );
+                if (SUCCEEDED( hr ))
+                {
+                    hr = IDeviceInformation_get_Id( info, &id2 );
+                    ok( SUCCEEDED( hr ), "got %#lx\n", hr );
+                }
+                if (id1 && id2)
+                {
+                    INT32 order = 1;
+                    WindowsCompareStringOrdinal( id1, id2, &order );
+                    ok( !order, "%s != %s\n", debugstr_hstring( id1 ), debugstr_hstring( id2 ) );
+                }
+                WindowsDeleteString( id1 );
+                WindowsDeleteString( id2 );
+                if (info)
+                    IDeviceInformation_Release( info );
+                IDeviceInformation_Release( devices[idx] );
+                winetest_pop_context();
+            }
+            free( devices );
+        }
+
+        IVectorView_DeviceInformation_Release( info_collection );
     }
 
     IDeviceInformationStatics_Release( device_info_statics );
