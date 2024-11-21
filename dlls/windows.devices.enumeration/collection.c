@@ -143,16 +143,48 @@ static HRESULT STDMETHODCALLTYPE vectorview_DeviceInformation_IndexOf( IVectorVi
                                                                        IDeviceInformation *elem, UINT32 *index,
                                                                        boolean *found )
 {
-    FIXME( "(%p, %p, %p, %p) stub!\n", iface, elem, index, found );
-    return E_NOTIMPL;
+    struct vectorview_DeviceInformation *impl;
+    UINT32 i;
+
+    TRACE( "(%p, %p, %p, %p)\n", iface, elem, index, found );
+
+    impl = impl_from_IVectorView_DeviceInformation( iface );
+    for (i = 0; i < impl->len; i++)
+        if (elem == impl->devices[i])
+            break;
+
+    if (i < impl->len)
+    {
+        *found = TRUE;
+        *index = i;
+    }
+    else
+    {
+        *found = FALSE;
+        *index = 0;
+    }
+
+    return S_OK;
 }
 
 static HRESULT STDMETHODCALLTYPE vectorview_DeviceInformation_GetMany( IVectorView_DeviceInformation *iface,
                                                                        UINT32 start, UINT32 size,
                                                                        IDeviceInformation **items, UINT32 *copied )
 {
-    FIXME( "(%p, %u, %u, %p, %p) stub!\n", iface, start, size, items, copied );
-    return E_NOTIMPL;
+    struct vectorview_DeviceInformation *impl;
+    UINT32 i;
+
+    TRACE( "(%p, %u, %u, %p, %p)\n", iface, start, size, items, copied );
+    impl = impl_from_IVectorView_DeviceInformation( iface );
+    memset( items, 0, size * sizeof( *items ) );
+
+    for (i = start; i < impl->len && i < start + size; i++)
+    {
+        items[i] = impl->devices[i - start];
+        IUnknown_AddRef( items[i] );
+    }
+    *copied = i - start;
+    return S_OK;
 }
 
 const static IVectorView_DeviceInformationVtbl vectorview_DeviceInformation_vtbl =

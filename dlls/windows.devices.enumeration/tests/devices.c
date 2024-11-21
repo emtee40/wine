@@ -500,7 +500,7 @@ static void test_DeviceInformation( void )
                 test_DeviceInformation_obj(__LINE__, info);
                 IDeviceInformation_Release( info );
                 hr = IVectorView_DeviceInformation_IndexOf( info_collection, info, &idx2, &found );
-                todo_wine ok( SUCCEEDED( hr ), "got %#lx\n", hr );
+                ok( SUCCEEDED( hr ), "got %#lx\n", hr );
                 if (SUCCEEDED( hr ))
                 {
                     ok( found, "Expected IndexOf to return true\n" );
@@ -517,9 +517,9 @@ static void test_DeviceInformation( void )
             UINT32 copied = 0;
 
             hr = IVectorView_DeviceInformation_GetMany( info_collection, 0, size, devices, &copied );
-            todo_wine ok( SUCCEEDED( hr ), "got %#lx\n", hr );
+            ok( SUCCEEDED( hr ), "got %#lx\n", hr );
             if (SUCCEEDED( hr ))
-                todo_wine ok( copied == size, "%u != %u\n", copied, size );
+                ok( copied == size, "%u != %u\n", copied, size );
             for(idx = 0; idx < copied; idx++)
             {
                 IDeviceInformation *info = NULL;
