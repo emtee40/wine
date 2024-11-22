@@ -2164,10 +2164,32 @@ static void test_MoveFileA(void)
           FindClose(hFind);
         }
     }
-    ret = DeleteFileA(source);
-    ok(ret, "DeleteFileA: error %ld\n", GetLastError());
     ret = DeleteFileA(dest);
     ok(!ret, "DeleteFileA: error %ld\n", GetLastError());
+
+    /* test renaming file to hardlink of itself with different case */
+    lstrcpyA(dest, tempdir);
+    lstrcatA(dest, "\\hardlink");
+    ret = CreateHardLinkA(dest, source, NULL);
+    ok(ret, "CreateHardLinkA: error %ld\n", GetLastError());
+    dest[lstrlenA(dest) - 4] = 'L';
+    ret = MoveFileA(source, dest);
+    ok(ret, "MoveFileA: error %ld\n", GetLastError());
+
+    hfile = FindFirstFileA(dest, &find_data);
+    ok(hfile != INVALID_HANDLE_VALUE, "FindFirstFileA: failed, error %ld\n", GetLastError());
+    if (hfile != INVALID_HANDLE_VALUE)
+    {
+        todo_wine
+        ok(!lstrcmpA(strrchr(dest, '\\') + 1, find_data.cFileName),
+           "MoveFile failed to change casing on hardlink of itself: got %s\n", find_data.cFileName);
+    }
+    FindClose(hfile);
+    ret = GetFileAttributesA(source);
+    ok(ret == INVALID_FILE_ATTRIBUTES && GetLastError() == ERROR_FILE_NOT_FOUND, "GetFileAttributesA: error %ld\n", GetLastError());
+    ret = DeleteFileA(dest);
+    ok(ret, "DeleteFileA: error %ld\n", GetLastError());
+
     ret = RemoveDirectoryA(tempdir);
     ok(ret, "DeleteDirectoryA: error %ld\n", GetLastError());
 }

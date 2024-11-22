@@ -2521,12 +2521,63 @@ static void set_fd_disposition( struct fd *fd, unsigned int flags )
         ((fd->options & FILE_DELETE_ON_CLOSE) ? FILE_DISPOSITION_DELETE : 0);
 }
 
+/* check if it's same file by path, and not a hardlink (inodes are assumed to be the same already) */
+static int is_same_file_by_path( char *name1, char *name2 )
+{
+    /* we check if (1) the directories they're in are the same and (2) they have the same name */
+    size_t pathlen1, pathlen2;
+    struct stat st, st2;
+    int stat_ret;
+    char *p;
+
+    /* get path len up to last component, ignoring trailing slashes */
+    for (pathlen1 = 0, p = name1; *p;)
+        if (*p++ == '/' && *p)
+            pathlen1 = p - name1;
+    if (pathlen1) {
+        name1[pathlen1 - 1] = '\0';
+        stat_ret = stat( name1, &st );
+        name1[pathlen1 - 1] = '/';
+        if (stat_ret || !S_ISDIR( st.st_mode ))
+            return 0;
+    }
+
+    for (pathlen2 = 0, p = name2; *p;)
+        if (*p++ == '/' && *p)
+            pathlen2 = p - name2;
+    if (pathlen2) {
+        name2[pathlen2 - 1] = '\0';
+        stat_ret = stat( name2, &st2 );
+        name2[pathlen2 - 1] = '/';
+        if (stat_ret || !S_ISDIR( st2.st_mode ))
+            return 0;
+    }
+
+    if (!pathlen1 || !pathlen2)
+    {
+        if (pathlen1 != pathlen2)
+            return 0;
+    }
+    else
+    {
+        if (st.st_ino != st2.st_ino || st.st_dev != st2.st_dev)
+            return 0;
+        name1 += pathlen1;
+        name2 += pathlen2;
+    }
+
+    /* compare ignoring trailing slashes */
+    while (*name1 == *name2 && *name1) name1++, name2++;
+    return *name1 == *name2 || (!*name1 && *name2 == '/') || (*name1 == '/' && !*name2);
+}
+
 /* set new name for the fd */
 static void set_fd_name( struct fd *fd, struct fd *root, const char *nameptr, data_size_t len,
                          struct unicode_str nt_name, int create_link, unsigned int flags )
 {
+    struct stat st, src_st;
+    int src_st_filled = 0;
     struct inode *inode;
-    struct stat st, st2;
     char *name;
     const unsigned int replace = flags & FILE_RENAME_REPLACE_IF_EXISTS;
 
@@ -2563,17 +2614,29 @@ static void set_fd_name( struct fd *fd, struct fd *root, const char *nameptr, da
     }
 
     /* when creating a hard link, source cannot be a dir */
-    if (create_link && !fstat( fd->unix_fd, &st ) && S_ISDIR( st.st_mode ))
+    if (create_link && !fstat( fd->unix_fd, &src_st ))
     {
-        set_error( STATUS_FILE_IS_A_DIRECTORY );
-        goto failed;
+        src_st_filled = 1;
+        if (S_ISDIR( src_st.st_mode ))
+        {
+            set_error( STATUS_FILE_IS_A_DIRECTORY );
+            goto failed;
+        }
     }
 
     if (!stat( name, &st ))
     {
-        if (!fstat( fd->unix_fd, &st2 ) && st.st_ino == st2.st_ino && st.st_dev == st2.st_dev)
+        if (!src_st_filled && !fstat( fd->unix_fd, &src_st ))
+            src_st_filled = 1;
+        if (src_st_filled && st.st_ino == src_st.st_ino && st.st_dev == src_st.st_dev)
         {
-            if (create_link && !replace) set_error( STATUS_OBJECT_NAME_COLLISION );
+            if (!create_link)
+            {
+                /* if it's not the "same" file (by path), it means it's a hardlink, so we need to remove the source */
+                if (!is_same_file_by_path( fd->unix_name, name ) && unlink( fd->unix_name ))
+                    file_set_error();
+            }
+            else if (!replace) set_error( STATUS_OBJECT_NAME_COLLISION );
             free( name );
             return;
         }
@@ -2613,7 +2676,7 @@ static void set_fd_name( struct fd *fd, struct fd *root, const char *nameptr, da
 
         /* link() expects that the target doesn't exist */
         /* rename() cannot replace files with directories */
-        if (create_link || S_ISDIR( st2.st_mode ))
+        if (create_link || (src_st_filled && S_ISDIR( src_st.st_mode )))
         {
             if (unlink( name ))
             {
@@ -2637,14 +2700,14 @@ static void set_fd_name( struct fd *fd, struct fd *root, const char *nameptr, da
         goto failed;
     }
 
-    if (is_file_executable( fd->unix_name ) != is_file_executable( name ) && !fstat( fd->unix_fd, &st ))
+    if (is_file_executable( fd->unix_name ) != is_file_executable( name ) && (src_st_filled || !fstat( fd->unix_fd, &src_st )))
     {
         if (is_file_executable( name ))
             /* set executable bit where read bit is set */
-            st.st_mode |= (st.st_mode & 0444) >> 2;
+            src_st.st_mode |= (src_st.st_mode & 0444) >> 2;
         else
-            st.st_mode &= ~0111;
-        fchmod( fd->unix_fd, st.st_mode );
+            src_st.st_mode &= ~0111;
+        fchmod( fd->unix_fd, src_st.st_mode );
     }
 
     free( fd->nt_name );
