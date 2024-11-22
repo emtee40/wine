@@ -669,6 +669,10 @@ void test_buffer(LPDIRECTSOUND dso, LPDIRECTSOUNDBUFFER *dsbo,
                     buffer_param.vPosition.x,buffer_param.vPosition.y,
                     buffer_param.vPosition.z,DS3D_IMMEDIATE);
                 ok(rc==DS_OK,"IDirectSound3dBuffer_SetPosition() failed: %08lx\n", rc);
+                rc=IDirectSound3DBuffer_SetPosition(buffer,
+                    NAN,NAN,NAN,DS3D_IMMEDIATE);
+                ok(rc==DSERR_INVALIDPARAM,"IDirectSound3dBuffer_SetPosition() returned %08lx\n", rc);
+
             }
         }
         /* Check the sound duration was within 10% of the expected value */
@@ -1350,6 +1354,8 @@ static void check_doppler(IDirectSound *dsound, IDirectSound3DListener *listener
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
     hr = IDirectSound3DListener_SetVelocity(listener, 0, 0, 0, DS3D_DEFERRED);
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    hr = IDirectSound3DListener_SetOrientation(listener, NAN, NAN, NAN, NAN, NAN, NAN, DS3D_DEFERRED);
+    ok(hr == DSERR_INVALIDPARAM, "Got hr %#lx.\n", hr);
     hr = IDirectSound3DBuffer_SetPosition(buffer_3d, 0, 1, 0, DS3D_DEFERRED);
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
     hr = IDirectSound3DBuffer_SetVelocity(buffer_3d, 0, -60, 0, DS3D_DEFERRED);
