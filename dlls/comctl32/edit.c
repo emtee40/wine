@@ -3205,7 +3205,7 @@ static void EDIT_WM_ContextMenu(EDITSTATE *es, INT x, INT y)
  */
 static INT EDIT_WM_GetText(const EDITSTATE *es, INT count, LPWSTR dst)
 {
-    if (!count)
+    if (!count || !dst)
         return 0;
 
     lstrcpynW(dst, es->text, count);
