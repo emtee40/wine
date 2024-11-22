@@ -84,6 +84,7 @@ AC_ARG_WITH(xshm,      AS_HELP_STRING([--without-xshm],[do not use XShm (shared 
             [if test "x$withval" = "xno"; then ac_cv_header_X11_extensions_XShm_h=no; fi])
 AC_ARG_WITH(xxf86vm,   AS_HELP_STRING([--without-xxf86vm],[do not use XFree video mode extension]),
             [if test "x$withval" = "xno"; then ac_cv_header_X11_extensions_xf86vmode_h=no; ac_cv_header_X11_extensions_xf86vmproto_h=no; fi])
+AC_ARG_WITH(zlib,      AS_HELP_STRING([--without-zlib],[do not use zlib]))
 
 AC_ARG_WITH(system-dllpath,AS_HELP_STRING([--with-system-dllpath=PATH],[load external PE dependencies from colon-separated path PATH]),
             AC_SUBST(system_dllpath,[$withval]))
@@ -1530,6 +1531,15 @@ WINE_NOTICE_WITH(gphoto,[test "$ac_cv_lib_gphoto2_gp_camera_new" != "yes"],
 WINE_NOTICE_WITH(gphoto,[test "$ac_cv_lib_gphoto2_port_gp_port_info_list_new" != "yes"],
                  [libgphoto2_port ${notice_platform}development files not found, digital cameras won't be auto-detected.])
 
+dnl **** Check for zlib ****
+if test "x$with_zlib" != "xno"
+then
+    WINE_PACKAGE_FLAGS(ZLIB,[zlib],,,,
+        [AC_CHECK_HEADERS([zlib.h])
+         AC_CHECK_LIB(z,compress,[:],[ZLIB_LIBS=""],[$ZLIB_LIBS])])
+fi
+WINE_NOTICE_WITH(zlib,[test "$ac_cv_header_zlib_h" != "yes"],
+                 [libz ${notice_platform}development files not found (or too old), wrc compressed resources won't be supported.])
 
 dnl **** Check for resolver library ***
 if test "$ac_cv_header_resolv_h" = "yes"

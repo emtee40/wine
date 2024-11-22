@@ -32,6 +32,7 @@
 #include <commctrl.h>
 #include <winternl.h>
 #include <mshtml.h>
+#include <zlib.h>
 
 #include "winetest.h"
 #include "resource.h"
@@ -657,11 +658,45 @@ static void* extract_rcdata (LPCSTR name, LPCSTR type, DWORD* size)
     return addr;
 }
 
+static void *zalloc( void *priv, unsigned int items, unsigned int sz )
+{
+    return malloc( items * sz );
+}
+
+static void zfree( void *priv, void *addr )
+{
+    free( addr );
+}
+
+static void *decompress( const char *res_name, UINT size,
+                         const void *comp, UINT comp_size )
+{
+    z_stream z = {.next_in = (BYTE *)comp, .avail_in = comp_size,
+                  .zalloc = zalloc, .zfree = zfree};
+    BYTE *data = malloc( size );
+    int res;
+
+    res = inflateInit( &z );
+    if (res != Z_OK)
+        report( R_FATAL, "Can't decompress test resource %s: %d",
+                res_name, GetLastError() );
+
+    do
+    {
+        z.next_out = data + z.total_out;
+        z.avail_out = size - z.total_out;
+        res = inflate( &z, Z_FINISH );
+    } while (z.avail_in && res == Z_STREAM_END);
+
+    if (res != Z_STREAM_END) inflateEnd( &z );
+    return data;
+}
+
 /* Fills in the name and exename fields */
 static void
 extract_test (struct wine_test *test, const char *dir, LPSTR res_name)
 {
-    BYTE* code;
+    BYTE* code, *buffer = NULL;
     DWORD size;
     char *exepos;
     HANDLE hfile;
@@ -670,6 +705,14 @@ extract_test (struct wine_test *test, const char *dir, LPSTR res_name)
     code = extract_rcdata (res_name, "TESTRES", &size);
     if (!code) report (R_FATAL, "Can't find test resource %s: %d",
                        res_name, GetLastError ());
+    if (*(DWORD *)code == 0)
+    {
+        DWORD comp_size = size - 8;
+        size = *(DWORD *)(code + 4);
+        buffer = decompress( res_name, size, code + 8, comp_size );
+        code = buffer;
+    }
+
     test->name = xstrdup( res_name );
     test->exename = strmake("%s\\%s", dir, test->name);
     exepos = strstr (test->name, testexe);
@@ -687,6 +730,7 @@ extract_test (struct wine_test *test, const char *dir, LPSTR res_name)
         report (R_FATAL, "Failed to write file %s.", test->exename);
 
     CloseHandle(hfile);
+    free( buffer );
 }
 
 static HANDLE get_admin_token(void)
