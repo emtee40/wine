@@ -24,6 +24,8 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(cmd);
 
+static UINT file_codepage; /* codepage for reading batch file */
+
 static RETURN_CODE WCMD_batch_main_loop(void)
 {
     RETURN_CODE return_code = NO_ERROR;
@@ -201,6 +203,18 @@ WCHAR *WCMD_parameter (WCHAR *s, int n, WCHAR **start, BOOL raw,
 }
 
 /****************************************************************************
+ * WCMD_update_file_codepage
+ *
+ * Update a file codepage used in WCMD_fgets.
+ * Since GetConsoleOutputCP is slow, we cache the result in advance.
+ */
+void WCMD_update_file_codepage(void)
+{
+    UINT cp = GetConsoleOutputCP();
+    file_codepage = cp ? cp : CP_OEMCP;
+}
+
+/****************************************************************************
  * WCMD_fgets
  *
  * Gets one line from a file/console and puts it into buffer buf
@@ -234,10 +248,8 @@ WCHAR *WCMD_fgets(WCHAR *buf, DWORD noChars, HANDLE h)
   else {
       LARGE_INTEGER filepos;
       char *bufA;
-      UINT cp;
       const char *p;
 
-      cp = GetOEMCP();
       bufA = xalloc(noChars);
 
       /* Save current file position */
@@ -251,7 +263,7 @@ WCHAR *WCMD_fgets(WCHAR *buf, DWORD noChars, HANDLE h)
       }
 
       /* Find first EOL */
-      for (p = bufA; p < (bufA + charsRead); p = CharNextExA(cp, p, 0)) {
+      for (p = bufA; p < (bufA + charsRead); p = CharNextExA(file_codepage, p, 0)) {
           if (*p == '\n' || *p == '\r')
               break;
       }
@@ -260,7 +272,7 @@ WCHAR *WCMD_fgets(WCHAR *buf, DWORD noChars, HANDLE h)
       filepos.QuadPart += p - bufA + 1 + (*p == '\r' ? 1 : 0);
       SetFilePointerEx(h, filepos, NULL, FILE_BEGIN);
 
-      i = MultiByteToWideChar(cp, 0, bufA, p - bufA, buf, noChars);
+      i = MultiByteToWideChar(file_codepage, 0, bufA, p - bufA, buf, noChars);
       free(bufA);
   }
 
