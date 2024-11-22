@@ -2575,8 +2575,9 @@ static int is_same_file_by_path( char *name1, char *name2 )
 static void set_fd_name( struct fd *fd, struct fd *root, const char *nameptr, data_size_t len,
                          struct unicode_str nt_name, int create_link, unsigned int flags )
 {
+    struct stat st, src_st;
+    int src_st_filled = 0;
     struct inode *inode;
-    struct stat st, st2;
     char *name;
     const unsigned int replace = flags & FILE_RENAME_REPLACE_IF_EXISTS;
 
@@ -2613,15 +2614,21 @@ static void set_fd_name( struct fd *fd, struct fd *root, const char *nameptr, da
     }
 
     /* when creating a hard link, source cannot be a dir */
-    if (create_link && !fstat( fd->unix_fd, &st ) && S_ISDIR( st.st_mode ))
+    if (create_link && !fstat( fd->unix_fd, &src_st ))
     {
-        set_error( STATUS_FILE_IS_A_DIRECTORY );
-        goto failed;
+        src_st_filled = 1;
+        if (S_ISDIR( src_st.st_mode ))
+        {
+            set_error( STATUS_FILE_IS_A_DIRECTORY );
+            goto failed;
+        }
     }
 
     if (!stat( name, &st ))
     {
-        if (!fstat( fd->unix_fd, &st2 ) && st.st_ino == st2.st_ino && st.st_dev == st2.st_dev)
+        if (!src_st_filled && !fstat( fd->unix_fd, &src_st ))
+            src_st_filled = 1;
+        if (src_st_filled && st.st_ino == src_st.st_ino && st.st_dev == src_st.st_dev)
         {
             if (!create_link)
             {
@@ -2669,7 +2676,7 @@ static void set_fd_name( struct fd *fd, struct fd *root, const char *nameptr, da
 
         /* link() expects that the target doesn't exist */
         /* rename() cannot replace files with directories */
-        if (create_link || S_ISDIR( st2.st_mode ))
+        if (create_link || (src_st_filled && S_ISDIR( src_st.st_mode )))
         {
             if (unlink( name ))
             {
@@ -2693,14 +2700,14 @@ static void set_fd_name( struct fd *fd, struct fd *root, const char *nameptr, da
         goto failed;
     }
 
-    if (is_file_executable( fd->unix_name ) != is_file_executable( name ) && !fstat( fd->unix_fd, &st ))
+    if (is_file_executable( fd->unix_name ) != is_file_executable( name ) && (src_st_filled || !fstat( fd->unix_fd, &src_st )))
     {
         if (is_file_executable( name ))
             /* set executable bit where read bit is set */
-            st.st_mode |= (st.st_mode & 0444) >> 2;
+            src_st.st_mode |= (src_st.st_mode & 0444) >> 2;
         else
-            st.st_mode &= ~0111;
-        fchmod( fd->unix_fd, st.st_mode );
+            src_st.st_mode &= ~0111;
+        fchmod( fd->unix_fd, src_st.st_mode );
     }
 
     free( fd->nt_name );
