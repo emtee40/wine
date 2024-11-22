@@ -1376,38 +1376,102 @@ static ULONG WINAPI media_source_Release(IMFMediaSource *iface)
 static HRESULT WINAPI media_source_GetEvent(IMFMediaSource *iface, DWORD flags, IMFMediaEvent **event)
 {
     struct media_source *source = impl_from_IMFMediaSource(iface);
+    IMFMediaEventQueue *event_queue = NULL;
+    HRESULT hr = S_OK;
 
     TRACE("%p, %#lx, %p.\n", iface, flags, event);
 
-    return IMFMediaEventQueue_GetEvent(source->event_queue, flags, event);
+    EnterCriticalSection(&source->cs);
+
+    /* GetEvent() is blocking, so we safely get an event queue pointer and then
+     * unlock the CS. The event queue exists until the media source is
+     * destroyed, and it checks for shutdown, but to be strictly correct we
+     * must check for shutdown in the source, because the event queue's state
+     * is updated during execution of IMFMediaSource_Shutdown() and we could
+     * erroneously return S_OK here. */
+    if (source->state == SOURCE_SHUTDOWN)
+        hr = MF_E_SHUTDOWN;
+    else
+    {
+        event_queue = source->event_queue;
+        IMFMediaEventQueue_AddRef(event_queue);
+    }
+
+    LeaveCriticalSection(&source->cs);
+
+    if (SUCCEEDED(hr))
+    {
+        hr = IMFMediaEventQueue_GetEvent(event_queue, flags, event);
+        IMFMediaEventQueue_Release(event_queue);
+    }
+
+    return hr;
 }
+
+/* The event queue has its own CS, but in the event-handling methods we still
+ * lock the source CS to ensure execution of the method is atomic wrt all other
+ * methods. The async handlers for start, stop, pause and request-sample all
+ * use the event queue, and the below event queue calls should not fall
+ * randomly between the actions taken in those handlers. Locking here ensures
+ * robustness and it means we don't need to prove the CS in the event queue is
+ * sufficient for correct synchronisation. */
 
 static HRESULT WINAPI media_source_BeginGetEvent(IMFMediaSource *iface, IMFAsyncCallback *callback, IUnknown *state)
 {
     struct media_source *source = impl_from_IMFMediaSource(iface);
+    HRESULT hr;
 
     TRACE("%p, %p, %p.\n", iface, callback, state);
 
-    return IMFMediaEventQueue_BeginGetEvent(source->event_queue, callback, state);
+    EnterCriticalSection(&source->cs);
+
+    if (source->state == SOURCE_SHUTDOWN)
+        hr = MF_E_SHUTDOWN;
+    else
+        hr = IMFMediaEventQueue_BeginGetEvent(source->event_queue, callback, state);
+
+    LeaveCriticalSection(&source->cs);
+
+    return hr;
 }
 
 static HRESULT WINAPI media_source_EndGetEvent(IMFMediaSource *iface, IMFAsyncResult *result, IMFMediaEvent **event)
 {
     struct media_source *source = impl_from_IMFMediaSource(iface);
+    HRESULT hr;
 
     TRACE("%p, %p, %p.\n", iface, result, event);
 
-    return IMFMediaEventQueue_EndGetEvent(source->event_queue, result, event);
+    EnterCriticalSection(&source->cs);
+
+    if (source->state == SOURCE_SHUTDOWN)
+        hr = MF_E_SHUTDOWN;
+    else
+        hr = IMFMediaEventQueue_EndGetEvent(source->event_queue, result, event);
+
+    LeaveCriticalSection(&source->cs);
+
+    return hr;
 }
 
 static HRESULT WINAPI media_source_QueueEvent(IMFMediaSource *iface, MediaEventType event_type, REFGUID ext_type,
-        HRESULT hr, const PROPVARIANT *value)
+        HRESULT status, const PROPVARIANT *value)
 {
     struct media_source *source = impl_from_IMFMediaSource(iface);
+    HRESULT hr;
 
-    TRACE("%p, %lu, %s, %#lx, %p.\n", iface, event_type, debugstr_guid(ext_type), hr, value);
+    TRACE("%p, %lu, %s, %#lx, %p.\n", iface, event_type, debugstr_guid(ext_type), status, value);
 
-    return IMFMediaEventQueue_QueueEventParamVar(source->event_queue, event_type, ext_type, hr, value);
+    EnterCriticalSection(&source->cs);
+
+    if (source->state == SOURCE_SHUTDOWN)
+        hr = MF_E_SHUTDOWN;
+    else
+        hr = IMFMediaEventQueue_QueueEventParamVar(source->event_queue, event_type, ext_type, status, value);
+
+    LeaveCriticalSection(&source->cs);
+
+    return hr;
 }
 
 static HRESULT WINAPI media_source_GetCharacteristics(IMFMediaSource *iface, DWORD *characteristics)
