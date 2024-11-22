@@ -986,12 +986,14 @@ static BOOL get_event(IMFMediaEventGenerator *generator, MediaEventType expected
                 ok(hr == S_OK, "Failed to get value of event, hr %#lx.\n", hr);
             }
 
+            IMFMediaEvent_Release(callback->media_event);
             break;
         }
+
+        if (callback->media_event)
+            IMFMediaEvent_Release(callback->media_event);
     }
 
-    if (callback->media_event)
-        IMFMediaEvent_Release(callback->media_event);
     IMFAsyncCallback_Release(&callback->IMFAsyncCallback_iface);
 
     return ret;
@@ -1319,8 +1321,10 @@ static void test_source_resolver(void)
     ok(mediasource != NULL, "got %p\n", mediasource);
     ok(obj_type == MF_OBJECT_MEDIASOURCE, "got %d\n", obj_type);
 
+    /* Test that no extra refs to mediasource are held if Start() was not called */
+    EXPECT_REF(mediasource, 1);
+
     refcount = IMFMediaSource_Release(mediasource);
-    todo_wine
     ok(!refcount, "Unexpected refcount %ld\n", refcount);
     IMFByteStream_Release(stream);
 
@@ -1407,14 +1411,20 @@ static void test_source_resolver(void)
     ok(mediasource != NULL, "got %p\n", mediasource);
     ok(obj_type == MF_OBJECT_MEDIASOURCE, "got %d\n", obj_type);
 
+    EXPECT_REF(mediasource, 1);
+
     check_interface(mediasource, &IID_IMFGetService, TRUE);
     check_service_interface(mediasource, &MF_RATE_CONTROL_SERVICE, &IID_IMFRateSupport, TRUE);
 
     hr = IMFMediaSource_QueryInterface(mediasource, &IID_IMFGetService, (void**)&get_service);
     ok(hr == S_OK, "Failed to get service interface, hr %#lx.\n", hr);
 
+    EXPECT_REF(mediasource, 2);
+
     hr = IMFGetService_GetService(get_service, &MF_RATE_CONTROL_SERVICE, &IID_IMFRateSupport, (void**)&rate_support);
     ok(hr == S_OK, "Failed to get rate support interface, hr %#lx.\n", hr);
+
+    EXPECT_REF(mediasource, 3);
 
     hr = IMFRateSupport_GetFastestRate(rate_support, MFRATE_FORWARD, FALSE, &rate);
     ok(hr == S_OK, "Failed to query fastest rate, hr %#lx.\n", hr);
@@ -1504,12 +1514,19 @@ static void test_source_resolver(void)
     hr = IMFMediaSource_Start(mediasource, descriptor, &GUID_NULL, &var);
     ok(hr == S_OK, "Failed to start media source, hr %#lx.\n", hr);
 
+    /* The stream holds a reference. It is unclear which object holds the fifth
+     * reference in Windows, but it's released after MENewStream is retrieved. */
+    todo_wine
+    EXPECT_REF(mediasource, 5);
+
     video_stream = NULL;
     if (get_event((IMFMediaEventGenerator *)mediasource, MENewStream, &var))
     {
         ok(var.vt == VT_UNKNOWN, "Unexpected value type.\n");
         video_stream = (IMFMediaStream *)var.punkVal;
     }
+
+    EXPECT_REF(mediasource, 4);
 
     hr = IMFMediaSource_Pause(mediasource);
     ok(hr == S_OK, "Failed to pause media source, hr %#lx.\n", hr);
@@ -1610,7 +1627,6 @@ static void test_source_resolver(void)
 
     get_event((IMFMediaEventGenerator *)mediasource, MEEndOfPresentation, NULL);
 
-    IMFMediaStream_Release(video_stream);
     IMFMediaTypeHandler_Release(handler);
     IMFPresentationDescriptor_Release(descriptor);
 
@@ -1619,14 +1635,24 @@ static void test_source_resolver(void)
     hr = IMFMediaSource_Shutdown(mediasource);
     ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
 
+    /* During shutdown, circular references such as source <-> stream should be released. */
+    EXPECT_REF(mediasource, 3);
+
     ok(bytestream_closed, "Missing IMFByteStream::Close call\n");
 
     hr = IMFMediaSource_CreatePresentationDescriptor(mediasource, NULL);
     ok(hr == MF_E_SHUTDOWN, "Unexpected hr %#lx.\n", hr);
 
     IMFRateSupport_Release(rate_support);
+
+    EXPECT_REF(mediasource, 2);
+
     IMFGetService_Release(get_service);
-    IMFMediaSource_Release(mediasource);
+
+    /* Holding a reference to the video stream does not prevent release of the media source. */
+    refcount = IMFMediaSource_Release(mediasource);
+    ok(!refcount, "Unexpected refcount %ld\n", refcount);
+
     IMFByteStream_Release(stream);
 
     /* Create directly through scheme handler. */
@@ -1658,6 +1684,12 @@ static void test_source_resolver(void)
         CoUninitialize();
 
     IMFSourceResolver_Release(resolver);
+
+    hr = IMFMediaStream_GetMediaSource(video_stream, &mediasource);
+    ok(hr == MF_E_SHUTDOWN, "Unexpected hr %#lx.\n", hr);
+
+    refcount = IMFMediaStream_Release(video_stream);
+    ok(!refcount, "Unexpected refcount %ld\n", refcount);
 
     hr = MFShutdown();
     ok(hr == S_OK, "Failed to shut down, hr %#lx.\n", hr);
