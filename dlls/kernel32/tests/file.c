@@ -2186,9 +2186,7 @@ static void test_MoveFileA(void)
     }
     FindClose(hfile);
     ret = GetFileAttributesA(source);
-    todo_wine
     ok(ret == INVALID_FILE_ATTRIBUTES && GetLastError() == ERROR_FILE_NOT_FOUND, "GetFileAttributesA: error %ld\n", GetLastError());
-    if(ret != INVALID_FILE_ATTRIBUTES) DeleteFileA(source);
     ret = DeleteFileA(dest);
     ok(ret, "DeleteFileA: error %ld\n", GetLastError());
 
