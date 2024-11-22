@@ -33,3 +33,9 @@ test_cmdline.cmd TESTCMD "test_cmdline.cmd"
 
 /* @makedep: test_cmdline.cmd.exp */
 test_cmdline.cmd.exp TESTOUT "test_cmdline.cmd.exp"
+
+/* @makedep: test_utf8.cmd */
+test_utf8.cmd TESTCMD_UTF8 "test_utf8.cmd"
+
+/* @makedep: test_utf8.cmd.exp */
+test_utf8.cmd.exp TESTOUT "test_utf8.cmd.exp"

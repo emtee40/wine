@@ -500,6 +500,28 @@ void create_nul_test_file(void)
     CloseHandle(file);
 }
 
+static void test_utf8_cmd(void)
+{
+    UINT prev_cp = GetConsoleOutputCP();
+    BOOL ret;
+
+    if (!prev_cp) {
+        /* Detach Wine's shell-no-window kind of console.
+           See test_Console() in kernel32/tests/process.c for details. */
+        FreeConsole();
+        AllocConsole();
+        prev_cp = GetConsoleOutputCP();
+    }
+    ok(prev_cp, "Can't get the console codepage, err %lu\n", GetLastError());
+
+    ret = SetConsoleOutputCP(CP_UTF8);
+    ok(ret, "Can't update the console codepage, err %lu\n", GetLastError());
+
+    EnumResourceNamesA(NULL, "TESTCMD_UTF8", test_enum_proc, 0);
+
+    SetConsoleOutputCP(prev_cp);
+}
+
 START_TEST(batch)
 {
     int argc;
@@ -529,8 +551,10 @@ START_TEST(batch)
     argc = winetest_get_mainargs(&argv);
     if(argc > 2)
         run_from_file(argv[2]);
-    else
+    else {
         EnumResourceNamesA(NULL, "TESTCMD", test_enum_proc, 0);
+        test_utf8_cmd();
+    }
 
     DeleteFileA("nul_test_file");
 }

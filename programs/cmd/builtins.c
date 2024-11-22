@@ -3393,6 +3393,7 @@ RETURN_CODE WCMD_start(WCHAR *args)
         WaitForSingleObject( pi.hProcess, INFINITE );
         GetExitCodeProcess( pi.hProcess, &exit_code );
         errorlevel = (exit_code == STILL_ACTIVE) ? NO_ERROR : exit_code;
+        WCMD_update_file_codepage();
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
     }

@@ -199,6 +199,7 @@ RETURN_CODE WCMD_volume(void);
 RETURN_CODE WCMD_mklink(WCHAR *args);
 RETURN_CODE WCMD_change_drive(WCHAR drive);
 
+void WCMD_update_file_codepage (void);
 WCHAR *WCMD_fgets (WCHAR *buf, DWORD n, HANDLE stream);
 WCHAR *WCMD_parameter (WCHAR *s, int n, WCHAR **start, BOOL raw, BOOL wholecmdline);
 WCHAR *WCMD_parameter_with_delims (WCHAR *s, int n, WCHAR **start, BOOL raw,
