@@ -5959,7 +5959,7 @@ static void test_lockrect_invalid(void)
             hr = IDirect3DCubeTexture8_UnlockRect(cube_texture, D3DCUBEMAP_FACE_NEGATIVE_X, 0);
             ok(SUCCEEDED(hr), "Failed to unlock texture, hr %#lx, type %s.\n", hr, resources[r].name);
 
-            IDirect3DTexture8_Release(cube_texture);
+            IDirect3DCubeTexture8_Release(cube_texture);
 
             hr = IDirect3DDevice8_CreateCubeTexture(device, 128, 1, D3DUSAGE_WRITEONLY, D3DFMT_A8R8G8B8,
                     resources[r].pool, &cube_texture);

@@ -229,7 +229,7 @@ static HRESULT reset_device(IDirect3DDevice9Ex *device, const struct device_desc
         present_parameters.Windowed = !(desc->flags & CREATE_DEVICE_FULLSCREEN);
     }
 
-    return IDirect3DDevice9_Reset(device, &present_parameters);
+    return IDirect3DDevice9Ex_Reset(device, &present_parameters);
 }
 
 static ULONG getref(IUnknown *obj) {
@@ -749,7 +749,7 @@ static void test_user_memory(void)
         goto done;
     }
 
-    hr = IDirect3DDevice9_GetDeviceCaps(device, &caps);
+    hr = IDirect3DDevice9Ex_GetDeviceCaps(device, &caps);
     ok(SUCCEEDED(hr), "Failed to get caps, hr %#lx.\n", hr);
 
     mem = calloc(128 * 128, 4);
@@ -847,7 +847,7 @@ static void test_user_memory(void)
     hr = IDirect3DDevice9Ex_CreateTexture(device, 33, 33, 1, 0, D3DFMT_L8,
             D3DPOOL_DEFAULT, &texture2, NULL);
     ok(SUCCEEDED(hr), "Failed to create texture, hr %#lx.\n", hr);
-    hr = IDirect3DDevice9_UpdateTexture(device, (IDirect3DBaseTexture9 *)texture,
+    hr = IDirect3DDevice9Ex_UpdateTexture(device, (IDirect3DBaseTexture9 *)texture,
             (IDirect3DBaseTexture9 *)texture2);
     ok(SUCCEEDED(hr), "Failed to update texture, hr %#lx.\n", hr);
 
@@ -873,7 +873,7 @@ static void test_user_memory(void)
     hr = IDirect3DDevice9Ex_Present(device, NULL, NULL, NULL, NULL);
     ok(SUCCEEDED(hr), "Failed to present, hr %#lx.\n", hr);
 
-    hr = IDirect3DDevice9_SetTexture(device, 0, NULL);
+    hr = IDirect3DDevice9Ex_SetTexture(device, 0, NULL);
     ok(SUCCEEDED(hr), "Failed to set texture, hr %#lx.\n", hr);
     IDirect3DTexture9_Release(texture2);
     IDirect3DTexture9_Release(texture);
@@ -1026,10 +1026,10 @@ static void test_reset(void)
     hr = IDirect3DDevice9Ex_SetScissorRect(device, &rect);
     ok(SUCCEEDED(hr), "Failed to set scissor rect, hr %#lx.\n", hr);
 
-    hr = IDirect3DDevice9_GetRenderState(device, D3DRS_LIGHTING, &value);
+    hr = IDirect3DDevice9Ex_GetRenderState(device, D3DRS_LIGHTING, &value);
     ok(SUCCEEDED(hr), "Failed to get render state, hr %#lx.\n", hr);
     ok(!!value, "Got unexpected value %#lx for D3DRS_LIGHTING.\n", value);
-    hr = IDirect3DDevice9_SetRenderState(device, D3DRS_LIGHTING, FALSE);
+    hr = IDirect3DDevice9Ex_SetRenderState(device, D3DRS_LIGHTING, FALSE);
     ok(SUCCEEDED(hr), "Failed to set render state, hr %#lx.\n", hr);
 
     memset(&d3dpp, 0, sizeof(d3dpp));
@@ -1044,7 +1044,7 @@ static void test_reset(void)
     ok(hr == D3D_OK, "Got hr %#lx.\n", hr);
 
     /* Render states are preserved in d3d9ex. */
-    hr = IDirect3DDevice9_GetRenderState(device, D3DRS_LIGHTING, &value);
+    hr = IDirect3DDevice9Ex_GetRenderState(device, D3DRS_LIGHTING, &value);
     ok(SUCCEEDED(hr), "Failed to get render state, hr %#lx.\n", hr);
     ok(!value, "Got unexpected value %#lx for D3DRS_LIGHTING.\n", value);
 
@@ -1536,10 +1536,10 @@ static void test_reset_ex(void)
     hr = IDirect3DDevice9Ex_SetScissorRect(device, &rect);
     ok(SUCCEEDED(hr), "Failed to set scissor rect, hr %#lx.\n", hr);
 
-    hr = IDirect3DDevice9_GetRenderState(device, D3DRS_LIGHTING, &value);
+    hr = IDirect3DDevice9Ex_GetRenderState(device, D3DRS_LIGHTING, &value);
     ok(SUCCEEDED(hr), "Failed to get render state, hr %#lx.\n", hr);
     ok(!!value, "Got unexpected value %#lx for D3DRS_LIGHTING.\n", value);
-    hr = IDirect3DDevice9_SetRenderState(device, D3DRS_LIGHTING, FALSE);
+    hr = IDirect3DDevice9Ex_SetRenderState(device, D3DRS_LIGHTING, FALSE);
     ok(SUCCEEDED(hr), "Failed to set render state, hr %#lx.\n", hr);
 
     memset(&d3dpp, 0, sizeof(d3dpp));
@@ -1556,7 +1556,7 @@ static void test_reset_ex(void)
     ok(hr == D3D_OK, "Got hr %#lx.\n", hr);
 
     /* Render states are preserved in d3d9ex. */
-    hr = IDirect3DDevice9_GetRenderState(device, D3DRS_LIGHTING, &value);
+    hr = IDirect3DDevice9Ex_GetRenderState(device, D3DRS_LIGHTING, &value);
     ok(SUCCEEDED(hr), "Failed to get render state, hr %#lx.\n", hr);
     ok(!value, "Got unexpected value %#lx for D3DRS_LIGHTING.\n", value);
 
@@ -1859,25 +1859,25 @@ static void test_reset_resources(void)
         goto done;
     }
 
-    hr = IDirect3DDevice9_GetDeviceCaps(device, &caps);
+    hr = IDirect3DDevice9Ex_GetDeviceCaps(device, &caps);
     ok(SUCCEEDED(hr), "Failed to get device caps, hr %#lx.\n", hr);
 
-    hr = IDirect3DDevice9_CreateDepthStencilSurface(device, 128, 128, D3DFMT_D24S8,
+    hr = IDirect3DDevice9Ex_CreateDepthStencilSurface(device, 128, 128, D3DFMT_D24S8,
             D3DMULTISAMPLE_NONE, 0, TRUE, &surface, NULL);
     ok(SUCCEEDED(hr), "Failed to create depth/stencil surface, hr %#lx.\n", hr);
-    hr = IDirect3DDevice9_SetDepthStencilSurface(device, surface);
+    hr = IDirect3DDevice9Ex_SetDepthStencilSurface(device, surface);
     ok(SUCCEEDED(hr), "Failed to set depth/stencil surface, hr %#lx.\n", hr);
     IDirect3DSurface9_Release(surface);
 
     for (i = 0; i < caps.NumSimultaneousRTs; ++i)
     {
-        hr = IDirect3DDevice9_CreateTexture(device, 128, 128, 1, D3DUSAGE_RENDERTARGET,
+        hr = IDirect3DDevice9Ex_CreateTexture(device, 128, 128, 1, D3DUSAGE_RENDERTARGET,
                 D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &texture, NULL);
         ok(SUCCEEDED(hr), "Failed to create render target texture %u, hr %#lx.\n", i, hr);
         hr = IDirect3DTexture9_GetSurfaceLevel(texture, 0, &surface);
         ok(SUCCEEDED(hr), "Failed to get surface %u, hr %#lx.\n", i, hr);
         IDirect3DTexture9_Release(texture);
-        hr = IDirect3DDevice9_SetRenderTarget(device, i, surface);
+        hr = IDirect3DDevice9Ex_SetRenderTarget(device, i, surface);
         ok(SUCCEEDED(hr), "Failed to set render target surface %u, hr %#lx.\n", i, hr);
         IDirect3DSurface9_Release(surface);
     }
@@ -1885,9 +1885,9 @@ static void test_reset_resources(void)
     hr = reset_device(device, NULL);
     ok(SUCCEEDED(hr), "Failed to reset device.\n");
 
-    hr = IDirect3DDevice9_GetBackBuffer(device, 0, 0, D3DBACKBUFFER_TYPE_MONO, &rt);
+    hr = IDirect3DDevice9Ex_GetBackBuffer(device, 0, 0, D3DBACKBUFFER_TYPE_MONO, &rt);
     ok(SUCCEEDED(hr), "Failed to get back buffer, hr %#lx.\n", hr);
-    hr = IDirect3DDevice9_GetRenderTarget(device, 0, &surface);
+    hr = IDirect3DDevice9Ex_GetRenderTarget(device, 0, &surface);
     ok(SUCCEEDED(hr), "Failed to get render target surface, hr %#lx.\n", hr);
     ok(surface == rt, "Got unexpected surface %p for render target.\n", surface);
     IDirect3DSurface9_Release(surface);
@@ -1895,11 +1895,11 @@ static void test_reset_resources(void)
 
     for (i = 1; i < caps.NumSimultaneousRTs; ++i)
     {
-        hr = IDirect3DDevice9_GetRenderTarget(device, i, &surface);
+        hr = IDirect3DDevice9Ex_GetRenderTarget(device, i, &surface);
         ok(hr == D3DERR_NOTFOUND, "Got unexpected hr %#lx.\n", hr);
     }
 
-    ref = IDirect3DDevice9_Release(device);
+    ref = IDirect3DDevice9Ex_Release(device);
     ok(!ref, "Unexpected refcount %lu.\n", ref);
 
 done:
@@ -1925,16 +1925,16 @@ static void test_vidmem_accounting(void)
         goto done;
     }
 
-    vidmem_start = IDirect3DDevice9_GetAvailableTextureMem(device);
+    vidmem_start = IDirect3DDevice9Ex_GetAvailableTextureMem(device);
     memset(textures, 0, sizeof(textures));
     for (i = 0; i < 20 && SUCCEEDED(hr); i++)
     {
-        hr = IDirect3DDevice9_CreateTexture(device, 1024, 1024, 1, D3DUSAGE_RENDERTARGET,
+        hr = IDirect3DDevice9Ex_CreateTexture(device, 1024, 1024, 1, D3DUSAGE_RENDERTARGET,
                 D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &textures[i], NULL);
         /* No D3DERR_OUTOFVIDEOMEMORY in d3d9ex */
         ok(SUCCEEDED(hr) || hr == E_OUTOFMEMORY, "Failed to create texture, hr %#lx.\n", hr);
     }
-    vidmem_end = IDirect3DDevice9_GetAvailableTextureMem(device);
+    vidmem_end = IDirect3DDevice9Ex_GetAvailableTextureMem(device);
 
     diff = vidmem_start - vidmem_end;
     diff = abs(diff);
@@ -1947,7 +1947,7 @@ static void test_vidmem_accounting(void)
             IDirect3DTexture9_Release(textures[i]);
     }
 
-    ref = IDirect3DDevice9_Release(device);
+    ref = IDirect3DDevice9Ex_Release(device);
     ok(!ref, "Unexpected refcount %lu.\n", ref);
 
 done:
@@ -1999,7 +1999,7 @@ static void test_user_memory_getdc(void)
     IDirect3DSurface9_Release(surface);
     free(data);
 
-    ref = IDirect3DDevice9_Release(device);
+    ref = IDirect3DDevice9Ex_Release(device);
     ok(!ref, "Unexpected refcount %lu.\n", ref);
 
 done:
@@ -3879,26 +3879,26 @@ static void test_backbuffer_resize(void)
         return;
     }
 
-    hr = IDirect3DDevice9_SetRenderState(device, D3DRS_CLIPPING, FALSE);
+    hr = IDirect3DDevice9Ex_SetRenderState(device, D3DRS_CLIPPING, FALSE);
     ok(SUCCEEDED(hr), "Failed to disable clipping, hr %#lx.\n", hr);
-    hr = IDirect3DDevice9_SetRenderState(device, D3DRS_ZENABLE, FALSE);
+    hr = IDirect3DDevice9Ex_SetRenderState(device, D3DRS_ZENABLE, FALSE);
     ok(SUCCEEDED(hr), "Failed to disable Z test, hr %#lx.\n", hr);
-    hr = IDirect3DDevice9_SetRenderState(device, D3DRS_LIGHTING, FALSE);
+    hr = IDirect3DDevice9Ex_SetRenderState(device, D3DRS_LIGHTING, FALSE);
     ok(SUCCEEDED(hr), "Failed to disable lighting, hr %#lx.\n", hr);
-    hr = IDirect3DDevice9_SetFVF(device, D3DFVF_XYZ | D3DFVF_DIFFUSE);
+    hr = IDirect3DDevice9Ex_SetFVF(device, D3DFVF_XYZ | D3DFVF_DIFFUSE);
     ok(SUCCEEDED(hr), "Failed to set FVF, hr %#lx.\n", hr);
 
-    hr = IDirect3DDevice9_GetBackBuffer(device, 0, 0, D3DBACKBUFFER_TYPE_MONO, &backbuffer);
+    hr = IDirect3DDevice9Ex_GetBackBuffer(device, 0, 0, D3DBACKBUFFER_TYPE_MONO, &backbuffer);
     ok(SUCCEEDED(hr), "Failed to get backbuffer, hr %#lx.\n", hr);
-    hr = IDirect3DDevice9_SetRenderTarget(device, 0, backbuffer);
+    hr = IDirect3DDevice9Ex_SetRenderTarget(device, 0, backbuffer);
     ok(SUCCEEDED(hr), "Failed to set render target, hr %#lx.\n", hr);
 
-    hr = IDirect3DDevice9_Clear(device, 0, NULL, D3DCLEAR_TARGET, 0xffff0000, 1.0f, 0);
+    hr = IDirect3DDevice9Ex_Clear(device, 0, NULL, D3DCLEAR_TARGET, 0xffff0000, 1.0f, 0);
     ok(SUCCEEDED(hr), "Failed to clear, hr %#lx.\n", hr);
     color = get_pixel_color(device, 1, 1);
     ok(color == 0x00ff0000, "Got unexpected color 0x%08x.\n", color);
 
-    hr = IDirect3DDevice9_GetSwapChain(device, 0, &old_swapchain);
+    hr = IDirect3DDevice9Ex_GetSwapChain(device, 0, &old_swapchain);
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
 
     hr = IDirect3DSurface9_GetContainer(backbuffer, &IID_IDirect3DSwapChain9, (void **)&swapchain);
@@ -3916,7 +3916,7 @@ static void test_backbuffer_resize(void)
     present_parameters.Windowed = TRUE;
     present_parameters.EnableAutoDepthStencil = TRUE;
     present_parameters.AutoDepthStencilFormat = D3DFMT_D24S8;
-    hr = IDirect3DDevice9_Reset(device, &present_parameters);
+    hr = IDirect3DDevice9Ex_Reset(device, &present_parameters);
     ok(SUCCEEDED(hr), "Failed to reset, hr %#lx.\n", hr);
 
     old_backbuffer = backbuffer;
@@ -3925,7 +3925,7 @@ static void test_backbuffer_resize(void)
     ok(surface_desc.Width == 640, "Got unexpected width %u.\n", surface_desc.Width);
     ok(surface_desc.Height == 480, "Got unexpected height %u.\n", surface_desc.Height);
 
-    hr = IDirect3DDevice9_GetSwapChain(device, 0, &swapchain);
+    hr = IDirect3DDevice9Ex_GetSwapChain(device, 0, &swapchain);
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
     ok(swapchain == old_swapchain, "Swapchains didn't match.\n");
     IDirect3DSwapChain9_Release(swapchain);
@@ -3938,30 +3938,30 @@ static void test_backbuffer_resize(void)
     hr = IDirect3DSurface9_GetContainer(old_backbuffer, &IID_IDirect3DDevice9, (void **)&device2);
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
     ok(device2 == device, "Devices didn't match.\n");
-    IDirect3DDevice9_Release(device2);
+    IDirect3DDevice9Ex_Release(device2);
 
     refcount = IDirect3DSurface9_Release(old_backbuffer);
     ok(!refcount, "Surface has %lu references left.\n", refcount);
 
-    hr = IDirect3DDevice9_GetBackBuffer(device, 0, 0, D3DBACKBUFFER_TYPE_MONO, &backbuffer);
+    hr = IDirect3DDevice9Ex_GetBackBuffer(device, 0, 0, D3DBACKBUFFER_TYPE_MONO, &backbuffer);
     ok(SUCCEEDED(hr), "Failed to get backbuffer, hr %#lx.\n", hr);
     ok(backbuffer != old_backbuffer, "Expected new backbuffer surface.\n");
 
-    hr = IDirect3DDevice9_SetRenderTarget(device, 0, backbuffer);
+    hr = IDirect3DDevice9Ex_SetRenderTarget(device, 0, backbuffer);
     ok(SUCCEEDED(hr), "Failed to set render target, hr %#lx.\n", hr);
 
-    hr = IDirect3DDevice9_Clear(device, 0, NULL, D3DCLEAR_TARGET, 0xffffff00, 1.0f, 0);
+    hr = IDirect3DDevice9Ex_Clear(device, 0, NULL, D3DCLEAR_TARGET, 0xffffff00, 1.0f, 0);
     ok(SUCCEEDED(hr), "Failed to clear, hr %#lx.\n", hr);
     color = get_pixel_color(device, 1, 1);
     ok(color == 0x00ffff00, "Got unexpected color 0x%08x.\n", color);
     color = get_pixel_color(device, 700, 500);
     ok(color == 0x00ffff00, "Got unexpected color 0x%08x.\n", color);
 
-    hr = IDirect3DDevice9_BeginScene(device);
+    hr = IDirect3DDevice9Ex_BeginScene(device);
     ok(SUCCEEDED(hr), "Failed to begin scene, hr %#lx.\n", hr);
-    hr = IDirect3DDevice9_DrawPrimitiveUP(device, D3DPT_TRIANGLESTRIP, 2, quad, sizeof(*quad));
+    hr = IDirect3DDevice9Ex_DrawPrimitiveUP(device, D3DPT_TRIANGLESTRIP, 2, quad, sizeof(*quad));
     ok(SUCCEEDED(hr), "Failed to draw, hr %#lx.\n", hr);
-    hr = IDirect3DDevice9_EndScene(device);
+    hr = IDirect3DDevice9Ex_EndScene(device);
     ok(SUCCEEDED(hr), "Failed to end scene, hr %#lx.\n", hr);
     color = get_pixel_color(device, 1, 1);
     ok(color == 0x0000ff00, "Got unexpected color 0x%08x.\n", color);
@@ -3969,7 +3969,7 @@ static void test_backbuffer_resize(void)
     ok(color == 0x0000ff00, "Got unexpected color 0x%08x.\n", color);
 
     IDirect3DSurface9_Release(backbuffer);
-    refcount = IDirect3DDevice9_Release(device);
+    refcount = IDirect3DDevice9Ex_Release(device);
     ok(!refcount, "Device has %lu references left.\n", refcount);
     DestroyWindow(window);
 }

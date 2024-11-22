@@ -12444,7 +12444,7 @@ stop:
         if (vs)
             IDirect3DVertexShader9_Release(vs);
         if (ps)
-            IDirect3DVertexShader9_Release(ps);
+            IDirect3DPixelShader9_Release(ps);
 
         winetest_pop_context();
     }
@@ -23210,7 +23210,7 @@ static void test_uninitialized_varyings(void)
         if (vs)
             IDirect3DVertexShader9_Release(vs);
         if (ps)
-            IDirect3DVertexShader9_Release(ps);
+            IDirect3DPixelShader9_Release(ps);
     }
 
     hr = IDirect3DDevice9_Present(device, NULL, NULL, NULL, NULL);
@@ -24406,7 +24406,7 @@ static void test_color_clamping(void)
         if (vs)
             IDirect3DVertexShader9_Release(vs);
         if (ps)
-            IDirect3DVertexShader9_Release(ps);
+            IDirect3DPixelShader9_Release(ps);
     }
 
     hr = IDirect3DDevice9_Present(device, NULL, NULL, NULL, NULL);
@@ -28302,7 +28302,7 @@ static void test_mipmap_upload(void)
             D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &texture, NULL);
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
 
-    level_count = IDirect3DBaseTexture9_GetLevelCount(texture);
+    level_count = IDirect3DTexture9_GetLevelCount(texture);
 
     hr = IDirect3DTexture9_LockRect(texture, 0, &locked_rect, NULL, 0);
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
@@ -28535,7 +28535,7 @@ static void test_default_diffuse(void)
         winetest_pop_context();
     }
 
-    IDirect3DVertexShader9_Release(vb);
+    IDirect3DVertexBuffer9_Release(vb);
     release_test_context(&context);
 }
 

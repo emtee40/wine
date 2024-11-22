@@ -1143,7 +1143,7 @@ static HRESULT WINAPI d3d8_device_CreateTexture(IDirect3DDevice8 *iface,
     {
         if (!d3d8_surface_create(object->wined3d_texture, i, (IUnknown *)&object->IDirect3DBaseTexture8_iface))
         {
-            IDirect3DTexture8_Release(&object->IDirect3DBaseTexture8_iface);
+            IDirect3DBaseTexture8_Release(&object->IDirect3DBaseTexture8_iface);
             return E_OUTOFMEMORY;
         }
     }
@@ -1217,7 +1217,7 @@ static HRESULT WINAPI d3d8_device_CreateCubeTexture(IDirect3DDevice8 *iface, UIN
     {
         if (!d3d8_surface_create(object->wined3d_texture, i, (IUnknown *)&object->IDirect3DBaseTexture8_iface))
         {
-            IDirect3DTexture8_Release(&object->IDirect3DBaseTexture8_iface);
+            IDirect3DBaseTexture8_Release(&object->IDirect3DBaseTexture8_iface);
             return E_OUTOFMEMORY;
         }
     }

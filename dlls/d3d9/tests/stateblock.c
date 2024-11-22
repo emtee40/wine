@@ -1813,7 +1813,7 @@ static void resource_check_data(IDirect3DDevice9 *device, const struct state_tes
         ok(w == d->stream_stride, "Stream source stride %u, expected %u.\n", w, d->stream_stride);
         if (SUCCEEDED(hr) && ptr)
         {
-            IDirect3DIndexBuffer9_Release((IDirect3DVertexBuffer9 *)ptr);
+            IDirect3DVertexBuffer9_Release((IDirect3DVertexBuffer9 *)ptr);
         }
     }
 
@@ -2002,7 +2002,7 @@ static void resource_test_cleanup(IDirect3DDevice9 *device, struct state_test *t
 
     for (i = 0; i < arg->tex_count; ++i)
     {
-        IDirect3DBaseTexture9_Release(ctx->test_data_all.tex[i]);
+        IDirect3DTexture9_Release(ctx->test_data_all.tex[i]);
     }
 
     free(ctx->default_data.vb);

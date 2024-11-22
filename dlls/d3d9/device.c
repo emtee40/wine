@@ -835,7 +835,7 @@ static HRESULT WINAPI d3d9_device_SetCursorProperties(IDirect3DDevice9Ex *iface,
         return hr;
     }
 
-    if (FAILED(hr = IDirect3D9_GetAdapterDisplayMode(&device->d3d_parent->IDirect3D9Ex_iface,
+    if (FAILED(hr = IDirect3D9Ex_GetAdapterDisplayMode(&device->d3d_parent->IDirect3D9Ex_iface,
             device->adapter_ordinal, &mode)))
     {
         WARN("Failed to get device display mode, hr %#lx.\n", hr);
@@ -951,7 +951,7 @@ static HRESULT WINAPI DECLSPEC_HOTPATCH d3d9_device_GetSwapChain(IDirect3DDevice
     {
         d3d9_swapchain = wined3d_swapchain_get_parent(device->implicit_swapchains[swapchain_idx]);
         *swapchain = (IDirect3DSwapChain9 *)&d3d9_swapchain->IDirect3DSwapChain9Ex_iface;
-        IDirect3DSwapChain9Ex_AddRef(*swapchain);
+        IDirect3DSwapChain9_AddRef(*swapchain);
         hr = D3D_OK;
     }
     else
@@ -1429,7 +1429,7 @@ static HRESULT WINAPI d3d9_device_CreateTexture(IDirect3DDevice9Ex *iface,
     {
         if (!d3d9_surface_create(object->wined3d_texture, i, (IUnknown *)&object->IDirect3DBaseTexture9_iface))
         {
-            IDirect3DTexture9_Release(&object->IDirect3DBaseTexture9_iface);
+            IDirect3DBaseTexture9_Release(&object->IDirect3DBaseTexture9_iface);
             return E_OUTOFMEMORY;
         }
     }
@@ -1532,7 +1532,7 @@ static HRESULT WINAPI d3d9_device_CreateCubeTexture(IDirect3DDevice9Ex *iface,
     {
         if (!d3d9_surface_create(object->wined3d_texture, i, (IUnknown *)&object->IDirect3DBaseTexture9_iface))
         {
-            IDirect3DTexture9_Release(&object->IDirect3DBaseTexture9_iface);
+            IDirect3DBaseTexture9_Release(&object->IDirect3DBaseTexture9_iface);
             return E_OUTOFMEMORY;
         }
     }

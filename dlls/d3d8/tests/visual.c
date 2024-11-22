@@ -12149,7 +12149,7 @@ static void test_mipmap_upload(void)
             D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &texture);
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
 
-    level_count = IDirect3DBaseTexture8_GetLevelCount(texture);
+    level_count = IDirect3DTexture8_GetLevelCount(texture);
 
     hr = IDirect3DTexture8_LockRect(texture, 0, &locked_rect, NULL, 0);
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
