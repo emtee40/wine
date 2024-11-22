@@ -6359,7 +6359,17 @@ TOOLBAR_Notify (TOOLBAR_INFO *infoPtr, LPNMHDR lpnmh)
         FIXME("TTN_GETDISPINFOA - should not be received; please report\n");
         return 0;
 
+    case CBEN_ENDEDITW:
+        if (infoPtr->bUnicode)
+        {
+            TRACE("Forwarding CBEN_ENDEDITW (no conversion).\n");
+            return SendMessageW(infoPtr->hwndNotify, WM_NOTIFY, lpnmh->idFrom, (LPARAM)lpnmh);
+        }
+        TRACE("Converting CBEN_ENDEDITW to CBEN_ENDEDITA and forwarding.\n");
+        return COMCTL32_ForwardNotifyToAnsiWindow(infoPtr->hwndNotify, lpnmh, NULL);
+
     default:
+        WARN("Should WM_NOTIFY NMHDR code 0x%x be forwarded?\n", lpnmh->code);
         return 0;
     }
 }
