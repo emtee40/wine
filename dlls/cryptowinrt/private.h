@@ -37,7 +37,8 @@
 #define WIDL_using_Windows_Security_Credentials
 #include "windows.security.credentials.h"
 
-#include "provider.h"
+#define WIDL_using_Windows_System_Threading
+#include "windows.system.threading.h"
 
 extern IActivationFactory *credentials_activation_factory;
 

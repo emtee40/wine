@@ -6,4 +6,3 @@ SOURCES = \
 	classes.idl \
 	credentials.c \
 	main.c \
-	provider.idl
