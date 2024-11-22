@@ -243,6 +243,7 @@ extern void X11DRV_UpdateLayeredWindow( HWND hwnd, UINT flags );
 extern LRESULT X11DRV_WindowMessage( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp );
 extern BOOL X11DRV_WindowPosChanging( HWND hwnd, UINT swp_flags, BOOL shaped, const struct window_rects *rects );
 extern BOOL X11DRV_GetWindowStyleMasks( HWND hwnd, UINT style, UINT ex_style, UINT *style_mask, UINT *ex_style_mask );
+extern BOOL X11DRV_GetWindowStateUpdates( HWND hwnd, UINT *state_cmd, UINT *config_cmd, RECT *rect );
 extern BOOL X11DRV_CreateWindowSurface( HWND hwnd, BOOL layered, const RECT *surface_rect, struct window_surface **surface );
 extern void X11DRV_MoveWindowBits( HWND hwnd, const struct window_rects *old_rects,
                                    const struct window_rects *new_rects, const RECT *valid_rects );
@@ -660,8 +661,7 @@ extern BOOL window_has_pending_wm_state( HWND hwnd, UINT state );
 extern void window_wm_state_notify( struct x11drv_win_data *data, unsigned long serial, UINT value );
 extern void window_net_wm_state_notify( struct x11drv_win_data *data, unsigned long serial, UINT value );
 extern void window_configure_notify( struct x11drv_win_data *data, unsigned long serial, const RECT *rect );
-extern UINT window_update_client_state( struct x11drv_win_data *data );
-extern UINT window_update_client_config( struct x11drv_win_data *data );
+extern BOOL get_window_state_updates( HWND hwnd, UINT *state_cmd, UINT *config_cmd, RECT *rect );
 
 extern Window init_clip_window(void);
 extern void update_user_time( Time time );
