@@ -1215,15 +1215,19 @@ static void xrandr14_free_monitors( struct gdi_monitor *monitors, int count )
 
 static BOOL xrandr14_device_change_handler( HWND hwnd, XEvent *event )
 {
+    BOOL ret = FALSE;
     RECT rect;
 
     xrandr14_invalidate_current_mode_cache();
     if (hwnd == NtUserGetDesktopWindow() && NtUserGetWindowThread( hwnd, NULL ) == GetCurrentThreadId())
+    {
         NtUserCallNoParam( NtUserCallNoParam_DisplayModeChanged );
+        ret = TRUE;
+    }
     /* Update xinerama monitors for xinerama_get_fullscreen_monitors() */
     rect = get_host_primary_monitor_rect();
     xinerama_init( rect.right - rect.left, rect.bottom - rect.top );
-    return FALSE;
+    return ret;
 }
 
 static void xrandr14_register_event_handlers(void)
