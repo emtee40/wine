@@ -145,12 +145,10 @@ static HRESULT STDMETHODCALLTYPE work_item_Invoke(IWorkItemHandler *iface, IAsyn
     hr = IAsyncAction_QueryInterface(action, &IID_IAsyncInfo, (void **)&async_info);
     ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
     hr = IAsyncInfo_get_Status(async_info, &status);
-    todo_wine
     ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
     if (SUCCEEDED(hr)) ok(status == Started, "Unexpected status %d.\n", status);
 
     hr = IAsyncInfo_Cancel(async_info);
-    todo_wine
     ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
 
     IAsyncInfo_Release(async_info);
