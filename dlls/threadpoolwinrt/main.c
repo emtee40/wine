@@ -37,6 +37,9 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(threadpool);
 
+#define HANDLER_NOT_SET ((void *)~(ULONG_PTR)0)
+#define Closed 4
+
 struct threadpool_factory
 {
     IActivationFactory IActivationFactory_iface;
@@ -48,6 +51,15 @@ struct async_action
 {
     IAsyncAction IAsyncAction_iface;
     IAsyncInfo IAsyncInfo_iface;
+
+    UINT32 id;
+    HRESULT hr;
+    TP_WORK *work;
+    IWorkItemHandler *work_item_handler;
+
+    CRITICAL_SECTION cs;
+    IAsyncActionCompletedHandler *completed_handler;
+    AsyncStatus status;
     LONG refcount;
 };
 
@@ -116,7 +128,15 @@ static ULONG STDMETHODCALLTYPE async_action_Release(IAsyncAction *iface)
     TRACE("iface %p, refcount %lu.\n", iface, refcount);
 
     if (!refcount)
+    {
+        if (action->completed_handler && action->completed_handler != HANDLER_NOT_SET)
+            IAsyncActionCompletedHandler_Release( action->completed_handler );
+        IAsyncInfo_Close(&action->IAsyncInfo_iface);
+        IWorkItemHandler_Release(action->work_item_handler);
+        action->cs.DebugInfo->Spare[0] = 0;
+        DeleteCriticalSection(&action->cs);
         free(action);
+    }
 
     return refcount;
 }
@@ -147,23 +167,77 @@ static HRESULT STDMETHODCALLTYPE async_action_GetTrustLevel(
 
 static HRESULT STDMETHODCALLTYPE async_action_put_Completed(IAsyncAction *iface, IAsyncActionCompletedHandler *handler)
 {
-    FIXME("iface %p, handler %p stub!\n", iface, handler);
+    struct async_action *action;
+    HRESULT hr = S_OK;
 
-    return E_NOTIMPL;
+    TRACE("iface %p, handler %p\n", iface, handler);
+
+    if (!handler)
+        return E_POINTER;
+
+    action = impl_from_IAsyncAction(iface);
+    EnterCriticalSection(&action->cs);
+    if (action->status == Closed)
+        hr = E_ILLEGAL_METHOD_CALL;
+    else if (action->completed_handler != HANDLER_NOT_SET)
+        hr = E_ILLEGAL_DELEGATE_ASSIGNMENT;
+    else if (handler)
+    {
+        action->completed_handler = handler;
+        IAsyncActionCompletedHandler_AddRef(action->completed_handler);
+        if (action->status > Started)
+        {
+            AsyncStatus status = action->status;
+            action->completed_handler = NULL;
+            LeaveCriticalSection(&action->cs);
+
+            IAsyncActionCompletedHandler_Invoke(handler, iface, status);
+            IAsyncActionCompletedHandler_Release(handler);
+            return S_OK;
+        }
+    }
+    LeaveCriticalSection(&action->cs);
+
+    return hr;
 }
 
 static HRESULT STDMETHODCALLTYPE async_action_get_Completed(IAsyncAction *iface, IAsyncActionCompletedHandler **handler)
 {
-    FIXME("iface %p, handler %p stub!\n", iface, handler);
+    struct async_action *action;
+    HRESULT hr = S_OK;
 
-    return E_NOTIMPL;
+    TRACE("iface %p, handler %p\n", iface, handler);
+
+    action = impl_from_IAsyncAction(iface);
+    EnterCriticalSection(&action->cs);
+    if (action->status == Closed)
+        hr = E_ILLEGAL_METHOD_CALL;
+    if (!action->completed_handler || action->completed_handler == HANDLER_NOT_SET)
+        *handler = NULL;
+    else
+    {
+        *handler = action->completed_handler;
+        IAsyncActionCompletedHandler_AddRef(*handler);
+    }
+    LeaveCriticalSection(&action->cs);
+
+    return hr;
 }
 
 static HRESULT STDMETHODCALLTYPE async_action_GetResults(IAsyncAction *iface)
 {
-    FIXME("iface %p stub!\n", iface);
+    struct async_action *action;
+    HRESULT hr = E_ILLEGAL_METHOD_CALL;
 
-    return E_NOTIMPL;
+    TRACE("iface %p\n", iface);
+
+    action = impl_from_IAsyncAction(iface);
+    EnterCriticalSection(&action->cs);
+    if (action->status == Completed || action->status == Error)
+        hr = S_OK;
+    LeaveCriticalSection(&action->cs);
+
+    return hr;
 }
 
 static const IAsyncActionVtbl async_action_vtbl =
@@ -217,37 +291,91 @@ static HRESULT STDMETHODCALLTYPE async_info_GetTrustLevel(IAsyncInfo *iface, Tru
 
 static HRESULT STDMETHODCALLTYPE async_info_get_Id(IAsyncInfo *iface, UINT32 *id)
 {
-    FIXME("iface %p, id %p stub!\n", iface, id);
+    struct async_action *action = impl_from_IAsyncInfo(iface);
+    HRESULT hr = S_OK;
 
-    return E_NOTIMPL;
+    TRACE("iface %p, id %p\n", iface, id);
+
+    EnterCriticalSection(&action->cs);
+    if (action->status == Closed)
+        hr = E_ILLEGAL_METHOD_CALL;
+    else
+        *id = action->id;
+    LeaveCriticalSection(&action->cs);
+
+    return hr;
 }
 
 static HRESULT STDMETHODCALLTYPE async_info_get_Status(IAsyncInfo *iface, AsyncStatus *status)
 {
-    FIXME("iface %p, status %p stub!\n", iface, status);
+    struct async_action *action = impl_from_IAsyncInfo(iface);
+    HRESULT hr = S_OK;
 
-    return E_NOTIMPL;
+    TRACE("iface %p, status %p\n", iface, status);
+
+    EnterCriticalSection(&action->cs);
+    if (action->status == Closed)
+        hr = E_ILLEGAL_METHOD_CALL;
+    *status = action->status;
+    LeaveCriticalSection(&action->cs);
+
+    return hr;
 }
 
 static HRESULT STDMETHODCALLTYPE async_info_get_ErrorCode(IAsyncInfo *iface, HRESULT *error_code)
 {
-    FIXME("iface %p, error_code %p stub!\n", iface, error_code);
+    struct async_action *action = impl_from_IAsyncInfo(iface);
+    HRESULT hr = S_OK;
 
-    return E_NOTIMPL;
+    TRACE("iface %p, error_code %p\n", iface, error_code);
+
+    EnterCriticalSection(&action->cs);
+    if (action->status == Closed)
+        *error_code = hr = E_ILLEGAL_METHOD_CALL;
+    else
+        *error_code = action->hr;
+    LeaveCriticalSection(&action->cs);
+
+    return hr;
 }
 
 static HRESULT STDMETHODCALLTYPE async_info_Cancel(IAsyncInfo *iface)
 {
-    FIXME("iface %p stub!\n", iface);
+    struct async_action *action = impl_from_IAsyncInfo(iface);
+    HRESULT hr = S_OK;
 
-    return E_NOTIMPL;
+    TRACE("iface %p\n", iface);
+
+    EnterCriticalSection(&action->cs);
+    if (action->status == Closed)
+        hr = E_ILLEGAL_METHOD_CALL;
+    else if (action->status == Started)
+        action->status = Canceled;
+    LeaveCriticalSection(&action->cs);
+
+    return hr;
 }
 
 static HRESULT STDMETHODCALLTYPE async_info_Close(IAsyncInfo *iface)
 {
-    FIXME("iface %p stub!\n", iface);
+    struct async_action *action = impl_from_IAsyncInfo( iface );
+    HRESULT hr = S_OK;
 
-    return E_NOTIMPL;
+    TRACE("iface %p\n", iface);
+
+    EnterCriticalSection(&action->cs);
+    if (action->status == Started)
+        hr = E_ILLEGAL_STATE_CHANGE;
+    else if (action->status != Closed)
+    {
+        if (action->work)
+            CloseThreadpoolWork( action->work );
+        action->work = NULL;
+        action->status = Closed;
+    }
+    LeaveCriticalSection(&action->cs);
+
+    return hr;
 }
 
 static const IAsyncInfoVtbl async_info_vtbl =
@@ -265,9 +393,51 @@ static const IAsyncInfoVtbl async_info_vtbl =
     async_info_Close,
 };
 
-static HRESULT async_action_create(IAsyncAction **ret)
+
+static void async_action_invoke_and_release(IAsyncAction *action_iface)
+{
+    struct async_action *action = impl_from_IAsyncAction(action_iface);
+    HRESULT hr;
+
+    hr = IWorkItemHandler_Invoke(action->work_item_handler, action_iface);
+
+    EnterCriticalSection(&action->cs);
+    action->hr = hr;
+
+    if (action->status != Closed)
+        action->status = FAILED(hr) ? Error : Completed;
+    if (action->completed_handler && action->completed_handler != HANDLER_NOT_SET)
+    {
+        AsyncStatus status = action->status;
+        IAsyncActionCompletedHandler *handler = action->completed_handler;
+        action->completed_handler = NULL;
+        LeaveCriticalSection(&action->cs);
+
+        IAsyncActionCompletedHandler_Invoke(handler, &action->IAsyncAction_iface, status);
+        IAsyncActionCompletedHandler_Release(handler);
+    }
+    else
+        LeaveCriticalSection(&action->cs);
+    IAsyncAction_Release(action_iface);
+}
+
+static void CALLBACK async_action_tp_callback(TP_CALLBACK_INSTANCE *inst, void *action_iface, TP_WORK *work)
+{
+    async_action_invoke_and_release(action_iface);
+}
+
+static DWORD CALLBACK async_action_sliced_proc(void *action_iface)
+{
+    async_action_invoke_and_release(action_iface);
+    return 0;
+}
+
+static HRESULT async_action_create_and_start(TP_CALLBACK_ENVIRON *environment, WorkItemPriority priority,
+                                             IWorkItemHandler *work_item, IAsyncAction **ret)
 {
     struct async_action *object;
+    static LONG async_action_id = 0;
+    HANDLE thread = NULL;
 
     *ret = NULL;
 
@@ -276,60 +446,49 @@ static HRESULT async_action_create(IAsyncAction **ret)
 
     object->IAsyncAction_iface.lpVtbl = &async_action_vtbl;
     object->IAsyncInfo_iface.lpVtbl = &async_info_vtbl;
-    object->refcount = 1;
+    if (environment)
+    {
+        object->work = CreateThreadpoolWork(async_action_tp_callback, &object->IAsyncAction_iface, environment);
+        if (!object->work)
+        {
+            ERR("Failed to create a thread pool work item: %lu.\n", GetLastError());
+            free(object);
+            return HRESULT_FROM_WIN32(GetLastError());
+        }
+    }
+    else
+    {
+        thread = CreateThread(NULL, 0, async_action_sliced_proc, &object->IAsyncAction_iface, CREATE_SUSPENDED,
+                              NULL);
+        if (!thread)
+        {
+            ERR("Failed to create a thread: %lu\n", GetLastError());
+            free(object);
+            return HRESULT_FROM_WIN32(GetLastError());
+        }
+        if (priority != WorkItemPriority_Normal)
+            SetThreadPriority(thread, priority == WorkItemPriority_High ? THREAD_PRIORITY_HIGHEST
+                              : THREAD_PRIORITY_LOWEST);
+    }
+    object->id = InterlockedIncrement(&async_action_id);
+    object->work_item_handler = work_item;
+    IWorkItemHandler_AddRef(work_item);
+    object->completed_handler = HANDLER_NOT_SET;
+    object->status = Started;
+    InitializeCriticalSectionEx(&object->cs, 0, RTL_CRITICAL_SECTION_FLAG_FORCE_DEBUG_INFO);
+    object->cs.DebugInfo->Spare[0] = (DWORD_PTR)(__FILE__": async_action.cs");
+    object->refcount = 2;
 
+    if (object->work)
+        SubmitThreadpoolWork(object->work);
+    else
+    {
+        ResumeThread(thread);
+        CloseHandle(thread);
+    }
     *ret = &object->IAsyncAction_iface;
 
     return S_OK;
-}
-
-struct work_item
-{
-    IWorkItemHandler *handler;
-    IAsyncAction *action;
-};
-
-static void release_work_item(struct work_item *item)
-{
-    IWorkItemHandler_Release(item->handler);
-    IAsyncAction_Release(item->action);
-    free(item);
-}
-
-static HRESULT alloc_work_item(IWorkItemHandler *handler, struct work_item **ret)
-{
-    struct work_item *object;
-    HRESULT hr;
-
-    *ret = NULL;
-
-    if (!(object = calloc(1, sizeof(*object))))
-        return E_OUTOFMEMORY;
-
-    if (FAILED(hr = async_action_create(&object->action)))
-    {
-        free(object);
-        return hr;
-    }
-
-    IWorkItemHandler_AddRef((object->handler = handler));
-
-    *ret = object;
-
-    return S_OK;
-}
-
-static void work_item_invoke_release(struct work_item *item)
-{
-    IWorkItemHandler_Invoke(item->handler, item->action);
-    release_work_item(item);
-}
-
-static DWORD WINAPI sliced_thread_proc(void *arg)
-{
-    struct work_item *item = arg;
-    work_item_invoke_release(item);
-    return 0;
 }
 
 struct thread_pool
@@ -354,62 +513,10 @@ static BOOL CALLBACK pool_init_once(INIT_ONCE *init_once, void *param, void **co
     return TRUE;
 }
 
-static void CALLBACK pool_work_callback(TP_CALLBACK_INSTANCE *instance, void *context, TP_WORK *work)
-{
-    struct work_item *item = context;
-    work_item_invoke_release(item);
-}
-
-static HRESULT submit_threadpool_work(struct work_item *item, WorkItemPriority priority, IAsyncAction **action)
-{
-    struct thread_pool *pool;
-    TP_WORK *work;
-
-    assert(priority == WorkItemPriority_Low
-            || priority == WorkItemPriority_Normal
-            || priority == WorkItemPriority_High);
-
-    pool = &pools[priority + 1];
-
-    if (!InitOnceExecuteOnce(&pool->init_once, pool_init_once, pool, NULL))
-        return E_FAIL;
-
-    if (!(work = CreateThreadpoolWork(pool_work_callback, item, &pool->environment)))
-        return E_FAIL;
-
-    IAsyncAction_AddRef((*action = item->action));
-    SubmitThreadpoolWork(work);
-
-    return S_OK;
-}
-
-static HRESULT submit_standalone_thread_work(struct work_item *item, WorkItemPriority priority, IAsyncAction **action)
-{
-    HANDLE thread;
-
-    if (!(thread = CreateThread(NULL, 0, sliced_thread_proc, item, priority == WorkItemPriority_Normal ?
-            0 : CREATE_SUSPENDED, NULL)))
-    {
-        WARN("Failed to create a thread, error %ld.\n", GetLastError());
-        return HRESULT_FROM_WIN32(GetLastError());
-    }
-
-    IAsyncAction_AddRef((*action = item->action));
-    if (priority != WorkItemPriority_Normal)
-    {
-        SetThreadPriority(thread, priority == WorkItemPriority_High ? THREAD_PRIORITY_HIGHEST : THREAD_PRIORITY_LOWEST);
-        ResumeThread(thread);
-    }
-    CloseHandle(thread);
-
-    return S_OK;
-}
-
 static HRESULT run_async(IWorkItemHandler *handler, WorkItemPriority priority, WorkItemOptions options,
         IAsyncAction **action)
 {
-    struct work_item *item;
-    HRESULT hr;
+    TP_CALLBACK_ENVIRON *environment = NULL;
 
     *action = NULL;
 
@@ -419,18 +526,15 @@ static HRESULT run_async(IWorkItemHandler *handler, WorkItemPriority priority, W
     if (priority < WorkItemPriority_Low || priority > WorkItemPriority_High)
         return E_INVALIDARG;
 
-    if (FAILED(hr = alloc_work_item(handler, &item)))
-        return hr;
+    if (options != WorkItemOptions_TimeSliced)
+    {
+        struct thread_pool *pool = &pools[priority + 1];
+        if (!InitOnceExecuteOnce(&pool->init_once, pool_init_once, pool, NULL))
+            return E_FAIL;
+        environment = &pools[priority + 1].environment;
+    }
 
-    if (options == WorkItemOptions_TimeSliced)
-        hr = submit_standalone_thread_work(item, priority, action);
-    else
-        hr = submit_threadpool_work(item, priority, action);
-
-    if (FAILED(hr))
-        release_work_item(item);
-
-    return hr;
+    return async_action_create_and_start(environment, priority, handler, action);
 }
 
 static HRESULT STDMETHODCALLTYPE threadpool_factory_QueryInterface(

@@ -138,7 +138,6 @@ static ULONG STDMETHODCALLTYPE work_item_Release(IWorkItemHandler *iface)
 static HRESULT STDMETHODCALLTYPE work_item_Invoke(IWorkItemHandler *iface, IAsyncAction *action)
 {
     struct work_item *item = impl_from_IWorkItemHandler(iface);
-    IAsyncActionCompletedHandler *handler;
     IAsyncInfo *async_info;
     AsyncStatus status;
     HRESULT hr;
@@ -146,29 +145,18 @@ static HRESULT STDMETHODCALLTYPE work_item_Invoke(IWorkItemHandler *iface, IAsyn
     hr = IAsyncAction_QueryInterface(action, &IID_IAsyncInfo, (void **)&async_info);
     ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
     hr = IAsyncInfo_get_Status(async_info, &status);
-    todo_wine
     ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
     if (SUCCEEDED(hr)) ok(status == Started, "Unexpected status %d.\n", status);
 
     hr = IAsyncInfo_Cancel(async_info);
-    todo_wine
     ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
 
     IAsyncInfo_Release(async_info);
 
     hr = IAsyncAction_GetResults(action);
-    todo_wine
     ok(hr == E_ILLEGAL_METHOD_CALL, "Unexpected hr %#lx.\n", hr);
 
-    handler = (void *)0xdeadbeef;
-    hr = IAsyncAction_get_Completed(action, &handler);
-    todo_wine
-    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
-    todo_wine
-    ok(!handler, "Unexpected pointer %p.\n", handler);
-
     hr = IAsyncAction_put_Completed(action, NULL);
-    todo_wine
     ok(hr == E_POINTER, "Unexpected hr %#lx.\n", hr);
 
     SetEvent(item->event);
@@ -202,10 +190,107 @@ static HRESULT create_work_item(IWorkItemHandler **item)
     return S_OK;
 }
 
+struct completed_handler
+{
+    IAsyncActionCompletedHandler IAsyncActionCompletedHandler_iface;
+    HANDLE invoked_event;
+    BOOL invoked;
+    LONG refcount;
+};
+
+static inline struct completed_handler *
+impl_from_IAsyncActionCompletedHandler(IAsyncActionCompletedHandler *iface)
+{
+    return CONTAINING_RECORD(iface, struct completed_handler, IAsyncActionCompletedHandler_iface);
+}
+
+static HRESULT STDMETHODCALLTYPE handler_QueryInterface(IAsyncActionCompletedHandler *iface, REFIID riid, void **out)
+{
+    if (IsEqualGUID(&IID_IUnknown, riid) ||
+        IsEqualGUID(&IID_IAsyncActionCompletedHandler, riid))
+    {
+        *out = iface;
+        IUnknown_AddRef((IUnknown *)*out);
+        return S_OK;
+    }
+
+    return E_NOINTERFACE;
+}
+
+static ULONG STDMETHODCALLTYPE handler_AddRef(IAsyncActionCompletedHandler *iface)
+{
+    struct completed_handler *handler = impl_from_IAsyncActionCompletedHandler(iface);
+    return InterlockedIncrement(&handler->refcount);
+}
+
+static ULONG STDMETHODCALLTYPE handler_Release(IAsyncActionCompletedHandler *iface)
+{
+    struct completed_handler *handler = impl_from_IAsyncActionCompletedHandler(iface);
+    ULONG ref = InterlockedDecrement(&handler->refcount);
+    if (!ref)
+    {
+        CloseHandle(handler->invoked_event);
+        free(handler);
+    }
+
+    return ref;
+}
+
+static HRESULT STDMETHODCALLTYPE handler_Invoke(IAsyncActionCompletedHandler *iface, IAsyncAction *action,
+                                                AsyncStatus status)
+{
+    struct completed_handler *handler = impl_from_IAsyncActionCompletedHandler(iface);
+
+    ok(!handler->invoked, "Handler should only be invoked once.\n");
+    ok(!!action, "Execpted non-null IAsyncAction value.\n");
+    handler->invoked = TRUE;
+    SetEvent(handler->invoked_event);
+    return S_OK;
+}
+
+static const IAsyncActionCompletedHandlerVtbl completed_handler_vtbl = {
+    handler_QueryInterface,
+    handler_AddRef,
+    handler_Release,
+    handler_Invoke,
+};
+
+static HRESULT create_completed_handler(IAsyncActionCompletedHandler **handler)
+{
+    struct completed_handler *object;
+
+    *handler = NULL;
+
+    object = calloc(1, sizeof(*object));
+    if (!object)
+        return E_OUTOFMEMORY;
+
+    object->IAsyncActionCompletedHandler_iface.lpVtbl = &completed_handler_vtbl;
+    object->refcount = 1;
+    object->invoked_event = CreateEventW(NULL, FALSE, FALSE, NULL);
+
+    *handler = &object->IAsyncActionCompletedHandler_iface;
+
+    return S_OK;
+}
+
+#define test_IAsyncActionCompletedHandler(h) test_IAsyncActionCompletedHandler_(__LINE__, (h))
+static void test_IAsyncActionCompletedHandler_(int line, IAsyncActionCompletedHandler *handler)
+{
+    struct completed_handler *impl = impl_from_IAsyncActionCompletedHandler(handler);
+    DWORD ret;
+
+    ret = WaitForSingleObject(impl->invoked_event, 1000);
+    ok(!ret, "Unexpected wait result %lu.\n", ret);
+
+    ok_(__FILE__, line)(impl->invoked, "Expected invoked to be non-zero.\n");
+}
+
 static void test_RunAsync(void)
 {
     IActivationFactory *factory = NULL;
     IThreadPoolStatics *threadpool_statics;
+    IAsyncActionCompletedHandler *handler = NULL;
     IWorkItemHandler *item_iface;
     struct work_item *item;
     IAsyncAction *action;
@@ -250,15 +335,48 @@ static void test_RunAsync(void)
 
     hr = IThreadPoolStatics_RunWithPriorityAsync(threadpool_statics, item_iface, WorkItemPriority_Normal, &action);
     ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    if (hr == S_OK)
+    {
+        hr = create_completed_handler(&handler);
+        ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+
+        if (hr == S_OK)
+        {
+            hr = IAsyncAction_put_Completed(action, handler);
+            ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+        }
+    }
     ret = WaitForSingleObject(item->event, 1000);
     ok(!ret, "Unexpected wait result %lu.\n", ret);
+    if (handler)
+    {
+        test_IAsyncActionCompletedHandler(handler);
+        IAsyncActionCompletedHandler_Release(handler);
+    }
     IAsyncAction_Release(action);
 
+    handler = NULL;
     hr = IThreadPoolStatics_RunWithPriorityAndOptionsAsync(threadpool_statics, item_iface, WorkItemPriority_Normal,
             WorkItemOptions_TimeSliced, &action);
     ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
     ret = WaitForSingleObject(item->event, 1000);
     ok(!ret, "Unexpected wait result %lu.\n", ret);
+    /* Try setting a Completed handler after the work item has likely run. */
+    if (hr == S_OK)
+    {
+        hr = create_completed_handler(&handler);
+        ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+
+        if (hr == S_OK)
+        {
+            hr = IAsyncAction_put_Completed(action, handler);
+            ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+            hr = IAsyncAction_put_Completed(action, handler);
+            ok(hr == E_ILLEGAL_DELEGATE_ASSIGNMENT, "%#lx != %#lx\n", hr, E_ILLEGAL_DELEGATE_ASSIGNMENT);
+            test_IAsyncActionCompletedHandler(handler);
+            IAsyncActionCompletedHandler_Release(handler);
+        }
+    }
     IAsyncAction_Release(action);
 
     hr = IThreadPoolStatics_RunWithPriorityAndOptionsAsync(threadpool_statics, item_iface, WorkItemPriority_Low,
