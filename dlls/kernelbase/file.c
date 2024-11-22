@@ -883,6 +883,11 @@ HANDLE WINAPI DECLSPEC_HOTPATCH CreateFileW( LPCWSTR filename, DWORD access, DWO
          */
         if (status == STATUS_OBJECT_NAME_COLLISION)
             SetLastError( ERROR_FILE_EXISTS );
+        else if (status == STATUS_FILE_IS_A_DIRECTORY)
+        {
+            WCHAR last = filename[wcslen(filename) - 1];
+            SetLastError(last == '\\' ? ERROR_PATH_NOT_FOUND : ERROR_ACCESS_DENIED);
+        }
         else
             SetLastError( RtlNtStatusToDosError(status) );
     }
