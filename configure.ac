@@ -1004,16 +1004,23 @@ This is an error since --enable-archs=$wine_arch was requested.])])
     if test "x$ac_debug_format_seen" = x
     then
       case $wine_crossdebug in
-        *dwarf)  WINE_TRY_PE_CFLAGS([-gdwarf-4]) ;;
+        *dwarf)  WINE_TRY_PE_CFLAGS([-gdwarf-4],[:],
+				    [WINE_TRY_PE_CFLAGS([-gdwarf-4 -Wl,-debug:dwarf],
+							[AS_VAR_APPEND([${wine_arch}_CFLAGS],[" -gdwarf-4"])
+							 AS_VAR_APPEND([${wine_arch}_LDFLAGS],[" -Wl,-debug:dwarf"])])]) ;;
         pdb)     WINE_TRY_PE_CFLAGS([-gcodeview]) ;;
       esac
     fi
     AS_VAR_SET([${wine_arch}_DEBUG],[$wine_crossdebug])
 
     test "x$enable_werror" != xyes || WINE_TRY_PE_CFLAGS([-Werror])
-    test "x$enable_build_id" != xyes || WINE_TRY_PE_CFLAGS([-Wl,--build-id],
-                                         [AS_VAR_APPEND([${wine_arch}_CFLAGS],[" -Wl,--build-id"])
-                                          AS_VAR_APPEND([${wine_arch}_LDFLAGS],[" -Wl,--build-id"])])
+    if test "x$enable_build_id" = xyes
+    then
+       WINE_TRY_PE_CFLAGS([-Wl,--build-id],
+			  [AS_VAR_APPEND([${wine_arch}_LDFLAGS],[" -Wl,--build-id"])],
+			  [WINE_TRY_PE_CFLAGS([-Wl,-build-id],
+			                      [AS_VAR_APPEND([${wine_arch}_LDFLAGS],[" -Wl,-build-id"])])])
+    fi
 
 done
 
