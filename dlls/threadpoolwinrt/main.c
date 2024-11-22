@@ -48,6 +48,12 @@ struct async_action
 {
     IAsyncAction IAsyncAction_iface;
     IAsyncInfo IAsyncInfo_iface;
+
+    TP_WORK *work;
+    IWorkItemHandler *work_item_handler;
+
+    CRITICAL_SECTION cs;
+    AsyncStatus status;
     LONG refcount;
 };
 
@@ -116,7 +122,12 @@ static ULONG STDMETHODCALLTYPE async_action_Release(IAsyncAction *iface)
     TRACE("iface %p, refcount %lu.\n", iface, refcount);
 
     if (!refcount)
+    {
+        IWorkItemHandler_Release(action->work_item_handler);
+        action->cs.DebugInfo->Spare[0] = 0;
+        DeleteCriticalSection(&action->cs);
         free(action);
+    }
 
     return refcount;
 }
@@ -161,9 +172,18 @@ static HRESULT STDMETHODCALLTYPE async_action_get_Completed(IAsyncAction *iface,
 
 static HRESULT STDMETHODCALLTYPE async_action_GetResults(IAsyncAction *iface)
 {
-    FIXME("iface %p stub!\n", iface);
+    struct async_action *action;
+    HRESULT hr = E_ILLEGAL_METHOD_CALL;
 
-    return E_NOTIMPL;
+    TRACE("iface %p\n", iface);
+
+    action = impl_from_IAsyncAction(iface);
+    EnterCriticalSection(&action->cs);
+    if (action->status == Completed || action->status == Error)
+        hr = S_OK;
+    LeaveCriticalSection(&action->cs);
+
+    return hr;
 }
 
 static const IAsyncActionVtbl async_action_vtbl =
@@ -265,9 +285,36 @@ static const IAsyncInfoVtbl async_info_vtbl =
     async_info_Close,
 };
 
-static HRESULT async_action_create(IAsyncAction **ret)
+
+static void async_action_invoke_and_release(IAsyncAction *action_iface)
+{
+    struct async_action *action = impl_from_IAsyncAction(action_iface);
+    HRESULT hr;
+
+    hr = IWorkItemHandler_Invoke(action->work_item_handler, action_iface);
+
+    EnterCriticalSection(&action->cs);
+    action->status = FAILED(hr) ? Error : Completed;
+    LeaveCriticalSection(&action->cs);
+    IAsyncAction_Release(action_iface);
+}
+
+static void CALLBACK async_action_tp_callback(TP_CALLBACK_INSTANCE *inst, void *action_iface, TP_WORK *work)
+{
+    async_action_invoke_and_release(action_iface);
+}
+
+static DWORD CALLBACK async_action_sliced_proc(void *action_iface)
+{
+    async_action_invoke_and_release(action_iface);
+    return 0;
+}
+
+static HRESULT async_action_create_and_start(TP_CALLBACK_ENVIRON *environment, WorkItemPriority priority,
+                                             IWorkItemHandler *work_item, IAsyncAction **ret)
 {
     struct async_action *object;
+    HANDLE thread = NULL;
 
     *ret = NULL;
 
@@ -276,60 +323,47 @@ static HRESULT async_action_create(IAsyncAction **ret)
 
     object->IAsyncAction_iface.lpVtbl = &async_action_vtbl;
     object->IAsyncInfo_iface.lpVtbl = &async_info_vtbl;
-    object->refcount = 1;
+    if (environment)
+    {
+        object->work = CreateThreadpoolWork(async_action_tp_callback, &object->IAsyncAction_iface, environment);
+        if (!object->work)
+        {
+            ERR("Failed to create a thread pool work item: %lu.\n", GetLastError());
+            free(object);
+            return HRESULT_FROM_WIN32(GetLastError());
+        }
+    }
+    else
+    {
+        thread = CreateThread(NULL, 0, async_action_sliced_proc, &object->IAsyncAction_iface, CREATE_SUSPENDED,
+                              NULL);
+        if (!thread)
+        {
+            ERR("Failed to create a thread: %lu\n", GetLastError());
+            free(object);
+            return HRESULT_FROM_WIN32(GetLastError());
+        }
+        if (priority != WorkItemPriority_Normal)
+            SetThreadPriority(thread, priority == WorkItemPriority_High ? THREAD_PRIORITY_HIGHEST
+                              : THREAD_PRIORITY_LOWEST);
+    }
+    object->work_item_handler = work_item;
+    IWorkItemHandler_AddRef(work_item);
+    object->status = Started;
+    InitializeCriticalSectionEx(&object->cs, 0, RTL_CRITICAL_SECTION_FLAG_FORCE_DEBUG_INFO);
+    object->cs.DebugInfo->Spare[0] = (DWORD_PTR)(__FILE__": async_action.cs");
+    object->refcount = 2;
 
+    if (object->work)
+        SubmitThreadpoolWork(object->work);
+    else
+    {
+        ResumeThread(thread);
+        CloseHandle(thread);
+    }
     *ret = &object->IAsyncAction_iface;
 
     return S_OK;
-}
-
-struct work_item
-{
-    IWorkItemHandler *handler;
-    IAsyncAction *action;
-};
-
-static void release_work_item(struct work_item *item)
-{
-    IWorkItemHandler_Release(item->handler);
-    IAsyncAction_Release(item->action);
-    free(item);
-}
-
-static HRESULT alloc_work_item(IWorkItemHandler *handler, struct work_item **ret)
-{
-    struct work_item *object;
-    HRESULT hr;
-
-    *ret = NULL;
-
-    if (!(object = calloc(1, sizeof(*object))))
-        return E_OUTOFMEMORY;
-
-    if (FAILED(hr = async_action_create(&object->action)))
-    {
-        free(object);
-        return hr;
-    }
-
-    IWorkItemHandler_AddRef((object->handler = handler));
-
-    *ret = object;
-
-    return S_OK;
-}
-
-static void work_item_invoke_release(struct work_item *item)
-{
-    IWorkItemHandler_Invoke(item->handler, item->action);
-    release_work_item(item);
-}
-
-static DWORD WINAPI sliced_thread_proc(void *arg)
-{
-    struct work_item *item = arg;
-    work_item_invoke_release(item);
-    return 0;
 }
 
 struct thread_pool
@@ -354,62 +388,10 @@ static BOOL CALLBACK pool_init_once(INIT_ONCE *init_once, void *param, void **co
     return TRUE;
 }
 
-static void CALLBACK pool_work_callback(TP_CALLBACK_INSTANCE *instance, void *context, TP_WORK *work)
-{
-    struct work_item *item = context;
-    work_item_invoke_release(item);
-}
-
-static HRESULT submit_threadpool_work(struct work_item *item, WorkItemPriority priority, IAsyncAction **action)
-{
-    struct thread_pool *pool;
-    TP_WORK *work;
-
-    assert(priority == WorkItemPriority_Low
-            || priority == WorkItemPriority_Normal
-            || priority == WorkItemPriority_High);
-
-    pool = &pools[priority + 1];
-
-    if (!InitOnceExecuteOnce(&pool->init_once, pool_init_once, pool, NULL))
-        return E_FAIL;
-
-    if (!(work = CreateThreadpoolWork(pool_work_callback, item, &pool->environment)))
-        return E_FAIL;
-
-    IAsyncAction_AddRef((*action = item->action));
-    SubmitThreadpoolWork(work);
-
-    return S_OK;
-}
-
-static HRESULT submit_standalone_thread_work(struct work_item *item, WorkItemPriority priority, IAsyncAction **action)
-{
-    HANDLE thread;
-
-    if (!(thread = CreateThread(NULL, 0, sliced_thread_proc, item, priority == WorkItemPriority_Normal ?
-            0 : CREATE_SUSPENDED, NULL)))
-    {
-        WARN("Failed to create a thread, error %ld.\n", GetLastError());
-        return HRESULT_FROM_WIN32(GetLastError());
-    }
-
-    IAsyncAction_AddRef((*action = item->action));
-    if (priority != WorkItemPriority_Normal)
-    {
-        SetThreadPriority(thread, priority == WorkItemPriority_High ? THREAD_PRIORITY_HIGHEST : THREAD_PRIORITY_LOWEST);
-        ResumeThread(thread);
-    }
-    CloseHandle(thread);
-
-    return S_OK;
-}
-
 static HRESULT run_async(IWorkItemHandler *handler, WorkItemPriority priority, WorkItemOptions options,
         IAsyncAction **action)
 {
-    struct work_item *item;
-    HRESULT hr;
+    TP_CALLBACK_ENVIRON *environment = NULL;
 
     *action = NULL;
 
@@ -419,18 +401,15 @@ static HRESULT run_async(IWorkItemHandler *handler, WorkItemPriority priority, W
     if (priority < WorkItemPriority_Low || priority > WorkItemPriority_High)
         return E_INVALIDARG;
 
-    if (FAILED(hr = alloc_work_item(handler, &item)))
-        return hr;
+    if (options != WorkItemOptions_TimeSliced)
+    {
+        struct thread_pool *pool = &pools[priority + 1];
+        if (!InitOnceExecuteOnce(&pool->init_once, pool_init_once, pool, NULL))
+            return E_FAIL;
+        environment = &pools[priority + 1].environment;
+    }
 
-    if (options == WorkItemOptions_TimeSliced)
-        hr = submit_standalone_thread_work(item, priority, action);
-    else
-        hr = submit_threadpool_work(item, priority, action);
-
-    if (FAILED(hr))
-        release_work_item(item);
-
-    return hr;
+    return async_action_create_and_start(environment, priority, handler, action);
 }
 
 static HRESULT STDMETHODCALLTYPE threadpool_factory_QueryInterface(

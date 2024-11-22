@@ -156,7 +156,6 @@ static HRESULT STDMETHODCALLTYPE work_item_Invoke(IWorkItemHandler *iface, IAsyn
     IAsyncInfo_Release(async_info);
 
     hr = IAsyncAction_GetResults(action);
-    todo_wine
     ok(hr == E_ILLEGAL_METHOD_CALL, "Unexpected hr %#lx.\n", hr);
 
     hr = IAsyncAction_put_Completed(action, NULL);
