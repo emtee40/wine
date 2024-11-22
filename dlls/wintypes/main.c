@@ -31,6 +31,7 @@
 
 #define WIDL_using_Windows_Foundation
 #define WIDL_using_Windows_Foundation_Metadata
+#define WIDL_using_Windows_Foundation_Collections
 #include "windows.foundation.metadata.h"
 #include "wintypes_private.h"
 
@@ -1213,8 +1214,14 @@ HRESULT WINAPI DllGetClassObject(REFCLSID clsid, REFIID riid, void **out)
 
 HRESULT WINAPI DllGetActivationFactory(HSTRING classid, IActivationFactory **factory)
 {
+    const WCHAR *name;
     TRACE("classid %s, factory %p.\n", debugstr_hstring(classid), factory);
-    *factory = &wintypes.IActivationFactory_iface;
+
+    name = WindowsGetStringRawBuffer(classid, NULL);
+    if (!wcscmp(name, RuntimeClass_Windows_Foundation_Collections_PropertySet))
+        *factory = IPropertySet_factory;
+    else
+        *factory = &wintypes.IActivationFactory_iface;
     IUnknown_AddRef(*factory);
     return S_OK;
 }
