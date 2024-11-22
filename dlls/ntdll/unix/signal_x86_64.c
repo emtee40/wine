@@ -63,6 +63,7 @@
 #endif
 #ifdef __APPLE__
 # include <mach/mach.h>
+extern void _thread_set_tsd_base(uint64_t);
 #endif
 
 #include "ntstatus.h"
@@ -423,7 +424,7 @@ struct syscall_frame
     void                 *syscall_cfa;   /* 00a8 */
     DWORD                 syscall_flags; /* 00b0 */
     DWORD                 restore_flags; /* 00b4 */
-    DWORD                 align[2];      /* 00b8 */
+    ULONG64               gsbase;        /* 00b8 */
     XMM_SAVE_AREA32       xsave;         /* 00c0 */
     DECLSPEC_ALIGN(64) XSAVE_AREA_HEADER xstate;    /* 02c0 */
 };
@@ -462,7 +463,7 @@ static inline struct amd64_thread_data *amd64_thread_data(void)
     return (struct amd64_thread_data *)ntdll_get_thread_data()->cpu_data;
 }
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 static inline TEB *get_current_teb(void)
 {
     unsigned long rsp;
@@ -476,6 +477,15 @@ static BOOL is_inside_syscall( const ucontext_t *sigcontext )
     return ((char *)RSP_sig(sigcontext) >= (char *)ntdll_get_thread_data()->kernel_stack &&
             (char *)RSP_sig(sigcontext) <= (char *)amd64_thread_data()->syscall_frame);
 }
+
+#ifdef __APPLE__
+static inline UINT64 get_gs30(void)
+{
+    UINT64 gs30;
+    __asm__("movq %%gs:0x30,%0" : "=r" (gs30));
+    return gs30;
+}
+#endif
 
 
 extern void __wine_syscall_dispatcher_instrumentation(void);
@@ -847,6 +857,10 @@ static inline ucontext_t *init_handler( void *sigcontext )
         arch_prctl( ARCH_SET_FS, ((struct amd64_thread_data *)thread_data->cpu_data)->pthread_teb );
     }
 #endif
+#ifdef __APPLE__
+    struct ntdll_thread_data *thread_data = (struct ntdll_thread_data *)&get_current_teb()->GdiTebBatch;
+    _thread_set_tsd_base( (uint64_t)((struct amd64_thread_data *)thread_data->cpu_data)->pthread_teb );
+#endif
     return sigcontext;
 }
 
@@ -859,6 +873,9 @@ static inline void leave_handler( ucontext_t *sigcontext )
 #ifdef __linux__
     if (fs32_sel && !is_inside_signal_stack( (void *)RSP_sig(sigcontext )) && !is_inside_syscall(sigcontext))
         __asm__ volatile( "movw %0,%%fs" :: "r" (fs32_sel) );
+#endif
+#ifdef __APPLE__
+    _thread_set_tsd_base( (uint64_t)NtCurrentTeb() );
 #endif
 #ifdef DS_sig
     DS_sig(sigcontext) = ds64_sel;
@@ -1644,6 +1661,12 @@ __ASM_GLOBAL_FUNC( call_user_mode_callback,
                    "test %r10,%r10\n\t"
                    "jz 1f\n\t"
                    "xchgq %rcx,%r10\n\t"
+#ifdef __APPLE__
+                   "1\t:pushq %rcx\n\t"
+                   "movq %r8,%rdi\n\t"
+                   "call " __ASM_NAME("_thread_set_tsd_base") "\n\t"
+                   "popq %rcx\n\t"
+#endif
                    "1\t:jmpq *%rcx" )          /* func */
 
 
@@ -1653,6 +1676,16 @@ __ASM_GLOBAL_FUNC( call_user_mode_callback,
 extern void DECLSPEC_NORETURN user_mode_callback_return( void *ret_ptr, ULONG ret_len,
                                                          NTSTATUS status, TEB *teb );
 __ASM_GLOBAL_FUNC( user_mode_callback_return,
+#ifdef __APPLE__
+                   "pushq %rcx\n\t"
+                   "pushq %rdi\n\t"
+                   "pushq %rsi\n\t"
+                   "movq 0x320(%rcx),%rdi\n\t" /* amd64_thread_data()->pthread_teb */
+                   "call " __ASM_NAME("_thread_set_tsd_base") "\n\t"
+                   "popq %rsi\n\t"
+                   "popq %rdi\n\t"
+                   "popq %rcx\n\t"
+#endif
                    "movq 0x328(%rcx),%r10\n\t" /* amd64_thread_data()->syscall_frame */
                    "movq 0xa0(%r10),%r11\n\t"  /* frame->prev_frame */
                    "movq %r11,0x328(%rcx)\n\t" /* amd64_thread_data()->syscall_frame = prev_frame */
@@ -1974,9 +2007,9 @@ static BOOL handle_syscall_trap( ucontext_t *sigcontext, siginfo_t *siginfo )
  */
 static void segv_handler( int signal, siginfo_t *siginfo, void *sigcontext )
 {
+    ucontext_t *ucontext = init_handler( sigcontext );
     EXCEPTION_RECORD rec = { 0 };
     struct xcontext context;
-    ucontext_t *ucontext = init_handler( sigcontext );
 
     rec.ExceptionAddress = (void *)RIP_sig(ucontext);
     save_context( &context, ucontext );
@@ -2059,9 +2092,9 @@ static void segv_handler( int signal, siginfo_t *siginfo, void *sigcontext )
  */
 static void trap_handler( int signal, siginfo_t *siginfo, void *sigcontext )
 {
+    ucontext_t *ucontext = init_handler( sigcontext );
     EXCEPTION_RECORD rec = { 0 };
     struct xcontext context;
-    ucontext_t *ucontext = init_handler( sigcontext );
 
     if (handle_syscall_trap( ucontext, siginfo )) return;
 
@@ -2093,8 +2126,8 @@ static void trap_handler( int signal, siginfo_t *siginfo, void *sigcontext )
  */
 static void fpe_handler( int signal, siginfo_t *siginfo, void *sigcontext )
 {
-    EXCEPTION_RECORD rec = { 0 };
     ucontext_t *ucontext = init_handler( sigcontext );
+    EXCEPTION_RECORD rec = { 0 };
 
     switch (siginfo->si_code)
     {
@@ -2194,6 +2227,9 @@ static void quit_handler( int signal, siginfo_t *siginfo, void *sigcontext )
  */
 static void usr1_handler( int signal, siginfo_t *siginfo, void *sigcontext )
 {
+#ifdef __APPLE__
+    UINT64 gs30 = get_gs30();
+#endif
     ucontext_t *ucontext = init_handler( sigcontext );
 
     if (is_inside_syscall( ucontext ))
@@ -2225,6 +2261,14 @@ static void usr1_handler( int signal, siginfo_t *siginfo, void *sigcontext )
             frame->restore_flags |= 0x40;
         }
         NtSetContextThread( GetCurrentThread(), &context->c );
+#ifdef __APPLE__
+        /* GSBASE needs to be reset to its value at the entry of this function,
+         * which could be either the TEB or Mac TSD.
+         * Check %gs:0x30, which is Self in the TEB and reserved (0) in the TSD.
+         */
+        if (gs30)
+            _thread_set_tsd_base( (uint64_t)NtCurrentTeb() );
+#endif
     }
     else
     {
@@ -2428,50 +2472,12 @@ static void *mac_thread_gsbase(void)
 {
     struct thread_identifier_info tiinfo;
     unsigned int info_count = THREAD_IDENTIFIER_INFO_COUNT;
-    static int gsbase_offset = -1;
 
     mach_port_t self = mach_thread_self();
     kern_return_t kr = thread_info(self, THREAD_IDENTIFIER_INFO, (thread_info_t) &tiinfo, &info_count);
     mach_port_deallocate(mach_task_self(), self);
 
     if (kr == KERN_SUCCESS) return (void*)tiinfo.thread_handle;
-
-    if (gsbase_offset < 0)
-    {
-        /* Search for the array of TLS slots within the pthread data structure.
-           That's what the macOS pthread implementation uses for gsbase. */
-        const void* const sentinel1 = (const void*)0x2bffb6b4f11228ae;
-        const void* const sentinel2 = (const void*)0x0845a7ff6ab76707;
-        int rc;
-        pthread_key_t key;
-        const void** p = (const void**)pthread_self();
-        int i;
-
-        gsbase_offset = 0;
-        if ((rc = pthread_key_create(&key, NULL))) return NULL;
-
-        pthread_setspecific(key, sentinel1);
-
-        for (i = key + 1; i < 2000; i++) /* arbitrary limit */
-        {
-            if (p[i] == sentinel1)
-            {
-                pthread_setspecific(key, sentinel2);
-
-                if (p[i] == sentinel2)
-                {
-                    gsbase_offset = (i - key) * sizeof(*p);
-                    break;
-                }
-
-                pthread_setspecific(key, sentinel1);
-            }
-        }
-
-        pthread_key_delete(key);
-    }
-
-    if (gsbase_offset) return (char*)pthread_self() + gsbase_offset;
     return NULL;
 }
 #endif
@@ -2597,13 +2603,7 @@ void call_init_thunk( LPTHREAD_START_ROUTINE entry, void *arg, BOOL suspend, TEB
 #elif defined(__NetBSD__)
     sysarch( X86_64_SET_GSBASE, &teb );
 #elif defined (__APPLE__)
-    __asm__ volatile (".byte 0x65\n\tmovq %0,%c1" :: "r" (teb->Tib.Self), "n" (FIELD_OFFSET(TEB, Tib.Self)));
-    __asm__ volatile (".byte 0x65\n\tmovq %0,%c1" :: "r" (teb->ThreadLocalStoragePointer), "n" (FIELD_OFFSET(TEB, ThreadLocalStoragePointer)));
     thread_data->pthread_teb = mac_thread_gsbase();
-    /* alloc_tls_slot() needs to poke a value to an address relative to each
-       thread's gsbase.  Have each thread record its gsbase pointer into its
-       TEB so alloc_tls_slot() can find it. */
-    teb->Instrumentation[0] = thread_data->pthread_teb;
 #else
 # error Please define setting %gs for your architecture
 #endif
@@ -2660,6 +2660,7 @@ void call_init_thunk( LPTHREAD_START_ROUTINE entry, void *arg, BOOL suspend, TEB
     frame->restore_flags |= CONTEXT_INTEGER;
     frame->syscall_flags = syscall_flags;
     frame->syscall_cfa   = syscall_cfa;
+    frame->gsbase = (ULONG64)teb;
     if ((callback = instrumentation_callback))
     {
         frame->r10 = frame->rip;
@@ -2710,12 +2711,7 @@ __ASM_GLOBAL_FUNC( signal_start_thread,
  *           __wine_syscall_dispatcher
  */
 __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
-#ifdef __APPLE__
-                   "movq %gs:0x30,%rcx\n\t"
-                   "movq 0x328(%rcx),%rcx\n\t"
-#else
                    "movq %gs:0x328,%rcx\n\t"       /* amd64_thread_data()->syscall_frame */
-#endif
                    "popq 0x70(%rcx)\n\t"           /* frame->rip */
                    __ASM_CFI(".cfi_adjust_cfa_offset -8\n\t")
                    __ASM_CFI_REG_IS_AT2(rip, rcx, 0xf0,0x00)
@@ -2747,18 +2743,17 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                    "movw %ss,0x90(%rcx)\n\t"
                    "movq %rbp,0x98(%rcx)\n\t"
                    __ASM_CFI_REG_IS_AT2(rbp, rcx, 0x98, 0x01)
+#ifdef __APPLE__
+                   "movq %gs:0x30,%r14\n\t"
+                   "movq %r14,0xb8(%rcx)\n\t"       /* frame->gsbase */
+#endif
                    /* Legends of Runeterra hooks the first system call return instruction, and
                     * depends on us returning to it. Adjust the return address accordingly. */
                    "subq $0xb,0x70(%rcx)\n\t"
                    "movl 0xb0(%rcx),%r14d\n\t"     /* frame->syscall_flags */
                    "testl $3,%r14d\n\t"            /* SYSCALL_HAVE_XSAVE | SYSCALL_HAVE_XSAVEC */
                    "jz 2f\n\t"
-#ifdef __APPLE__
-                   "movq %gs:0x30,%rdx\n\t"
-                   "movl 0x340(%rdx),%eax\n\t"
-#else
                    "movl %gs:0x340,%eax\n\t"       /* amd64_thread_data()->xstate_features_mask */
-#endif
                    "xorl %edx,%edx\n\t"
                    "andl $7,%eax\n\t"
                    "xorq %rbp,%rbp\n\t"
@@ -2825,16 +2820,27 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                    "movl %eax,%ebx\n\t"
                    "shrl $8,%ebx\n\t"
                    "andl $0x30,%ebx\n\t"           /* syscall table number */
-#ifdef __APPLE__
-                   "movq %gs:0x30,%rcx\n\t"
-                   "movq 0x330(%rcx),%rcx\n\t"
-#else
                    "movq %gs:0x330,%rcx\n\t"       /* amd64_thread_data()->syscall_table */
-#endif
                    "leaq (%rcx,%rbx,2),%rbx\n\t"
                    "andl $0xfff,%eax\n\t"          /* syscall number */
                    "cmpq 16(%rbx),%rax\n\t"        /* table->ServiceLimit */
                    "jae 5f\n\t"
+#ifdef __APPLE__
+                   "pushq %rax\n\t"
+                   "pushq %rcx\n\t"
+                   "pushq %rdi\n\t"
+                   "pushq %rdx\n\t"
+                   "pushq %rsi\n\t"
+                   "pushq %r11\n\t"
+                   "movq %gs:0x320,%rdi\n\t"       /* amd64_thread_data()->pthread_teb */
+                   "call " __ASM_NAME("_thread_set_tsd_base") "\n\t"
+                   "popq %r11\n\t"
+                   "popq %rsi\n\t"
+                   "popq %rdx\n\t"
+                   "popq %rdi\n\t"
+                   "popq %rcx\n\t"
+                   "popq %rax\n\t"
+#endif
                    "movq 24(%rbx),%rcx\n\t"        /* table->ArgumentTable */
                    "movzbl (%rcx,%rax),%ecx\n\t"
                    "subq $0x30,%rcx\n\t"
@@ -2856,6 +2862,20 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                    "callq *(%r10,%rax,8)\n\t"
                    "leaq -0x98(%rbp),%rcx\n\t"
                    __ASM_LOCAL_LABEL("__wine_syscall_dispatcher_return") ":\n\t"
+#ifdef __APPLE__
+                   "pushq %rax\n\t"
+                   "pushq %rcx\n\t"
+                   "pushq %rdi\n\t"
+                   "pushq %rdx\n\t"
+                   "pushq %rsi\n\t"
+                   "movq 0xb8(%rcx),%rdi\n\t"       /* frame->gsbase */
+                   "call " __ASM_NAME("_thread_set_tsd_base") "\n\t"
+                   "popq %rsi\n\t"
+                   "popq %rdx\n\t"
+                   "popq %rdi\n\t"
+                   "popq %rcx\n\t"
+                   "popq %rax\n\t"
+#endif
                    "movl 0xb4(%rcx),%edx\n\t"      /* frame->restore_flags */
                    "testl $0x48,%edx\n\t"          /* CONTEXT_FLOATING_POINT | CONTEXT_XSTATE */
                    "jnz 2f\n\t"
@@ -2873,14 +2893,8 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                    "2:\ttestl $3,%r14d\n\t"        /* SYSCALL_HAVE_XSAVE | SYSCALL_HAVE_XSAVEC */
                    "jz 3f\n\t"
                    "movq %rax,%r11\n\t"
-#ifdef __APPLE__
-                   "movq %gs:0x30,%rdx\n\t"
-                   "movl 0x340(%rdx),%eax\n\t"
-                   "movl 0x344(%rdx),%edx\n\t"
-#else
                    "movl %gs:0x340,%eax\n\t"       /* amd64_thread_data()->xstate_features_mask */
                    "movl %gs:0x344,%edx\n\t"       /* amd64_thread_data()->xstate_features_mask high dword */
-#endif
                    "xrstor64 0xc0(%rcx)\n\t"
                    "movq %r11,%rax\n\t"
                    "movl 0xb4(%rcx),%edx\n\t"      /* frame->restore_flags */
@@ -2951,12 +2965,7 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                    "movq 0x10(%rcx),%rcx\n\t"
                    "iretq\n"
                    /* RESTORE_FLAGS_INSTRUMENTATION */
-#ifdef __APPLE__
-                   "2:\tmovq %gs:0x30,%r10\n\t"
-                   "movq 0x348(%r10),%r10\n\t"
-#else
                    "2:\tmovq %gs:0x348,%r10\n\t"  /* amd64_thread_data()->instrumentation_callback */
-#endif
                    "movq (%r10),%r10\n\t"
                    "test %r10,%r10\n\t"
                    "jz 3b\n\t"
@@ -2979,12 +2988,7 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher_return,
 
 
 __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher_instrumentation,
-#ifdef __APPLE__
-                   "movq %gs:0x30,%rcx\n\t"
-                   "movq 0x328(%rcx),%rcx\n\t"
-#else
                    "movq %gs:0x328,%rcx\n\t"       /* amd64_thread_data()->syscall_frame */
-#endif
                    "popq 0x70(%rcx)\n\t"           /* frame->rip */
                    __ASM_CFI(".cfi_adjust_cfa_offset -8\n\t")
                    __ASM_CFI_REG_IS_AT2(rip, rcx, 0xf0,0x00)
@@ -3001,12 +3005,7 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher_instrumentation,
  */
 __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
                    "movq %rcx,%r10\n\t"
-#ifdef __APPLE__
-                   "movq %gs:0x30,%rcx\n\t"
-                   "movq 0x328(%rcx),%rcx\n\t"
-#else
                    "movq %gs:0x328,%rcx\n\t"       /* amd64_thread_data()->syscall_frame */
-#endif
                    "popq 0x70(%rcx)\n\t"           /* frame->rip */
                    __ASM_CFI(".cfi_adjust_cfa_offset -8\n\t")
                    __ASM_CFI_REG_IS_AT2(rip, rcx, 0xf0,0x00)
@@ -3030,6 +3029,10 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
                    __ASM_CFI_CFA_IS_AT2(rcx, 0x88, 0x01)
                    "movq %rbp,0x98(%rcx)\n\t"
                    __ASM_CFI_REG_IS_AT2(rbp, rcx, 0x98, 0x01)
+#ifdef __APPLE__
+                   "movq %gs:0x30,%r14\n\t"
+                   "movq %r14,0xb8(%rcx)\n\t"       /* frame->gsbase */
+#endif
                    "movdqa %xmm6,0x1c0(%rcx)\n\t"
                    "movdqa %xmm7,0x1d0(%rcx)\n\t"
                    "movdqa %xmm8,0x1e0(%rcx)\n\t"
@@ -3068,6 +3071,18 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
                    "syscall\n\t"
                    "2:\n\t"
 #endif
+#ifdef __APPLE__
+                   "pushq %rax\n\t"
+                   "pushq %rcx\n\t"
+                   "pushq %rdx\n\t"
+                   "pushq %rsi\n\t"
+                   "movq %gs:0x320,%rdi\n\t"       /* amd64_thread_data()->pthread_teb */
+                   "call " __ASM_NAME("_thread_set_tsd_base") "\n\t"
+                   "popq %rsi\n\t"
+                   "popq %rdx\n\t"
+                   "popq %rcx\n\t"
+                   "popq %rax\n\t"
+#endif
                    "movq %r8,%rdi\n\t"             /* args */
                    "callq *(%r10,%rdx,8)\n\t"
                    "movq %rsp,%rcx\n\t"
@@ -3091,6 +3106,16 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
                    "jz 1f\n\t"
                    "movw %gs:0x338,%fs\n"          /* amd64_thread_data()->fs */
                    "1:\n\t"
+#endif
+#ifdef __APPLE__
+                   "pushq %rax\n\t"
+                   "pushq %rcx\n\t"
+                   "pushq %rdx\n\t"
+                   "movq 0xb8(%rcx),%rdi\n\t"       /* frame->gsbase */
+                   "call " __ASM_NAME("_thread_set_tsd_base") "\n\t"
+                   "popq %rdx\n\t"
+                   "popq %rcx\n\t"
+                   "popq %rax\n\t"
 #endif
                    "movq 0x60(%rcx),%r14\n\t"
                    "movq 0x28(%rcx),%rdi\n\t"
