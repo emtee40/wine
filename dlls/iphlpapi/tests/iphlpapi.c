@@ -3098,6 +3098,45 @@ static void test_compartments(void)
     ok(id == NET_IF_COMPARTMENT_ID_PRIMARY, "got %u\n", id);
 }
 
+static void test_SendARP(void)
+{
+    DWORD apiReturn;
+    ULONG dwSize = 0;
+    ULONG MacAddr[2]={0,0};
+    
+    apiReturn = SendARP(0, 0, NULL, NULL);
+    if (apiReturn == ERROR_NOT_SUPPORTED) {
+        skip("SendARP is not supported\n");
+        return;
+    }
+    ok(apiReturn == ERROR_BAD_NET_NAME,
+       "SendARP(0, 0, NULL, NULL) returned %ld, expected ERROR_BAD_NET_NAME\n",
+       apiReturn);
+
+    apiReturn = SendARP( inet_addr("127.0.0.1"), 0, NULL, NULL);
+    ok(apiReturn == ERROR_INVALID_PARAMETER,
+       "SendARP(inet_addr('127.0.0.1'), 0, NULL, NULL) returned %ld, expected ERROR_INVALID_PARAMETER\n",
+       apiReturn);
+
+    apiReturn = SendARP( inet_addr("127.0.0.1"), 0, (PULONG) &MacAddr, NULL);
+    ok(apiReturn == ERROR_INVALID_USER_BUFFER,
+       "SendARP(inet_addr('127.0.0.1'), 0, (PULONG) &MacAddr, NULL) returned %ld, expected ERROR_INVALID_USER_BUFFER\n",
+       apiReturn);
+
+    apiReturn = SendARP( inet_addr("127.0.0.1"), 0, (PULONG) &MacAddr, &dwSize);
+    ok(apiReturn == ERROR_BUFFER_OVERFLOW,
+       "SendARP(inet_addr('127.0.0.1'), 0, (PULONG) &MacAddr, &dwSize=0) returned %ld, expected ERROR_BUFFER_OVERFLOW\n",
+       apiReturn);
+    
+    dwSize = 6;   
+    apiReturn = SendARP( inet_addr("127.0.0.1"), 0, (PULONG) &MacAddr, &dwSize);
+    if (apiReturn == ERROR_NOT_FOUND) {
+        trace( "SendARP(inet_addr('127.0.0.1'), 0, (PULONG) &MacAddr, &dwSize) did not found a mac address\n" );
+    } else {
+        trace( "SendARP(inet_addr('127.0.0.1'), 0, (PULONG) &MacAddr, &dwSize) returned %lu mac: %lu - %lu.\n", apiReturn, MacAddr[0], MacAddr[1] );
+    }
+}
+
 START_TEST(iphlpapi)
 {
   WSADATA wsa_data;
@@ -3139,6 +3178,7 @@ START_TEST(iphlpapi)
     test_NotifyUnicastIpAddressChange();
     test_ConvertGuidToString();
     test_compartments();
+    test_SendARP();
     freeIPHlpApi();
   }
 
