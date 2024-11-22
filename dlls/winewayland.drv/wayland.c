@@ -32,6 +32,25 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(waylanddrv);
 
+static const struct user_driver_funcs waylanddrv_funcs =
+{
+    .pClipCursor = WAYLAND_ClipCursor,
+    .pDesktopWindowProc = WAYLAND_DesktopWindowProc,
+    .pDestroyWindow = WAYLAND_DestroyWindow,
+    .pKbdLayerDescriptor = WAYLAND_KbdLayerDescriptor,
+    .pReleaseKbdTables = WAYLAND_ReleaseKbdTables,
+    .pSetCursor = WAYLAND_SetCursor,
+    .pSetWindowText = WAYLAND_SetWindowText,
+    .pSysCommand = WAYLAND_SysCommand,
+    .pUpdateDisplayDevices = WAYLAND_UpdateDisplayDevices,
+    .pWindowMessage = WAYLAND_WindowMessage,
+    .pWindowPosChanged = WAYLAND_WindowPosChanged,
+    .pWindowPosChanging = WAYLAND_WindowPosChanging,
+    .pCreateWindowSurface = WAYLAND_CreateWindowSurface,
+    .pVulkanInit = WAYLAND_VulkanInit,
+    .pwine_get_wgl_driver = WAYLAND_wine_get_wgl_driver,
+};
+
 struct wayland process_wayland =
 {
     .seat.mutex = PTHREAD_MUTEX_INITIALIZER,
@@ -244,8 +263,7 @@ BOOL wayland_process_init(void)
     wl_registry_add_listener(process_wayland.wl_registry, &registry_listener, NULL);
 
     /* We need two roundtrips. One to get and bind globals, one to handle all
-     * initial events produced from registering the globals. */
-    wl_display_roundtrip_queue(process_wayland.wl_display, process_wayland.wl_event_queue);
+     * initial events produced from registering the globals (which is ran later). */
     wl_display_roundtrip_queue(process_wayland.wl_display, process_wayland.wl_event_queue);
 
     /* Check for required protocol globals. */
@@ -282,7 +300,11 @@ BOOL wayland_process_init(void)
     if (!process_wayland.zwp_relative_pointer_manager_v1)
         ERR("Wayland compositor doesn't support optional zwp_relative_pointer_manager_v1 (relative motion won't work)\n");
 
-    process_wayland.initialized = TRUE;
+    __wine_set_user_driver(&waylanddrv_funcs, WINE_GDI_DRIVER_VERSION);
 
+    /* The second roundtrip is delayed to avoid display device initialization. */
+    wl_display_roundtrip_queue(process_wayland.wl_display, process_wayland.wl_event_queue);
+
+    process_wayland.initialized = TRUE;
     return TRUE;
 }
