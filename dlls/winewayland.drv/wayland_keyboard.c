@@ -629,8 +629,8 @@ static void release_all_keys(HWND hwnd)
     {
         /* Skip mouse buttons. */
         if (vkey < 7 && vkey != VK_CANCEL) continue;
-        /* Skip left/right-agnostic modifier vkeys. */
-        if (vkey == VK_SHIFT || vkey == VK_CONTROL || vkey == VK_MENU) continue;
+        /* Skip modifier vkeys. */
+        if (vkey == VK_SHIFT || vkey == VK_CONTROL || vkey == VK_MENU || (vkey >= VK_LSHIFT && vkey <= VK_RMENU)) continue;
 
         if (state[vkey] & 0x80)
         {

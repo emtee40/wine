@@ -2433,11 +2433,10 @@ static int queue_keyboard_message( struct desktop *desktop, user_handle_t win, c
        }
     }
 
-    if (origin == IMO_HARDWARE)
+    if ((origin == IMO_HARDWARE) && (input->kbd.scan == desktop->key_repeat.input.kbd.scan))
     {
         /* if the repeat key is released, stop auto-repeating */
-        if (((input->kbd.flags & KEYEVENTF_KEYUP) &&
-             (input->kbd.scan == desktop->key_repeat.input.kbd.scan)))
+        if (input->kbd.flags & KEYEVENTF_KEYUP)
         {
             stop_key_repeat( desktop );
         }
