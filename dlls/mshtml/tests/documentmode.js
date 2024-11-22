@@ -3699,6 +3699,6 @@ sync_test("prototype props", function() {
         "PROCESSING_INSTRUCTION_NODE", "TEXT_NODE", "hasAttributes", "normalize"
     ]);
     check(StorageEvent, [ "initStorageEvent", "key", "newValue", "oldValue", "storageArea", "url" ]);
-    check(Text, [ "removeNode", "replaceNode", "replaceWholeText", "splitText", "swapNode", "wholeText" ], [ "replaceWholeText", "toString", "wholeText" ]);
+    check(Text, [ "removeNode", "replaceNode", "replaceWholeText", "splitText", "swapNode", "wholeText" ], [ "replaceWholeText", "wholeText" ]);
     check(UIEvent, [ "detail", "initUIEvent", "view" ], null, [ "deviceSessionId" ]);
 });

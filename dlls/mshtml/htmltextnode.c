@@ -25,6 +25,7 @@
 #include "winbase.h"
 #include "winuser.h"
 #include "ole2.h"
+#include "mshtmdid.h"
 
 #include "mshtml_private.h"
 #include "htmlevent.h"
@@ -384,15 +385,20 @@ static const dispex_static_data_vtbl_t Text_dispex_vtbl = {
 
 static void Text_init_dispex_info(dispex_data_t *info, compat_mode_t mode)
 {
+    static const dispex_hook_t textnode_hooks[] = {
+        {DISPID_IHTMLDOMTEXTNODE_TOSTRING},
+        {DISPID_UNKNOWN}
+    };
     HTMLDOMNode_init_dispex_info(info, mode);
     CharacterData_init_dispex_info(info, mode);
+
+    dispex_info_add_interface(info, IHTMLDOMTextNode_tid, textnode_hooks);
+    dispex_info_add_interface(info, IHTMLDOMTextNode2_tid, NULL);
 }
 
 static const tid_t Text_iface_tids[] = {
     IHTMLDOMNode_tid,
     IHTMLDOMNode2_tid,
-    IHTMLDOMTextNode_tid,
-    IHTMLDOMTextNode2_tid,
     0
 };
 dispex_static_data_t Text_dispex = {
