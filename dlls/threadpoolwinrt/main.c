@@ -37,6 +37,7 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(threadpool);
 
+#define HANDLER_NOT_SET ((void *)~(ULONG_PTR)0)
 #define Closed 4
 
 struct threadpool_factory
@@ -57,6 +58,7 @@ struct async_action
     IWorkItemHandler *work_item_handler;
 
     CRITICAL_SECTION cs;
+    IAsyncActionCompletedHandler *completed_handler;
     AsyncStatus status;
     LONG refcount;
 };
@@ -127,6 +129,8 @@ static ULONG STDMETHODCALLTYPE async_action_Release(IAsyncAction *iface)
 
     if (!refcount)
     {
+        if (action->completed_handler && action->completed_handler != HANDLER_NOT_SET)
+            IAsyncActionCompletedHandler_Release( action->completed_handler );
         IAsyncInfo_Close(&action->IAsyncInfo_iface);
         IWorkItemHandler_Release(action->work_item_handler);
         action->cs.DebugInfo->Spare[0] = 0;
@@ -163,16 +167,61 @@ static HRESULT STDMETHODCALLTYPE async_action_GetTrustLevel(
 
 static HRESULT STDMETHODCALLTYPE async_action_put_Completed(IAsyncAction *iface, IAsyncActionCompletedHandler *handler)
 {
-    FIXME("iface %p, handler %p stub!\n", iface, handler);
+    struct async_action *action;
+    HRESULT hr = S_OK;
 
-    return E_NOTIMPL;
+    TRACE("iface %p, handler %p\n", iface, handler);
+
+    if (!handler)
+        return E_POINTER;
+
+    action = impl_from_IAsyncAction(iface);
+    EnterCriticalSection(&action->cs);
+    if (action->status == Closed)
+        hr = E_ILLEGAL_METHOD_CALL;
+    else if (action->completed_handler != HANDLER_NOT_SET)
+        hr = E_ILLEGAL_DELEGATE_ASSIGNMENT;
+    else if (handler)
+    {
+        action->completed_handler = handler;
+        IAsyncActionCompletedHandler_AddRef(action->completed_handler);
+        if (action->status > Started)
+        {
+            AsyncStatus status = action->status;
+            action->completed_handler = NULL;
+            LeaveCriticalSection(&action->cs);
+
+            IAsyncActionCompletedHandler_Invoke(handler, iface, status);
+            IAsyncActionCompletedHandler_Release(handler);
+            return S_OK;
+        }
+    }
+    LeaveCriticalSection(&action->cs);
+
+    return hr;
 }
 
 static HRESULT STDMETHODCALLTYPE async_action_get_Completed(IAsyncAction *iface, IAsyncActionCompletedHandler **handler)
 {
-    FIXME("iface %p, handler %p stub!\n", iface, handler);
+    struct async_action *action;
+    HRESULT hr = S_OK;
 
-    return E_NOTIMPL;
+    TRACE("iface %p, handler %p\n", iface, handler);
+
+    action = impl_from_IAsyncAction(iface);
+    EnterCriticalSection(&action->cs);
+    if (action->status == Closed)
+        hr = E_ILLEGAL_METHOD_CALL;
+    if (!action->completed_handler || action->completed_handler == HANDLER_NOT_SET)
+        *handler = NULL;
+    else
+    {
+        *handler = action->completed_handler;
+        IAsyncActionCompletedHandler_AddRef(*handler);
+    }
+    LeaveCriticalSection(&action->cs);
+
+    return hr;
 }
 
 static HRESULT STDMETHODCALLTYPE async_action_GetResults(IAsyncAction *iface)
@@ -354,9 +403,21 @@ static void async_action_invoke_and_release(IAsyncAction *action_iface)
 
     EnterCriticalSection(&action->cs);
     action->hr = hr;
+
     if (action->status != Closed)
         action->status = FAILED(hr) ? Error : Completed;
-    LeaveCriticalSection(&action->cs);
+    if (action->completed_handler && action->completed_handler != HANDLER_NOT_SET)
+    {
+        AsyncStatus status = action->status;
+        IAsyncActionCompletedHandler *handler = action->completed_handler;
+        action->completed_handler = NULL;
+        LeaveCriticalSection(&action->cs);
+
+        IAsyncActionCompletedHandler_Invoke(handler, &action->IAsyncAction_iface, status);
+        IAsyncActionCompletedHandler_Release(handler);
+    }
+    else
+        LeaveCriticalSection(&action->cs);
     IAsyncAction_Release(action_iface);
 }
 
@@ -412,6 +473,7 @@ static HRESULT async_action_create_and_start(TP_CALLBACK_ENVIRON *environment, W
     object->id = InterlockedIncrement(&async_action_id);
     object->work_item_handler = work_item;
     IWorkItemHandler_AddRef(work_item);
+    object->completed_handler = HANDLER_NOT_SET;
     object->status = Started;
     InitializeCriticalSectionEx(&object->cs, 0, RTL_CRITICAL_SECTION_FLAG_FORCE_DEBUG_INFO);
     object->cs.DebugInfo->Spare[0] = (DWORD_PTR)(__FILE__": async_action.cs");

@@ -157,7 +157,6 @@ static HRESULT STDMETHODCALLTYPE work_item_Invoke(IWorkItemHandler *iface, IAsyn
     ok(hr == E_ILLEGAL_METHOD_CALL, "Unexpected hr %#lx.\n", hr);
 
     hr = IAsyncAction_put_Completed(action, NULL);
-    todo_wine
     ok(hr == E_POINTER, "Unexpected hr %#lx.\n", hr);
 
     SetEvent(item->event);
@@ -344,14 +343,14 @@ static void test_RunAsync(void)
         if (hr == S_OK)
         {
             hr = IAsyncAction_put_Completed(action, handler);
-            todo_wine ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+            ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
         }
     }
     ret = WaitForSingleObject(item->event, 1000);
     ok(!ret, "Unexpected wait result %lu.\n", ret);
     if (handler)
     {
-        todo_wine test_IAsyncActionCompletedHandler(handler);
+        test_IAsyncActionCompletedHandler(handler);
         IAsyncActionCompletedHandler_Release(handler);
     }
     IAsyncAction_Release(action);
@@ -371,10 +370,10 @@ static void test_RunAsync(void)
         if (hr == S_OK)
         {
             hr = IAsyncAction_put_Completed(action, handler);
-            todo_wine ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+            ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
             hr = IAsyncAction_put_Completed(action, handler);
-            todo_wine ok(hr == E_ILLEGAL_DELEGATE_ASSIGNMENT, "%#lx != %#lx\n", hr, E_ILLEGAL_DELEGATE_ASSIGNMENT);
-            todo_wine test_IAsyncActionCompletedHandler(handler);
+            ok(hr == E_ILLEGAL_DELEGATE_ASSIGNMENT, "%#lx != %#lx\n", hr, E_ILLEGAL_DELEGATE_ASSIGNMENT);
+            test_IAsyncActionCompletedHandler(handler);
             IAsyncActionCompletedHandler_Release(handler);
         }
     }
