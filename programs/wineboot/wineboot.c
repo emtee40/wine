@@ -1480,15 +1480,34 @@ static INT_PTR CALLBACK wait_dlgproc( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp 
     {
     case WM_INITDIALOG:
         {
-            DWORD len;
+            DWORD len, end_len, split_len = 15;
+            INT fin_len = (split_len * 2) + 3 + 1;
             WCHAR *buffer, text[1024];
+            SIZE text_size;
+            HWND ctrl_hwnd = GetDlgItem( hwnd, IDC_WAITTEXT );
+            RECT ctrl_rect;
+            FLOAT ctrl_len, text_len;
             const WCHAR *name = (WCHAR *)lp;
             HICON icon = LoadImageW( 0, (LPCWSTR)IDI_WINLOGO, IMAGE_ICON, 48, 48, LR_SHARED );
+
             SendDlgItemMessageW( hwnd, IDC_WAITICON, STM_SETICON, (WPARAM)icon, 0 );
             SendDlgItemMessageW( hwnd, IDC_WAITTEXT, WM_GETTEXT, 1024, (LPARAM)text );
             len = lstrlenW(text) + lstrlenW(name) + 1;
             buffer = malloc( len * sizeof(WCHAR) );
-            swprintf( buffer, len, text, name );
+
+            GetTextExtentPoint32W( GetDC(ctrl_hwnd), name, lstrlenW(name), &text_size );
+            GetClientRect( ctrl_hwnd, &ctrl_rect );
+            ctrl_len = (ctrl_rect.right / 1.5) - 2.0; /* Add some length headroom */
+            text_len = ((FLOAT)text_size.cx / (FLOAT)text_size.cy) * 8.0;
+            if (text_len > ctrl_len && len >= fin_len)
+            {
+                WINE_TRACE( "Text length %f exceeds control length %f, shrinking the text to %d characters\n",
+                            text_len, ctrl_len, fin_len );
+                end_len = lstrlenW(name) - (split_len + 1);
+                swprintf( buffer, len, L"%.*s...%s", split_len, name, &name[end_len] );
+            }
+            else swprintf( buffer, len, text, name );
+
             SendDlgItemMessageW( hwnd, IDC_WAITTEXT, WM_SETTEXT, 0, (LPARAM)buffer );
             free( buffer );
         }
