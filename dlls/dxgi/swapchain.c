@@ -1170,6 +1170,7 @@ struct d3d12_swapchain
     VkImage vk_swapchain_images[DXGI_MAX_SWAP_CHAIN_BUFFERS];
     VkCommandBuffer vk_cmd_buffers[DXGI_MAX_SWAP_CHAIN_BUFFERS];
     VkSemaphore vk_semaphores[DXGI_MAX_SWAP_CHAIN_BUFFERS];
+    VkFence vk_buffer_fences[DXGI_MAX_SWAP_CHAIN_BUFFERS];
     unsigned int vk_swapchain_width;
     unsigned int vk_swapchain_height;
     VkPresentModeKHR present_mode;
@@ -1214,7 +1215,8 @@ struct d3d12_swapchain_op
         {
             unsigned int sync_interval;
             VkImage vk_image;
-            unsigned int frame_number;
+            uint64_t frame_number;
+            unsigned int buffer_index;
         } present;
         struct
         {
@@ -2020,6 +2022,18 @@ static ULONG STDMETHODCALLTYPE d3d12_swapchain_AddRef(IDXGISwapChain4 *iface)
     return refcount;
 }
 
+static void d3d12_swapchain_destroy_buffer_fences(struct d3d12_swapchain *swapchain)
+{
+    const struct dxgi_vk_funcs *vk_funcs = &swapchain->vk_funcs;
+    size_t i;
+
+    for (i = 0; i < ARRAY_SIZE(swapchain->vk_buffer_fences); ++i)
+    {
+        vk_funcs->p_vkDestroyFence(swapchain->vk_device, swapchain->vk_buffer_fences[i], NULL);
+        swapchain->vk_buffer_fences[i] = VK_NULL_HANDLE;
+    }
+}
+
 static void d3d12_swapchain_destroy(struct d3d12_swapchain *swapchain)
 {
     const struct dxgi_vk_funcs *vk_funcs = &swapchain->vk_funcs;
@@ -2068,6 +2082,7 @@ static void d3d12_swapchain_destroy(struct d3d12_swapchain *swapchain)
     if (swapchain->vk_device)
     {
         vk_funcs->p_vkDestroyFence(swapchain->vk_device, swapchain->vk_fence, NULL);
+        d3d12_swapchain_destroy_buffer_fences(swapchain);
         vk_funcs->p_vkDestroySwapchainKHR(swapchain->vk_device, swapchain->vk_swapchain, NULL);
     }
 
@@ -2193,7 +2208,7 @@ static HRESULT d3d12_swapchain_set_sync_interval(struct d3d12_swapchain *swapcha
 }
 
 static VkResult d3d12_swapchain_queue_present(struct d3d12_swapchain *swapchain, VkImage vk_src_image,
-        uint64_t frame_number)
+        uint64_t frame_number, unsigned int buffer_index)
 {
     const struct dxgi_vk_funcs *vk_funcs = &swapchain->vk_funcs;
     VkPresentInfoKHR present_info;
@@ -2243,7 +2258,7 @@ static VkResult d3d12_swapchain_queue_present(struct d3d12_swapchain *swapchain,
     submit_info.signalSemaphoreCount = 1;
     submit_info.pSignalSemaphores = &swapchain->vk_semaphores[swapchain->vk_image_index];
 
-    if ((vr = vk_funcs->p_vkQueueSubmit(vk_queue, 1, &submit_info, VK_NULL_HANDLE)) < 0)
+    if ((vr = vk_funcs->p_vkQueueSubmit(vk_queue, 1, &submit_info, swapchain->vk_buffer_fences[buffer_index])) < 0)
     {
         ERR("Failed to blit swapchain buffer, vr %d.\n", vr);
         vkd3d_release_vk_queue(swapchain->command_queue);
@@ -2275,7 +2290,8 @@ static HRESULT d3d12_swapchain_op_present_execute(struct d3d12_swapchain *swapch
     if (FAILED(hr = d3d12_swapchain_set_sync_interval(swapchain, op->present.sync_interval)))
         return hr;
 
-    vr = d3d12_swapchain_queue_present(swapchain, op->present.vk_image, op->present.frame_number);
+    vr = d3d12_swapchain_queue_present(swapchain, op->present.vk_image, op->present.frame_number,
+            op->present.buffer_index);
     if (vr == VK_ERROR_OUT_OF_DATE_KHR)
     {
         TRACE("Recreating Vulkan swapchain.\n");
@@ -2284,7 +2300,8 @@ static HRESULT d3d12_swapchain_op_present_execute(struct d3d12_swapchain *swapch
         if (FAILED(hr = d3d12_swapchain_create_vulkan_resources(swapchain)))
             return hr;
 
-        if ((vr = d3d12_swapchain_queue_present(swapchain, op->present.vk_image, op->present.frame_number)) < 0)
+        if ((vr = d3d12_swapchain_queue_present(swapchain, op->present.vk_image, op->present.frame_number,
+                op->present.buffer_index)) < 0)
             ERR("Failed to present after recreating swapchain, vr %d.\n", vr);
     }
 
@@ -2314,8 +2331,12 @@ static HRESULT d3d12_swapchain_op_present_execute(struct d3d12_swapchain *swapch
 static HRESULT d3d12_swapchain_present(struct d3d12_swapchain *swapchain,
         unsigned int sync_interval, unsigned int flags)
 {
+    const struct dxgi_vk_funcs *vk_funcs = &swapchain->vk_funcs;
+    VkDevice vk_device = swapchain->vk_device;
     struct d3d12_swapchain_op *op;
     HANDLE frame_latency_event;
+    VkFence vk_fence;
+    VkResult vr;
     HRESULT hr;
 
     if (sync_interval > 4)
@@ -2338,15 +2359,29 @@ static HRESULT d3d12_swapchain_present(struct d3d12_swapchain *swapchain,
         return E_OUTOFMEMORY;
     }
 
+    if (!(vk_fence = swapchain->vk_buffer_fences[swapchain->current_buffer_index]))
+    {
+        VkFenceCreateInfo fence_desc;
+
+        fence_desc.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fence_desc.pNext = NULL;
+        fence_desc.flags = 0;
+        if ((vr = vk_funcs->p_vkCreateFence(vk_device, &fence_desc, NULL, &vk_fence)) < 0)
+            ERR("Failed to create Vulkan fence, vr %d.\n", vr);
+        else
+            swapchain->vk_buffer_fences[swapchain->current_buffer_index] = vk_fence;
+    }
+
     op->type = D3D12_SWAPCHAIN_OP_PRESENT;
     op->present.sync_interval = sync_interval;
+    op->present.buffer_index = swapchain->current_buffer_index;
     op->present.vk_image = swapchain->vk_images[swapchain->current_buffer_index];
     op->present.frame_number = swapchain->frame_number;
 
     EnterCriticalSection(&swapchain->worker_cs);
     list_add_tail(&swapchain->worker_ops, &op->entry);
-    WakeAllConditionVariable(&swapchain->worker_cv);
     LeaveCriticalSection(&swapchain->worker_cs);
+    WakeAllConditionVariable(&swapchain->worker_cv);
 
     ++swapchain->frame_number;
     if ((frame_latency_event = swapchain->frame_latency_event))
@@ -2371,6 +2406,18 @@ static HRESULT d3d12_swapchain_present(struct d3d12_swapchain *swapchain,
     }
 
     swapchain->current_buffer_index = (swapchain->current_buffer_index + 1) % swapchain->desc.BufferCount;
+
+    /* Prevent the client from overwriting the new current buffer before a pending blit is done.
+     * After Present() returns, it is expected the client will render to the next buffer in sequence,
+     * so Present() is the last place where it is possible to wait for a pending read from that buffer. */
+    if ((vk_fence = swapchain->vk_buffer_fences[swapchain->current_buffer_index]))
+    {
+        if ((vr = vk_funcs->p_vkWaitForFences(vk_device, 1, &vk_fence, VK_TRUE, UINT64_MAX)) != VK_SUCCESS)
+            ERR("Failed to wait for fence, vr %d.\n", vr);
+        if ((vr = vk_funcs->p_vkResetFences(vk_device, 1, &vk_fence)) < 0)
+            ERR("Failed to reset fence, vr %d.\n", vr);
+    }
+
     return S_OK;
 }
 
@@ -2611,6 +2658,7 @@ static HRESULT d3d12_swapchain_resize_buffers(struct d3d12_swapchain *swapchain,
     if (desc->Width == new_desc.Width && desc->Height == new_desc.Height
             && desc->Format == new_desc.Format && desc->BufferCount == new_desc.BufferCount)
     {
+        d3d12_swapchain_destroy_buffer_fences(swapchain);
         swapchain->current_buffer_index = 0;
         return S_OK;
     }
@@ -2630,9 +2678,10 @@ static HRESULT d3d12_swapchain_resize_buffers(struct d3d12_swapchain *swapchain,
 
     EnterCriticalSection(&swapchain->worker_cs);
     list_add_tail(&swapchain->worker_ops, &op->entry);
-    WakeAllConditionVariable(&swapchain->worker_cv);
     LeaveCriticalSection(&swapchain->worker_cs);
+    WakeAllConditionVariable(&swapchain->worker_cv);
 
+    d3d12_swapchain_destroy_buffer_fences(swapchain);
     swapchain->current_buffer_index = 0;
 
     d3d12_swapchain_destroy_d3d12_resources(swapchain);
